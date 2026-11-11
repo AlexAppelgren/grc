@@ -24,7 +24,6 @@ from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, caller_tenant, caller_user, if_match
 from apps.taxonomy.reading import language_order
-from apps.taxonomy.schemas import PersonRef
 from apps.tenants import (
     logic,
     organisation,
@@ -74,6 +73,7 @@ from apps.tenants.schemas import (
     TenantTeamPage,
     TenantWorkflowPatch,
 )
+from apps.shared.schemas import NamedRef
 
 router = Router(tags=["Tenants"])
 
@@ -877,7 +877,7 @@ def list_teams(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
 
 @router.get(
     "/reference/people",
-    response=list[PersonRef],
+    response=list[NamedRef],
     auth=SessionAuth(),
     operation_id="listPeople",
     by_alias=True,

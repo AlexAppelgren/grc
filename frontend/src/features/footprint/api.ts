@@ -68,7 +68,7 @@ export function scopeItemOf(raw: Schemas['ScopeItemRow']): ScopeItem {
     key: raw.key,
     name: raw.name,
     description: raw.description,
-    jurisdiction: { key: raw.jurisdiction.key, kind: raw.jurisdiction.kind ?? null, label: raw.jurisdiction.label },
+    jurisdiction: raw.jurisdiction,
     regimeTerm: termOf(raw.regimeTerm),
     officialReference: raw.officialReference,
     sourceUrl: raw.sourceUrl,
@@ -105,15 +105,15 @@ export function requestOf(raw: Schemas['FootprintRequestRow']): FootprintChangeR
 }
 
 export function marketOf(raw: Schemas['MarketRow']): Market {
-  return { jurisdiction: { key: raw.jurisdiction.key, kind: raw.jurisdiction.kind ?? null, label: raw.jurisdiction.label }, level: raw.level };
+  return { jurisdiction: raw.jurisdiction, level: raw.level };
 }
 
 export function footprintOf(raw: Schemas['FootprintView']): Footprint {
   return {
     dimensions: raw.dimensions.map((d) => ({
-      dimension: { key: d.dimension.key, kind: d.dimension.kind ?? null, label: d.dimension.label },
+      dimension: d.dimension,
       restrictsFootprint: d.restrictsFootprint,
-      terms: (d.terms ?? []).map((term) => ({ key: term.key, kind: term.kind ?? null, label: term.label })),
+      terms: d.terms ?? [],
       allSelected: d.allSelected,
     })),
     pendingRequest: raw.pendingRequest === null || raw.pendingRequest === undefined ? null : requestOf(raw.pendingRequest),

@@ -12,7 +12,7 @@ import type { components } from '@/types/api.generated';
 
 type Schemas = components['schemas'];
 
-export type ReferencePerson = Schemas['PersonRef'];
+export type ReferencePerson = Schemas['NamedRef'];
 export type ReferenceTeam = Schemas['TenantTeam'];
 export type TermRow = Schemas['TaxonomyTermRow'];
 

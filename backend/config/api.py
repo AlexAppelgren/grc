@@ -20,6 +20,7 @@ from django.http.multipartparser import MultiPartParserError
 from ninja import NinjaAPI
 from ninja.errors import AuthenticationError, HttpError
 from ninja.errors import ValidationError as NinjaValidationError
+from ninja.openapi.schema import OpenAPISchema
 
 from apps.agents.api import router as agents_router
 from apps.cases.api import router as cases_router
@@ -36,13 +37,23 @@ from apps.search.api import router as search_router
 from apps.shared.api import router as shared_router
 from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
 from apps.shared.middleware import loggable_route
+from apps.shared.openapi import without_unreferenced_schemas
 from apps.taxonomy.api import router as taxonomy_router
 from apps.tenants.api import router as tenants_router
 from apps.watch.api import router as watch_router
 
 logger = logging.getLogger(__name__)
 
-api = NinjaAPI(
+class PublishedAPI(NinjaAPI):
+    """The API as published: Ninja's document without the schemas no operation reaches."""
+
+    def get_openapi_schema(self, *, path_prefix: str | None = None, path_params: dict[str, Any] | None = None) -> OpenAPISchema:
+        schema = super().get_openapi_schema(path_prefix=path_prefix, path_params=path_params)
+        without_unreferenced_schemas(schema)
+        return schema
+
+
+api = PublishedAPI(
     title=f"{settings.PRODUCT_NAME} API",
     version="0.1.0",
     description=(

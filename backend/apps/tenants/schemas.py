@@ -16,7 +16,6 @@ from typing import Annotated, Literal
 from django.conf import settings
 from pydantic import ConfigDict, Field, JsonValue, model_validator
 
-from apps.identity.schemas import RoleRef
 from apps.reports.schemas import JobStatusValue
 from apps.shared.models import (
     ESCALATE_AFTER_DAYS_MAX,
@@ -25,7 +24,7 @@ from apps.shared.models import (
     TRIAGE_TARGET_HOURS_MAX,
 )
 from apps.shared.schemas import CamelSchema, SingleLineName, WriteBody
-from apps.taxonomy.schemas import PersonRef, TermRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -144,7 +143,7 @@ class TenantWorkflow(CamelSchema):
             "`escalateToRole`. The platform default is 5."
         )
     )
-    escalate_to_role: RoleRef = Field(
+    escalate_to_role: VocabRef = Field(
         description=(
             "The role of this bank whose members are told when overdue work escalates, as key, "
             "kind and label; the key is what `PATCH /tenant/workflow` takes. Roles are rows of "
@@ -246,7 +245,7 @@ class TenantOut(CamelSchema):
             "until a tenant exit has been approved by two people and executed."
         )
     )
-    default_language: RoleRef | None = Field(
+    default_language: VocabRef | None = Field(
         description=(
             "The language the bank reads and writes in first: it decides which version of a "
             "library record a reader is shown when they have expressed no preference, and "
@@ -257,7 +256,7 @@ class TenantOut(CamelSchema):
             "organisation has not chosen one."
         )
     )
-    content_languages: list[RoleRef] = Field(
+    content_languages: list[VocabRef] = Field(
         description=(
             "Every language this bank keeps content in, in the order its administrators put "
             "them, the default usually first. It decides which translations a reader is "
@@ -598,7 +597,7 @@ class ConsoleTenantRow(CamelSchema):
             "people and executed."
         )
     )
-    default_language: RoleRef | None = Field(
+    default_language: VocabRef | None = Field(
         description=(
             "The language the bank reads and writes in first, as a reference to a language row "
             "by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are "
@@ -883,7 +882,7 @@ class TenantOrgUnit(CamelSchema):
     org_number: str = Field(description="The company registration number a legal entity carries, such as `556000-0000`; empty for any other unit.")
     lei: str = Field(description="The legal entity identifier (ISO 17442, 20 characters) a legal entity carries; empty when it has none or for any other unit.")
     country_code: str = Field(description="The two-letter ISO 3166 country a legal entity is registered in, such as `SE`; empty for any other unit.")
-    entity_term: TermRef | None = Field(
+    entity_term: VocabRef | None = Field(
         description=(
             "The term of the shared library's `legal_entity` dimension a legal entity is scoped "
             "with, the same term obligations are scoped with, so an obligation can be assessed per "
@@ -892,7 +891,7 @@ class TenantOrgUnit(CamelSchema):
             "Null for every unit that is not a legal entity."
         )
     )
-    head: PersonRef | None = Field(
+    head: NamedRef | None = Field(
         description="The member who heads the unit, an active member of the same bank, or null when nobody does; a department's head is told about its work."
     )
     active: bool = Field(description="False once the unit is deactivated; a unit is deactivated and never deleted, so its history stays readable.")
@@ -968,7 +967,7 @@ class TenantLicence(CamelSchema):
 
     id: uuid.UUID = Field(description="The licence's identifier, a UUID that never changes.")
     org_unit_id: uuid.UUID = Field(description="The identifier of the legal entity that holds it, a UUID of the same bank.")
-    licence_type: TermRef = Field(
+    licence_type: VocabRef = Field(
         description=(
             "What the licence or certificate is, as a term of the shared library, the same terms "
             "obligations are scoped with; a vocabulary an administrator may extend only through an "
@@ -989,8 +988,8 @@ class TenantLicence(CamelSchema):
         description="The last date a certificate is valid, a plain date, or null; it shows on the roadmap as the bank's own deadline and never in the calendar feed."
     )
     next_audit_on: date | None = Field(description="The date of a certificate's next audit, a plain date, or null; the bank's own deadline, like the validity.")
-    owner: PersonRef | None = Field(description="The member who owns the licence or certificate and its deadlines, or null.")
-    service_terms: list[TermRef] = Field(
+    owner: NamedRef | None = Field(description="The member who owns the licence or certificate and its deadlines, or null.")
+    service_terms: list[VocabRef] = Field(
         description=(
             "The services the licence covers, as terms of the shared library, a vocabulary an "
             "administrator may extend only through an approved proposal; an empty list when none are recorded."
@@ -1217,7 +1216,7 @@ class RegisterLookupEntity(RegisterLookupCompany):
             "turn into a scope term, in the register's order, shown as not used for the scope; an empty list when every line maps."
         )
     )
-    entity_type: TermRef | None = Field(
+    entity_type: VocabRef | None = Field(
         description=(
             "The legal-entity type the company's main business gives it, a term of the shared library's "
             "`legal_entity` dimension: a vocabulary an administrator may extend only through an approved "
@@ -1358,7 +1357,7 @@ class TenantOrgUnitRow(TenantOrgUnit):
             "facts, and always null for a group or a department."
         )
     )
-    scope_exclusions: list[TermRef] = Field(
+    scope_exclusions: list[VocabRef] = Field(
         default_factory=list,
         description=(
             "The licence-bound terms outside this legal entity's own scope (FP-05), each with its key, "
@@ -1446,8 +1445,8 @@ class TenantProductOut(CamelSchema):
     status: ProductStatusValue = Field(description=f"Where the product stands: {_PRODUCT_STATUSES}.")
     launch_date: date | None = Field(description="The date the product went or goes live, a plain date, or null.")
     org_unit_id: uuid.UUID | None = Field(description="The identifier of the unit that offers it, a UUID of the same bank, or null.")
-    owner: PersonRef | None = Field(description="The member who owns the product, or null.")
-    terms: list[TermRef] = Field(
+    owner: NamedRef | None = Field(description="The member who owns the product, or null.")
+    terms: list[VocabRef] = Field(
         description=(
             "The product's scope as terms of the shared library, the same terms obligations are "
             "scoped with; a vocabulary an administrator may extend only through an approved "
@@ -1556,7 +1555,7 @@ class TenantMemberOpenWork(CamelSchema):
         }
     )
 
-    member: PersonRef = Field(description="The member whose open work this is.")
+    member: NamedRef = Field(description="The member whose open work this is.")
     items: list[TenantOpenWork] = Field(description="One row per kind the member holds; an empty list is a 200 and means the removal moves nothing.")
     teams: list[str] = Field(
         description=(
@@ -1626,9 +1625,9 @@ class SupportAccessGrant(CamelSchema):
     purpose: str = Field(description="Why platform support asked, in their own words, written for the bank.")
     ticket_ref: str = Field(description="The support ticket it was asked under, such as `SUP-2511`; empty when there is none.")
     hours: int = Field(description="How long the window asked for is, in hours; the window starts when the bank approves.")
-    platform_person: PersonRef = Field(description="The platform support person who asked; their name and id, nothing else.")
+    platform_person: NamedRef = Field(description="The platform support person who asked; their name and id, nothing else.")
     requested_at: datetime = Field(description="When the request was made, a UTC timestamp.")
-    decided_by: PersonRef | None = Field(description="The member who approved, declined or revoked it, or null while it is pending or once it lapsed.")
+    decided_by: NamedRef | None = Field(description="The member who approved, declined or revoked it, or null while it is pending or once it lapsed.")
     decided_at: datetime | None = Field(description="When the bank last decided on it, a UTC timestamp, or null.")
     ends_at: datetime | None = Field(description="When an approved window closes or closed, a UTC timestamp, or null until it is approved.")
 
@@ -1743,7 +1742,7 @@ class SecurityPolicyOut(CamelSchema):
     updated_at: datetime | None = Field(
         description="When the bank last changed its limits, a UTC timestamp, or null when it never has."
     )
-    updated_by: PersonRef | None = Field(
+    updated_by: NamedRef | None = Field(
         description="Who last changed the limits, by id and name, or null when the bank never has."
     )
 
@@ -1803,7 +1802,7 @@ class MeOutOfOffice(CamelSchema):
             "(its timezone), or null when they have set no absence."
         )
     )
-    delegate: PersonRef | None = Field(
+    delegate: NamedRef | None = Field(
         description="The member who receives the caller's work while they are away, by id and name, or null."
     )
     away: bool = Field(

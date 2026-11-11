@@ -28,7 +28,6 @@ from typing import Annotated, Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.identity.schemas import RoleRef
 from apps.library import reading, reports
 from apps.library.models import Language, SubjectType
 from apps.library.schemas import (
@@ -59,7 +58,7 @@ from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_library_read
 from apps.taxonomy.reading import language_order
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 router = Router(tags=["Library"])
 
@@ -240,14 +239,14 @@ _AUTHORITIES_EXAMPLE = {
 
 @router.get(
     "/reference/languages",
-    response=list[RoleRef],
+    response=list[VocabRef],
     auth=SessionAuth(),
     operation_id="listLanguages",
     by_alias=True,
     summary="List the languages a record can be read in",
     openapi_extra=_LANGUAGES_EXAMPLE,
 )
-def list_languages(request: HttpRequest) -> list[RoleRef]:
+def list_languages(request: HttpRequest) -> list[VocabRef]:
     """Every content language the platform is serving, as key, kind and label: what fills a
     language picker on a person's profile, on a bank's default-language setting and behind
     "Show original" on a record. Swedish, Danish, Norwegian, Finnish and English are active
@@ -266,7 +265,7 @@ def list_languages(request: HttpRequest) -> list[RoleRef]:
     """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     return [
-        RoleRef(key=language.key, kind=None, label=language.name)
+        VocabRef(key=language.key, kind=None, label=language.name)
         for language in Language.objects.filter(active=True).order_by("key")
     ]
 
@@ -816,5 +815,5 @@ def reverify_obligation(
         outcome=verification.outcome,
         verified_at=verification.verified_at,
         last_verified_at=obligation.last_verified_at,
-        verified_by=None if stamped_by is None else PersonRef(id=stamped_by.id, name=stamped_by.name),
+        verified_by=None if stamped_by is None else NamedRef(id=stamped_by.id, name=stamped_by.name),
     )

@@ -18,6 +18,7 @@ from django.conf import settings
 from pydantic import ConfigDict, Field
 
 from apps.shared.schemas import CamelSchema, LibraryResponse, SingleLineName, VocabularyExtra, WriteBody
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -26,72 +27,15 @@ __all__ = ["CamelSchema"]
 # References: what every picker, pill and filter reads (playbook 15: key and kind, never a
 # phrase the client must string-match).
 # ---------------------------------------------------------------------------------------
-class TermRef(CamelSchema):
-    """A vocabulary value as every picker, pill and filter reads it: the key to store and
-    compare, the kind when the value's list has one, and a label to show (playbook 15)."""
-
-    key: str = Field(
-        description=(
-            "The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for "
-            "Swedish, and the only part of this reference to store, compare or send back. It is a row of "
-            "a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend "
-            "through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform seeds "
-            "and its library editors relabel, retire and restore by proposal; `GET /reference/jurisdictions`), a language (the platform's own "
-            "list, which no bank admin can extend) or an urgency (the shared library's `urgency` "
-            "vocabulary, which an administrator may extend through an approved proposal; "
-            "`GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never "
-            "changes once issued."
-        ),
-        examples=["advice"],
-    )
-    kind: str | None = Field(
-        default=None,
-        description=(
-            "The fixed kind of the value, when its list has one, so a screen can branch or pick a pill "
-            "tone without reading the label; null by default, when the list has no kind. By list: a "
-            "taxonomy term is always null, because its dimension is its kind; a language is always null; "
-            "a jurisdiction is `supranational` (the European Union, whose rules reach its members and the "
-            "EEA), `country` (one national market, such as Sweden) or `international` (a standards body "
-            "such as ISO/IEC, which is no bank's market); an urgency is its pill tone, one of "
-            "`information`, `notice`, `positive`, `warning`, `negative` and `brand`. Kinds are fixed in "
-            "code and never added by an administrator."
-        ),
-        examples=[None],
-    )
-    label: str = Field(
-        description=(
-            "The value's name in the reader's language: the caller's own language first, then the "
-            "organisation's default language, then English, then any label the value has, and the key "
-            "itself when it has none. A language is the exception and reads in itself, such as `Svenska`. "
-            "For display only: a person wrote it and may reword or translate it at any time, so nothing "
-            "may match on it."
-        ),
-        examples=["Advice"],
-    )
+# Published as `VocabRef` (review 2026-11-11 B-2); the name the logic modules import.
+TermRef = VocabRef
 
 
-class PersonRef(CamelSchema):
-    """A person on a record: id and name, the only personal data a screen or a log may carry
-    about them (playbook 4.7)."""
-
-    id: UUID = Field(
-        description=(
-            "The person's identifier, a UUID that never changes, the same one a member list and the audit "
-            "log carry. Store and compare this, never the name."
-        ),
-        examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
-    )
-    name: str = Field(
-        description=(
-            "The person's name as they gave it, for display only. It may change when they edit their "
-            "profile and two people may share it, so nothing may match on it. A person's name and id are "
-            "the only personal data a record carries about them."
-        ),
-        examples=["Sara Lindqvist"],
-    )
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+PersonRef = NamedRef
 
 
-# Declared here beside `PersonRef`, not in apps/library/schemas.py, because that module
+# Declared here beside `NamedRef`, not in apps/library/schemas.py, because that module
 # imports its references from this one: a list row and an obligation version name an agent
 # with the same shape, and importing it the other way round would be a cycle.
 class AgentRef(LibraryResponse):
@@ -158,41 +102,8 @@ RowProposedByAgent = Annotated[
 ]
 
 
-class TaxonomyDimensionRef(CamelSchema):
-    """A taxonomy dimension as a reference: the group a term or a regulatory scope group
-    belongs to (FP-01)."""
-
-    key: str = Field(
-        description=(
-            "The dimension's immutable key, such as `service_type` or `standard`, and the only part of this "
-            "reference to store, compare or send back. Dimensions are rows of the shared library's "
-            "`term_dimension` vocabulary, which an administrator may extend through an approved proposal, "
-            "so a key you have not seen before is new data and not an error; `GET /vocab/term_dimension` "
-            "lists the live set."
-        ),
-        examples=["service_type"],
-    )
-    kind: str | None = Field(
-        default=None,
-        description=(
-            "How the dimension's terms act on a bank's regulatory scope, one of three fixed values. "
-            "`scope`: the dimension says who or what a rule covers, and a scope group with no term chosen "
-            "restricts nothing. `classification`: the dimension only describes a record and never narrows "
-            "the scope. `opt_in`: the standards a bank follows, where a record carrying one of the "
-            "dimension's terms shows only to a bank whose scope names that term, so a group with no term "
-            "chosen means none followed rather than no restriction. Every dimension carries a kind, so the "
-            "default of null never reaches a reader. It is a kind in code, so the rules branch on it; an "
-            "administrator never adds a value."
-        ),
-        examples=["scope"],
-    )
-    label: str = Field(
-        description=(
-            "The dimension's name in the reader's language, for display only. It is a phrase a person wrote "
-            "and may be reworded or translated at any time, so nothing may match on it."
-        ),
-        examples=["Service"],
-    )
+# Published as `VocabRef` (review 2026-11-11 B-2); the name the logic modules import.
+TaxonomyDimensionRef = VocabRef
 
 
 class JurisdictionRow(CamelSchema):
@@ -239,7 +150,7 @@ class JurisdictionRow(CamelSchema):
         ),
         examples=["eu"],
     )
-    default_language: TermRef | None = Field(
+    default_language: VocabRef | None = Field(
         default=None,
         description=(
             "The language this jurisdiction's legal texts are written in, such as Swedish (`sv`) for "
@@ -987,7 +898,7 @@ class VocabularySuggestionRow(CamelSchema):
         description='Why the member wants the value, in their own words; the default "" means they gave no reason.',
         examples=["Moving an occupational pension from one provider to another."],
     )
-    suggested_by: PersonRef | None = Field(
+    suggested_by: NamedRef | None = Field(
         default=None,
         description=(
             "The member who suggested it, by id and name, the only personal data a suggestion carries. Always "
@@ -1097,7 +1008,7 @@ class TaxonomyTermRow(CamelSchema):
         ),
         examples=[{"en": "Advice", "sv": "Rådgivning"}],
     )
-    dimension: TaxonomyDimensionRef = Field(
+    dimension: VocabRef = Field(
         description=(
             "The dimension the term belongs to: its key, its kind (`scope`, `classification` or `opt_in`) "
             "and its label. Dimensions are rows of the shared library's `term_dimension` vocabulary, which "
@@ -1365,7 +1276,7 @@ class FootprintDimension(CamelSchema):
     the scope, and the terms this bank has chosen in it. The dimension's kind says how an
     empty group reads: no restriction for a scope dimension, none followed for an opt-in one."""
 
-    dimension: TaxonomyDimensionRef = Field(
+    dimension: VocabRef = Field(
         description=(
             "The taxonomy dimension this group covers: its key, its kind and its label in the caller's "
             "language. The kind is `scope` for a dimension that says who or what a rule covers, "
@@ -1385,7 +1296,7 @@ class FootprintDimension(CamelSchema):
             "proposal."
         )
     )
-    terms: list[TermRef] = Field(
+    terms: list[VocabRef] = Field(
         default_factory=list,
         description=(
             "The terms this bank has chosen in the group, each its key and its label in the caller's "
@@ -1404,7 +1315,7 @@ class FootprintDimension(CamelSchema):
     )
 
 
-class FootprintTermRef(TermRef):
+class FootprintTermRef(VocabRef):
     """A taxonomy term in a regulatory scope change: the term as a reference, plus the key of
     the dimension it belongs to, since a term key is unique only within its dimension."""
 
@@ -1482,7 +1393,7 @@ class ScopeItemRow(CamelSchema):
         ),
         examples=["Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry."],
     )
-    jurisdiction: TermRef = Field(
+    jurisdiction: VocabRef = Field(
         description=(
             "Where the regulation comes from: a jurisdiction by key, kind and label. A row of the jurisdiction "
             "vocabulary, whose kinds are `supranational` (the European Union), `country` (one national market) and "
@@ -1623,17 +1534,8 @@ class ScopeItemInput(WriteBody):
     )
 
 
-class FootprintOrgUnitRef(CamelSchema):
-    """A legal entity of the organisation, by id and name, as a company line names it."""
-
-    id: UUID = Field(
-        description="The legal entity's identifier, a UUID that never changes (`GET /tenant/org-units`).",
-        examples=["3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53"],
-    )
-    name: str = Field(
-        description="The legal entity's name as the organisation recorded it; the organisation's own data.",
-        examples=["Example Fonder AB"],
-    )
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+FootprintOrgUnitRef = NamedRef
 
 
 class FootprintEntityTermRef(CamelSchema):
@@ -1641,7 +1543,7 @@ class FootprintEntityTermRef(CamelSchema):
     one legal entity's own scope, or put back into it. It narrows only which rules the register
     offers for that company, never what the organisation's members see."""
 
-    org_unit: FootprintOrgUnitRef = Field(description="The legal entity whose own scope the line changes.")
+    org_unit: NamedRef = Field(description="The legal entity whose own scope the line changes.")
     term: FootprintTermRef = Field(
         description=(
             "The term, with its label and dimension: one of the licence-bound dimensions `regime`, "
@@ -1655,7 +1557,7 @@ class FootprintSuggestionReason(CamelSchema):
     """Why the public registers suggest a line: a legal entity and the register's own line
     behind it."""
 
-    org_unit: FootprintOrgUnitRef = Field(description="The legal entity whose register facts give the term.")
+    org_unit: NamedRef = Field(description="The legal entity whose register facts give the term.")
     register_line: str | None = Field(
         default=None,
         description=(
@@ -1691,7 +1593,7 @@ class FootprintEntitySuggestion(CamelSchema):
     """The terms the public registers suggest taking out of, or putting back into, one legal
     entity's own scope (FP-05)."""
 
-    org_unit: FootprintOrgUnitRef = Field(description="The legal entity of the organisation whose own scope the line would change.")
+    org_unit: NamedRef = Field(description="The legal entity of the organisation whose own scope the line would change.")
     main_business: str = Field(
         description=(
             "The legal entity's main business as the register writes it (`Fondbolag`), which decides what "
@@ -1831,7 +1733,7 @@ class FootprintRequestRow(CamelSchema):
         ),
         examples=["pending"],
     )
-    requested_by: PersonRef | None = Field(
+    requested_by: NamedRef | None = Field(
         default=None,
         description=(
             "The member who asked for the change, by id and name. Every request has one, so the default "
@@ -1898,7 +1800,7 @@ class FootprintRequestRow(CamelSchema):
             "decided request keeps the counts it was decided against, the same ones its audit event holds."
         )
     )
-    decided_by: PersonRef | None = Field(
+    decided_by: NamedRef | None = Field(
         default=None,
         description=(
             "The second person who approved or rejected the request, by id and name; never the requester, "
@@ -1947,7 +1849,7 @@ class MarketRow(CamelSchema):
         json_schema_extra={"examples": [{"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"}]}
     )
 
-    jurisdiction: TermRef = Field(
+    jurisdiction: VocabRef = Field(
         description=(
             "The country: its key, kind (always `country`) and label in the caller's language. A row of "
             "the jurisdiction vocabulary; an admin may add more without a deploy, and `GET /reference/jurisdictions` "
@@ -2516,30 +2418,8 @@ class TaggingBatchBody(WriteBody):
     )
 
 
-class TaggingTagRef(CamelSchema):
-    """One of the bank's own tags as a pill shows it: the key to store and compare and the
-    label to show, never a phrase to match on."""
-
-    key: str = Field(
-        description=(
-            "The tag's immutable key, the only part to store, compare or send back. A row of this bank's own "
-            "`tenant_tag` vocabulary, which the bank's admin may extend or relabel without a deploy; "
-            "`GET /vocab/tenant_tag` lists the live set, starting with `follow_up`."
-        ),
-        examples=["custody"],
-    )
-    kind: str | None = Field(
-        default=None,
-        description="Always null: the bank's tags have no kind. Present so every vocabulary reference has one shape.",
-        examples=[None],
-    )
-    label: str = Field(
-        description=(
-            "The tag's name in the caller's language, falling back to the language it was written in, then to "
-            "the key. For display only; a rename changes it and never the key."
-        ),
-        examples=["Custody"],
-    )
+# Published as `VocabRef` (review 2026-11-11 B-2); the name the logic modules import.
+TaggingTagRef = VocabRef
 
 
 class TaggingRecordTags(CamelSchema):
@@ -2561,7 +2441,7 @@ class TaggingRecordTags(CamelSchema):
         description="The kind of the record, as sent: `obligation`, `change`, `change_case` or `tenant_obligation`.", examples=["obligation"]
     )
     subject_id: UUID = Field(description="The id of the record, a UUID, as sent.", examples=["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"])
-    tags: list[TaggingTagRef] = Field(
+    tags: list[VocabRef] = Field(
         description=(
             "Every one of this bank's tags now on the record, in the vocabulary's own order: rows of the bank's own "
             "`tenant_tag` vocabulary, which has no kinds and which the bank's admin may extend or relabel without a "
@@ -2615,7 +2495,7 @@ class TaggingBatchOutcome(CamelSchema):
         }
     )
 
-    tag: TaggingTagRef = Field(
+    tag: VocabRef = Field(
         description=(
             "The tag the batch applies: a row of this bank's own `tenant_tag` vocabulary, which has no kinds and which "
             "the bank's admin may extend or relabel without a deploy; `GET /vocab/tenant_tag` lists the live set."

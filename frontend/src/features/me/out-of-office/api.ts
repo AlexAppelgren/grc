@@ -7,7 +7,7 @@ import { api } from '@/shared/utils/api-client';
 type Schemas = components['schemas'];
 export type OutOfOffice = Schemas['MeOutOfOffice'];
 export type OutOfOfficeBody = Schemas['MeOutOfOfficeBody'];
-export type Person = Schemas['PersonRef'];
+export type Person = Schemas['NamedRef'];
 
 const OUT_OF_OFFICE = '/api/v1/me/out-of-office';
 

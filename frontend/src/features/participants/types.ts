@@ -8,5 +8,5 @@ type Schemas = components['schemas'];
 export type Participant = Schemas['CollabParticipant'];
 export type ParticipantPage = Schemas['CollabParticipantPage'];
 export type ParticipantInput = Schemas['CollabParticipantInput'];
-export type PersonRef = Schemas['PersonRef'];
+export type PersonRef = Schemas['NamedRef'];
 export type Team = Schemas['TenantTeam'];

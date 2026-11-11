@@ -103,7 +103,7 @@ export function workReasons(item: Pick<WorkItem, 'reasons'>, scope: WorkScope['s
 /** The pills the record already has elsewhere: an obligation's compliance status, a change's urgency. */
 export function presentWorkItem(item: Pick<WorkItem, 'status' | 'urgency'>): PresentedPill[] {
   const pills: PresentedPill[] = [];
-  if (item.status !== null) pills.push(presentCompliance({ key: item.status.key, label: item.status.label, kind: item.status.kind ?? null }));
+  if (item.status !== null) pills.push(presentCompliance({ key: item.status.key, label: item.status.label, kind: item.status.kind }));
   const urgency = urgencyOf(item.urgency);
   if (urgency !== null) pills.push({ key: `urgency:${urgency.key}`, label: urgency.label, tone: urgencyTone[urgency.kind], order: 0 });
   return pills;

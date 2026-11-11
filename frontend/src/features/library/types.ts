@@ -14,7 +14,7 @@ export type { Page, PageQuery };
 type Schemas = components['schemas'];
 
 /** A vocabulary row or a term as every library read returns it: key, kind and the label in the reader's language. */
-export type LibraryRef = Schemas['LibraryRef'];
+export type LibraryRef = Schemas['VocabRef'];
 /** One text in one language, labelled so the screen can say a machine wrote it (INV-05). */
 export type LocalizedText = Schemas['LocalizedText'];
 /** One row of GET /obligations (INV-03), with the bank's register overlay (REG-01, REG-02). */

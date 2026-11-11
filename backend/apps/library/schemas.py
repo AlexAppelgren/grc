@@ -14,9 +14,10 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field
 
-from apps.register.schemas import Applicability, RegisterPersonRef, RegisterVocabRef
+from apps.register.schemas import Applicability
 from apps.shared.schemas import CamelSchema, LibraryResponse, WriteBody
-from apps.taxonomy.schemas import AgentRef, PersonRef, TaggingTagRef
+from apps.taxonomy.schemas import AgentRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
 MAX_QUERY_LENGTH = 200
@@ -42,47 +43,8 @@ LIBRARY_FACT = (
 )
 
 
-class LibraryRef(LibraryResponse):
-    """A vocabulary row or a term as every surface reads it: key and kind, and the label in
-    the reader's language (playbook 15). A term's kind is null: its dimension is its kind.
-
-    A shared library fact wherever it appears: the row behind it is a library vocabulary
-    or a taxonomy term, which a platform admin may add to, rename or retire without a
-    deploy. The key is what a filter, a report, a webhook or an export stores; the label
-    is for a person to read and may change under it. A tone is never here: a pill's tone
-    follows its slot or the row's own kind and is nobody's to send (NFR-03)."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "act_now", "kind": None, "label": "Act now"}]})
-
-    key: str = Field(
-        description=(
-            "The row's immutable key, and the only part of this reference to store, compare "
-            "or send back. Which list it is drawn from is settled by the field that carries "
-            "the reference, and that field names its vocabulary and the endpoint that "
-            "returns the live set; every one of those lists is rows rather than a closed "
-            "set, so an admin may extend, relabel, reorder or retire it without a deploy "
-            "and a key you have not seen before is new data and not an error. Match on the "
-            "key and never on the label, and never construct one: a key the list does not "
-            "hold answers 422 `unknown_key` with the valid keys."
-        ),
-        examples=["act_now"],
-    )
-    kind: str | None = Field(
-        description=(
-            "The row's fixed sub-kind where its list has one — a change type's lifecycle "
-            "kind, a case sub-status's category — and null where it has none. A taxonomy "
-            "term is always null here: its dimension is its kind. It is a kind in code, so "
-            "the rules may branch on it; an admin never adds one."
-        ),
-        examples=[None],
-    )
-    label: str = Field(
-        description=(
-            "The row's label in the reader's language, for display only. It is a phrase a "
-            "person wrote and may be reworded at any time, so nothing may match on it."
-        ),
-        examples=["Act now"],
-    )
+# Published as `VocabRef` (review 2026-11-11 B-2); the name the logic modules import.
+LibraryRef = VocabRef
 
 
 class LocalizedText(LibraryResponse):
@@ -238,7 +200,7 @@ class ScopeDimension(LibraryResponse):
     """The record's terms in one dimension (FP-01). An empty list means no restriction in
     that dimension; `allSelected` means every active term of it is carried."""
 
-    dimension: LibraryRef = Field(
+    dimension: VocabRef = Field(
         description=(
             "Which facet of the taxonomy this entry is about, as key, kind and label. The "
             "dimensions are vocabulary rows and never a closed set: a platform admin may "
@@ -249,7 +211,7 @@ class ScopeDimension(LibraryResponse):
             "listed on every record, including the ones a record carries no term in."
         ),
     )
-    terms: list[LibraryRef] = Field(
+    terms: list[VocabRef] = Field(
         description=(
             "The terms this record carries in that dimension, in the picker's order. An "
             "empty list means the record puts no restriction on this facet and so reaches "
@@ -278,7 +240,7 @@ class ScopeDimension(LibraryResponse):
 class OutsideReason(LibraryResponse):
     """A dimension in which none of the record's terms is in the footprint (FP-03)."""
 
-    dimension: LibraryRef = Field(
+    dimension: VocabRef = Field(
         description=(
             "The facet in which the record's terms and the bank's footprint have nothing in "
             "common, which is the reason the record would be hidden. The dimensions are "
@@ -288,7 +250,7 @@ class OutsideReason(LibraryResponse):
             "`lifecycle_stage` describe a record and never hide it."
         ),
     )
-    terms: list[LibraryRef] = Field(
+    terms: list[VocabRef] = Field(
         description=(
             "The terms the record carries in that dimension, so a reader can see what the "
             "bank's footprint would have to include for the record to appear. They are "
@@ -507,11 +469,11 @@ class ObligationRow(LibraryResponse):
             "carries only what a column shows."
         )
     )
-    binding_level: LibraryRef = Field(description=_BINDING_LEVEL)
+    binding_level: VocabRef = Field(description=_BINDING_LEVEL)
     binding: bool = Field(description=_BINDING, examples=[True])
-    duty_type: LibraryRef = Field(description=_DUTY_TYPE)
-    tags: list[LibraryRef] = Field(description=_TAGS)
-    tenant_tags: list[TaggingTagRef] = Field(description=_TENANT_TAGS)
+    duty_type: VocabRef = Field(description=_DUTY_TYPE)
+    tags: list[VocabRef] = Field(description=_TAGS)
+    tenant_tags: list[VocabRef] = Field(description=_TENANT_TAGS)
     private_to_us: bool = Field(description=_PRIVATE_TO_US, examples=[False])
     scope: list[ScopeDimension] = Field(description=_SCOPE)
     version: ObligationVersionRef | None = Field(
@@ -529,10 +491,10 @@ class ObligationRow(LibraryResponse):
             "the case, never to the library record."
         )
     )
-    jurisdiction: LibraryRef = Field(description=_ROW_JURISDICTION)
+    jurisdiction: VocabRef = Field(description=_ROW_JURISDICTION)
     in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
     outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
-    verified_by: PersonRef | None = Field(
+    verified_by: NamedRef | None = Field(
         description=(
             "The bleqq platform person who made the `lastVerifiedAt` check, by id and name, or "
             "null when no named person has. Never a member of a bank: re-verifying a shared fact "
@@ -560,9 +522,9 @@ class ObligationRow(LibraryResponse):
         examples=[0],
     )
     applicability: Applicability = Field(description=_APPLICABILITY, examples=["applies"])
-    compliance_status: RegisterVocabRef | None = Field(description=_COMPLIANCE_STATUS)
-    first_line_owner: RegisterPersonRef | None = Field(description=_FIRST_LINE_OWNER)
-    owner_team: RegisterVocabRef | None = Field(description=_OWNER_TEAM)
+    compliance_status: VocabRef | None = Field(description=_COMPLIANCE_STATUS)
+    first_line_owner: NamedRef | None = Field(description=_FIRST_LINE_OWNER)
+    owner_team: VocabRef | None = Field(description=_OWNER_TEAM)
 
     # A row is validated again when the page takes it, so a row built any other way than
     # through this constructor still never reaches the wire unchecked.
@@ -840,7 +802,7 @@ class RelatedObligation(LibraryResponse):
         description="Which instrument the related duty was broken out of, by key and short name."
     )
     binding: bool = Field(description=_BINDING, examples=[True])
-    relation: LibraryRef = Field(
+    relation: VocabRef = Field(
         description=(
             "How the two duties are related, as key, kind and label: `implements` when this "
             "one puts the other into effect, `elaborates` when it spells the other out, and "
@@ -898,7 +860,7 @@ class ObligationProvenance(LibraryResponse):
         ),
         examples=["2026-02-11T08:45:03Z"],
     )
-    verified_by: PersonRef | None = Field(
+    verified_by: NamedRef | None = Field(
         description=(
             "The bleqq platform person who last confirmed this record against its source, by "
             "id and name, or null when nobody has. Never a member of a bank: re-verifying a "
@@ -1085,7 +1047,7 @@ class ObligationDetail(LibraryResponse):
             "own read."
         )
     )
-    regime: LibraryRef = Field(
+    regime: VocabRef = Field(
         description=(
             "Which body of law the duty belongs to, as a term of the taxonomy's `regime` "
             "dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, "
@@ -1096,9 +1058,9 @@ class ObligationDetail(LibraryResponse):
             "`GET /taxonomy/terms` for the live set and match on the key."
         )
     )
-    binding_level: LibraryRef = Field(description=_BINDING_LEVEL)
+    binding_level: VocabRef = Field(description=_BINDING_LEVEL)
     binding: bool = Field(description=_BINDING, examples=[True])
-    duty_type: LibraryRef = Field(description=_DUTY_TYPE)
+    duty_type: VocabRef = Field(description=_DUTY_TYPE)
     trigger_frequency: str = Field(
         description=(
             "When the duty bites, in the library's own words. Free text for a person to "
@@ -1135,8 +1097,8 @@ class ObligationDetail(LibraryResponse):
         ),
         examples=["Third-party research"],
     )
-    tags: list[LibraryRef] = Field(description=_TAGS)
-    tenant_tags: list[TaggingTagRef] = Field(description=_TENANT_TAGS)
+    tags: list[VocabRef] = Field(description=_TAGS)
+    tenant_tags: list[VocabRef] = Field(description=_TENANT_TAGS)
     private_to_us: bool = Field(description=_PRIVATE_TO_US, examples=[False])
     scope: list[ScopeDimension] = Field(description=_SCOPE)
     in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
@@ -1191,9 +1153,9 @@ class ObligationDetail(LibraryResponse):
         )
     )
     applicability: Applicability = Field(description=_APPLICABILITY, examples=["applies"])
-    compliance_status: RegisterVocabRef | None = Field(description=_COMPLIANCE_STATUS)
-    first_line_owner: RegisterPersonRef | None = Field(description=_FIRST_LINE_OWNER)
-    owner_team: RegisterVocabRef | None = Field(description=_OWNER_TEAM)
+    compliance_status: VocabRef | None = Field(description=_COMPLIANCE_STATUS)
+    first_line_owner: NamedRef | None = Field(description=_FIRST_LINE_OWNER)
+    owner_team: VocabRef | None = Field(description=_OWNER_TEAM)
 
 
 class DiffSegment(LibraryResponse):
@@ -1749,7 +1711,7 @@ class VerificationCreated(LibraryResponse):
             "was approved here, only that the source still said the same thing on that date."
         )
     )
-    verified_by: PersonRef | None = Field(
+    verified_by: NamedRef | None = Field(
         description=(
             "Who backed the stamp with their passkey: a bleqq platform person, by id and name, and "
             "never a member of a bank, because re-verifying a shared fact is bleqq's own check. Null "
@@ -1900,11 +1862,11 @@ class InstrumentRow(LibraryResponse):
     )
     short_name: str = Field(description=_INSTRUMENT_SHORT_NAME, examples=["FFFS 2017:2"])
     name: LocalizedText | None = Field(description=_INSTRUMENT_NAME)
-    level: LibraryRef = Field(description=_INSTRUMENT_LEVEL)
+    level: VocabRef = Field(description=_INSTRUMENT_LEVEL)
     binding: bool = Field(description=_BINDING, examples=[True])
-    jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
+    jurisdiction: VocabRef = Field(description=_INSTRUMENT_JURISDICTION)
     authority: InstrumentAuthorityRef | None = Field(description="Who issued the instrument, or null when the fixture carries none.")
-    regime: LibraryRef = Field(description=_INSTRUMENT_REGIME)
+    regime: VocabRef = Field(description=_INSTRUMENT_REGIME)
     official_ref: str = Field(description=_INSTRUMENT_OFFICIAL_REF, examples=["FFFS 2017:2"])
     in_force_from: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_FROM)
     in_force_to: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_TO)
@@ -2029,7 +1991,7 @@ class InstrumentLineageRef(LibraryResponse):
     """One instrument-to-instrument relation, from either side (INV-01): what this
     instrument implements or elaborates, and what implements, elaborates or amends it."""
 
-    relation: LibraryRef = Field(
+    relation: VocabRef = Field(
         description=(
             "How the two instruments are related, as key, kind and label: `implements`, "
             "`elaborates` and `amends` are seeded on day one. The relation types are "
@@ -2123,7 +2085,7 @@ class InstrumentLinkRef(LibraryResponse):
     id: UUID = Field(description="The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.")
     key: str = Field(description="The other instrument's stable key, issued once and never changed.", examples=["se-sfs-2004-297"])
     short_name: str = Field(description="The other instrument's short name, to print.", examples=["LBF"])
-    jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
+    jurisdiction: VocabRef = Field(description=_INSTRUMENT_JURISDICTION)
 
 
 class InstrumentObligationCounts(LibraryResponse):
@@ -2169,11 +2131,11 @@ class InstrumentDetail(LibraryResponse):
     )
     short_name: str = Field(description=_INSTRUMENT_SHORT_NAME, examples=["FFFS 2017:2"])
     name: LocalizedText | None = Field(description=_INSTRUMENT_NAME)
-    level: LibraryRef = Field(description=_INSTRUMENT_LEVEL)
+    level: VocabRef = Field(description=_INSTRUMENT_LEVEL)
     binding: bool = Field(description=_BINDING, examples=[True])
-    jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
+    jurisdiction: VocabRef = Field(description=_INSTRUMENT_JURISDICTION)
     authority: InstrumentAuthorityRef | None = Field(description="Who issued the instrument, in full, or null when the fixture carries none.")
-    regime: LibraryRef = Field(description=_INSTRUMENT_REGIME)
+    regime: VocabRef = Field(description=_INSTRUMENT_REGIME)
     official_ref: str = Field(description=_INSTRUMENT_OFFICIAL_REF, examples=["FFFS 2017:2"])
     eli_uri: str = Field(
         description=(
@@ -2190,7 +2152,7 @@ class InstrumentDetail(LibraryResponse):
         description=_INSTRUMENT_SOURCE_URL, examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"]
     )
     last_verified_at: datetime.datetime | None = Field(description=_INSTRUMENT_LAST_VERIFIED_AT, examples=["2026-06-30T07:12:44Z"])
-    verified_by: PersonRef | None = Field(
+    verified_by: NamedRef | None = Field(
         description=(
             "The bleqq platform person who last confirmed this record against its "
             "source, by id and name, or null when nobody has. Never a member of a bank: "
@@ -2327,7 +2289,7 @@ class ProvisionNode(LibraryResponse):
         ),
         examples=["fffs-2017-2/9-6"],
     )
-    kind: LibraryRef = Field(
+    kind: VocabRef = Field(
         description=(
             "What structural kind of unit this is, as key, kind and label: `chapter`, "
             "`section`, `article`, `paragraph`, `part`, `annex` and `guideline` are seeded "
@@ -2508,7 +2470,7 @@ class LibraryAuthority(LibraryResponse):
         description="How the authority is abbreviated in a pill or a column, in its own language.", examples=["FI"]
     )
     name: str = Field(description="The authority's full name, as it names itself.", examples=["Finansinspektionen"])
-    jurisdiction: LibraryRef = Field(
+    jurisdiction: VocabRef = Field(
         description=(
             "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary "
             "(`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The "

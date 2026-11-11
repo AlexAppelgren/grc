@@ -244,7 +244,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
     if (shown === undefined) return;
     commit.mutate({ tagKey: shown.tag.key, obligationIds: [...shown.gained.ids, ...shown.alreadyTagged.ids] }, { onSuccess: onDone });
   };
-  const tagPill = shown === undefined ? null : presentVocabularyValue(TENANT_TAG, { key: shown.tag.key, kind: shown.tag.kind ?? null, label: shown.tag.label, extra: {} });
+  const tagPill = shown === undefined ? null : presentVocabularyValue(TENANT_TAG, { key: shown.tag.key, kind: shown.tag.kind, label: shown.tag.label, extra: {} });
 
   return (
     <Modal open onOpenChange={(open) => (open ? undefined : onClose())} title={title}>

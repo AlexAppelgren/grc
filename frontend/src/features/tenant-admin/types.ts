@@ -5,7 +5,7 @@
 // with a one-line reason.
 
 import type { UserSession } from '@/features/identity/types';
-import type { components } from '@/types/api.generated';
+import type { components, operations } from '@/types/api.generated';
 
 type Schemas = components['schemas'];
 
@@ -18,7 +18,7 @@ export interface Page<T> {
 }
 
 // Partial: `limit` and `offset` have server defaults, which the generator renders as required fields.
-export type PageQuery = Partial<Schemas['PageQuery']>;
+export type PageQuery = NonNullable<operations['listMembers']['parameters']['query']>;
 
 export type Tenant = Schemas['TenantOut'];
 export type TenantUpdate = Schemas['TenantPatch'];
@@ -46,7 +46,7 @@ export type RoleUpdate = Schemas['RolePatch'];
 export type PermissionRef = Schemas['PermissionOut'];
 
 /** A language row, as every vocabulary read returns it. */
-export type LanguageRef = Schemas['RoleRef'];
+export type LanguageRef = Schemas['VocabRef'];
 
 export type ApiKey = Schemas['ApiKeyOut'];
 /** `plainKey` is the only place the plain key ever appears. */

@@ -25,69 +25,13 @@ from apps.identity import (
     session_logic,
 )
 from apps.identity.models import ApiKey, User
-from apps.identity.schemas import (
-    CredentialEntryRef,
-    AgentKeyCreate,
-    AgentKeyCreated,
-    AgentKeyOut,
-    AgentKeysPage,
-    ApiKeyCreate,
-    ApiKeyCreated,
-    ApiKeyOut,
-    ApiKeysPage,
-    CodeRequestBody,
-    CodeVerifyBody,
-    ContextSwitchBody,
-    Empty,
-    ENROLMENT_SESSION_EXAMPLE,
-    InvitationAcceptBody,
-    InvitationAccepted,
-    InvitationCodeVerifyBody,
-    InvitationOpenBody,
-    InvitationOut,
-    InvitationsPage,
-    Me,
-    MemberInvite,
-    MemberOut,
-    MemberPatch,
-    MemberTeamsBody,
-    MembersPage,
-    MePatch,
-    MEMBER_SESSIONS_EXAMPLE,
-    MY_PASSKEYS_EXAMPLE,
-    MY_SESSIONS_EXAMPLE,
-    PasskeyAssertBody,
-    PasskeyOut,
-    PasskeyPatch,
-    PasskeyRegisterBody,
-    PasskeyRegistered,
-    PersonalTokenCreate,
-    PersonalTokenCreated,
-    PersonalTokenOut,
-    PersonalTokensPage,
-    PERMISSIONS_EXAMPLE,
-    PermissionOut,
-    RefreshResult,
-    RoleCreate,
-    ROLES_EXAMPLE,
-    RoleOut,
-    RoleRef,
-    RolePatch,
-    SecurityEventOut,
-    SecurityLogPage,
-    SessionOut,
-    SessionTokens,
-    STEP_UP_OPTIONS_EXAMPLE,
-    StepUpResult,
-    WebAuthnCreationOptions,
-    WebAuthnRequestOptions,
-)
+from apps.identity.schemas import AgentKeyCreate, AgentKeyCreated, AgentKeyOut, AgentKeysPage, ApiKeyCreate, ApiKeyCreated, ApiKeyOut, ApiKeysPage, CodeRequestBody, CodeVerifyBody, ContextSwitchBody, Empty, ENROLMENT_SESSION_EXAMPLE, InvitationAccepted, InvitationCodeVerifyBody, InvitationOpenBody, InvitationOut, InvitationsPage, Me, MemberInvite, MemberOut, MemberPatch, MemberTeamsBody, MembersPage, MePatch, MEMBER_SESSIONS_EXAMPLE, MY_PASSKEYS_EXAMPLE, MY_SESSIONS_EXAMPLE, PasskeyAssertBody, PasskeyOut, PasskeyPatch, PasskeyRegisterBody, PasskeyRegistered, PersonalTokenCreate, PersonalTokenCreated, PersonalTokenOut, PersonalTokensPage, PERMISSIONS_EXAMPLE, PermissionOut, RefreshResult, RoleCreate, ROLES_EXAMPLE, RoleOut, RolePatch, SecurityEventOut, SecurityLogPage, SessionOut, SessionTokens, STEP_UP_OPTIONS_EXAMPLE, StepUpResult, WebAuthnCreationOptions, WebAuthnRequestOptions
 from apps.shared import permissions as perms
 from apps.shared.authentication import EnrolmentAuth, Principal, PrincipalKind, SessionAuth
 from apps.shared.models import Tenant
 from apps.shared.permissions import enforce_recent_sign_in_or_step_up, enforce_step_up, requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 router = Router(tags=["Identity"])
 
@@ -774,7 +718,7 @@ def switch_context(request: HttpRequest, body: ContextSwitchBody, response: Http
 )
 @requires_step_up
 @_quoting_settings
-def accept_invitation(request: HttpRequest, body: InvitationAcceptBody) -> InvitationAccepted:
+def accept_invitation(request: HttpRequest, body: InvitationOpenBody) -> InvitationAccepted:
     """For a person who already holds a passkey, such as platform staff or a member of another
     bank, and has been invited into a bank: the emailed code is only for enrolling a first
     passkey and is never sent to them, so they sign in and send the token from the link
@@ -990,9 +934,9 @@ _TOKEN_ID = Path(
 )
 
 
-def _entry_ref(key: ApiKey) -> CredentialEntryRef | None:
+def _entry_ref(key: ApiKey) -> NamedRef | None:
     entry = key.agent_access
-    return None if entry is None else CredentialEntryRef(id=entry.id, name=entry.name)
+    return None if entry is None else NamedRef(id=entry.id, name=entry.name)
 
 
 def _token_out(key: ApiKey) -> PersonalTokenOut:
@@ -1720,7 +1664,7 @@ def _api_key_out(key: ApiKey) -> ApiKeyOut:
         last_used_at=key.last_used_at,
         kind=key.kind,  # type: ignore[arg-type]
         agent_access=_entry_ref(key),
-        person=None if person is None else PersonRef(id=person.id, name=person.name),
+        person=None if person is None else NamedRef(id=person.id, name=person.name),
     )
 
 
@@ -1824,7 +1768,7 @@ def _agent_key_out(key: ApiKey) -> AgentKeyOut:
         scopes=sorted(key.scopes),
         agent_id=key.agent_id,
         # The label names the version, as a reviewing agent's audit label does (proposals/api.py).
-        agent=RoleRef(key=agent.key, kind=None, label=f"{agent.key} v{agent.current_version}") if agent is not None else None,
+        agent=VocabRef(key=agent.key, kind=None, label=f"{agent.key} v{agent.current_version}") if agent is not None else None,
         created_at=key.created_at,
         expires_at=key.expires_at,
         revoked_at=key.revoked_at,

@@ -15,7 +15,7 @@ from pydantic import ConfigDict, Field, JsonValue, ModelWrapValidatorHandler, Va
 
 from apps.shared import permissions as perms
 from apps.shared.schemas import CamelSchema, WriteBody
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -24,40 +24,6 @@ class Empty(CamelSchema):
     """`{}`: the neutral answer of the code request and the accepted re-issue."""
 
 
-class RoleRef(CamelSchema):
-    """A pointer to a row in one of the platform's managed lists — a role, a language, an
-    agent — as key, kind and label together, so a screen can show a name while an
-    integration stores something that never moves under it."""
-
-    key: str = Field(
-        description=(
-            "The stable key of the row being pointed at: a role such as `admin`, a language "
-            "such as `sv`, an agent definition such as `watch-sweeper`. Store and compare this "
-            "and never the label — a key is issued once and never changes, while a label is "
-            "reworded and translated freely. Some of the lists behind a reference are "
-            "vocabularies whose rows a bank's admin may extend or retire, so an unfamiliar key "
-            "is new data and not an error; others, such as the content languages, are library "
-            "reference rows that only an approved proposal adds to. Read the endpoint that "
-            "owns the list for the live set."
-        )
-    )
-    kind: str | None = Field(
-        default=None,
-        description=(
-            "Which list the key belongs to, where one shape carries rows from more than one "
-            "list — the name of the vocabulary, for instance. It is null wherever the field "
-            "holding the reference already settles the question, as it does for a language or "
-            "a role, and a reader should then take the kind from that field rather than "
-            "guessing from the key."
-        ),
-    )
-    label: str = Field(
-        description=(
-            "The row's name in the reader's language, for showing on screen and for nothing "
-            "else. It is reworded whenever the bank prefers different wording and it is "
-            "translated, so storing it or matching on it will break; keep the key instead."
-        )
-    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -222,10 +188,9 @@ class CodeVerifyBody(CamelSchema):
 
 
 class InvitationOpenBody(CamelSchema):
-    """Opening the emailed link. The token rides in the body, never a path, so no server
-    that logs request lines ever holds it."""
-
-    # Security review F29: the token moved out of the path.
+    """Opening the emailed link, or joining a bank with it as a person who already holds a
+    passkey (D-122). The token rides in the body, never a path, so no server that logs
+    request lines ever holds it (security review F29)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"}]})
 
@@ -234,7 +199,8 @@ class InvitationOpenBody(CamelSchema):
         description=(
             "The invitation token, at most 128 characters: the part after `#` in the emailed "
             "link (`/invite#<token>`). The fragment is never sent to any server by a browser, "
-            "so the page reads it and posts it here. The token is single use and stops "
+            "so the page reads it and posts it here. Joining with it as a signed-in person works "
+            "only for that person's own email address. The token is single use and stops "
             f"working {settings.INVITATION_TTL_HOURS} hours after it was sent (a setting), "
             "once the invitee has enrolled, or when an administrator revokes or resends the "
             "invitation; the server keeps only its hash."
@@ -286,22 +252,6 @@ class ContextSwitchBody(CamelSchema):
     )
 
 
-class InvitationAcceptBody(CamelSchema):
-    """Joining a bank as a person who already holds a passkey (D-122). The token rides in the
-    body, never a path, as on every other invitation route."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"}]})
-
-    token: str = Field(
-        max_length=128,
-        description=(
-            "The invitation token, at most 128 characters: the part after `#` in the emailed "
-            "link (`/invite#<token>`). It works once, only for the signed-in person's own email "
-            f"address, and stops working {settings.INVITATION_TTL_HOURS} hours after it was sent "
-            "(a setting) or when an administrator revokes or resends the invitation; the server "
-            "keeps only its hash."
-        ),
-    )
 
 
 class InvitationAccepted(CamelSchema):
@@ -1092,12 +1042,6 @@ class MeContext(CamelSchema):
     current: bool = Field(description="True for the context this session is in, false for every other one.")
 
 
-class MeDepartment(CamelSchema):
-    """A department the caller heads (TEN-02, HOM-05, D-21): a business area, business unit or
-    function of the bank whose head is the caller."""
-
-    id: uuid.UUID = Field(description="The department's identifier, a UUID of this bank's organisation, as `GET /tenant/org-units` lists it.")
-    name: str = Field(description="The department's name as the bank wrote it, such as `Retail Banking`, for display only.")
 
 
 class MeCounts(CamelSchema):
@@ -1342,7 +1286,7 @@ class Me(CamelSchema):
             "the bank whose invitation it came from."
         )
     )
-    roles: list[RoleRef] = Field(
+    roles: list[VocabRef] = Field(
         description=(
             "The person's roles in this bank, as key, kind and label: the seeded `admin`, "
             "`compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, "
@@ -1363,7 +1307,7 @@ class Me(CamelSchema):
             "decide what to offer from these, never from a role. Empty for an enrolment session."
         )
     )
-    platform_roles: list[RoleRef] = Field(
+    platform_roles: list[VocabRef] = Field(
         description=(
             "The platform roles of platform staff, as key, kind and label: the seeded "
             "`platform_admin` and `library_editor`. Always empty in a bank's session, even for "
@@ -1430,7 +1374,7 @@ class Me(CamelSchema):
             "`PATCH /me` changes it."
         )
     )
-    head_of: list[MeDepartment] = Field(
+    head_of: list[NamedRef] = Field(
         description=(
             "The active departments of this bank the caller is the head of, by name: the business "
             "areas, business units and functions an administrator named them head of on the "
@@ -1737,7 +1681,7 @@ class MemberOut(CamelSchema):
             + " Deactivated members stay in the list so the bank can see who was removed."
         )
     )
-    roles: list[RoleRef] = Field(
+    roles: list[VocabRef] = Field(
         description=(
             "The roles the person holds in this bank, each as its stable key with a label in the "
             "reader's language; what they may do is the union of the permissions of these roles. "
@@ -1899,7 +1843,7 @@ class InvitationOut(CamelSchema):
         )
     )
     email: str = Field(description="The lowercased address the invitation was sent to, the only address its code will go to.")
-    roles: list[RoleRef] = Field(
+    roles: list[VocabRef] = Field(
         description=(
             "The roles the person receives when they enrol with this invitation, each as its "
             "stable key with a label in the reader's language. " + _ROLE_KEYS_TEXT
@@ -2194,23 +2138,18 @@ class ApiKeyOut(CamelSchema):
             "member and never reading more than they could."
         )
     )
-    agent_access: CredentialEntryRef | None = Field(
+    agent_access: NamedRef | None = Field(
         description=(
             "The agent access entry the credential is bound to, whose scope narrows what it reads: "
             "an entry's service key, or a token that names the entry. Null for a key or token "
             "bound to no entry."
         )
     )
-    person: PersonRef | None = Field(
+    person: NamedRef | None = Field(
         description="The member a personal access token acts as. Null for a service key, which acts as no person."
     )
 
 
-class CredentialEntryRef(CamelSchema):
-    """The agent access entry a credential is bound to: its id and name."""
-
-    id: uuid.UUID = Field(description="The entry's permanent identifier, a UUID, as `GET /agent-access` lists it.")
-    name: str = Field(description="What the bank calls the agent, such as `Trading platform coding agent`.")
 
 
 class ApiKeysPage(CamelSchema):
@@ -2333,7 +2272,7 @@ class PersonalTokenOut(CamelSchema):
         )
     )
     scopes: list[str] = Field(description="What the token may read, as scope keys, sorted. " + _PERSONAL_SCOPES_TEXT)
-    agent_access: CredentialEntryRef | None = Field(
+    agent_access: NamedRef | None = Field(
         description="The agent access entry the token names, whose scope narrows what it reads; null for a token that names none."
     )
     created_at: datetime = Field(description="When the token was minted, as a UTC timestamp in ISO 8601, set by the server.")
@@ -2505,7 +2444,7 @@ class AgentKeyOut(CamelSchema):
             "one, and the review queue refuses one."
         )
     )
-    agent: RoleRef | None = Field(
+    agent: VocabRef | None = Field(
         description=(
             "The bound agent definition as its stable key, such as `watch-sweeper`, with a label "
             "naming its current version to show on screen, such as `watch-sweeper v1`. The kind is "

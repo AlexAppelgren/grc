@@ -42,44 +42,8 @@ from apps.taxonomy.http import (
     uuid_or_404,
 )
 from apps.taxonomy.models import FootprintChangeRequest
-from apps.taxonomy.schemas import (
-    FootprintDecisionBody,
-    FootprintDryRun,
-    FootprintRequestBody,
-    FootprintRequestPage,
-    FootprintRequestQuery,
-    FootprintRequestRow,
-    FootprintView,
-    JurisdictionRow,
-    MarketRow,
-    MarketWatchBody,
-    TaggingBatchBody,
-    TaggingBatchOutcome,
-    TaggingBody,
-    TaggingRecordTags,
-    TaxonomyTermCreateBody,
-    TaxonomyTermPage,
-    TaxonomyTermQuery,
-    TermRef,
-    VocabularyCreateBody,
-    VocabularyListPage,
-    VocabularyMergeBody,
-    VocabularyMerged,
-    VocabularyMergeQuery,
-    VocabularyPatchBody,
-    VocabularyQuery,
-    VocabularyReorderBody,
-    VocabularyRestored,
-    VocabularyRetireBody,
-    VocabularyRetired,
-    VocabularyRow,
-    VocabularyRowDetail,
-    VocabularyRowPage,
-    VocabularySuggestBody,
-    VocabularySuggestionPage,
-    VocabularySuggestionRow,
-    FootprintSuggestions,
-)
+from apps.taxonomy.schemas import FootprintDecisionBody, FootprintDryRun, FootprintRequestBody, FootprintRequestPage, FootprintRequestQuery, FootprintRequestRow, FootprintView, JurisdictionRow, MarketRow, MarketWatchBody, TaggingBatchBody, TaggingBatchOutcome, TaggingBody, TaggingRecordTags, TaxonomyTermCreateBody, TaxonomyTermPage, TaxonomyTermQuery, VocabularyCreateBody, VocabularyListPage, VocabularyMergeBody, VocabularyMerged, VocabularyMergeQuery, VocabularyPatchBody, VocabularyQuery, VocabularyReorderBody, VocabularyRestored, VocabularyRetireBody, VocabularyRetired, VocabularyRow, VocabularyRowDetail, VocabularyRowPage, VocabularySuggestBody, VocabularySuggestionPage, VocabularySuggestionRow, FootprintSuggestions
+from apps.shared.schemas import VocabRef
 
 router = Router(tags=["Taxonomy"])
 
@@ -1323,7 +1287,7 @@ def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
             kind=row.kind,
             label=label_of(labels.texts(row.id), order, original=labels.original(row.id), key=row.key),
             parent_key=row.parent.key if row.parent is not None else None,
-            default_language=TermRef(key=row.default_language.key, kind=None, label=row.default_language.name),
+            default_language=VocabRef(key=row.default_language.key, kind=None, label=row.default_language.name),
         )
         for row in rows
     ]

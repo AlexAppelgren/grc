@@ -45,7 +45,7 @@ const DIFF_OPS: readonly DiffOp[] = ['equal', 'insert', 'delete'];
  * the tone map knows: a tone is chosen by kind, never by a person, so a kind
  * nobody has a tone for is not rendered at all.
  */
-export function complianceOf(raw: Schemas['LibraryRef'] | null | undefined): KindRef<ComplianceKind> | null {
+export function complianceOf(raw: Schemas['VocabRef'] | null | undefined): KindRef<ComplianceKind> | null {
   if (raw === null || raw === undefined) return null;
   const kind = COMPLIANCE_KINDS.find((known) => known === raw.kind);
   return kind === undefined ? null : { key: raw.key, label: raw.label, kind };
@@ -111,18 +111,14 @@ const TAGGINGS = '/api/v1/taggings';
 
 export async function tagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
   const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
-  return tagsOf((await api.post<Schemas['TaggingRecordTags']>(TAGGINGS, body)).data);
+  return (await api.post<Schemas['TaggingRecordTags']>(TAGGINGS, body)).data.tags;
 }
 
 export async function untagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
   const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
-  return tagsOf((await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data);
+  return (await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data.tags;
 }
 
-/** The bank's own tags carry no kind of their own; they read as library references with none. */
-function tagsOf(raw: Schemas['TaggingRecordTags']): LibraryRef[] {
-  return raw.tags.map((tag) => ({ key: tag.key, kind: tag.kind ?? null, label: tag.label }));
-}
 
 /** VOC-08: what one tag on many obligations would do. A read with a body: nothing is written. */
 export async function previewObligationTagging(tagKey: string, obligationIds: readonly string[]): Promise<TaggingBatch> {

@@ -47,11 +47,11 @@ describe('footprint api', () => {
 
   it('reads the footprint and its requests into the shapes the screen uses', async () => {
     const view = {
-      dimensions: [{ dimension: { key: 'service_type', kind: null, label: 'Services we provide' }, restrictsFootprint: true, allSelected: false, terms: [{ key: 'advice', label: 'Advice' }] }],
+      dimensions: [{ dimension: { key: 'service_type', kind: null, label: 'Services we provide' }, restrictsFootprint: true, allSelected: false, terms: [{ key: 'advice', kind: null, label: 'Advice' }] }],
       pendingRequest: serverRequest,
       markets: [
         { jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' }, level: 'operating' },
-        { jurisdiction: { key: 'no', label: 'Norway' }, level: 'watching' },
+        { jurisdiction: { key: 'no', kind: null, label: 'Norway' }, level: 'watching' },
       ],
     };
     const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/requests') ? { items: [serverRequest], total: 1 } : view }));
@@ -74,7 +74,7 @@ describe('footprint api', () => {
   });
 
   it('reads a footprint with no pending request and dimensions with no terms', () => {
-    expect(footprint.footprintOf({ dimensions: [{ dimension: { key: 'channel', label: 'Channels' }, restrictsFootprint: true, allSelected: true }], pendingRequest: null })).toEqual({
+    expect(footprint.footprintOf({ dimensions: [{ dimension: { key: 'channel', kind: null, label: 'Channels' }, restrictsFootprint: true, allSelected: true }], pendingRequest: null })).toEqual({
       dimensions: [{ dimension: { key: 'channel', kind: null, label: 'Channels' }, restrictsFootprint: true, terms: [], allSelected: true }],
       pendingRequest: null,
       markets: [],
@@ -192,8 +192,8 @@ describe('footprint api', () => {
       name: 'Local rules',
       description: '',
       officialReference: '',
-      jurisdiction: { key: 'se', label: 'Sweden' },
-      regimeTerm: { key: 'payments', label: 'Payments', dimension: 'regime' },
+      jurisdiction: { key: 'se', kind: null, label: 'Sweden' },
+      regimeTerm: { key: 'payments', kind: null, label: 'Payments', dimension: 'regime' },
       sourceUrl: 'https://www.fi.se/',
       status: 'requested',
     };
@@ -209,7 +209,7 @@ describe('footprint api', () => {
     const fonder = { id: 'u-fonder', name: 'Example Fonder AB' };
     const request = footprint.requestOf({
       ...serverRequest,
-      entityExclusions: [{ orgUnit: fonder, term: { dimension: 'regime', key: 'banking', label: 'Banking' } }],
+      entityExclusions: [{ orgUnit: fonder, term: { dimension: 'regime', key: 'banking', kind: null, label: 'Banking' } }],
       entityInclusions: [{ orgUnit: fonder, term: { dimension: 'service_type', key: 'custody', kind: null, label: 'Custody' } }],
     });
     expect(request.entityExclusions).toEqual([{ orgUnit: fonder, term: { dimension: 'regime', key: 'banking', kind: null, label: 'Banking' } }]);

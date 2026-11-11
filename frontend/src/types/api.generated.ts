@@ -9989,7 +9989,7 @@ export interface components {
              */
             id: string;
             /** @description The member a personal access token acts as, by id and name; null for a service key, which acts as the entry and names no person. */
-            person?: components["schemas"]["PersonRef"] | null;
+            person?: components["schemas"]["NamedRef"] | null;
             /**
              * Recordcount
              * @description How many records the answer carried: the items of a page, or 1 for one record. Null for an answer that was refused or carried no records.
@@ -10162,7 +10162,7 @@ export interface components {
              */
             name: string;
             /** @description The member a personal access token acts as; null for a service key, which acts as the entry. */
-            person?: components["schemas"]["PersonRef"] | null;
+            person?: components["schemas"]["NamedRef"] | null;
             /**
              * Plainkey
              * @description The key itself, `cw_<prefix>_<secret>`, sent as `X-API-Key` or as a bearer token. This answer is the only time it exists outside the caller: the server keeps only a hash of the secret, so put it straight into the agent's secret store. A lost key is revoked and replaced, not recovered.
@@ -10270,7 +10270,7 @@ export interface components {
              */
             name: string;
             /** @description The member a personal access token acts as; null for a service key, which acts as the entry. */
-            person?: components["schemas"]["PersonRef"] | null;
+            person?: components["schemas"]["NamedRef"] | null;
             /**
              * Revokedat
              * @description When it was revoked, a UTC timestamp; null while it works. A revoked credential never works again.
@@ -10345,12 +10345,12 @@ export interface components {
              */
             createdAt: string;
             /** @description The member who registered the entry. */
-            createdBy: components["schemas"]["PersonRef"];
+            createdBy: components["schemas"]["NamedRef"];
             /**
              * Departments
              * @description The departments the agent serves, by name. The entry reads the terms of their products and of every unit below them. With `products`, they can only narrow what the bank itself sees; naming neither narrows nothing.
              */
-            departments: components["schemas"]["AgentAccessUnitRef"][];
+            departments: components["schemas"]["NamedRef"][];
             /**
              * Id
              * Format: uuid
@@ -10373,7 +10373,7 @@ export interface components {
              * Products
              * @description The products the agent serves, by name, narrowing as the departments do.
              */
-            products: components["schemas"]["AgentAccessUnitRef"][];
+            products: components["schemas"]["NamedRef"][];
             /**
              * Purpose
              * @description What the agent does, in one sentence the bank wrote. The bank's own text: it stays in the bank and is never in the access log.
@@ -10385,7 +10385,7 @@ export interface components {
              */
             revokedAt?: string | null;
             /** @description Who revoked it; null while active. */
-            revokedBy?: components["schemas"]["PersonRef"] | null;
+            revokedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Tenantreach
              * @description The entry's own half of tenant reach: true lets its `tenant:read` credentials read the bank's register decisions, but only while the bank's own switch is on too; with that off, the entry reads the shared library only, whatever this says.
@@ -10511,9 +10511,9 @@ export interface components {
              * Departments
              * @description The departments the entry serves, by name; its scope is the terms of their products and of every unit below them, within the bank's footprint.
              */
-            departments: components["schemas"]["AgentAccessUnitRef"][];
+            departments: components["schemas"]["NamedRef"][];
             /** @description The agent access entry the credential reads as, by id and name; null for a personal access token that names no entry and reads as its person. */
-            entry: components["schemas"]["AgentAccessUnitRef"] | null;
+            entry: components["schemas"]["NamedRef"] | null;
             /**
              * Narrowed
              * @description True when the departments or products narrow what the credential reads to their terms; false when it reads the bank's whole footprint. A narrowed answer names what it could not see rather than stay silent about it.
@@ -10524,7 +10524,7 @@ export interface components {
              * Products
              * @description The products the entry serves, by name, narrowing as the departments do.
              */
-            products: components["schemas"]["AgentAccessUnitRef"][];
+            products: components["schemas"]["NamedRef"][];
         };
         /**
          * AgentAccessTeamRef
@@ -10551,23 +10551,6 @@ export interface components {
              * @example Compliance
              */
             label: string;
-        };
-        /**
-         * AgentAccessUnitRef
-         * @description A department or a product of the bank that an entry serves, by id and name.
-         */
-        AgentAccessUnitRef: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The department's or product's identifier in the bank's organisation, a UUID that never changes.
-             */
-            id: string;
-            /**
-             * Name
-             * @description Its name as the bank's organisation gives it, for display only; nothing may match on it.
-             */
-            name: string;
         };
         /**
          * AgentAccessUpdate
@@ -11008,7 +10991,7 @@ export interface components {
          */
         AgentKeyOut: {
             /** @description The bound agent definition as its stable key, such as `watch-sweeper`, with a label naming its current version to show on screen, such as `watch-sweeper v1`. The kind is null because the field already says what the key points at. Agent definitions are platform rows loaded from versioned definition folders, not a vocabulary an admin may extend or add to. Null exactly when `agentId` is. */
-            agent: components["schemas"]["RoleRef"] | null;
+            agent: components["schemas"]["VocabRef"] | null;
             /**
              * Agentid
              * @description The identifier of the agent definition the key is bound to, a UUID from `GET /agent-definitions`. Everything the key writes is recorded as that agent, so the audit trail names the agent rather than the key. Null only for a platform key bound to no agent, which is listed so that it can be seen and revoked; this API never creates one, and the review queue refuses one.
@@ -11276,7 +11259,7 @@ export interface components {
              */
             pipelineVersion: string;
             /** @description The person who asked for the run, by id and name, or null when nobody did (a schedule or a key). */
-            requestedBy: components["schemas"]["PersonRef"] | null;
+            requestedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Startedat
              * Format: date-time
@@ -11554,7 +11537,7 @@ export interface components {
              */
             publishedAt: string;
             /** @description The platform administrator who published the version, by id and name. Null for a first version the build loaded, which nobody published by hand. */
-            publishedBy: components["schemas"]["PersonRef"] | null;
+            publishedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Retiredat
              * @description When the version was retired, as a UTC timestamp in ISO 8601, or null while it may still run. A retired version starts no new run; runs that used it keep pointing at it.
@@ -11609,55 +11592,6 @@ export interface components {
              * @example 0
              */
             total: number;
-        };
-        /**
-         * AiGenerationQuery
-         * @description Filters of the AI output log, each optional and combined with AND. Leaving all three
-         *     out lists everything the reader may see.
-         */
-        AiGenerationQuery: {
-            /**
-             * Purpose
-             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
-             * @example so_what
-             */
-            purpose?: string | null;
-            /**
-             * Status
-             * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. It reads the state as this bank sees it (see `status` on a row), so `confirmed` lists a shared “So what?” this bank stood behind and not one only another bank did. A value that is not one of them matches nothing and answers 200 with an empty page.
-             * @example draft
-             */
-            status?: string | null;
-            /**
-             * Subjectid
-             * @description Show only the calls about one record, by the UUID a row carries in `subjectId`: for a “So what?” the regulatory change's id, so a change's screen can list every draft of what it means. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
-             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
-             */
-            subjectId?: string | null;
-        };
-        /**
-         * AiGenerationReviewer
-         * @description The person who stood behind a model's output: id and name, the only personal data
-         *     the log carries about them (playbook 4.7).
-         * @example {
-         *       "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
-         *       "name": "Anna Lindqvist"
-         *     }
-         */
-        AiGenerationReviewer: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The person's user id, as a UUID.
-             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
-             */
-            id: string;
-            /**
-             * Name
-             * @description The person's name as it stands now, at most 200 characters, for display.
-             * @example Anna Lindqvist
-             */
-            name: string;
         };
         /**
          * AiGenerationRow
@@ -11787,7 +11721,7 @@ export interface components {
              * @description Who moved the row out of `draft`, computed for the reading bank as `status` is: on a shared “So what?” the person at this bank who confirmed or rewrote it on the case. Null while `status` is `draft`.
              * @example null
              */
-            reviewedBy: components["schemas"]["AiGenerationReviewer"] | null;
+            reviewedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Status
              * @description How far a person has got with it, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. Computed for the reading bank. On a bank's own row it is that row's state. A shared “So what?” (`tenantScoped` false) is one row every bank reads and no bank may move, so its state here is this bank's own, taken from this bank's case for the change and never written to the shared row: `confirmed` when someone here confirmed the draft as it stands, `edited` when they rewrote it, and `draft` otherwise. A case settles the newest draft of the change logged by the time it was confirmed, so an earlier draft, or one logged after the confirmation, reads `draft` because nobody here stood behind those words. Another bank's decision never shows.
@@ -12144,7 +12078,7 @@ export interface components {
          */
         ApiKeyOut: {
             /** @description The agent access entry the credential is bound to, whose scope narrows what it reads: an entry's service key, or a token that names the entry. Null for a key or token bound to no entry. */
-            agentAccess: components["schemas"]["CredentialEntryRef"] | null;
+            agentAccess: components["schemas"]["NamedRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -12184,7 +12118,7 @@ export interface components {
              */
             name: string;
             /** @description The member a personal access token acts as. Null for a service key, which acts as no person. */
-            person: components["schemas"]["PersonRef"] | null;
+            person: components["schemas"]["NamedRef"] | null;
             /**
              * Revokedat
              * @description When an administrator revoked the key, as a UTC timestamp in ISO 8601; from that moment every call with it answers `unauthenticated`. A revoked key stays listed and cannot be turned back on. Null while it is live.
@@ -12511,43 +12445,6 @@ export interface components {
             total: number;
         };
         /**
-         * AuditEventQuery
-         * @description Filters of the audit log, each optional and combined with AND. A record is `subjectType`
-         *     and `subjectId`; `from` is inclusive and `to` exclusive.
-         */
-        AuditEventQuery: {
-            /**
-             * Actorid
-             * @description Show only what one person or agent did, by the UUID a row carries in `actor.id`: a person's user id, or for an agent the agent its key is bound to (the key's own id for a key bound to no agent). The system has no id, so its rows cannot be picked out this way. A value that is not a UUID is refused with `validation_error` (422); an actor who did nothing here answers 200 with an empty page.
-             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
-             */
-            actorId?: string | null;
-            /**
-             * From
-             * @description Show only rows written at or after this moment (inclusive), as an ISO 8601 timestamp such as `2026-09-16T00:00:00+02:00`. Give the offset: a value without one, or a date alone, is read as UTC (a date as midnight UTC) and not as the bank's local time. In the query string write the offset's `+` as `%2B` (or use `Z`): a bare `+` arrives as a space. A value that is not a timestamp is refused with `validation_error` (422). A `from` later than `to` matches nothing and answers 200 with an empty page.
-             * @example 2026-09-16T00:00:00+02:00
-             */
-            from?: string | null;
-            /**
-             * Subjectid
-             * @description Show only the rows about one record, by the UUID a row carries in `subjectId`. For most kinds that is the id the API uses for the record, such as a footprint change request's id; a `membership` row carries the membership's own id, which the API does not otherwise show, and not the member's `userId`, so take it from a row. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
-             * @example 4a7c1e9b-3d5f-4b2a-8e6c-0f1d3b5a7c92
-             */
-            subjectId?: string | null;
-            /**
-             * Subjecttype
-             * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `footprint_change_request`, `membership` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
-             * @example footprint_change_request
-             */
-            subjectType?: string | null;
-            /**
-             * To
-             * @description Show only rows written before this moment (exclusive), so `from` one midnight and `to` the next is exactly one day and back-to-back windows never count a row twice. An ISO 8601 timestamp such as `2026-09-17T00:00:00+02:00`, read like `from`: without an offset it is UTC, the `+` is sent as `%2B`, and a value that is not a timestamp is refused with `validation_error` (422).
-             * @example 2026-09-17T00:00:00+02:00
-             */
-            to?: string | null;
-        };
-        /**
          * AuditEventRow
          * @description One change in the bank's audit log (AUD-01): who made it, what happened to which record,
          *     and the record's fields before and after. Written in the same transaction as the change and
@@ -12685,7 +12582,7 @@ export interface components {
              */
             doneAt: string | null;
             /** @description Who marked it done. A person in this bank, as their id and display name; the only personal data a case carries about them. Null while open. */
-            doneBy: components["schemas"]["PersonRef"] | null;
+            doneBy: components["schemas"]["NamedRef"] | null;
             /**
              * Duedate
              * Format: date
@@ -12701,7 +12598,7 @@ export interface components {
              */
             id: string;
             /** @description Who must do it. A person in this bank, as their id and display name; the only personal data a case carries about them. */
-            owner: components["schemas"]["PersonRef"];
+            owner: components["schemas"]["NamedRef"];
             /**
              * Title
              * @description What must be done, at most 500 characters. Tenant content.
@@ -12851,7 +12748,7 @@ export interface components {
              */
             applies: "yes" | "partly" | "no";
             /** @description How big the work is, from the bank's `effort_size` vocabulary, `s`, `m` and `l` on day one. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null when nobody has sized it. */
-            effort: components["schemas"]["CasesVocabularyRef"] | null;
+            effort: components["schemas"]["VocabRef"] | null;
             /**
              * Internaldeadline
              * @description The bank's own deadline for the work, as a plain calendar date (`2026-10-15`). The bank's judgement, not the regulator's date, which is the change's key date. Null when none is set.
@@ -12871,7 +12768,7 @@ export interface components {
              */
             savedAt: string | null;
             /** @description Who last saved it. A person in this bank, as their id and display name; the only personal data a case carries about them. Null until it is saved. */
-            savedBy: components["schemas"]["PersonRef"] | null;
+            savedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Version
              * @description The assessment's own version, starting at 1 and raised by every save. Informational: a save sends the case's `version` in `If-Match`, never this one.
@@ -13038,7 +12935,7 @@ export interface components {
              */
             changeId: string;
             /** @description Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` (one person closed it, audited). The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null while the case is open. */
-            closeReason: components["schemas"]["CasesVocabularyRef"] | null;
+            closeReason: components["schemas"]["VocabRef"] | null;
             /**
              * Closedat
              * @description When the case was closed, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while it is open.
@@ -13058,9 +12955,9 @@ export interface components {
              */
             dismissedAt: string | null;
             /** @description Who dismissed it. A person in this bank, as their id and display name; the only personal data a case carries about them. Null unless it was dismissed. */
-            dismissedBy: components["schemas"]["PersonRef"] | null;
+            dismissedBy: components["schemas"]["NamedRef"] | null;
             /** @description Why the bank dismissed the change, from its `dismissal_reason` vocabulary, `out_of_scope`, `duplicate` and `already_covered` on day one. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null unless the case is or was dismissed. */
-            dismissedReason: components["schemas"]["CasesVocabularyRef"] | null;
+            dismissedReason: components["schemas"]["VocabRef"] | null;
             /**
              * Footprintmatch
              * @description Whether the change's scope matches this bank's footprint, computed by the server. It says the change is in scope to look at, never that it applies or that the bank complies.
@@ -13081,11 +12978,11 @@ export interface components {
              */
             openActionCount: number;
             /** @description Who owns the case, named at triage. A person in this bank, as their id and display name; the only personal data a case carries about them. Null before triage. */
-            owner: components["schemas"]["PersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /** @description The team of the bank that owns the case beside its owner, never instead of one, from the bank's own `team` vocabulary, whose rows its admin may extend at `GET /vocab/team`; `kind` is always null, because teams have no kinds. The team stays when the owner changes or leaves the bank. Null when no team was named. */
-            ownerTeam: components["schemas"]["CasesVocabularyRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /** @description The second person who signed the case off with a passkey. A person in this bank, as their id and display name; the only personal data a case carries about them. Never the person who asked, which the database itself refuses. Null until it is signed off. */
-            signedOffBy: components["schemas"]["PersonRef"] | null;
+            signedOffBy: components["schemas"]["NamedRef"] | null;
             /**
              * Signoffrequestedat
              * @description When sign-off was asked for, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null until someone asks.
@@ -13093,7 +12990,7 @@ export interface components {
              */
             signoffRequestedAt: string | null;
             /** @description Who asked for sign-off; this person can never sign it off. A person in this bank, as their id and display name; the only personal data a case carries about them. Null until someone asks. */
-            signoffRequestedBy: components["schemas"]["PersonRef"] | null;
+            signoffRequestedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Status
              * @description Where the case stands, one of seven fixed categories the state machine reads: `new` (registered, nobody has looked yet; the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what the change means for the bank), `implementing` (actions are being done), `signoff` (waiting for a second person to sign it off with a passkey), `closed` (signed off, or closed by one person with a reason that needs no work) and `dismissed` (not for this bank, with a reason, and restorable). A bank's sub-status sits inside a category and changes nothing a guard decides.
@@ -13102,7 +12999,7 @@ export interface components {
              */
             status: "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
             /** @description The bank's own finer step inside the category, from its `case_sub_status` vocabulary, whose `kind` is the category it sits in; day one seeds one per category, keyed like it. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. Null when the bank uses none here. */
-            subStatus: components["schemas"]["CasesVocabularyRef"] | null;
+            subStatus: components["schemas"]["VocabRef"] | null;
             /**
              * Triagedat
              * @description When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null before triage.
@@ -13110,9 +13007,9 @@ export interface components {
              */
             triagedAt: string | null;
             /** @description Who triaged the case. A person in this bank, as their id and display name; the only personal data a case carries about them. Null before triage. */
-            triagedBy: components["schemas"]["PersonRef"] | null;
+            triagedBy: components["schemas"]["NamedRef"] | null;
             /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one, a vocabulary a platform admin may extend. It is the agent's suggestion until `urgencyConfirmed` is true. */
-            urgency: components["schemas"]["LibraryRef"];
+            urgency: components["schemas"]["VocabRef"];
             /**
              * Urgencyconfirmed
              * @description Whether a person in this bank confirmed the urgency at triage. False means the value is still the agent's suggestion and must not be reported as the bank's decision.
@@ -13225,7 +13122,7 @@ export interface components {
              */
             uploadedAt: string;
             /** @description Who added it. A person in this bank, as their id and display name; the only personal data a case carries about them. */
-            uploadedBy: components["schemas"]["PersonRef"];
+            uploadedBy: components["schemas"]["NamedRef"];
             /**
              * Url
              * @description The address a link points at. Null for a file or a reference. The server never fetches it.
@@ -13258,38 +13155,6 @@ export interface components {
         CasesEvidenceCreated: {
             /** @description The evidence as stored. A file is `pending` until the scan finishes, and cannot be downloaded until it is `clean`. */
             evidence: components["schemas"]["CasesEvidence"];
-        };
-        /**
-         * CasesEvidenceForm
-         * @description The form fields of `POST /changes/{changeId}/evidence` (CAS-05), sent as
-         *     `multipart/form-data` beside the `file` part when the kind is `file`.
-         * @example {
-         *       "kind": "link",
-         *       "name": "FI decision memo",
-         *       "url": "https://intranet.example.com/memo/42"
-         *     }
-         */
-        CasesEvidenceForm: {
-            /**
-             * Kind
-             * @description What is being added, a fixed kind: `file` (send the bytes in the `file` part), `link` (send `url`) or `reference` (the name of an internal document, nothing else).
-             * @example link
-             * @enum {string}
-             */
-            kind: "file" | "link" | "reference";
-            /**
-             * Name
-             * @description What the evidence is called, 1 to 500 characters. Tenant content.
-             * @example FI decision memo
-             */
-            name: string;
-            /**
-             * Url
-             * @description The address of a link, an https URL of at most 2000 characters; empty by default and for the other kinds. The server stores it and never fetches it.
-             * @default
-             * @example https://intranet.example.com/memo/42
-             */
-            url: string;
         };
         /**
          * CasesEvidencePage
@@ -13557,37 +13422,6 @@ export interface components {
             urgency: string;
         };
         /**
-         * CasesVocabularyRef
-         * @description A value from one of the bank's own lists as a read answers it: key and kind, and the
-         *     label in the reader's language. The bank's own zone: its admin manages these rows, and
-         *     no other bank sees them.
-         * @example {
-         *       "key": "out_of_scope",
-         *       "kind": null,
-         *       "label": "Out of scope"
-         *     }
-         */
-        CasesVocabularyRef: {
-            /**
-             * Key
-             * @description The row's immutable key, and the only part of this reference to store, compare or send back. It is drawn from the bank's own vocabulary that the field carrying it names; an admin may extend, relabel or retire those rows without a deploy, so a key you have not seen before is new data and not an error.
-             * @example out_of_scope
-             */
-            key: string;
-            /**
-             * Kind
-             * @description The fixed category the row sits in, where its list has one: a sub-status names the case category it belongs to (`new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`), and a close reason one of `signed_off`, `no_action` or `not_applicable`. Null for a list without categories, such as dismissal reasons and effort sizes. Never a tone: a pill's tone follows its slot.
-             * @example null
-             */
-            kind: string | null;
-            /**
-             * Label
-             * @description The value's name in the reader's language, falling back to the bank's default language and then to the key. For display only: an admin may reword it at any time, so nothing may match on it.
-             * @example Out of scope
-             */
-            label: string;
-        };
-        /**
          * CodeRequestBody
          * @description Asking for a one-time enrolment code by email, the "First time here?" path. The code
          *     opens only an enrolment session that can register a passkey, never a full sign-in.
@@ -13650,7 +13484,7 @@ export interface components {
          */
         CollabComment: {
             /** @description The person who wrote the comment. Only they may edit or delete it. */
-            author: components["schemas"]["PersonRef"];
+            author: components["schemas"]["NamedRef"];
             /**
              * Body
              * @description What the author wrote, as plain text, or null once the comment was deleted: a deleted comment keeps its place in the thread so the conversation still reads, but its text is no longer returned. The bank's own text, visible to everyone in the bank who can read the record; it never leaves the bank.
@@ -13699,7 +13533,7 @@ export interface components {
              * Mentions
              * @description The people the author named when writing it, fixed at that moment: an edit does not change who was mentioned, so an edit can never notify anyone new. Someone mentioned is not necessarily notified; only those who could read the record were.
              */
-            mentions: components["schemas"]["PersonRef"][];
+            mentions: components["schemas"]["NamedRef"][];
             /**
              * Subjectid
              * Format: uuid
@@ -13742,7 +13576,7 @@ export interface components {
          */
         CollabCommentCreated: {
             /** @description The person who wrote the comment. Only they may edit or delete it. */
-            author: components["schemas"]["PersonRef"];
+            author: components["schemas"]["NamedRef"];
             /**
              * Body
              * @description What the author wrote, as plain text, or null once the comment was deleted: a deleted comment keeps its place in the thread so the conversation still reads, but its text is no longer returned. The bank's own text, visible to everyone in the bank who can read the record; it never leaves the bank.
@@ -13791,7 +13625,7 @@ export interface components {
              * Mentions
              * @description The people the author named when writing it, fixed at that moment: an edit does not change who was mentioned, so an edit can never notify anyone new. Someone mentioned is not necessarily notified; only those who could read the record were.
              */
-            mentions: components["schemas"]["PersonRef"][];
+            mentions: components["schemas"]["NamedRef"][];
             /**
              * Subjectid
              * Format: uuid
@@ -13809,7 +13643,7 @@ export interface components {
              * Undeliveredmentions
              * @description The mentioned people who were not notified, so the composer can say by name that the mention did not reach them: someone who cannot read this record, is no longer an active member or has switched mentions off. It never says which. The author is never notified of their own mention and never listed here. Empty when everyone mentioned was notified.
              */
-            undeliveredMentions: components["schemas"]["PersonRef"][];
+            undeliveredMentions: components["schemas"]["NamedRef"][];
         };
         /**
          * CollabCommentInput
@@ -13911,40 +13745,6 @@ export interface components {
             body: string;
         };
         /**
-         * CollabCommentQuery
-         * @description Which record's comments to read, and the shared `limit` and `offset`: 20 by default and
-         *     100 at most. Kinds and ids ride in the query string; a comment's text never does.
-         */
-        CollabCommentQuery: {
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
-            /**
-             * Subjectid
-             * Format: uuid
-             * @description The record's identifier, as a uuid. Together with the kind it names exactly one record; a record this bank does not hold, or one the caller may not read, answers 404 as if it did not exist.
-             * @example 11111111-1111-4111-8111-111111111111
-             */
-            subjectId: string;
-            /**
-             * Subjecttype
-             * @description The kind of record, as a fixed lowercase code of at most 64 characters. Comments are taken on four kinds: `obligation` (an obligation in the shared library, as this bank sees it), `tenant_obligation` (an item the bank keeps in its own inventory), `change_case` (the bank's own case on a regulatory change) and `action` (a piece of work on a case). A kind outside those four is refused with a 422. A code, not a label: store and compare it, never show it.
-             * @example change_case
-             */
-            subjectType: string;
-        };
-        /**
          * CollabMyComment
          * @description One comment on My work's "Comments and mentions" panel: the comment and the title of
          *     the record it is on, so the row can link there (COL-01, HOM-05).
@@ -13974,7 +13774,7 @@ export interface components {
          */
         CollabMyComment: {
             /** @description The person who wrote the comment. Only they may edit or delete it. */
-            author: components["schemas"]["PersonRef"];
+            author: components["schemas"]["NamedRef"];
             /**
              * Body
              * @description What the author wrote, as plain text, or null once the comment was deleted: a deleted comment keeps its place in the thread so the conversation still reads, but its text is no longer returned. The bank's own text, visible to everyone in the bank who can read the record; it never leaves the bank.
@@ -14029,7 +13829,7 @@ export interface components {
              * Mentions
              * @description The people the author named when writing it, fixed at that moment: an edit does not change who was mentioned, so an edit can never notify anyone new. Someone mentioned is not necessarily notified; only those who could read the record were.
              */
-            mentions: components["schemas"]["PersonRef"][];
+            mentions: components["schemas"]["NamedRef"][];
             /**
              * Subjectid
              * Format: uuid
@@ -14103,34 +13903,6 @@ export interface components {
              * @description How many comments match in total among the records the caller can read, not how many are on this page.
              */
             total: number;
-        };
-        /**
-         * CollabMyCommentQuery
-         * @description Which half of the panel to read, and the shared `limit` and `offset`: 20 by default and
-         *     100 at most.
-         */
-        CollabMyCommentQuery: {
-            /**
-             * About
-             * @description Which comments to list: `written`, the comments the caller wrote, on any record; `mentioned`, other people's comments that name the caller. Any other value is refused with a 422.
-             * @example mentioned
-             * @enum {string}
-             */
-            about: "written" | "mentioned";
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
         };
         /**
          * CollabNotification
@@ -14225,35 +13997,6 @@ export interface components {
             total: number;
         };
         /**
-         * CollabNotificationQuery
-         * @description The filter and paging of `GET /notifications`: the shared `limit` and `offset`, 20 by
-         *     default and 100 at most, and `unread`. A query parameter the route does not name is
-         *     ignored rather than refused.
-         */
-        CollabNotificationQuery: {
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
-            /**
-             * Unread
-             * @description `true` to list only the notifications not yet marked read, for the bell; false by default, which lists read and unread alike, newest first.
-             * @default false
-             * @example true
-             */
-            unread: boolean;
-        };
-        /**
          * CollabParticipant
          * @description One person or one team taking part in a register entry or a case (COL-04). Taking part
          *     puts the record on their My work and in their notifications and grants them nothing: what
@@ -14288,7 +14031,7 @@ export interface components {
              *       "name": "Anna Berg"
              *     }
              */
-            addedBy: components["schemas"]["PersonRef"];
+            addedBy: components["schemas"]["NamedRef"];
             /**
              * Id
              * Format: uuid
@@ -14303,12 +14046,12 @@ export interface components {
              *       "name": "Erik Holm"
              *     }
              */
-            person: components["schemas"]["PersonRef"] | null;
+            person: components["schemas"]["NamedRef"] | null;
             /**
              * @description The team taking part, or null when a person takes part: a row of the bank's own `team` vocabulary, which its administrators extend (`GET /vocab/team` for the live set). A team has no kinds. A team reaches its active members, each of whom still sees only what their own role can read. Exactly one of `person` and `team` is set.
              * @example null
              */
-            team: components["schemas"]["CollabTeamRef"] | null;
+            team: components["schemas"]["VocabRef"] | null;
         };
         /**
          * CollabParticipantInput
@@ -14382,31 +14125,6 @@ export interface components {
              * @description How many take part now in total, not how many are on this page.
              */
             total: number;
-        };
-        /**
-         * CollabTeamRef
-         * @description A team of the bank, as a picker and a list read it: the key to store and send back,
-         *     and a label to show.
-         */
-        CollabTeamRef: {
-            /**
-             * Key
-             * @description The team's key, a lowercase code of at most 80 characters such as `legal`, and the only part to store, compare or send back. Teams are rows of the bank's own `team` vocabulary, which its administrators extend, rename and retire (`GET /vocab/team` for the live set); the `compliance` team is there from day one. A key never changes once issued.
-             * @example legal
-             */
-            key: string;
-            /**
-             * Kind
-             * @description The fixed kind of the value, as on every vocabulary reference; always null here, because the team list has no kinds: every team is simply a team of the bank.
-             * @example null
-             */
-            kind?: string | null;
-            /**
-             * Label
-             * @description The team's name in the reader's language: the caller's own language first, then the bank's default language, then English, then any label the team has, and the key itself when it has none. For display only: an administrator may rename it at any time, so nothing may match on it.
-             * @example Legal
-             */
-            label: string;
         };
         /**
          * ConsoleFirstAdministrator
@@ -14720,7 +14438,7 @@ export interface components {
              */
             createdAt: string;
             /** @description The language the bank reads and writes in first, as a reference to a language row by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null until the bank's own administrator chooses one on its Organisation profile: an organisation created through this console starts without one. */
-            defaultLanguage: components["schemas"]["RoleRef"] | null;
+            defaultLanguage: components["schemas"]["VocabRef"] | null;
             /** @description The invitation the console sent the bank's first administrator, and whether they have joined, so a bank nobody has entered yet is visible here. Null for a bank that was not created through this console, such as one a deploy seeded. */
             firstAdministrator: components["schemas"]["ConsoleFirstAdministrator"] | null;
             /**
@@ -14761,23 +14479,6 @@ export interface components {
              * @description The bank to work in, a UUID from `contexts` in `GET /me`, or null for the platform console. Required: send null explicitly for the console.
              */
             tenantId: string | null;
-        };
-        /**
-         * CredentialEntryRef
-         * @description The agent access entry a credential is bound to: its id and name.
-         */
-        CredentialEntryRef: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The entry's permanent identifier, a UUID, as `GET /agent-access` lists it.
-             */
-            id: string;
-            /**
-             * Name
-             * @description What the bank calls the agent, such as `Trading platform coding agent`.
-             */
-            name: string;
         };
         /**
          * DiffSegment
@@ -15505,7 +15206,7 @@ export interface components {
              */
             allSelected: boolean;
             /** @description The taxonomy dimension this group covers: its key, its kind and its label in the caller's language. The kind is `scope` for a dimension that says who or what a rule covers, `classification` for one that only describes a record and never narrows the scope, and `opt_in` for the standards a bank follows, where a record carrying one of the dimension's terms shows only when this group names that term, so an empty group means none followed rather than no restriction. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the live set. */
-            dimension: components["schemas"]["TaxonomyDimensionRef"];
+            dimension: components["schemas"]["VocabRef"];
             /**
              * Restrictsfootprint
              * @description True when the terms chosen in this group narrow what the bank sees. False for a dimension that only describes records, which never hides anything. Always true for an `opt_in` dimension, whatever its own flag says. A library fact, changed only through an approved proposal.
@@ -15515,7 +15216,7 @@ export interface components {
              * Terms
              * @description The terms this bank has chosen in the group, each its key and its label in the caller's language, in picker order; empty when it has chosen none. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/terms` lists the live set. Changed only through a regulatory scope change request with its preview, second person and step-up.
              */
-            terms?: components["schemas"]["TermRef"][];
+            terms?: components["schemas"]["VocabRef"][];
         };
         /**
          * FootprintDryRun
@@ -15633,7 +15334,7 @@ export interface components {
              */
             mainBusiness: string;
             /** @description The legal entity of the organisation whose own scope the line would change. */
-            orgUnit: components["schemas"]["FootprintOrgUnitRef"];
+            orgUnit: components["schemas"]["NamedRef"];
             /**
              * Terms
              * @description The licence-bound terms (dimensions `regime`, `service_type`, `licensed_activity`) to take out or put back, each with its label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
@@ -15648,7 +15349,7 @@ export interface components {
          */
         FootprintEntityTermRef: {
             /** @description The legal entity whose own scope the line changes. */
-            orgUnit: components["schemas"]["FootprintOrgUnitRef"];
+            orgUnit: components["schemas"]["NamedRef"];
             /** @description The term, with its label and dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal. */
             term: components["schemas"]["FootprintTermRef"];
         };
@@ -15677,25 +15378,6 @@ export interface components {
              * @example 3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53
              */
             orgUnitId: string;
-        };
-        /**
-         * FootprintOrgUnitRef
-         * @description A legal entity of the organisation, by id and name, as a company line names it.
-         */
-        FootprintOrgUnitRef: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The legal entity's identifier, a UUID that never changes (`GET /tenant/org-units`).
-             * @example 3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53
-             */
-            id: string;
-            /**
-             * Name
-             * @description The legal entity's name as the organisation recorded it; the organisation's own data.
-             * @example Example Fonder AB
-             */
-            name: string;
         };
         /**
          * FootprintPreview
@@ -15919,15 +15601,6 @@ export interface components {
              */
             total: number;
         };
-        /** FootprintRequestQuery */
-        FootprintRequestQuery: {
-            /**
-             * Dryrun
-             * @description True previews the change and stores nothing: the answer is a 200 with what it would hide and reveal, no request is created, no second person is asked and no audit event is written. False, the default, sends the request for approval and answers 201.
-             * @default false
-             */
-            dryRun: boolean;
-        };
         /**
          * FootprintRequestRow
          * @description One request to change the organisation's regulatory scope (FP-02): what it adds and
@@ -16027,7 +15700,7 @@ export interface components {
              */
             decidedAt?: string | null;
             /** @description The second person who approved or rejected the request, by id and name; never the requester, which the database itself refuses. Null by default: while the request is pending, and when it was withdrawn, since withdrawing is not a decision. */
-            decidedBy?: components["schemas"]["PersonRef"] | null;
+            decidedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Decisionnote
              * @description What the person deciding wrote about it, such as why a change was turned down; empty by default, when they wrote nothing and always for a withdrawn request. The organisation's own text, never shared outside it.
@@ -16067,7 +15740,7 @@ export interface components {
              */
             requestedAt: string;
             /** @description The member who asked for the change, by id and name. Every request has one, so the default of null never reaches a reader. */
-            requestedBy?: components["schemas"]["PersonRef"] | null;
+            requestedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Scopeitemadds
              * @description The scope items the change puts into the regulatory scope: regulations the shared library does not cover, for the organisation's own agent to research. Empty by default. Each reads `requested` while the change waits, `in_scope` once approved and `declined` when rejected or withdrawn. An item hides and reveals nothing, so it never moves `preview`.
@@ -16113,7 +15786,7 @@ export interface components {
          */
         FootprintSuggestionReason: {
             /** @description The legal entity whose register facts give the term. */
-            orgUnit: components["schemas"]["FootprintOrgUnitRef"];
+            orgUnit: components["schemas"]["NamedRef"];
             /**
              * Registerline
              * @description The line in the register that gives the term, in the register's own words and language: a business name (`Värdepappersbolag`), a licence with its legal basis, or a branch's name. Public data, at most 1,000 characters. Null when the reason is the company's own country, or for a term no licence answers that is added only so the change hides nothing outside the licences.
@@ -16201,6 +15874,11 @@ export interface components {
          * FootprintTermRef
          * @description A taxonomy term in a regulatory scope change: the term as a reference, plus the key of
          *     the dimension it belongs to, since a term key is unique only within its dimension.
+         * @example {
+         *       "key": "act_now",
+         *       "kind": null,
+         *       "label": "Act now"
+         *     }
          */
         FootprintTermRef: {
             /**
@@ -16211,20 +15889,20 @@ export interface components {
             dimension: string;
             /**
              * Key
-             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform seeds and its library editors relabel, retire and restore by proposal; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
-             * @example advice
+             * @description The row's immutable key, and the only part of this reference to store, compare or send back. Which vocabulary it is drawn from is settled by the field that carries the reference, which names the list and the endpoint that returns its live set: the shared library's vocabularies and taxonomy terms, which an admin may extend through an approved proposal, a bank's own lists such as its roles, teams, tags and statuses, which the bank's admin may extend, relabel, reorder or retire without a deploy, and the platform's fixed lists such as the languages. A key you have not seen before is new data and not an error. Match on the key and never on the label, and never construct one: a key the list does not hold answers 422 `unknown_key` with the valid keys.
+             * @example act_now
              */
             key: string;
             /**
              * Kind
-             * @description The fixed kind of the value, when its list has one, so a screen can branch or pick a pill tone without reading the label; null by default, when the list has no kind. By list: a taxonomy term is always null, because its dimension is its kind; a language is always null; a jurisdiction is `supranational` (the European Union, whose rules reach its members and the EEA), `country` (one national market, such as Sweden) or `international` (a standards body such as ISO/IEC, which is no bank's market); an urgency is its pill tone, one of `information`, `notice`, `positive`, `warning`, `negative` and `brand`. Kinds are fixed in code and never added by an administrator.
+             * @description The row's fixed kind where its list has one, so a screen can branch or pick a pill tone without reading the label, and null by default where it has none. By list: a jurisdiction is `supranational` (the European Union), `country` (one national market) or `international` (a standards body such as ISO/IEC); an urgency is its pill tone, one of `information`, `notice`, `positive`, `warning`, `negative` and `brand`; a change type is its lifecycle kind; a case sub-status is its case category (`new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`) and a close reason one of `signed_off`, `no_action` or `not_applicable`; a compliance status is `compliant`, `partly`, `gap` or `not_assessed` and a gap status `open`, `remediating`, `risk_accepted` or `closed`; a taxonomy dimension is `scope` (its terms say who or what a rule covers), `classification` (its terms only describe a record) or `opt_in` (the standards a bank follows). Where one field carries rows of more than one list, it is the list's name. A taxonomy term, a language, a role, a team, a tag, a risk rating and a link kind are null. Kinds are fixed in code, so the rules may branch on them; an admin never adds one.
              * @example null
              */
-            kind?: string | null;
+            kind: string | null;
             /**
              * Label
-             * @description The value's name in the reader's language: the caller's own language first, then the organisation's default language, then English, then any label the value has, and the key itself when it has none. A language is the exception and reads in itself, such as `Svenska`. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
-             * @example Advice
+             * @description The row's label in the reader's language: the caller's own language first, then the organisation's default language, then English, then any label the row has, and the key itself when it has none; a language reads in itself, such as `Svenska`. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
+             * @example Act now
              */
             label: string;
         };
@@ -17079,29 +16757,6 @@ export interface components {
             quarters: string[];
         };
         /**
-         * HomeRoadmapEntity
-         * @description The legal entity an internal roadmap item's date belongs to.
-         * @example {
-         *       "id": "3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36",
-         *       "name": "Example Bank AB"
-         *     }
-         */
-        HomeRoadmapEntity: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The organisation unit's identifier, as a uuid.
-             * @example 3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36
-             */
-            id: string;
-            /**
-             * Name
-             * @description The bank's own name for the unit, for display only; it may change.
-             * @example Example Bank AB
-             */
-            name: string;
-        };
-        /**
          * HomeRoadmapItem
          * @description One dated thing on the bank's calendar of regulation: what happens, when, and what
          *     this bank has open against it.
@@ -17204,7 +16859,7 @@ export interface components {
              */
             obligations: components["schemas"]["WatchObligationLink"][];
             /** @description Who answers for an `internal` item's date, a person, a team or, on a register entry, both: the entry's first-line owner and owning team, the owner of one legal entity's row, of a gap, of a duty's occurrence or of a certificate, the case's owner for its internal deadline and the action's owner for an action. Null on a regulatory item, and on an internal one nobody owns yet. The bank's own zone. */
-            owner: components["schemas"]["HomeRoadmapOwner"] | null;
+            owner: components["schemas"]["HomeWorkWho"] | null;
             /**
              * Quarter
              * @description The quarter the date falls in, as the key `YYYY-Qn` (`2026-Q4`), computed by the server in the bank's own time zone — so a date that is 31 December in Stockholm and 1 January in another zone lands in the quarter the bank reads it in. At most 7 characters. It is a key for grouping and ordering: the screen renders the phrase from its own catalog, never from this string.
@@ -17232,62 +16887,7 @@ export interface components {
              */
             title: string;
             /** @description How soon this needs work, as `{key, kind, label}` from the `urgency` library vocabulary: `act_now` (something must change within weeks), `within_3_months` (work must start this quarter), `six_months_plus` (plan it, no rush), `monitor` (nothing to do yet) and `no_action` (noted, nothing changes) are seeded on day one, in severity order. The pill's tone follows the row's ordinal and is never sent here (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. It starts as the agent's suggestion for every bank and becomes this bank's own at triage; until then a reader must not report it as the bank's decision. Null when no urgency has been set at all, and always null on an `internal` item, whose date is the bank's own and carries no urgency. */
-            urgency: components["schemas"]["LibraryRef"] | null;
-        };
-        /**
-         * HomeRoadmapOwner
-         * @description Who answers for one of the bank's own deadlines on the roadmap.
-         * @example {
-         *       "person": {
-         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
-         *         "name": "Anna Berg"
-         *       },
-         *       "team": null
-         *     }
-         */
-        HomeRoadmapOwner: {
-            /** @description The member who owns the record, as id and name, or null when a team owns it alone. */
-            person: components["schemas"]["PersonRef"] | null;
-            /** @description The team that owns the record, as `{key, kind, label}` from the bank's own `team` vocabulary, or null when a person owns it alone. Its rows carry no kind, so `kind` is null. The bank's admin may add, relabel or retire a team without a deploy, so read `GET /vocab/team` for the live set and match on the key, never on the label. */
-            team: components["schemas"]["TermRef"] | null;
-        };
-        /**
-         * HomeRoadmapQuery
-         * @description The filters of `GET /roadmap`. Every value is a key or a fixed kind, never a label,
-         *     so a filter a person bookmarks keeps working when someone relabels a vocabulary row.
-         *
-         *     The three parameters below are all this route reads; a query string carrying any other
-         *     name is ignored rather than refused, so check the spelling against this list when a
-         *     filter seems not to bite. There is deliberately no "show outside our scope" switch here:
-         *     the roadmap and the briefing always respect the bank's regulatory scope, and the
-         *     inventory is where a person looks outside it (FP-03, chunk 6 rulings).
-         * @example {
-         *       "from": "2026-10-01",
-         *       "kind": "all",
-         *       "to": "2027-03-31"
-         *     }
-         */
-        HomeRoadmapQuery: {
-            /**
-             * From
-             * @description Show nothing dated before this calendar date (`2026-10-01`), inclusive. A plain date and never a timestamp. Omit it to start from the bank's own today, which is what the roadmap screen does; a date in the past widens nothing, because the roadmap holds no item whose date has gone.
-             * @example 2026-10-01
-             */
-            from?: string | null;
-            /**
-             * Kind
-             * @description Which kinds of item to include, a fixed kind with three members and `all` by default: `all` (both), `regulatory` (dates the outside world set) and `internal` (deadlines this bank set for itself). The register's deadlines, next reviews and gap targets, are included only for a reader holding `register.read`; a certificate's expiry and next audit for every reader. An empty answer is a 200 and never a 422.
-             * @default all
-             * @example all
-             * @enum {string}
-             */
-            kind: "all" | "regulatory" | "internal";
-            /**
-             * To
-             * @description Show nothing dated after this calendar date (`2027-03-31`), inclusive. A plain date and never a timestamp. Omit it for everything ahead. A `to` earlier than `from` matches nothing and answers a 200 with an empty list, which is the honest answer to a window that holds nothing.
-             * @example 2027-03-31
-             */
-            to?: string | null;
+            urgency: components["schemas"]["VocabRef"] | null;
         };
         /**
          * HomeRoadmapSubject
@@ -17307,7 +16907,7 @@ export interface components {
          */
         HomeRoadmapSubject: {
             /** @description The legal entity the date belongs to: the entity a review row, a gap or a duty's occurrence is for, or the entity holding the certificate. Null when the date is the whole register entry's own. */
-            entity: components["schemas"]["HomeRoadmapEntity"] | null;
+            entity: components["schemas"]["NamedRef"] | null;
             /**
              * Gapid
              * @description On a `gap_target` item, the bank's gap, as a uuid; null otherwise.
@@ -17478,7 +17078,7 @@ export interface components {
              */
             changeId: string;
             /** @description What kind of change this is, as `{key, kind, label}` from the `change_type` library vocabulary: `proposal` (a draft rule; its dates are proposed, not decided), `adopted` (decided, application still ahead), `supervision` (a survey or review, no new rule), `enforcement` (a decision against a named firm) and `recurring_date` (a date that returns) are seeded on day one. The `kind` member is the lifecycle kind the rules branch on. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            changeType: components["schemas"]["LibraryRef"];
+            changeType: components["schemas"]["VocabRef"];
             /**
              * Keydate
              * Format: date
@@ -17505,43 +17105,13 @@ export interface components {
              */
             sourceUrl: string;
             /** @description How soon this needs work, as `{key, kind, label}` from the `urgency` library vocabulary: `act_now` (something must change within weeks), `within_3_months` (work must start this quarter), `six_months_plus` (plan it, no rush), `monitor` (nothing to do yet) and `no_action` (noted, nothing changes) are seeded on day one, in severity order. The pill's tone follows the row's ordinal and is never sent here (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. It is the agent's suggestion for the whole library and not any bank's decision; a reader outside a bank must not present it as one. Null when no suggestion was made. */
-            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            suggestedUrgency: components["schemas"]["VocabRef"] | null;
             /**
              * Title
              * @description What the reform is called, in the source's own words and at most 300 characters. A library fact: it names no bank and carries no judgement.
              * @example FI adopts amended rules on paying for investment research
              */
             title: string;
-        };
-        /**
-         * HomeUpcomingQuery
-         * @description The paging of `GET /upcoming`, carrying the shared `limit` and `offset`: 20 by default,
-         *     100 at most, and a larger `limit` answers 422 rather than being clamped. The list is
-         *     ordered by date and carries no total, so a page shorter than `limit` is the end of it.
-         *
-         *     `limit` and `offset` are all this route reads; any other name in the query string is
-         *     ignored rather than refused. There is no filter here on purpose: this is the public
-         *     list, the same for everyone, and narrowing it per bank would make it a tenant read.
-         * @example {
-         *       "limit": 20,
-         *       "offset": 0
-         *     }
-         */
-        HomeUpcomingQuery: {
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
         };
         /**
          * HomeWorkCounts
@@ -17613,29 +17183,6 @@ export interface components {
             value: string;
         };
         /**
-         * HomeWorkEntity
-         * @description The legal entity a row's date belongs to, where the date is one entity's own.
-         * @example {
-         *       "id": "3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36",
-         *       "name": "Fund AB"
-         *     }
-         */
-        HomeWorkEntity: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The organisation unit's identifier, as a uuid.
-             * @example 3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36
-             */
-            id: string;
-            /**
-             * Name
-             * @description The bank's own name for the unit, for display only; it may change.
-             * @example Fund AB
-             */
-            name: string;
-        };
-        /**
          * HomeWorkItem
          * @description One row of My work: a record a person or a team is responsible for or takes part
          *     in, the section it is in, the date that put it there and every reason it is listed.
@@ -17693,7 +17240,7 @@ export interface components {
             /** @description The date that placed the row in its section, or null on an `open` row with no date at all, which sorts after every dated one. */
             date: components["schemas"]["HomeWorkDate"] | null;
             /** @description The legal entity whose own date or gap placed the row, or null when the date is the record's own or there is none. */
-            entity: components["schemas"]["HomeWorkEntity"] | null;
+            entity: components["schemas"]["NamedRef"] | null;
             /**
              * Itemkind
              * @description What kind of record the row is about, a fixed kind and the same key the audit log names it by: `tenant_obligation` (the bank's register entry on an obligation), `internal_item` (a policy, procedure, control or other internal item of the bank) or `change_case` (the bank's case on a regulatory change).
@@ -17713,11 +17260,11 @@ export interface components {
              */
             reasons: components["schemas"]["HomeWorkReason"][];
             /** @description On a `tenant_obligation` row, the register entry's compliance status as `{key, kind, label}` from the bank's own `compliance_status` vocabulary; null on other rows. `kind` is the fixed category the pill's tone reads: `compliant`, `partly`, `gap` or `not_assessed`. The bank's admin may add, relabel or retire a status inside those categories without a deploy, so read `GET /vocab/compliance_status` for the live set and match on the key. Whether an obligation applies is a separate fact and never read from this. */
-            status: components["schemas"]["TermRef"] | null;
+            status: components["schemas"]["VocabRef"] | null;
             /** @description The record the row is about: its identifier and its name. */
             subject: components["schemas"]["HomeWorkSubject"];
             /** @description On a `change_case` row, the case's urgency; null on other rows. How soon this needs work, as `{key, kind, label}` from the `urgency` library vocabulary: `act_now` (something must change within weeks), `within_3_months` (work must start this quarter), `six_months_plus` (plan it, no rush), `monitor` (nothing to do yet) and `no_action` (noted, nothing changes) are seeded on day one, in severity order. The pill's tone follows the row's ordinal and is never sent here (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            urgency: components["schemas"]["LibraryRef"] | null;
+            urgency: components["schemas"]["VocabRef"] | null;
         };
         /**
          * HomeWorkPage
@@ -17814,58 +17361,6 @@ export interface components {
             unit: string | null;
         };
         /**
-         * HomeWorkQuery
-         * @description What `GET /me/work` reads from its query string: whose work, which section, and the
-         *     shared paging — 20 rows by default and 100 at most through `limit` and `offset`, where a
-         *     larger `limit` answers 422 rather than being clamped.
-         *
-         *     `scope=unit` needs `unit`, and `scope=mine` refuses one, each with a 422: a department
-         *     view without a department, or a personal view that names one, is a mistake in the call,
-         *     never something to guess at. The department view is a filter and never a grant: any
-         *     member may open any department, and every row still needs its own read permission.
-         * @example {
-         *       "limit": 20,
-         *       "offset": 0,
-         *       "scope": "mine"
-         *     }
-         */
-        HomeWorkQuery: {
-            /**
-             * Bucket
-             * @description Only the rows of one section, or every section when left out. Which section of My work the row is in, a fixed kind, in this order: `overdue` (its next date is before the bank's own today), `due_soon` (its next date is today or within the `MY_WORK_DUE_SOON_DAYS` setting, 30 days by default), `aware` (a change on the item: an open case whose change has a confirmed link to it, or a new version of the obligation applied within the `MY_WORK_AWARE_DAYS` setting, 14 days by default) and `open` (everything else the person is responsible for or takes part in). A row sits in the first section it qualifies for and appears once. The counts always cover every section, whatever this filter is.
-             * @example overdue
-             */
-            bucket?: ("overdue" | "due_soon" | "aware" | "open") | null;
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
-            /**
-             * Scope
-             * @description Whose work to list, a fixed kind: `mine` (the default) is what the caller or one of the caller's teams is responsible for or takes part in; `unit` is what the teams of the department named by `unit`, and of every unit below it, are responsible for, together with those teams' active members.
-             * @default mine
-             * @example mine
-             * @enum {string}
-             */
-            scope: "mine" | "unit";
-            /**
-             * Unit
-             * @description The department to list, as the uuid of one of the bank's organisation units; required with `scope=unit` and refused with `scope=mine`. A unit the bank does not have answers 404 `not_found`, exactly as another bank's unit does.
-             * @example 5d2a9c7e-1f3b-4e80-a6d4-9b0c2e7f1a35
-             */
-            unit?: string | null;
-        };
-        /**
          * HomeWorkReason
          * @description Why a row is on My work. A row carries every reason that applies, each once.
          * @example {
@@ -17956,7 +17451,8 @@ export interface components {
         };
         /**
          * HomeWorkWho
-         * @description Who a reason names: one person or one team, never both and never neither.
+         * @description Who a My work reason names or who owns a roadmap item: a person, a team, or both
+         *     when a person owns the record with their team.
          * @example {
          *       "person": null,
          *       "team": {
@@ -17967,10 +17463,10 @@ export interface components {
          *     }
          */
         HomeWorkWho: {
-            /** @description The person the reason names, as id and name, or null when it names a team. In the caller's own view this is the caller; in a department view it is whichever member is responsible, so the row can say 'Anna is responsible'. */
-            person: components["schemas"]["PersonRef"] | null;
-            /** @description The team the reason names, as `{key, kind, label}` from the bank's own `team` vocabulary, or null when it names a person. Its rows carry no kind, so `kind` is null. The bank's admin may add, relabel or retire a team without a deploy, so read `GET /vocab/team` for the live set and match on the key, never on the label. */
-            team: components["schemas"]["TermRef"] | null;
+            /** @description The person named, as id and name, or null when only a team is. On My work it is the caller in their own view and whichever member is responsible in a department view, so the row can say 'Anna is responsible'; on the roadmap it is the member who owns the record. */
+            person: components["schemas"]["NamedRef"] | null;
+            /** @description The team named, as `{key, kind, label}` from the bank's own `team` vocabulary, or null when only a person is. Its rows carry no kind, so `kind` is null. The bank's admin may add, relabel or retire a team without a deploy, so read `GET /vocab/team` for the live set and match on the key, never on the label. */
+            team: components["schemas"]["VocabRef"] | null;
         };
         /**
          * InstrumentAuthorityRef
@@ -18142,7 +17638,7 @@ export interface components {
             /** @description The legal date the instrument stopped binding, at the precision the source gave it. Null on an instrument still in force, which is most of them. */
             inForceTo: components["schemas"]["PartialDate"] | null;
             /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in. */
-            jurisdiction: components["schemas"]["LibraryRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Lastverifiedat
              * @description When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as "Verified <date>" in the bank's own time zone. Null on a record nobody has confirmed that way.
@@ -18150,7 +17646,7 @@ export interface components {
              */
             lastVerifiedAt: string | null;
             /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
-            level: components["schemas"]["LibraryRef"];
+            level: components["schemas"]["VocabRef"];
             /**
              * Lineage
              * @description What this instrument implements or elaborates, and what implements, elaborates or amends it in turn: both directions of the library's own cross-references, so the designed `GET /instruments/{instrumentId}/relations` is served here instead. Only instruments this caller may read appear: a relation to one they may not is left out silently.
@@ -18178,7 +17674,7 @@ export interface components {
              */
             privateToUs: boolean;
             /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
-            regime: components["schemas"]["LibraryRef"];
+            regime: components["schemas"]["VocabRef"];
             /**
              * Shortname
              * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
@@ -18205,7 +17701,7 @@ export interface components {
              */
             summaryTranslations: components["schemas"]["LocalizedText"][];
             /** @description The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check. */
-            verifiedBy: components["schemas"]["PersonRef"] | null;
+            verifiedBy: components["schemas"]["NamedRef"] | null;
         };
         /**
          * InstrumentLineageRef
@@ -18234,7 +17730,7 @@ export interface components {
              */
             note: string;
             /** @description How the two instruments are related, as key, kind and label: `implements`, `elaborates` and `amends` are seeded on day one. The relation types are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/relation_type` for the live set and match on the key. */
-            relation: components["schemas"]["LibraryRef"];
+            relation: components["schemas"]["VocabRef"];
             /**
              * Toref
              * @description The place in the instrument being related to, in the words the source uses ("Article 25(3) and (4)"): in the one named in `instrument` when `direction` is `outgoing`, in this instrument when it is `incoming`. It means the same whichever card reads it, so MiFID II's own card still says which of its articles a guideline elaborates. An empty string when the relation names no specific place, which is most of them: a whole-instrument amendment needs none.
@@ -18254,7 +17750,7 @@ export interface components {
              */
             id: string;
             /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in. */
-            jurisdiction: components["schemas"]["LibraryRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Key
              * @description The other instrument's stable key, issued once and never changed.
@@ -18361,56 +17857,6 @@ export interface components {
             total: number;
         };
         /**
-         * InstrumentProvisionsQuery
-         * @description `asOf` on the provision tree: which version of each unit `inForceVersion` names,
-         *     today in the tenant's time zone by default (AC-INV1). `versions` always lists every
-         *     one regardless, so a reader can choose an earlier or a future version by its own
-         *     chip and is never limited to what was in force on this date.
-         */
-        InstrumentProvisionsQuery: {
-            /**
-             * Asof
-             * @description Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. It decides `inForceVersion` alone; every version stays in `versions`.
-             * @example 2026-06-30
-             */
-            asOf?: string | null;
-        };
-        /**
-         * InstrumentQuery
-         * @description The filters of `GET /instruments`. Jurisdiction, level, authority and `asOf` are
-         *     deferred (chunk3-rest defaults): the Instruments tab lists every visible instrument
-         *     with its own in-force dates, and "as of" applies to obligations only.
-         */
-        InstrumentQuery: {
-            /**
-             * Footprint
-             * @description Which records to show against the bank's footprint, a fixed kind and a single value, so no contradictory pair can be sent: `in` (the default, the working inventory: only what matches the footprint), `all` (everything the library holds, each record the footprint would hide saying why in `outsideReason`) or `watched` (only what the markets the bank watches add: a record the footprint hides, that matches every dimension but jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union rule never appears under `watched` once the bank operates anywhere it reaches. A record shown under `all` or `watched` is not one the bank has decided applies to it. An instrument is judged by its own scope, and `obligationCount` counts under the same value.
-             * @default in
-             * @example in
-             * @enum {string}
-             */
-            footprint: "in" | "all" | "watched";
-            /**
-             * Outsidefootprint
-             * @deprecated
-             * @description Not accepted: send `footprint` instead. This boolean was replaced by the single `footprint` value, which adds the watched markets. Any value answers 422 `validation_error`, because ignoring it would hand a client that asked for everything the working inventory without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
-             * @example null
-             */
-            outsideFootprint?: null;
-            /**
-             * Q
-             * @description Find the instruments whose name, short name or official reference contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`.
-             * @example FFFS
-             */
-            q?: string | null;
-            /**
-             * Regime
-             * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
-             * @example securities
-             */
-            regime?: string | null;
-        };
-        /**
          * InstrumentRow
          * @description One row of `GET /instruments` (INV-01). `obligationCount` counts the obligations
          *     this row's reader would see under the same `footprint` value.
@@ -18493,7 +17939,7 @@ export interface components {
             /** @description The legal date the instrument stopped binding, at the precision the source gave it. Null on an instrument still in force, which is most of them. */
             inForceTo: components["schemas"]["PartialDate"] | null;
             /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in. */
-            jurisdiction: components["schemas"]["LibraryRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Lastverifiedat
              * @description When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as "Verified <date>" in the bank's own time zone. Null on a record nobody has confirmed that way.
@@ -18501,7 +17947,7 @@ export interface components {
              */
             lastVerifiedAt: string | null;
             /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
-            level: components["schemas"]["LibraryRef"];
+            level: components["schemas"]["VocabRef"];
             /** @description The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language. */
             name: components["schemas"]["LocalizedText"] | null;
             /**
@@ -18523,7 +17969,7 @@ export interface components {
              */
             privateToUs: boolean;
             /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
-            regime: components["schemas"]["LibraryRef"];
+            regime: components["schemas"]["VocabRef"];
             /**
              * Shortname
              * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
@@ -18542,21 +17988,6 @@ export interface components {
              * @example fffs-2017-2
              */
             stableKey: string;
-        };
-        /**
-         * InvitationAcceptBody
-         * @description Joining a bank as a person who already holds a passkey (D-122). The token rides in the
-         *     body, never a path, as on every other invitation route.
-         * @example {
-         *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
-         *     }
-         */
-        InvitationAcceptBody: {
-            /**
-             * Token
-             * @description The invitation token, at most 128 characters: the part after `#` in the emailed link (`/invite#<token>`). It works once, only for the signed-in person's own email address, and stops working 72 hours after it was sent (a setting) or when an administrator revokes or resends the invitation; the server keeps only its hash.
-             */
-            token: string;
         };
         /**
          * InvitationAccepted
@@ -18603,8 +18034,9 @@ export interface components {
         };
         /**
          * InvitationOpenBody
-         * @description Opening the emailed link. The token rides in the body, never a path, so no server
-         *     that logs request lines ever holds it.
+         * @description Opening the emailed link, or joining a bank with it as a person who already holds a
+         *     passkey (D-122). The token rides in the body, never a path, so no server that logs
+         *     request lines ever holds it (security review F29).
          * @example {
          *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
          *     }
@@ -18612,7 +18044,7 @@ export interface components {
         InvitationOpenBody: {
             /**
              * Token
-             * @description The invitation token, at most 128 characters: the part after `#` in the emailed link (`/invite#<token>`). The fragment is never sent to any server by a browser, so the page reads it and posts it here. The token is single use and stops working 72 hours after it was sent (a setting), once the invitee has enrolled, or when an administrator revokes or resends the invitation; the server keeps only its hash.
+             * @description The invitation token, at most 128 characters: the part after `#` in the emailed link (`/invite#<token>`). The fragment is never sent to any server by a browser, so the page reads it and posts it here. Joining with it as a signed-in person works only for that person's own email address. The token is single use and stops working 72 hours after it was sent (a setting), once the invitee has enrolled, or when an administrator revokes or resends the invitation; the server keeps only its hash.
              */
             token: string;
         };
@@ -18670,7 +18102,7 @@ export interface components {
              * Roles
              * @description The roles the person receives when they enrol with this invitation, each as its stable key with a label in the reader's language. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels.
              */
-            roles: components["schemas"]["RoleRef"][];
+            roles: components["schemas"]["VocabRef"][];
             /**
              * Status
              * @description Where the invitation stands, computed by the server at the moment of the call, one of four values. `pending` means the link still works and nobody has enrolled with it; `accepted` means the person enrolled their first passkey with it; `revoked` means an administrator withdrew it, a newer invitation to the same address replaced it, or the member was removed; `expired` means nobody used the link within its lifetime. Only a pending or expired invitation can be resent.
@@ -18727,7 +18159,7 @@ export interface components {
          */
         JurisdictionRow: {
             /** @description The language this jurisdiction's legal texts are written in, such as Swedish (`sv`) for Sweden and English (`en`) for the European Union: the original a translation is made from. Its key is a row of the platform's language vocabulary (`en`, `sv`, `da`, `nb`, `fi` on day one), which only the platform adds to and no bank admin can extend; its kind is always null. Every jurisdiction names one, so the default of null never reaches a reader. */
-            defaultLanguage?: components["schemas"]["TermRef"] | null;
+            defaultLanguage?: components["schemas"]["VocabRef"] | null;
             /**
              * Key
              * @description The jurisdiction's immutable key, the lowercased code a record, a market and a filter carry: seeded on day one are `eu` (the European Union), `se`, `dk`, `no`, `fi` and `intl` (international standards bodies). Jurisdictions are rows of the shared library's `jurisdiction` vocabulary, which the platform's library editors may extend without a deploy; a bank's admin cannot add one. This endpoint lists the live set, and a key never changes.
@@ -18779,7 +18211,7 @@ export interface components {
              */
             id: string;
             /** @description Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, where a standards body such as ISO/IEC sits; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01). */
-            jurisdiction: components["schemas"]["LibraryRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Key
              * @description The authority's immutable key, the value a filter, a report or an export stores. It never changes; the name may be relabelled around it (playbook 4.3).
@@ -18897,42 +18329,6 @@ export interface components {
              * @example 2
              */
             versionNumber: number;
-        };
-        /**
-         * LibraryRef
-         * @description A vocabulary row or a term as every surface reads it: key and kind, and the label in
-         *     the reader's language (playbook 15). A term's kind is null: its dimension is its kind.
-         *
-         *     A shared library fact wherever it appears: the row behind it is a library vocabulary
-         *     or a taxonomy term, which a platform admin may add to, rename or retire without a
-         *     deploy. The key is what a filter, a report, a webhook or an export stores; the label
-         *     is for a person to read and may change under it. A tone is never here: a pill's tone
-         *     follows its slot or the row's own kind and is nobody's to send (NFR-03).
-         * @example {
-         *       "key": "act_now",
-         *       "kind": null,
-         *       "label": "Act now"
-         *     }
-         */
-        LibraryRef: {
-            /**
-             * Key
-             * @description The row's immutable key, and the only part of this reference to store, compare or send back. Which list it is drawn from is settled by the field that carries the reference, and that field names its vocabulary and the endpoint that returns the live set; every one of those lists is rows rather than a closed set, so an admin may extend, relabel, reorder or retire it without a deploy and a key you have not seen before is new data and not an error. Match on the key and never on the label, and never construct one: a key the list does not hold answers 422 `unknown_key` with the valid keys.
-             * @example act_now
-             */
-            key: string;
-            /**
-             * Kind
-             * @description The row's fixed sub-kind where its list has one — a change type's lifecycle kind, a case sub-status's category — and null where it has none. A taxonomy term is always null here: its dimension is its kind. It is a kind in code, so the rules may branch on it; an admin never adds one.
-             * @example null
-             */
-            kind: string | null;
-            /**
-             * Label
-             * @description The row's label in the reader's language, for display only. It is a phrase a person wrote and may be reworded at any time, so nothing may match on it.
-             * @example Act now
-             */
-            label: string;
         };
         /**
          * LibraryUpdateDay
@@ -19054,7 +18450,7 @@ export interface components {
             /** @description The agent that proposed the change, by its definition key. Null whenever the proposer was not a key bound to an agent, which is every change a person asked for, whoever confirmed it; that person is never named. It is independent of `verifiedOrigin`: a person may have approved an agent's proposal, and an agent may have confirmed a person's. */
             proposedByAgent: components["schemas"]["AgentRef"] | null;
             /** @description The duty that changed, or the duty that arrived, named by the library's own wording. Null on a change to a shared list, which names no single record, when `vocabularyList` says which list it was, and null on a new instrument. */
-            target?: components["schemas"]["LibraryUpdateTarget"] | null;
+            target?: components["schemas"]["ProposalTarget"] | null;
             /**
              * Verifiedorigin
              * @description Who confirmed the approval that applied this change: `agent` when the reviewer was a second, independent agent, which a screen labels machine-confirmed and never as a person's verification; `user` when a person approved it, who is never named here. A fixed kind, not a vocabulary.
@@ -19068,47 +18464,13 @@ export interface components {
              */
             versionNumber?: number | null;
             /** @description The row of that list which changed, by key and label, as the list labels it today. The rows are vocabulary data an admin may extend, relabel, reorder or retire without a deploy, so store the key and show the label; `GET /vocabularies` returns the live set. The label is the library's own and never the wording of the request that changed it. Null on a change to a duty, and null when the row has since been deleted. */
-            vocabulary?: components["schemas"]["LibraryRef"] | null;
+            vocabulary?: components["schemas"]["VocabRef"] | null;
             /**
              * Vocabularylist
              * @description Which shared list or taxonomy dimension changed, by its key, for example `flag`. The lists are themselves rows an admin may extend or retire, and `GET /vocabularies` returns the live set. Null on a change to a duty and on a new instrument.
              * @example flag
              */
             vocabularyList?: string | null;
-        };
-        /**
-         * LibraryUpdateTarget
-         * @description The library record an update touched, named by the record itself. A proposal's own
-         *     wording never appears here: one bank's request must not reach another bank as a title.
-         * @example {
-         *       "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
-         *       "instrumentShortName": "FFFS 2017:2",
-         *       "referenceLabel": "Third-party payments",
-         *       "title": "Pay for third-party research only under the permitted models"
-         *     }
-         */
-        LibraryUpdateTarget: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The duty that changed, as a UUID: the id its own card is read at, so a row can link straight to it.
-             */
-            id: string;
-            /**
-             * Instrumentshortname
-             * @description The short name of the law, regulation or guideline the duty sits in, for example "FFFS 2017:2".
-             */
-            instrumentShortName: string;
-            /**
-             * Referencelabel
-             * @description How the duty is cited inside its instrument, for example "Third-party payments". Empty when the record carries no reference of its own.
-             */
-            referenceLabel: string;
-            /**
-             * Title
-             * @description The duty's own title, in the best language this reader has, as the library holds it after the change.
-             */
-            title: string;
         };
         /**
          * LibraryUpdatesPage
@@ -19173,25 +18535,6 @@ export interface components {
              * @example 1
              */
             total: number;
-        };
-        /**
-         * LibraryUpdatesQuery
-         * @description Filters of "what changed in the library", each optional.
-         */
-        LibraryUpdatesQuery: {
-            /**
-             * Kind
-             * @description Keep only these kinds of change: one value, or several separated by commas, from the kinds `LibraryUpdateRow.kind` names. Left out, every kind is returned.
-             * @example new_obligation_version
-             */
-            kind?: string | null;
-            /**
-             * Outsidefootprint
-             * @description True also lists the changes to duties the bank's footprint hides, each saying in `outsideReason` why it would have been hidden. False, the default, lists only what reaches this bank. Changes to a shared list are listed either way.
-             * @default false
-             * @example true
-             */
-            outsideFootprint: boolean;
         };
         /**
          * LocalizedText
@@ -19263,7 +18606,7 @@ export interface components {
          */
         MarketRow: {
             /** @description The country: its key, kind (always `country`) and label in the caller's language. A row of the jurisdiction vocabulary; an admin may add more without a deploy, and `GET /reference/jurisdictions` lists the live set. */
-            jurisdiction: components["schemas"]["TermRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Level
              * @description How closely the tenant follows this country, computed by the server on every read and never stored. Operating comes first, then watching:
@@ -19722,7 +19065,7 @@ export interface components {
              * Headof
              * @description The active departments of this bank the caller is the head of, by name: the business areas, business units and functions an administrator named them head of on the organisation screen. A legal entity or a group is never a department. My work offers a department view for each. Empty for someone who heads none, for a platform session and for an enrolment session.
              */
-            headOf: components["schemas"]["MeDepartment"][];
+            headOf: components["schemas"]["NamedRef"][];
             /**
              * Lastvisitat
              * @description When this member last marked the library as seen (`POST /me/visit`), as an RFC 3339 timestamp in UTC, or null before their first visit. Null for a platform session. It is a reading habit, this bank's own, and never a judgement about a regulation.
@@ -19745,12 +19088,12 @@ export interface components {
              * Platformroles
              * @description The platform roles of platform staff, as key, kind and label: the seeded `platform_admin` and `library_editor`. Always empty in a bank's session, even for a member who is platform staff too, because a bank session never carries a platform grant; `contexts` says whether the console is one switch away. They are a platform vocabulary that only the platform's own administrators manage; a bank's admin cannot extend it.
              */
-            platformRoles: components["schemas"]["RoleRef"][];
+            platformRoles: components["schemas"]["VocabRef"][];
             /**
              * Roles
              * @description The person's roles in this bank, as key, kind and label: the seeded `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, plus any role the bank's own administrators added. Roles are rows of the bank's role vocabulary, which an admin may extend in the role editor (`GET /tenant/roles` lists the live set), so an unfamiliar key is new data and not an error. Never decide what to show from a role key; read `permissions`. Empty for a platform session and for an enrolment session.
              */
-            roles: components["schemas"]["RoleRef"][];
+            roles: components["schemas"]["VocabRef"][];
             /**
              * Stepupvaliduntil
              * @description Until when the latest passkey step-up on this session stays fresh, as a UTC timestamp, or null when there is none or it has lapsed. While it lies ahead, a sensitive action — an approval, a sign-off, a footprint change, an export, a key, a role or security change, a re-enrolment — goes through without a new passkey prompt. Signing in never counts as a step-up.
@@ -19844,24 +19187,6 @@ export interface components {
             unreadNotifications: number;
         };
         /**
-         * MeDepartment
-         * @description A department the caller heads (TEN-02, HOM-05, D-21): a business area, business unit or
-         *     function of the bank whose head is the caller.
-         */
-        MeDepartment: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The department's identifier, a UUID of this bank's organisation, as `GET /tenant/org-units` lists it.
-             */
-            id: string;
-            /**
-             * Name
-             * @description The department's name as the bank wrote it, such as `Retail Banking`, for display only.
-             */
-            name: string;
-        };
-        /**
          * MeOutOfOffice
          * @description The caller's own absence in their current bank: the last day they are away and the
          *     member who receives their reminders, escalations, assignments and sign-off requests
@@ -19883,7 +19208,7 @@ export interface components {
              */
             away: boolean;
             /** @description The member who receives the caller's work while they are away, by id and name, or null. */
-            delegate: components["schemas"]["PersonRef"] | null;
+            delegate: components["schemas"]["NamedRef"] | null;
             /**
              * Untildate
              * @description The last day the caller is away, inclusive, a plain date on the bank's own calendar (its timezone), or null when they have set no absence.
@@ -20088,7 +19413,7 @@ export interface components {
              * Roles
              * @description The roles the person holds in this bank, each as its stable key with a label in the reader's language; what they may do is the union of the permissions of these roles. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels.
              */
-            roles: components["schemas"]["RoleRef"][];
+            roles: components["schemas"]["VocabRef"][];
             /**
              * Status
              * @description Where the person stands in this bank, one of three values. `invited` means an administrator re-issued the person's enrolment and they have not enrolled a new passkey yet, so they cannot sign in until they do; `active` means they hold a passkey and can sign in; `deactivated` means the bank removed them, their sessions here were ended and they can no longer sign in to this bank, though the record stays for the audit trail. Deactivated members stay in the list so the bank can see who was removed.
@@ -20276,17 +19601,30 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * ObligationAsOfQuery
-         * @description `asOf` on the obligation read: the version in force on that date, today in the
-         *     tenant's time zone by default (AC-INV1).
+         * NamedRef
+         * @description A record named on another, as every screen and list reads it: the id to store and
+         *     compare, and a name to show. A person, a unit of the bank's organisation or one of its
+         *     agent access entries; the field that carries the reference says which. A person's id and
+         *     name are the only personal data a record carries about them (playbook 4.7).
+         * @example {
+         *       "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *       "name": "Sara Lindqvist"
+         *     }
          */
-        ObligationAsOfQuery: {
+        NamedRef: {
             /**
-             * Asof
-             * @description Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. A date before the record's first version answers the record with a null `version` and a null `summary` rather than a 404.
-             * @example 2026-06-30
+             * Id
+             * Format: uuid
+             * @description The record's identifier, a UUID that never changes, the same one its own list and the audit log carry. Store and compare this, never the name.
+             * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
              */
-            asOf?: string | null;
+            id: string;
+            /**
+             * Name
+             * @description The record's name for display only: a person's name as they gave it, or the name the bank gave a unit or an entry. It may change at any time and two records may share it, so nothing may match on it.
+             * @example Sara Lindqvist
+             */
+            name: string;
         };
         /**
          * ObligationDetail
@@ -20642,13 +19980,13 @@ export interface components {
              */
             binding: boolean;
             /** @description What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
-            bindingLevel: components["schemas"]["LibraryRef"];
+            bindingLevel: components["schemas"]["VocabRef"];
             /** @description How the bank judges its compliance with this duty, as key, kind and label, and null unless `applicability` is `applies`: a status is kept, never deleted, while the duty does not apply, and shows again when it applies once more. Where the bank records a status per legal entity it is the worst of the applying entities' statuses by their kind (`gap`, then `partly`, then `not_assessed`, then `compliant`), else the duty's own. The statuses are rows of the bank's own `compliance_status` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/compliance_status` for the live set and match on the key; `compliant`, `partly_compliant`, `gap` and `not_assessed` are seeded on day one, each carrying its fixed category as its kind, which decides the pill's tone. The bank's own judgement, held in its own zone and never shared with another bank or changed by the shared record. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"] | null;
+            complianceStatus: components["schemas"]["VocabRef"] | null;
             /** @description What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are the rows seeded on day one, and they are vocabulary rows rather than a closed enum: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set, send the key as `?dutyType=`, and never match on the label. */
-            dutyType: components["schemas"]["LibraryRef"];
+            dutyType: components["schemas"]["VocabRef"];
             /** @description The member of the bank who owns this duty in the first line, by id and name, or null when nobody is named. `ownerTeam` may name a team as well. The bank's own judgement, held in its own zone and never shared with another bank or changed by the shared record. */
-            firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
+            firstLineOwner: components["schemas"]["NamedRef"] | null;
             /**
              * Id
              * Format: uuid
@@ -20670,7 +20008,7 @@ export interface components {
              */
             outsideReason: components["schemas"]["OutsideReason"][];
             /** @description The team that owns this duty, as key, kind and label, or null when no team is named. Teams are rows of the bank's own `team` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/team` for the live set and match on the key. The bank's own judgement, held in its own zone and never shared with another bank or changed by the shared record. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Privatetous
              * @description Whether this record is the bank's own rather than a shared library fact: true only when the caller's bank owns it, proposed and approved inside that bank, so no other bank and nobody at bleqq can read it. False on every shared record, which is every record until a bank's own records arrive in a later release. A key that belongs to no bank reads no record at all.
@@ -20697,7 +20035,7 @@ export interface components {
              */
             refLabel: string;
             /** @description Which body of law the duty belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. It is inherited from the instrument, which is where the sector boundary is set, and it is never null, because every instrument carries one. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
-            regime: components["schemas"]["LibraryRef"];
+            regime: components["schemas"]["VocabRef"];
             /**
              * Related
              * @description The duties a reader should see beside this one, as the library files them. Only records this caller may read appear: a relation to one they may not is left out silently rather than hinted at.
@@ -20732,12 +20070,12 @@ export interface components {
              * Tags
              * @description The library's own keywords for this duty, as key, kind and label — `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.
              */
-            tags: components["schemas"]["LibraryRef"][];
+            tags: components["schemas"]["VocabRef"][];
             /**
              * Tenanttags
              * @description The bank's own tags on this duty, as key, kind and label, in the tag list's own order: what the bank's people put on the record to find it again, such as `custody`. They are rows of this bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key. Held in the bank's own zone: another bank never sees them, and they never change the shared record. Empty when the bank has tagged nothing here. Kept apart from `tags`, the library's own keywords, which are the same for every bank.
              */
-            tenantTags: components["schemas"]["TaggingTagRef"][];
+            tenantTags: components["schemas"]["VocabRef"][];
             /** @description The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all. */
             title: components["schemas"]["LocalizedText"] | null;
             /**
@@ -21138,7 +20476,7 @@ export interface components {
              */
             sourceUrl: string;
             /** @description The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check, and a bank reading the record leaves nothing here. */
-            verifiedBy: components["schemas"]["PersonRef"] | null;
+            verifiedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Verifiedorigin
              * @description Who confirmed the approval that wrote the version in force on the read's date: `agent` when the reviewer was a second, independent agent, `user` when a person approved it. Empty for a version the library was seeded with or applied before this was recorded, and when no version is in force, which reads the same as `user`: a person's approval, unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification.
@@ -21174,107 +20512,6 @@ export interface components {
             refLabel: string;
         };
         /**
-         * ObligationQuery
-         * @description The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
-         *     `dimension:key` and repeats, every term must be in the obligation's scope; `tag` and
-         *     `tenantTag` repeat, every tag must be on the obligation. `applicability`,
-         *     `complianceStatus`, `owner` and `ownerTeam` filter on the bank's register overlay. Each
-         *     string is at most 80 characters (H27). `asOf`
-         *     defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
-         *     lifts the footprint filter and reports why each hidden row would be hidden, or
-         *     `watched`, which lists only what the watched markets add (FP-03, FP-04).
-         */
-        ObligationQuery: {
-            /**
-             * Applicability
-             * @description Only the duties the bank has answered this way: `applies`, `not_applicable` or `under_assessment`, the values a row carries in `applicability`. `under_assessment` includes every duty the bank has not worked on. Any other value is refused with 422 `validation_error`, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank.
-             * @example applies
-             */
-            applicability?: ("applies" | "not_applicable" | "under_assessment") | null;
-            /**
-             * Asof
-             * @description Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. On the list it changes which wording each row carries, never which duties are listed.
-             * @example 2026-06-30
-             */
-            asOf?: string | null;
-            /**
-             * Compliancestatus
-             * @description Only the duties that apply to the bank and show this compliance status, by the key a row carries in `complianceStatus`: the worst of the applying legal entities' statuses where the bank records one per entity. The statuses are rows of the bank's own `compliance_status` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/compliance_status` for the live set and send the key, never the label. A key the bank has no status for matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank.
-             * @example gap
-             */
-            complianceStatus?: string | null;
-            /**
-             * Dutytype
-             * @description Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
-             * @example governance
-             */
-            dutyType?: string | null;
-            /**
-             * Footprint
-             * @description Which records to show against the bank's footprint, a fixed kind and a single value, so no contradictory pair can be sent: `in` (the default, the working inventory: only what matches the footprint), `all` (everything the library holds, each record the footprint would hide saying why in `outsideReason`) or `watched` (only what the markets the bank watches add: a record the footprint hides, that matches every dimension but jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union rule never appears under `watched` once the bank operates anywhere it reaches. A record shown under `all` or `watched` is not one the bank has decided applies to it.
-             * @default in
-             * @example in
-             * @enum {string}
-             */
-            footprint: "in" | "all" | "watched";
-            /**
-             * Instrument
-             * @description Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it matches nothing, and the call answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`.
-             * @example fffs-2017-2
-             */
-            instrument?: string | null;
-            /**
-             * Outsidefootprint
-             * @deprecated
-             * @description Not accepted: send `footprint` instead. This boolean was replaced by the single `footprint` value, which adds the watched markets. Any value answers 422 `validation_error`, because ignoring it would hand a client that asked for everything the working inventory without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
-             * @example null
-             */
-            outsideFootprint?: null;
-            /**
-             * Owner
-             * @description Only the duties this member of the bank owns in the first line, by the user id a row carries in `firstLineOwner`. An id no duty names matches nothing and answers 200 with an empty page. A value that is not a UUID is refused with 422 `validation_error`, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank.
-             * @example 3f2a9c1e-8b7d-4e6f-a5c4-1d2e3f4a5b6c
-             */
-            owner?: string | null;
-            /**
-             * Ownerteam
-             * @description Only the duties this team owns, by the key a row carries in `ownerTeam`. Teams are rows of the bank's own `team` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/team` for the live set and send the key. A key no duty names matches nothing and answers 200 with an empty page. At most 80 characters; a longer one is refused with 422 `validation_error`, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank.
-             * @example compliance
-             */
-            ownerTeam?: string | null;
-            /**
-             * Q
-             * @description Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.
-             * @example research
-             */
-            q?: string | null;
-            /**
-             * Tag
-             * @description Only the duties carrying every one of these library tags, by key: the library's own keywords a row shows in `tags`, the same for every bank. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`, the cap every repeated filter here shares). The tags are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`, and a key no library tag has with 422 `unknown_key` naming every one that was not found.
-             * @example [
-             *       "research"
-             *     ]
-             */
-            tag?: string[];
-            /**
-             * Tenanttag
-             * @description Only the duties carrying every one of these tags of the caller's own bank, by key: what a row shows in `tenantTags`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The tags are rows of the bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key; another bank's tags are never matched. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`, a key the bank has no tag for with 422 `unknown_key` naming every one that was not found, and the filter itself with 422 `unknown_filter` when the caller belongs to no bank, such as a platform key.
-             * @example [
-             *       "custody"
-             *     ]
-             */
-            tenantTag?: string[];
-            /**
-             * Term
-             * @description Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. Each value is at most 80 characters. A longer one, or one with no colon, is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.
-             * @example [
-             *       "service_type:advice",
-             *       "account_type:isk"
-             *     ]
-             */
-            term?: string[];
-        };
-        /**
          * ObligationRow
          * @description One row of `GET /obligations` (INV-03). `version` is the one in force on the read's
          *     date and `upcomingVersion` the next one after it. `tenantTags` and `privateToUs` are the
@@ -21298,13 +20535,13 @@ export interface components {
              */
             binding: boolean;
             /** @description What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
-            bindingLevel: components["schemas"]["LibraryRef"];
+            bindingLevel: components["schemas"]["VocabRef"];
             /** @description How the bank judges its compliance with this duty, as key, kind and label, and null unless `applicability` is `applies`: a status is kept, never deleted, while the duty does not apply, and shows again when it applies once more. Where the bank records a status per legal entity it is the worst of the applying entities' statuses by their kind (`gap`, then `partly`, then `not_assessed`, then `compliant`), else the duty's own. The statuses are rows of the bank's own `compliance_status` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/compliance_status` for the live set and match on the key; `compliant`, `partly_compliant`, `gap` and `not_assessed` are seeded on day one, each carrying its fixed category as its kind, which decides the pill's tone. The bank's own judgement, held in its own zone and never shared with another bank or changed by the shared record. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"] | null;
+            complianceStatus: components["schemas"]["VocabRef"] | null;
             /** @description What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are the rows seeded on day one, and they are vocabulary rows rather than a closed enum: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set, send the key as `?dutyType=`, and never match on the label. */
-            dutyType: components["schemas"]["LibraryRef"];
+            dutyType: components["schemas"]["VocabRef"];
             /** @description The member of the bank who owns this duty in the first line, by id and name, or null when nobody is named. `ownerTeam` may name a team as well. The bank's own judgement, held in its own zone and never shared with another bank or changed by the shared record. */
-            firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
+            firstLineOwner: components["schemas"]["NamedRef"] | null;
             /**
              * Id
              * Format: uuid
@@ -21321,7 +20558,7 @@ export interface components {
             /** @description The instrument this duty was broken out of, by key and short name. The card adds the instrument's official reference and what it implements; this row carries only what a column shows. */
             instrument: components["schemas"]["ObligationInstrumentRef"];
             /** @description The jurisdiction of the instrument this duty was broken out of, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`. It is what `footprint=watched` names as the market a row comes from; the jurisdictions the duty reaches are in `scope`, derived from this one. */
-            jurisdiction: components["schemas"]["LibraryRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Lastverifiedat
              * @description When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as "Verified <date>" in the bank's own time zone. Null on a record nobody has confirmed that way. It is not the date the record last changed, and it is not the bank's own review date.
@@ -21340,7 +20577,7 @@ export interface components {
              */
             outsideReason: components["schemas"]["OutsideReason"][];
             /** @description The team that owns this duty, as key, kind and label, or null when no team is named. Teams are rows of the bank's own `team` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/team` for the live set and match on the key. The bank's own judgement, held in its own zone and never shared with another bank or changed by the shared record. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Privatetous
              * @description Whether this record is the bank's own rather than a shared library fact: true only when the caller's bank owns it, proposed and approved inside that bank, so no other bank and nobody at bleqq can read it. False on every shared record, which is every record until a bank's own records arrive in a later release. A key that belongs to no bank reads no record at all.
@@ -21368,18 +20605,18 @@ export interface components {
              * Tags
              * @description The library's own keywords for this duty, as key, kind and label — `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.
              */
-            tags: components["schemas"]["LibraryRef"][];
+            tags: components["schemas"]["VocabRef"][];
             /**
              * Tenanttags
              * @description The bank's own tags on this duty, as key, kind and label, in the tag list's own order: what the bank's people put on the record to find it again, such as `custody`. They are rows of this bank's own `tenant_tag` vocabulary, which its admin may extend, relabel or retire without a deploy, so read `GET /vocab/tenant_tag` for the live set and match on the key. Held in the bank's own zone: another bank never sees them, and they never change the shared record. Empty when the bank has tagged nothing here. Kept apart from `tags`, the library's own keywords, which are the same for every bank.
              */
-            tenantTags: components["schemas"]["TaggingTagRef"][];
+            tenantTags: components["schemas"]["VocabRef"][];
             /** @description The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all. */
             title: components["schemas"]["LocalizedText"] | null;
             /** @description The next version due to take effect after the date the list was read, so a row can say new wording is coming. Null when none is waiting. Its presence is not work the bank owes: what to do about a change belongs to the watch feed and the case, never to the library record. */
             upcomingVersion: components["schemas"]["ObligationVersionRef"] | null;
             /** @description The bleqq platform person who made the `lastVerifiedAt` check, by id and name, or null when no named person has. Never a member of a bank: re-verifying a shared fact is bleqq's own check. */
-            verifiedBy: components["schemas"]["PersonRef"] | null;
+            verifiedBy: components["schemas"]["NamedRef"] | null;
             /** @description The version of the summary in force on the date the list was read, by number and effective date. Null when every version of this duty starts after that date, which is a duty recorded before it begins to bind anyone. */
             version: components["schemas"]["ObligationVersionRef"] | null;
         };
@@ -21583,35 +20820,12 @@ export interface components {
          */
         OutsideReason: {
             /** @description The facet in which the record's terms and the bank's footprint have nothing in common, which is the reason the record would be hidden. The dimensions are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key. Only a dimension that narrows the footprint appears here: `channel` and `lifecycle_stage` describe a record and never hide it. */
-            dimension: components["schemas"]["LibraryRef"];
+            dimension: components["schemas"]["VocabRef"];
             /**
              * Terms
              * @description The terms the record carries in that dimension, so a reader can see what the bank's footprint would have to include for the record to appear. They are vocabulary rows a platform admin may extend or retire, matched on the key. This is the record's own scope and never the bank's footprint: nothing here says what the bank does. In the `jurisdiction` dimension they are the jurisdictions the record's instrument reaches, derived when the record is read and never stored, as `scope` explains.
              */
-            terms: components["schemas"]["LibraryRef"][];
-        };
-        /**
-         * PageQuery
-         * @description Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.
-         *     The numbers come from settings; a value above the maximum is a 422, not a clamp.
-         *     `offset` is bounded too: PostgreSQL walks every skipped row and raises above a signed
-         *     64-bit integer, so an unbounded offset answers 500 on every list (hardening H1).
-         */
-        PageQuery: {
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
+            terms: components["schemas"]["VocabRef"][];
         };
         /**
          * PartialDate
@@ -21925,26 +21139,6 @@ export interface components {
             key: string;
         };
         /**
-         * PersonRef
-         * @description A person on a record: id and name, the only personal data a screen or a log may carry
-         *     about them (playbook 4.7).
-         */
-        PersonRef: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The person's identifier, a UUID that never changes, the same one a member list and the audit log carry. Store and compare this, never the name.
-             * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
-             */
-            id: string;
-            /**
-             * Name
-             * @description The person's name as they gave it, for display only. It may change when they edit their profile and two people may share it, so nothing may match on it. A person's name and id are the only personal data a record carries about them.
-             * @example Sara Lindqvist
-             */
-            name: string;
-        };
-        /**
          * PersonalTokenCreate
          * @description `POST /me/tokens`: a new personal access token for the caller.
          * @example {
@@ -22004,7 +21198,7 @@ export interface components {
          */
         PersonalTokenCreated: {
             /** @description The agent access entry the token names, whose scope narrows what it reads; null for a token that names none. */
-            agentAccess: components["schemas"]["CredentialEntryRef"] | null;
+            agentAccess: components["schemas"]["NamedRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -22077,7 +21271,7 @@ export interface components {
          */
         PersonalTokenOut: {
             /** @description The agent access entry the token names, whose scope narrows what it reads; null for a token that names none. */
-            agentAccess: components["schemas"]["CredentialEntryRef"] | null;
+            agentAccess: components["schemas"]["NamedRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -22642,51 +21836,6 @@ export interface components {
             total: number;
         };
         /**
-         * ProblemReportPerson
-         * @description A member of this bank on a report: id and name, the only personal data a report
-         *     carries about them (playbook 4.7).
-         */
-        ProblemReportPerson: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The person's user id, as a UUID. Match on this, never on the name.
-             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
-             */
-            id: string;
-            /**
-             * Name
-             * @description The person's display name as it stands now, for display only.
-             * @example Erik Holm
-             */
-            name: string;
-        };
-        /**
-         * ProblemReportQuery
-         * @description Filters of the bank's problem reports, each optional and combined with AND. Leaving
-         *     them all out lists every report the caller may see.
-         */
-        ProblemReportQuery: {
-            /**
-             * Status
-             * @description Show only reports in one state, a fixed kind: `open` (filed and not yet looked at, which is how every report starts), `answered` (a colleague explained what the reader saw, and the record needs no correction), `fixed` (the record was wrong and has been or is being corrected; the correction itself reaches the library through the watch agents' re-check and a proposal, never through the report) and `rejected` (the record is right as it stands). Fixed in code: an admin adds no fifth state. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
-             * @example open
-             */
-            status?: string | null;
-            /**
-             * Subjectid
-             * @description Show only reports on one library record, by its UUID as the library routes return it (an obligation's or an instrument's `id`). A value that is not a UUID is refused with `validation_error` (422); an id no report names answers 200 with an empty page.
-             * @example 3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17
-             */
-            subjectId?: string | null;
-            /**
-             * Subjecttype
-             * @description Show only reports on one kind of library record, a fixed kind: `obligation` (a duty), `instrument` (a law, regulation or guideline; a provision is reported through the instrument whose card shows it) and `provision` (reserved for a provision reported on its own, which no route files today). Pair it with `subjectId` to list the reports on one record, which is what the record's own screen does. At most 32 characters; a value that is not one of them matches nothing and answers 200 with an empty page.
-             * @example obligation
-             */
-            subjectType?: string | null;
-        };
-        /**
          * ProblemReportRow
          * @description One problem report of this bank: what a member said looks wrong with a library
          *     record, and, once closed, who closed it, when and why. Everything here is the bank's
@@ -22723,7 +21872,7 @@ export interface components {
              */
             closedAt: string | null;
             /** @description The member who closed the report: the reporter, or a colleague holding `proposals.create`. Null while it is open. */
-            closedBy: components["schemas"]["ProblemReportPerson"] | null;
+            closedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -22751,7 +21900,7 @@ export interface components {
              */
             language: string | null;
             /** @description The member who filed the report. */
-            reporter: components["schemas"]["ProblemReportPerson"];
+            reporter: components["schemas"]["NamedRef"];
             /**
              * Resolutionnote
              * @description Why it was closed, in the closer's words; the bank's own content, like the report. Null while it is open, and never empty once it is closed.
@@ -22848,29 +21997,6 @@ export interface components {
         ProposalAccepted: {
             /** @description The proposal the write became, waiting in the platform's review queue with `status` `open`. Nothing has changed yet: the shared list or taxonomy still says what it said, and it changes only when a second, independent person or agent approves the proposal in the console, never the one who made it. A proposal made inside a bank names no proposer (`fromOrganisation` is true); the bank follows it in `GET /tenant/proposals`. */
             proposal: components["schemas"]["ProposalRow"];
-        };
-        /**
-         * ProposalActorRef
-         * @description A platform person named on a proposal: who filed it, who corrected it or who decided
-         *     it. Always bleqq's own staff and never a bank member, whose name and id do not reach the
-         *     console (PRO-03).
-         * @example {
-         *       "id": "0b6f2c4e-8d1a-4f3b-9e27-5c8a1d3f6b90",
-         *       "name": "Kari Nygaard"
-         *     }
-         */
-        ProposalActorRef: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The person's platform account, as a UUID that never changes. Compare this, never the name, to tell whether two proposals were handled by the same person.
-             */
-            id: string;
-            /**
-             * Name
-             * @description The person's name as their platform account spells it today, for showing on screen. It may change; the audit trail keeps the name it had at the time.
-             */
-            name: string;
         };
         /**
          * ProposalAgentRef
@@ -23207,7 +22333,7 @@ export interface components {
              */
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
-            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            correctedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -23272,7 +22398,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
-            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            proposedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
             proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -23293,7 +22419,7 @@ export interface components {
              */
             reviewedAt?: string | null;
             /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
-            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            reviewedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -23488,7 +22614,7 @@ export interface components {
              */
             decidedAt?: string | null;
             /** @description The platform person who decided the row, never the batch's proposer, which the database enforces. Null while pending. */
-            decidedBy?: components["schemas"]["ProposalActorRef"] | null;
+            decidedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Decision
              * @description Where the row stands. A fixed kind: `pending` waits for a reviewer, `approved` means the library carries its `after`, and `rejected` means it was refused with a reason and changed nothing. A row is decided once and never again.
@@ -23757,7 +22883,7 @@ export interface components {
              */
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
-            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            correctedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -23854,7 +22980,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
-            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            proposedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
             proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -23870,7 +22996,7 @@ export interface components {
              */
             rejectionCode: string;
             /** @description Why it was refused, as the key and the label of the row chosen from the `rejection_reason` vocabulary, a library list. Its rows are data an admin may extend, relabel, reorder or retire without a deploy, never a closed set, and `GET /vocab/rejection_reason` returns the live one, so a key you have not seen before is new data and not an error; the kinds are those of that list, which today gives its rows none. Null unless the status is `rejected`, and null when the code stored on the proposal names a row the list no longer holds. */
-            rejectionReason?: components["schemas"]["LibraryRef"] | null;
+            rejectionReason?: components["schemas"]["VocabRef"] | null;
             /**
              * Reviewnote
              * @description The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.
@@ -23883,7 +23009,7 @@ export interface components {
              */
             reviewedAt?: string | null;
             /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
-            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            reviewedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24042,49 +23168,6 @@ export interface components {
             total: number;
         };
         /**
-         * ProposalQuery
-         * @description Filters of the console review queue, each optional and each narrowing the queue.
-         */
-        ProposalQuery: {
-            /**
-             * Kind
-             * @description Keep only these kinds: one value, or several separated by commas, from the kinds `ProposalRow.kind` names. Left out, every kind is returned.
-             * @example vocabulary_create,term_create
-             */
-            kind?: string | null;
-            /**
-             * Notmine
-             * @description True drops the proposals the reader filed themselves, which are exactly the ones four eyes will not let them decide and the ones `isMine` marks, so the queue shows only work they can actually do: for a person, their own; for an agent's key, the key's own and those of every other key of the same agent definition. `total` then counts what is left. False, the default, returns theirs alongside the rest.
-             * @default false
-             * @example true
-             */
-            notMine: boolean;
-            /**
-             * Order
-             * @description Which end of the queue comes first, by when each proposal was filed, with the id breaking a tie so paging is repeatable. The values are `oldest` (the default: the order proposals arrived in, which is how the Waiting tab is worked) and `newest` (the latest filed first, which is how the Approved and Rejected tabs read). Those are the only two values; anything else is refused with 422 `unknown_key`. Left out, the queue reads oldest first.
-             * @example newest
-             */
-            order?: string | null;
-            /**
-             * Origin
-             * @description Keep only the proposals filed by one sort of proposer: `agent` for a watch or research agent's, `user` for a person's. Those are the only two values; anything else is refused with 422 `unknown_key` rather than answered with an empty queue. Left out, both are returned.
-             * @example agent
-             */
-            origin?: string | null;
-            /**
-             * Status
-             * @description Keep only these statuses: one value, or several separated by commas. The values are `open` (waiting for a reviewer), `approved`, `rejected` and `superseded`. Left out, every status is returned, which is why each tab of the queue sends its own.
-             * @example open
-             */
-            status?: string | null;
-            /**
-             * Targetlist
-             * @description Keep only the proposals that change this vocabulary list, or this taxonomy dimension, by its key, for example `flag`: the lists are rows an admin manages and `GET /vocabularies` returns the live set. Left out, every list is returned.
-             * @example flag
-             */
-            targetList?: string | null;
-        };
-        /**
          * ProposalQueueRow
          * @description One row of the console queue: the proposal, plus what a reviewer needs to tell the
          *     rows apart without opening each one. Platform data throughout; a bank reads its own
@@ -24155,7 +23238,7 @@ export interface components {
              */
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
-            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            correctedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24227,7 +23310,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
-            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            proposedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
             proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24248,7 +23331,7 @@ export interface components {
              */
             reviewedAt?: string | null;
             /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
-            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            reviewedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24447,7 +23530,7 @@ export interface components {
              */
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
-            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            correctedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24512,7 +23595,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
-            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            proposedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
             proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24533,7 +23616,7 @@ export interface components {
              */
             reviewedAt?: string | null;
             /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
-            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            reviewedBy?: components["schemas"]["NamedRef"] | null;
             /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
             reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
@@ -24624,8 +23707,9 @@ export interface components {
         };
         /**
          * ProposalTarget
-         * @description The library record a proposal changes, as the queue names it in a row: the record's
-         *     own title and reference, never the proposal's wording. Null on a proposal that changes a
+         * @description The library record a proposal changes or an update touched, as a queue or update row
+         *     names it: the record's own title and reference, never a proposal's wording, so one bank's
+         *     request never reaches another bank as a title. Null on a proposal that changes a
          *     vocabulary list rather than a record; `payload.list` and `payload.key` name that row.
          * @example {
          *       "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
@@ -24638,7 +23722,7 @@ export interface components {
             /**
              * Id
              * Format: uuid
-             * @description The library record this proposal changes, as a UUID, which is the id `GET /obligations/{obligationId}` takes.
+             * @description The library record the proposal changes or the update touched, as a UUID, which is the id `GET /obligations/{obligationId}` takes.
              */
             id: string;
             /**
@@ -24712,7 +23796,7 @@ export interface components {
              */
             inForceVersion: number | null;
             /** @description What structural kind of unit this is, as key, kind and label: `chapter`, `section`, `article`, `paragraph`, `part`, `annex` and `guideline` are seeded on day one. Here `kind` on the reference itself carries the row's own fixed structural kind (`division`, `unit` or `annex`) rather than being null, because a screen groups provisions by it. The kinds are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /vocab/provision_kind` for the live set and match on the key. */
-            kind: components["schemas"]["LibraryRef"];
+            kind: components["schemas"]["VocabRef"];
             /**
              * Obligations
              * @description The obligations that cite this unit, so a reader can jump from the law to the duty. Only obligations this caller may read appear: one they may not is left out silently.
@@ -24905,7 +23989,7 @@ export interface components {
              */
             decidedAt: string;
             /** @description The person who set the answer after confirming it, as the audit event names them. */
-            decidedBy: components["schemas"]["RegisterPersonRef"];
+            decidedBy: components["schemas"]["NamedRef"];
             /**
              * Obligationid
              * Format: uuid
@@ -25148,7 +24232,7 @@ export interface components {
              */
             assessedAt: string;
             /** @description The person who assessed the status. */
-            assessedBy: components["schemas"]["RegisterPersonRef"];
+            assessedBy: components["schemas"]["NamedRef"];
             /**
              * Id
              * Format: uuid
@@ -25182,9 +24266,9 @@ export interface components {
              */
             rationale: string;
             /** @description The risk rated at the time, as a row of the bank's own `risk_rating` vocabulary, which its admin may extend; null when not rated. */
-            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            riskRating: components["schemas"]["VocabRef"] | null;
             /** @description The status assessed, as a row of the bank's own `compliance_status` vocabulary, which its admin may extend; the label is read today, the key as it was then. */
-            status: components["schemas"]["RegisterVocabRef"];
+            status: components["schemas"]["VocabRef"];
         };
         /**
          * RegisterAssessmentPage
@@ -25311,7 +24395,7 @@ export interface components {
              */
             applicabilityReason: string | null;
             /** @description How the bank complies here, as a row of its own `compliance_status` vocabulary: the key is stable, `kind` is the fixed category (`compliant`, `partly`, `gap` or `not_assessed`) and the label is for showing. The bank's admin may add and relabel rows, so branch on `kind` and read `GET /vocab/compliance_status` for the live set. Where legal entities the obligation applies to have rows, it is the worst of theirs by category: gap, then partly, then not assessed, then compliant. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Entities
              * @description One row per legal entity the bank has decided on for this obligation, by entity name; empty when it decided for the obligation as a whole.
@@ -25344,9 +24428,9 @@ export interface components {
              */
             obligationKey: string;
             /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
-            owner: components["schemas"]["RegisterPersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /** @description The team that owns the obligation here, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. The key is stable and the label is for showing. Null when no team owns it. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Process
              * @description The bank's own business process the obligation is met in, by its name; null when not recorded.
@@ -25400,7 +24484,7 @@ export interface components {
              */
             applicabilityReason: string | null;
             /** @description How the bank complies here, as a row of its own `compliance_status` vocabulary: the key is stable, `kind` is the fixed category (`compliant`, `partly`, `gap` or `not_assessed`) and the label is for showing. The bank's admin may add and relabel rows, so branch on `kind` and read `GET /vocab/compliance_status` for the live set. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Nextreviewdate
              * @description The plain date by which the bank means to review this row again; null when none is set.
@@ -25418,9 +24502,9 @@ export interface components {
              */
             orgUnitName: string;
             /** @description The member who owns meeting the obligation in this entity; null when a team or nobody does. */
-            owner: components["schemas"]["RegisterPersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /** @description The team that owns the obligation here, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. The key is stable and the label is for showing. Null when no team owns it. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Process
              * @description The bank's own business process the obligation is met in, by its name; null when not recorded.
@@ -25465,7 +24549,7 @@ export interface components {
              */
             externalSystem: string | null;
             /** @description What the linked item is, as a row of the bank's own `link_kind` vocabulary, seeded as `policy`, `procedure` and `control`; its admin may add rows such as a process or a system. */
-            kind: components["schemas"]["RegisterVocabRef"];
+            kind: components["schemas"]["VocabRef"];
             /**
              * Label
              * @description The item's name as the bank calls it, such as `Client asset policy`.
@@ -25679,7 +24763,7 @@ export interface components {
              */
             completedAt: string | null;
             /** @description The person who completed it, null until completed. */
-            completedBy: components["schemas"]["RegisterPersonRef"] | null;
+            completedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Duedate
              * Format: date
@@ -25703,7 +24787,7 @@ export interface components {
              */
             orgUnitId: string | null;
             /** @description The member who owns the occurrence; null when nobody does yet. */
-            owner: components["schemas"]["RegisterPersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /**
              * Status
              * @description Where the occurrence stands: `upcoming` before work starts, `in_progress` while it is worked, `done` once completed, `missed` past its date without completion, `not_applicable` when the obligation no longer applies. A fixed kind.
@@ -25862,14 +24946,14 @@ export interface components {
              */
             applicabilityDecidedAt: string | null;
             /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
-            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            applicabilityDecidedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Applicabilityreason
              * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
              */
             applicabilityReason: string | null;
             /** @description How this entity complies, as a row of the bank's own `compliance_status` vocabulary; its admin may add rows under the fixed categories, so read `GET /vocab/compliance_status` for the live set. Kept even while the entity's applicability is `not_applicable`, so nothing is lost when it applies again. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Evidencelocation
              * @description Where the bank keeps the evidence for this entity, such as a folder or a document system path; null when not recorded.
@@ -25892,16 +24976,16 @@ export interface components {
              */
             orgUnitName: string;
             /** @description The member who owns the obligation for this entity; null when nobody does, or when a team owns it instead. */
-            owner: components["schemas"]["RegisterPersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /** @description The team that owns the obligation here, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. The key is stable and the label is for showing. Null when no team owns it. An entity's row is owned by a person or a team, never both. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Process
              * @description The bank's own business process the obligation is met in, by its name; null when not recorded.
              */
             process: string | null;
             /** @description The bank's risk rating for this entity, as a row of its own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. Null until rated. */
-            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            riskRating: components["schemas"]["VocabRef"] | null;
             /**
              * Statusnote
              * @description The bank's note on the status, in its own words; null when none was written.
@@ -26015,16 +25099,16 @@ export interface components {
              */
             applicabilityDecidedAt: string | null;
             /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
-            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            applicabilityDecidedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Applicabilityreason
              * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
              */
             applicabilityReason: string | null;
             /** @description The compliance member who follows the obligation; null when nobody does yet. */
-            complianceContact: components["schemas"]["RegisterPersonRef"] | null;
+            complianceContact: components["schemas"]["NamedRef"] | null;
             /** @description How the bank complies, as a row of its own `compliance_status` vocabulary, which its admin may extend under fixed categories; read `GET /vocab/compliance_status` for the live set. Where legal entities the obligation applies to have rows, it is the worst of their statuses by category, computed by the server: `gap`, then `partly`, then `not_assessed`, then `compliant`; the label and the bank's ordinal never decide. The `gap` category means a gap exists, which applicability never hides. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Entities
              * @description One row per legal entity the bank has answered for, in the order of its organisation. Empty for an obligation the bank treats as a whole. Reading never creates a row; a row appears with the first write that needs it.
@@ -26036,7 +25120,7 @@ export interface components {
              */
             evidenceLocation: string | null;
             /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
-            firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
+            firstLineOwner: components["schemas"]["NamedRef"] | null;
             /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `PUT /obligations/{obligationId}/interpretation` answers after a save, so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
             interpretation: components["schemas"]["RegisterInterpretation"];
             /**
@@ -26051,14 +25135,14 @@ export interface components {
              */
             obligationId: string;
             /** @description The team that owns the obligation here, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. The key is stable and the label is for showing. Null when no team owns it. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Process
              * @description The bank's own business process the obligation is met in, by its name; null when not recorded.
              */
             process: string | null;
             /** @description The bank's risk rating for the obligation, as a row of its own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. Null until rated. */
-            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            riskRating: components["schemas"]["VocabRef"] | null;
             /**
              * Statusnote
              * @description The bank's note on the status, in its own words; null when none was written.
@@ -26215,16 +25299,16 @@ export interface components {
              */
             applicabilityDecidedAt: string | null;
             /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
-            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            applicabilityDecidedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Applicabilityreason
              * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
              */
             applicabilityReason: string | null;
             /** @description The compliance member who follows the obligation; null when nobody does yet. */
-            complianceContact: components["schemas"]["RegisterPersonRef"] | null;
+            complianceContact: components["schemas"]["NamedRef"] | null;
             /** @description How the bank complies, as a row of its own `compliance_status` vocabulary, which its admin may extend under fixed categories; read `GET /vocab/compliance_status` for the live set. Where legal entities the obligation applies to have rows, it is the worst of their statuses by category, computed by the server: `gap`, then `partly`, then `not_assessed`, then `compliant`; the label and the bank's ordinal never decide. The `gap` category means a gap exists, which applicability never hides. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Entities
              * @description One row per legal entity the bank has answered for, in the order of its organisation. Empty for an obligation the bank treats as a whole. Reading never creates a row; a row appears with the first write that needs it.
@@ -26236,7 +25320,7 @@ export interface components {
              */
             evidenceLocation: string | null;
             /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
-            firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
+            firstLineOwner: components["schemas"]["NamedRef"] | null;
             /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `PUT /obligations/{obligationId}/interpretation` answers after a save, so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
             interpretation: components["schemas"]["RegisterInterpretation"];
             /**
@@ -26251,7 +25335,7 @@ export interface components {
              */
             obligationId: string;
             /** @description The team that owns the obligation here, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. The key is stable and the label is for showing. Null when no team owns it. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /** @description What the obligation page's panels show on load, each part gated by the permission its own route takes. */
             panels: components["schemas"]["RegisterPanels"];
             /**
@@ -26260,7 +25344,7 @@ export interface components {
              */
             process: string | null;
             /** @description The bank's risk rating for the obligation, as a row of its own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. Null until rated. */
-            riskRating: components["schemas"]["RegisterVocabRef"] | null;
+            riskRating: components["schemas"]["VocabRef"] | null;
             /**
              * Statusnote
              * @description The bank's note on the status, in its own words; null when none was written.
@@ -26478,7 +25562,7 @@ export interface components {
              */
             identifiedAt: string;
             /** @description The person who recorded the gap. */
-            identifiedBy: components["schemas"]["RegisterPersonRef"];
+            identifiedBy: components["schemas"]["NamedRef"];
             /**
              * Obligationid
              * Format: uuid
@@ -26491,9 +25575,9 @@ export interface components {
              */
             orgUnitId: string | null;
             /** @description The member who owns closing the gap; null when a team owns it or nobody does yet. */
-            owner: components["schemas"]["RegisterPersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /** @description The team that owns closing the gap, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. Null when a person owns it or nobody does yet; never set together with `owner`. */
-            ownerTeam: components["schemas"]["RegisterVocabRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /**
              * Remediation
              * @description The bank's plan for closing the gap, in its own words; null when none was written.
@@ -26502,11 +25586,11 @@ export interface components {
             /** @description The request to accept the gap's risk and its approval, null when nobody has asked. */
             riskAcceptance: components["schemas"]["RegisterRiskAcceptance"] | null;
             /** @description How serious the gap is, as a row of the bank's own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. */
-            severity: components["schemas"]["RegisterVocabRef"];
+            severity: components["schemas"]["VocabRef"];
             /** @description Where the gap was found, as a row of the bank's own `gap_source` vocabulary, which its admin may extend; read `GET /vocab/gap_source` for the live set. */
-            source: components["schemas"]["RegisterVocabRef"];
+            source: components["schemas"]["VocabRef"];
             /** @description Where the gap stands, as a row of the bank's own `gap_status` vocabulary, which its admin may extend under the fixed categories; the kind is one of `open`, `remediating`, `risk_accepted` or `closed` and decides the pill's tone. */
-            status: components["schemas"]["RegisterVocabRef"];
+            status: components["schemas"]["VocabRef"];
             /**
              * Targetdate
              * @description The plain date the bank means to close the gap by, shown on the roadmap as our own deadline; null when not set.
@@ -26716,42 +25800,6 @@ export interface components {
             title?: string | null;
         };
         /**
-         * RegisterGapQuery
-         * @description Filters of the gaps list, each optional and combined with AND.
-         */
-        RegisterGapQuery: {
-            /**
-             * Entity
-             * @description Only gaps in this legal entity, by its UUID from the bank's organisation.
-             */
-            entity?: string | null;
-            /**
-             * Owner
-             * @description Only gaps this member owns, by their user UUID.
-             */
-            owner?: string | null;
-            /**
-             * Severity
-             * @description Only gaps of this severity. The key of a row in the bank's own `risk_rating` vocabulary, at most 64 characters. Seeded as `low`, `medium` and `high`, each with a fixed ordinal; the bank's admin may add or relabel rows, so read `GET /vocab/risk_rating` for the live set.
-             */
-            severity?: string | null;
-            /**
-             * Status
-             * @description Only gaps in this status. The key of a row in the bank's own `gap_status` vocabulary, at most 64 characters, under one of the fixed categories `open`, `remediating`, `risk_accepted` and `closed`. The bank's admin may add or relabel rows, so read `GET /vocab/gap_status` for the live set. A risk is accepted only through the acceptance routes, never by setting the status.
-             */
-            status?: string | null;
-            /**
-             * Targetfrom
-             * @description Only gaps whose target date is on or after this plain date.
-             */
-            targetFrom?: string | null;
-            /**
-             * Targetto
-             * @description Only gaps whose target date is on or before this plain date.
-             */
-            targetTo?: string | null;
-        };
-        /**
          * RegisterInternalItem
          * @description One of the bank's own policies, procedures, controls, processes or systems, as the link
          *     dialog offers it to pick (REG-05). An item is created from a link's call; there is no
@@ -26775,7 +25823,7 @@ export interface components {
              */
             id: string;
             /** @description What the item is, as a row of the bank's own `link_kind` vocabulary, seeded as `policy`, `procedure` and `control`; its admin may add rows such as a process or a system, so read `GET /vocab/link_kind` for the live set. Send its `key` as the link's `kind`. */
-            kind: components["schemas"]["RegisterVocabRef"];
+            kind: components["schemas"]["VocabRef"];
             /**
              * Name
              * @description The item's name as the bank calls it, such as `Daily reconciliation`.
@@ -26819,18 +25867,6 @@ export interface components {
             total: number;
         };
         /**
-         * RegisterInternalItemQuery
-         * @description What to look for among the bank's internal items.
-         */
-        RegisterInternalItemQuery: {
-            /**
-             * Q
-             * @description Part of an item's name or of its own reference, matched without regard to case, at most 300 characters. Empty by default, which lists every active item.
-             * @default
-             */
-            q: string;
-        };
-        /**
          * RegisterInternalLink
          * @description A policy, procedure, control, process or system of the bank's own linked to an
          *     obligation, with the reference an outside GRC system knows it by.
@@ -26861,7 +25897,7 @@ export interface components {
              */
             createdAt: string;
             /** @description The person who made the link. */
-            createdBy: components["schemas"]["RegisterPersonRef"];
+            createdBy: components["schemas"]["NamedRef"];
             /**
              * Externalref
              * @description The item's reference in the bank's GRC or document system, such as `POL-014`; null when none was given.
@@ -26885,7 +25921,7 @@ export interface components {
              */
             internalItemId: string;
             /** @description What the linked item is, as a row of the bank's own `link_kind` vocabulary, seeded as `policy`, `procedure` and `control`; its admin may add rows such as a process or a system, so read `GET /vocab/link_kind` for the live set. */
-            kind: components["schemas"]["RegisterVocabRef"];
+            kind: components["schemas"]["VocabRef"];
             /**
              * Label
              * @description The item's name as the bank calls it, such as `Client asset policy`.
@@ -27069,7 +26105,7 @@ export interface components {
          */
         RegisterInterpretationVersion: {
             /** @description The person who wrote this version. */
-            author: components["schemas"]["RegisterPersonRef"];
+            author: components["schemas"]["NamedRef"];
             /**
              * Text
              * @description How the bank reads the rule, in its own words. Internal legal judgement that never leaves the bank.
@@ -27152,7 +26188,7 @@ export interface components {
              */
             country: string;
             /** @description The legal-entity type the company's main business gives it, a term of the shared library's `legal_entity` dimension: a vocabulary an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Null when the main business maps to no type the taxonomy holds. */
-            entityType: components["schemas"]["TermRef"] | null;
+            entityType: components["schemas"]["VocabRef"] | null;
             /**
              * Existingorgunitid
              * @description The identifier of the bank's active legal entity that is this company, a UUID, when it has one: the same LEI, or the same registration number (digits compared) in the same country or with no country recorded. Applying it links that unit rather than adding a second one. Computed when read; null when the bank has none.
@@ -27405,23 +26441,6 @@ export interface components {
             system?: string | null;
         };
         /**
-         * RegisterPersonRef
-         * @description A member of the bank named on a register row.
-         */
-        RegisterPersonRef: {
-            /**
-             * Id
-             * Format: uuid
-             * @description The person's user UUID in this bank; stable for as long as they are a member.
-             */
-            id: string;
-            /**
-             * Name
-             * @description The person's display name, for showing beside the row. It may change; keep the id.
-             */
-            name: string;
-        };
-        /**
          * RegisterRiskAcceptance
          * @description A request to accept a gap's risk, and its approval by a second person with a step-up.
          */
@@ -27432,14 +26451,14 @@ export interface components {
              */
             approvedAt: string | null;
             /** @description The second person who approved it with a passkey step-up, never the person who asked for it. Null while the acceptance is waiting for approval. */
-            approvedBy: components["schemas"]["RegisterPersonRef"] | null;
+            approvedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Note
              * @description The requester's note in their own words; null when none was written.
              */
             note: string | null;
             /** @description Why the risk is accepted, as a row of the bank's own risk-acceptance reason vocabulary, which its admin may extend; read the vocabulary endpoint for the live set. */
-            reason: components["schemas"]["RegisterVocabRef"];
+            reason: components["schemas"]["VocabRef"];
             /**
              * Requestedat
              * Format: date-time
@@ -27447,7 +26466,7 @@ export interface components {
              */
             requestedAt: string;
             /** @description The person who asked for the risk to be accepted. */
-            requestedBy: components["schemas"]["RegisterPersonRef"];
+            requestedBy: components["schemas"]["NamedRef"];
         };
         /**
          * RegisterRiskAcceptanceBody
@@ -27583,18 +26602,6 @@ export interface components {
             units: components["schemas"]["RegisterStatementUnit"][];
         };
         /**
-         * RegisterStatementQuery
-         * @description The one filter the Statement of Applicability needs.
-         */
-        RegisterStatementQuery: {
-            /**
-             * Entity
-             * Format: uuid
-             * @description The legal entity whose statement to read, by its UUID from the bank's organisation. Required.
-             */
-            entity: string;
-        };
-        /**
          * RegisterStatementUnit
          * @description A unit as the Statement of Applicability shows it: the unit and its decisions.
          * @example {
@@ -27643,14 +26650,14 @@ export interface components {
              */
             applicabilityDecidedAt: string | null;
             /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
-            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            applicabilityDecidedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Applicabilityreason
              * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
              */
             applicabilityReason: string | null;
             /** @description How the bank complies with the unit, as a row of its own `compliance_status` vocabulary, which its admin may extend. The conformance row's status is never computed from its units. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Hashistory
              * @description True once the unit has an applicability decision, a status or a gap, after which its reference and title are fixed; false before.
@@ -27734,14 +26741,14 @@ export interface components {
              */
             applicabilityDecidedAt: string | null;
             /** @description The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. */
-            applicabilityDecidedBy: components["schemas"]["RegisterPersonRef"] | null;
+            applicabilityDecidedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Applicabilityreason
              * @description Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.
              */
             applicabilityReason: string | null;
             /** @description How the bank complies with the unit, as a row of its own `compliance_status` vocabulary, which its admin may extend. The conformance row's status is never computed from its units. */
-            complianceStatus: components["schemas"]["RegisterVocabRef"];
+            complianceStatus: components["schemas"]["VocabRef"];
             /**
              * Hashistory
              * @description True once the unit has an applicability decision, a status or a gap, after which its reference and title are fixed; false before.
@@ -27826,7 +26833,7 @@ export interface components {
              */
             decidedAt: string;
             /** @description The person who set the answer after confirming it. */
-            decidedBy: components["schemas"]["RegisterPersonRef"];
+            decidedBy: components["schemas"]["NamedRef"];
             /**
              * Reason
              * @description Why, in the bank's own words, as the person gave it. Tenant content that never leaves the bank.
@@ -28032,39 +27039,6 @@ export interface components {
             title?: string | null;
         };
         /**
-         * RegisterUnitQuery
-         * @description Filters of the units list.
-         */
-        RegisterUnitQuery: {
-            /**
-             * Entity
-             * @description Only the units of this legal entity, by its UUID from the bank's organisation.
-             */
-            entity?: string | null;
-        };
-        /**
-         * RegisterVocabRef
-         * @description A value of one of the bank's own lists as the register shows it: key, kind and label
-         *     together, so a screen shows a name while an integration stores what never moves.
-         */
-        RegisterVocabRef: {
-            /**
-             * Key
-             * @description The stable key of the row in the bank's own vocabulary, such as `partly_compliant` in `compliance_status`, `high` in `risk_rating`, `open` in `gap_status` or `policy` in `link_kind`. The bank's admin may add, relabel or retire rows, so an unfamiliar key is new data and not an error; read `GET /vocab/{listName}` for the live set. Store and compare the key, never the label.
-             */
-            key: string;
-            /**
-             * Kind
-             * @description The fixed category the row belongs to, which decides the pill's tone and every rule the server applies: for `compliance_status` one of `compliant`, `partly`, `gap` or `not_assessed`; for `gap_status` one of `open`, `remediating`, `risk_accepted` or `closed`. Null for a list whose rows carry no category, such as `risk_rating` or `link_kind`.
-             */
-            kind: string | null;
-            /**
-             * Label
-             * @description The row's name in the reader's language, for showing and for nothing else. The bank may reword and translate it at any time, so never store it or match on it.
-             */
-            label: string;
-        };
-        /**
          * RelatedObligation
          * @description An obligation a reader should see beside this one (INV-03), with the relation as a
          *     vocabulary row.
@@ -28086,7 +27060,7 @@ export interface components {
             /** @description Which instrument the related duty was broken out of, by key and short name. */
             instrument: components["schemas"]["ObligationInstrumentRef"];
             /** @description How the two duties are related, as key, kind and label: `implements` when this one puts the other into effect, `elaborates` when it spells the other out, and `related` when the library only says read them together. Those three are seeded on day one and they are vocabulary rows, not a closed set: a platform admin may extend, relabel or retire the list without a deploy, so read `GET /vocab/relation_type` for the live set and match on the key. A relation is the library's own cross-reference and never a statement that both duties reach this bank. */
-            relation: components["schemas"]["LibraryRef"];
+            relation: components["schemas"]["VocabRef"];
             /** @description The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all. */
             title: components["schemas"]["LocalizedText"] | null;
         };
@@ -28177,7 +27151,7 @@ export interface components {
              */
             kind: "run_now" | "check_source" | "check_url" | "research_topic" | "retag" | "scope_item";
             /** @description The person who made the request, by id and name. */
-            requestedBy: components["schemas"]["PersonRef"];
+            requestedBy: components["schemas"]["NamedRef"];
             /**
              * Sourceid
              * @description The registered source to check, as a UUID, or null for another kind.
@@ -28417,29 +27391,6 @@ export interface components {
             usageNote?: string | null;
         };
         /**
-         * RoleRef
-         * @description A pointer to a row in one of the platform's managed lists — a role, a language, an
-         *     agent — as key, kind and label together, so a screen can show a name while an
-         *     integration stores something that never moves under it.
-         */
-        RoleRef: {
-            /**
-             * Key
-             * @description The stable key of the row being pointed at: a role such as `admin`, a language such as `sv`, an agent definition such as `watch-sweeper`. Store and compare this and never the label — a key is issued once and never changes, while a label is reworded and translated freely. Some of the lists behind a reference are vocabularies whose rows a bank's admin may extend or retire, so an unfamiliar key is new data and not an error; others, such as the content languages, are library reference rows that only an approved proposal adds to. Read the endpoint that owns the list for the live set.
-             */
-            key: string;
-            /**
-             * Kind
-             * @description Which list the key belongs to, where one shape carries rows from more than one list — the name of the vocabulary, for instance. It is null wherever the field holding the reference already settles the question, as it does for a language or a role, and a reader should then take the kind from that field rather than guessing from the key.
-             */
-            kind?: string | null;
-            /**
-             * Label
-             * @description The row's name in the reader's language, for showing on screen and for nothing else. It is reworded whenever the bank prefers different wording and it is translated, so storing it or matching on it will break; keep the key instead.
-             */
-            label: string;
-        };
-        /**
          * ScopeDimension
          * @description The record's terms in one dimension (FP-01). An empty list means no restriction in
          *     that dimension; `allSelected` means every active term of it is carried.
@@ -28452,12 +27403,12 @@ export interface components {
              */
             allSelected: boolean;
             /** @description Which facet of the taxonomy this entry is about, as key, kind and label. The dimensions are vocabulary rows and never a closed set: a platform admin may extend, relabel, reorder or retire the list without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key. Seeded on day one: `regime`, `legal_entity`, `service_type`, `account_type`, `client_category`, `channel` and `lifecycle_stage`. Every active dimension is listed on every record, including the ones a record carries no term in. */
-            dimension: components["schemas"]["LibraryRef"];
+            dimension: components["schemas"]["VocabRef"];
             /**
              * Terms
              * @description The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it — never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind. In the `jurisdiction` dimension the terms are not stored on the record: they are derived each time it is read, from its instrument's jurisdiction, as the term of that jurisdiction plus the term of every jurisdiction its rules reach. So a European Union instrument's duty lists `eu`, `se`, `dk`, `no` and `fi`, a Swedish one lists `se` alone, and an international standard's lists none.
              */
-            terms: components["schemas"]["LibraryRef"][];
+            terms: components["schemas"]["VocabRef"][];
         };
         /**
          * ScopeItemInput
@@ -28556,7 +27507,7 @@ export interface components {
              */
             id?: string | null;
             /** @description Where the regulation comes from: a jurisdiction by key, kind and label. A row of the jurisdiction vocabulary, whose kinds are `supranational` (the European Union), `country` (one national market) and `international` (a standards body); the platform seeds it, an administrator may add more without a deploy, and `GET /reference/jurisdictions` lists the live set. */
-            jurisdiction: components["schemas"]["TermRef"];
+            jurisdiction: components["schemas"]["VocabRef"];
             /**
              * Key
              * @description The scope item's stable key, at most 80 characters of lower-case letters, digits and underscores, such as `local_crypto_asset_rules`. The server derives it from the name when the item is asked for, adding `_2`, `_3` and so on when the organisation already used it, and it never changes or passes to another item, a declined or removed one included.
@@ -28714,7 +27665,7 @@ export interface components {
             /** @description What this hit points at, and therefore what opens when the reader clicks it. Source: the shared library, copied onto the search index. Do not read the kind as a ranking: an obligation does not outrank a provision by being one. */
             type: components["schemas"]["SearchHitType"];
             /** @description How soon the shared library says this record deserves attention, as a key, its pill tone and a label in the reader's language. The keys are rows in the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; seeded on day one are `act_now`, `within_3_months`, `six_months_plus`, `monitor` and `no_action`. Source: the shared library. Do not read it as this bank's priority: it is the library's general view, and the bank's own deadline lives on its case. */
-            urgency?: components["schemas"]["TermRef"] | null;
+            urgency?: components["schemas"]["VocabRef"] | null;
             /**
              * Validfrom
              * @description The first day this version of the record was in force, a plain date such as `2026-01-01`, so a reader knows whether it governed a transaction. Empty when the library holds no such day, as on a change not yet in force. Source: the shared library. Do not read it as the day the bank had to comply from: a transitional rule may give longer, and that is in the text.
@@ -29074,7 +28025,7 @@ export interface components {
              */
             updatedAt: string | null;
             /** @description Who last changed the limits, by id and name, or null when the bank never has. */
-            updatedBy: components["schemas"]["PersonRef"] | null;
+            updatedBy: components["schemas"]["NamedRef"] | null;
         };
         /**
          * SessionOut
@@ -29237,7 +28188,7 @@ export interface components {
              */
             decidedAt: string | null;
             /** @description The member who approved, declined or revoked it, or null while it is pending or once it lapsed. */
-            decidedBy: components["schemas"]["PersonRef"] | null;
+            decidedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Endsat
              * @description When an approved window closes or closed, a UTC timestamp, or null until it is approved.
@@ -29255,7 +28206,7 @@ export interface components {
              */
             id: string;
             /** @description The platform support person who asked; their name and id, nothing else. */
-            platformPerson: components["schemas"]["PersonRef"];
+            platformPerson: components["schemas"]["NamedRef"];
             /**
              * Purpose
              * @description Why platform support asked, in their own words, written for the bank.
@@ -29400,7 +28351,7 @@ export interface components {
              */
             subjectType: string;
             /** @description The tag the batch applies: a row of this bank's own `tenant_tag` vocabulary, which has no kinds and which the bank's admin may extend or relabel without a deploy; `GET /vocab/tenant_tag` lists the live set. */
-            tag: components["schemas"]["TaggingTagRef"];
+            tag: components["schemas"]["VocabRef"];
         };
         /**
          * TaggingBody
@@ -29490,7 +28441,7 @@ export interface components {
              * Tags
              * @description Every one of this bank's tags now on the record, in the vocabulary's own order: rows of the bank's own `tenant_tag` vocabulary, which has no kinds and which the bank's admin may extend or relabel without a deploy (`GET /vocab/tenant_tag` lists the live set); an empty list when it carries none. Only the bank's own tags: the library's tags on an obligation are read from the obligation itself.
              */
-            tags: components["schemas"]["TaggingTagRef"][];
+            tags: components["schemas"]["VocabRef"][];
         };
         /**
          * TaggingSkipped
@@ -29503,56 +28454,6 @@ export interface components {
              * @example 1
              */
             count: number;
-        };
-        /**
-         * TaggingTagRef
-         * @description One of the bank's own tags as a pill shows it: the key to store and compare and the
-         *     label to show, never a phrase to match on.
-         */
-        TaggingTagRef: {
-            /**
-             * Key
-             * @description The tag's immutable key, the only part to store, compare or send back. A row of this bank's own `tenant_tag` vocabulary, which the bank's admin may extend or relabel without a deploy; `GET /vocab/tenant_tag` lists the live set, starting with `follow_up`.
-             * @example custody
-             */
-            key: string;
-            /**
-             * Kind
-             * @description Always null: the bank's tags have no kind. Present so every vocabulary reference has one shape.
-             * @example null
-             */
-            kind?: string | null;
-            /**
-             * Label
-             * @description The tag's name in the caller's language, falling back to the language it was written in, then to the key. For display only; a rename changes it and never the key.
-             * @example Custody
-             */
-            label: string;
-        };
-        /**
-         * TaxonomyDimensionRef
-         * @description A taxonomy dimension as a reference: the group a term or a regulatory scope group
-         *     belongs to (FP-01).
-         */
-        TaxonomyDimensionRef: {
-            /**
-             * Key
-             * @description The dimension's immutable key, such as `service_type` or `standard`, and the only part of this reference to store, compare or send back. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal, so a key you have not seen before is new data and not an error; `GET /vocab/term_dimension` lists the live set.
-             * @example service_type
-             */
-            key: string;
-            /**
-             * Kind
-             * @description How the dimension's terms act on a bank's regulatory scope, one of three fixed values. `scope`: the dimension says who or what a rule covers, and a scope group with no term chosen restricts nothing. `classification`: the dimension only describes a record and never narrows the scope. `opt_in`: the standards a bank follows, where a record carrying one of the dimension's terms shows only to a bank whose scope names that term, so a group with no term chosen means none followed rather than no restriction. Every dimension carries a kind, so the default of null never reaches a reader. It is a kind in code, so the rules branch on it; an administrator never adds a value.
-             * @example scope
-             */
-            kind?: string | null;
-            /**
-             * Label
-             * @description The dimension's name in the reader's language, for display only. It is a phrase a person wrote and may be reworded or translated at any time, so nothing may match on it.
-             * @example Service
-             */
-            label: string;
         };
         /**
          * TaxonomyTermCreateBody
@@ -29673,20 +28574,6 @@ export interface components {
              */
             total: number;
         };
-        /** TaxonomyTermQuery */
-        TaxonomyTermQuery: {
-            /**
-             * Dimension
-             * @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys.
-             */
-            dimension?: string | null;
-            /**
-             * Includeretired
-             * @description True also returns retired terms, marked `active: false`, for an editor or for reading an old record. False, the default, returns only the terms a scope or a record can use today.
-             * @default false
-             */
-            includeRetired: boolean;
-        };
         /**
          * TaxonomyTermRow
          * @description One term of the shared library's taxonomy (FP-01): the values a bank chooses in its
@@ -29704,7 +28591,7 @@ export interface components {
             /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             /** @description The dimension the term belongs to: its key, its kind (`scope`, `classification` or `opt_in`) and its label. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the live set. */
-            dimension: components["schemas"]["TaxonomyDimensionRef"];
+            dimension: components["schemas"]["VocabRef"];
             /**
              * Id
              * Format: uuid
@@ -29896,7 +28783,7 @@ export interface components {
              */
             pausedAt: string | null;
             /** @description The person who paused the agent. Null when it is not paused, or when the budget cap paused it rather than a person. */
-            pausedBy: components["schemas"]["PersonRef"] | null;
+            pausedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Runhour
              * @description The hour a scheduled run starts, a whole number with a minimum of 0 and a maximum of 23, in the bank's own time zone. Null for manual.
@@ -30082,7 +28969,7 @@ export interface components {
              */
             pausedAt: string | null;
             /** @description The person who paused the agent. Null when it is not paused, or when the budget cap paused it rather than a person. */
-            pausedBy: components["schemas"]["PersonRef"] | null;
+            pausedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Recentruns
              * @description The agent's latest runs, newest first, at most the `AGENT_RECENT_RUNS` setting (5 by default, 100 at most): the first rows `GET /agent-runs?tenantAgentId=` answers for this agent, where the rest of its history is paged. An empty list means it has not run yet.
@@ -30233,7 +29120,7 @@ export interface components {
              */
             issuer: string;
             /** @description What the licence or certificate is, as a term of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal (`GET /taxonomy/terms`). A type is a key, never a phrase. */
-            licenceType: components["schemas"]["TermRef"];
+            licenceType: components["schemas"]["VocabRef"];
             /**
              * Nextauditon
              * @description The date of a certificate's next audit, a plain date, or null; the bank's own deadline, like the validity.
@@ -30251,7 +29138,7 @@ export interface components {
              */
             orgUnitId: string;
             /** @description The member who owns the licence or certificate and its deadlines, or null. */
-            owner: components["schemas"]["PersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /**
              * Reference
              * @description The authority's own reference for the licence, such as `FI 12-3456`; empty when there is none.
@@ -30271,7 +29158,7 @@ export interface components {
              * Serviceterms
              * @description The services the licence covers, as terms of the shared library, a vocabulary an administrator may extend only through an approved proposal; an empty list when none are recorded.
              */
-            serviceTerms: components["schemas"]["TermRef"][];
+            serviceTerms: components["schemas"]["VocabRef"][];
             /**
              * Validuntil
              * @description The last date a certificate is valid, a plain date, or null; it shows on the roadmap as the bank's own deadline and never in the calendar feed.
@@ -30479,7 +29366,7 @@ export interface components {
              */
             items: components["schemas"]["TenantOpenWork"][];
             /** @description The member whose open work this is. */
-            member: components["schemas"]["PersonRef"];
+            member: components["schemas"]["NamedRef"];
             /**
              * Teams
              * @description The keys of the teams the member is in, rows of the bank's `team` vocabulary at `GET /vocab/team`, in that list's order; the removal takes the member out of every one. An empty list means they are in no team.
@@ -30567,9 +29454,9 @@ export interface components {
              */
             countryCode: string;
             /** @description The term of the shared library's `legal_entity` dimension a legal entity is scoped with, the same term obligations are scoped with, so an obligation can be assessed per entity. The terms are a vocabulary of the shared library, which an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Null for every unit that is not a legal entity. */
-            entityTerm: components["schemas"]["TermRef"] | null;
+            entityTerm: components["schemas"]["VocabRef"] | null;
             /** @description The member who heads the unit, an active member of the same bank, or null when nobody does; a department's head is told about its work. */
-            head: components["schemas"]["PersonRef"] | null;
+            head: components["schemas"]["NamedRef"] | null;
             /**
              * Id
              * Format: uuid
@@ -30929,9 +29816,9 @@ export interface components {
              */
             countryCode: string;
             /** @description The term of the shared library's `legal_entity` dimension a legal entity is scoped with, the same term obligations are scoped with, so an obligation can be assessed per entity. The terms are a vocabulary of the shared library, which an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Null for every unit that is not a legal entity. */
-            entityTerm: components["schemas"]["TermRef"] | null;
+            entityTerm: components["schemas"]["VocabRef"] | null;
             /** @description The member who heads the unit, an active member of the same bank, or null when nobody does; a department's head is told about its work. */
-            head: components["schemas"]["PersonRef"] | null;
+            head: components["schemas"]["NamedRef"] | null;
             /**
              * Id
              * Format: uuid
@@ -30975,7 +29862,7 @@ export interface components {
              * Scopeexclusions
              * @description The licence-bound terms outside this legal entity's own scope (FP-05), each with its key, label and dimension (`regime`, `service_type` or `licensed_activity`): the register offers the entity no rule whose terms in a dimension are all among these. They change only through an approved regulatory scope request (`entityExclusions` of `POST /tenant/footprint/requests`). Empty by default, and always empty for a group or a department. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
              */
-            scopeExclusions?: components["schemas"]["TermRef"][];
+            scopeExclusions?: components["schemas"]["VocabRef"][];
             /**
              * Version
              * @description The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
@@ -31079,9 +29966,9 @@ export interface components {
              * Contentlanguages
              * @description Every language this bank keeps content in, in the order its administrators put them, the default usually first. It decides which translations a reader is offered and which languages an import or an export covers; it does not limit what the shared library holds, which stays whole whatever a bank picks here. Each entry points at a language row by key, and those rows are library reference data rather than a vocabulary an admin may extend.
              */
-            contentLanguages: components["schemas"]["RoleRef"][];
+            contentLanguages: components["schemas"]["VocabRef"][];
             /** @description The language the bank reads and writes in first: it decides which version of a library record a reader is shown when they have expressed no preference, and which language a briefing is written in. A reference to a language row by its key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are library reference rows, not a vocabulary a bank's admin may extend; read `GET /reference/languages` for the set on offer. Null only while a brand-new organisation has not chosen one. */
-            defaultLanguage: components["schemas"]["RoleRef"] | null;
+            defaultLanguage: components["schemas"]["VocabRef"] | null;
             /**
              * Id
              * Format: uuid
@@ -31253,7 +30140,7 @@ export interface components {
              */
             orgUnitId: string | null;
             /** @description The member who owns the product, or null. */
-            owner: components["schemas"]["PersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /**
              * Status
              * @description Where the product stands: `planned` (not yet offered, already scoped so the work can start), `live` (offered to customers today) or `retired` (withdrawn; a product is retired and never deleted, and a retired product scopes nothing).
@@ -31264,7 +30151,7 @@ export interface components {
              * Terms
              * @description The product's scope as terms of the shared library, the same terms obligations are scoped with; a vocabulary an administrator may extend only through an approved proposal. An empty list when it is not scoped yet.
              */
-            terms: components["schemas"]["TermRef"][];
+            terms: components["schemas"]["VocabRef"][];
             /**
              * Version
              * @description The product's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
@@ -31386,30 +30273,6 @@ export interface components {
             total: number;
         };
         /**
-         * TenantProposalQuery
-         * @description Filters of a bank's own proposals, each optional and each narrowing the list.
-         */
-        TenantProposalQuery: {
-            /**
-             * Kind
-             * @description Keep only these kinds: one value, or several separated by commas, from the kinds `kind` names above. Left out, every kind is returned.
-             * @example vocabulary_create,vocabulary_relabel
-             */
-            kind?: string | null;
-            /**
-             * Status
-             * @description Keep only these statuses: one value, or several separated by commas. The values are `open`, `approved`, `rejected` and `superseded`. Left out, every status is returned.
-             * @example open
-             */
-            status?: string | null;
-            /**
-             * Targetlist
-             * @description Keep only the proposals that change this vocabulary list, or this taxonomy dimension, by its key, for example `flag`. The keys are rows an admin manages; `GET /vocabularies` returns the live set. Left out, every list is returned.
-             * @example flag
-             */
-            targetList?: string | null;
-        };
-        /**
          * TenantProposalRow
          * @description One proposal this bank made to a shared library list (PRO-03, VOC-07), as the bank's
          *     own vocabulary screen lists it. A bank sees the proposals its own people and agents
@@ -31477,7 +30340,7 @@ export interface components {
              */
             decidedAt?: string | null;
             /** @description The second member who approved or rejected it, by id and name, never the requester: the database refuses that. Null while the request is pending. */
-            decidedBy?: components["schemas"]["PersonRef"] | null;
+            decidedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Id
              * Format: uuid
@@ -31493,7 +30356,7 @@ export interface components {
              */
             requestedAt: string;
             /** @description The member holding `security.manage` who asked for reach, by id and name. */
-            requestedBy: components["schemas"]["PersonRef"];
+            requestedBy: components["schemas"]["NamedRef"];
             /**
              * Status
              * @description Where the request stands, one of three fixed values. `pending`: waiting for a second person; reach is unchanged, and a bank has at most one pending request. `approved`: a second person approved it with a passkey and reach was switched on at that moment. `rejected`: a second person turned it down and reach stayed off. Only `pending` can still change; the other two are final. A kind in code, never extended by an administrator.
@@ -31539,7 +30402,7 @@ export interface components {
              */
             changedAt?: string | null;
             /** @description The member who last switched reach on (by approving a request) or off, by id and name; null for a bank that never switched it. */
-            changedBy?: components["schemas"]["PersonRef"] | null;
+            changedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Enabled
              * @description True when two different people holding `security.manage` switched reach on and nobody has switched it off since; then an agent access entry whose own toggle is on may read the bank's register decisions. False, the default for every bank, means every entry reads the shared library only.
@@ -31667,38 +30530,6 @@ export interface components {
             userId?: string | null;
         };
         /**
-         * TenantRunQuery
-         * @description `GET /agent-runs`: the shared page, narrowed to one of the bank's agents or the
-         *     caller's own requests (ruling 9).
-         */
-        TenantRunQuery: {
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Mine
-             * @description Only the runs the caller asked for with run now or a research request; by default false, which filters nothing.
-             * @default false
-             */
-            mine: boolean;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
-            /**
-             * Tenantagentid
-             * @description Only the runs of this one of the bank's own agents, by its UUID identifier; by default null, which filters nothing. Another bank's agent matches no run.
-             */
-            tenantAgentId?: string | null;
-        };
-        /**
          * TenantTeam
          * @description A team of the bank, which can own work and take part in it (TEN-03). A team is a row
          *     of the bank's `team` list, so creating, renaming and retiring one is `/vocab/team`.
@@ -31808,7 +30639,7 @@ export interface components {
              */
             escalateAfterDays: number;
             /** @description The role of this bank whose members are told when overdue work escalates, as key, kind and label; the key is what `PATCH /tenant/workflow` takes. Roles are rows of the bank's role vocabulary: the seeded `admin`, `compliance_officer` (the platform default), `owner`, `approver`, `contributor`, `reader` and `auditor`, plus any role an admin may extend it with in the role editor (`GET /tenant/roles` lists the live set), so an unfamiliar key is new data and not an error. It names a role and never a person, so the escalation survives a member leaving. */
-            escalateToRole: components["schemas"]["RoleRef"];
+            escalateToRole: components["schemas"]["VocabRef"];
             /**
              * Reminderdaysbefore
              * @description How many days before a due date the owner of an open action or case is reminded, one reminder per entry, largest first — `[7, 3]` reminds a week ahead and again three days ahead. One to 5 entries, each a whole number of days from 1 to 90, counted in the bank's own timezone. The platform default is `[3]`.
@@ -31872,31 +30703,6 @@ export interface components {
             triageTargetHours?: number | null;
         };
         /**
-         * TermRef
-         * @description A vocabulary value as every picker, pill and filter reads it: the key to store and
-         *     compare, the kind when the value's list has one, and a label to show (playbook 15).
-         */
-        TermRef: {
-            /**
-             * Key
-             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform seeds and its library editors relabel, retire and restore by proposal; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
-             * @example advice
-             */
-            key: string;
-            /**
-             * Kind
-             * @description The fixed kind of the value, when its list has one, so a screen can branch or pick a pill tone without reading the label; null by default, when the list has no kind. By list: a taxonomy term is always null, because its dimension is its kind; a language is always null; a jurisdiction is `supranational` (the European Union, whose rules reach its members and the EEA), `country` (one national market, such as Sweden) or `international` (a standards body such as ISO/IEC, which is no bank's market); an urgency is its pill tone, one of `information`, `notice`, `positive`, `warning`, `negative` and `brand`. Kinds are fixed in code and never added by an administrator.
-             * @example null
-             */
-            kind?: string | null;
-            /**
-             * Label
-             * @description The value's name in the reader's language: the caller's own language first, then the organisation's default language, then English, then any label the value has, and the key itself when it has none. A language is the exception and reads in itself, such as `Svenska`. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
-             * @example Advice
-             */
-            label: string;
-        };
-        /**
          * VerificationCreated
          * @description What the check recorded, and the stamp the record now carries. `lastVerifiedAt` and
          *     `verifiedBy` move only on `no_change`; any other outcome leaves the old stamp standing
@@ -31936,7 +30742,7 @@ export interface components {
              */
             verifiedAt: string;
             /** @description Who backed the stamp with their passkey: a bleqq platform person, by id and name, and never a member of a bank, because re-verifying a shared fact is bleqq's own check. Null on a record nobody has ever confirmed, and left as it was when the outcome was not `no_change`. */
-            verifiedBy: components["schemas"]["PersonRef"] | null;
+            verifiedBy: components["schemas"]["NamedRef"] | null;
         };
         /**
          * VersionConfirmation
@@ -32054,32 +30860,37 @@ export interface components {
             toVersion: number;
         };
         /**
-         * VersionDiffQuery
-         * @description `from` and `to` are version numbers, defaulting to the latest version against the one
-         *     before it. `lang` asks for a language; the diff falls back to the reader's language
-         *     order when neither version has it (INV-05). Serves the obligation diff and the
-         *     provision diff alike (chunk3-rest-T16): both compare two versions of one record and
-         *     never one record with another.
+         * VocabRef
+         * @description A row of a vocabulary as every picker, pill, filter and export reads it: the key to
+         *     store and compare, the kind when its list has one, and the label in the reader's language
+         *     (playbook 15). The field that carries the reference names the list and the endpoint that
+         *     returns its live set. A tone is never here: a pill's tone follows its slot or the row's
+         *     own kind and is nobody's to send (NFR-03).
+         * @example {
+         *       "key": "act_now",
+         *       "kind": null,
+         *       "label": "Act now"
+         *     }
          */
-        VersionDiffQuery: {
+        VocabRef: {
             /**
-             * From
-             * @description Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same record: there is no comparison across records. A number this record has no version for is refused with 422 `unknown_key`.
-             * @example 1
+             * Key
+             * @description The row's immutable key, and the only part of this reference to store, compare or send back. Which vocabulary it is drawn from is settled by the field that carries the reference, which names the list and the endpoint that returns its live set: the shared library's vocabularies and taxonomy terms, which an admin may extend through an approved proposal, a bank's own lists such as its roles, teams, tags and statuses, which the bank's admin may extend, relabel, reorder or retire without a deploy, and the platform's fixed lists such as the languages. A key you have not seen before is new data and not an error. Match on the key and never on the label, and never construct one: a key the list does not hold answers 422 `unknown_key` with the valid keys.
+             * @example act_now
              */
-            from?: number | null;
+            key: string;
             /**
-             * Lang
-             * @description Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.
-             * @example en
+             * Kind
+             * @description The row's fixed kind where its list has one, so a screen can branch or pick a pill tone without reading the label, and null by default where it has none. By list: a jurisdiction is `supranational` (the European Union), `country` (one national market) or `international` (a standards body such as ISO/IEC); an urgency is its pill tone, one of `information`, `notice`, `positive`, `warning`, `negative` and `brand`; a change type is its lifecycle kind; a case sub-status is its case category (`new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`) and a close reason one of `signed_off`, `no_action` or `not_applicable`; a compliance status is `compliant`, `partly`, `gap` or `not_assessed` and a gap status `open`, `remediating`, `risk_accepted` or `closed`; a taxonomy dimension is `scope` (its terms say who or what a rule covers), `classification` (its terms only describe a record) or `opt_in` (the standards a bank follows). Where one field carries rows of more than one list, it is the list's name. A taxonomy term, a language, a role, a team, a tag, a risk rating and a link kind are null. Kinds are fixed in code, so the rules may branch on them; an admin never adds one.
+             * @example null
              */
-            lang?: string | null;
+            kind: string | null;
             /**
-             * To
-             * @description Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the record has, including one that has been approved and does not take effect until later. A number this record has no version for is refused with 422 `unknown_key`.
-             * @example 2
+             * Label
+             * @description The row's label in the reader's language: the caller's own language first, then the organisation's default language, then English, then any label the row has, and the key itself when it has none; a language reads in itself, such as `Svenska`. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
+             * @example Act now
              */
-            to?: number | null;
+            label: string;
         };
         /**
          * VocabularyCreateBody
@@ -32285,16 +31096,6 @@ export interface components {
              */
             into: string;
         };
-        /** VocabularyMergeQuery */
-        VocabularyMergeQuery: {
-            /**
-             * Dryrun
-             * @description True previews the merge and changes nothing: the answer is a 200 with how many records would move, no proposal is filed and no audit event is written, on a library list as on a bank's own. False, the default, makes the merge on a bank's own list (200) or files it as a proposal on a library list (202).
-             * @default false
-             * @example true
-             */
-            dryRun: boolean;
-        };
         /**
          * VocabularyMerged
          * @description Both the dry run and the commit answer this shape, so the screen renders one
@@ -32383,16 +31184,6 @@ export interface components {
              * @example Safekeeping of client assets.
              */
             usageNote?: string | null;
-        };
-        /** VocabularyQuery */
-        VocabularyQuery: {
-            /**
-             * Includeretired
-             * @description True also returns the values that were retired or merged away, each with `active` false, which an admin screen needs to restore one. False, the default, returns only what pickers offer.
-             * @default false
-             * @example true
-             */
-            includeRetired: boolean;
         };
         /**
          * VocabularyReorderBody
@@ -32939,7 +31730,7 @@ export interface components {
              */
             status: string;
             /** @description The member who suggested it, by id and name, the only personal data a suggestion carries. Always set on a suggestion this API returns. */
-            suggestedBy?: components["schemas"]["PersonRef"] | null;
+            suggestedBy?: components["schemas"]["NamedRef"] | null;
             /**
              * Usagenote
              * @description Why the member wants the value, in their own words; the default "" means they gave no reason.
@@ -33090,7 +31881,7 @@ export interface components {
              */
             category: "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
             /** @description Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` (one person closed it, audited); rows the bank's admin may extend, so read `GET /vocab/close_reason` for the live set and match on the key. Null while open. */
-            closeReason: components["schemas"]["CasesVocabularyRef"] | null;
+            closeReason: components["schemas"]["VocabRef"] | null;
             /**
              * Closedat
              * @description When the case was closed, as an RFC 3339 timestamp in UTC. Null while it is open.
@@ -33110,9 +31901,9 @@ export interface components {
              */
             dismissedAt: string | null;
             /** @description Who dismissed it. A person in this bank, as their id and display name; the only personal data this read carries about them. Null unless it was dismissed. */
-            dismissedBy: components["schemas"]["PersonRef"] | null;
+            dismissedBy: components["schemas"]["NamedRef"] | null;
             /** @description Why the bank dismissed the change, from its `dismissal_reason` vocabulary, `out_of_scope`, `duplicate` and `already_covered` on day one; rows the bank's admin may extend, so read `GET /vocab/dismissal_reason` for the live set and match on the key. Null unless the case is or was dismissed. */
-            dismissedReason: components["schemas"]["CasesVocabularyRef"] | null;
+            dismissedReason: components["schemas"]["VocabRef"] | null;
             /**
              * Footprintmatch
              * @description Whether the change's scope terms match this bank's footprint, computed by the server when the case was created and recomputed when either side moves. It says the change is in scope to look at; it does not say the obligation applies or that the bank complies — those are separate facts (REG-01, REG-02).
@@ -33138,7 +31929,7 @@ export interface components {
              */
             openActionCount: number;
             /** @description Who owns the case, named at triage. A person in this bank, as their id and display name; the only personal data this read carries about them. Null before triage. */
-            owner: components["schemas"]["PersonRef"] | null;
+            owner: components["schemas"]["NamedRef"] | null;
             /**
              * Ownerid
              * @description The person in this bank who owns the case, as a UUID, once triage names one. Null before triage, and kept after a dismissal only if one was named. Never a person of another bank.
@@ -33146,9 +31937,9 @@ export interface components {
              */
             ownerId: string | null;
             /** @description The team of the bank that owns the case beside its owner, never instead of one, from the bank's own `team` vocabulary, whose rows its admin may extend at `GET /vocab/team`; `kind` is always null, because teams have no kinds. The team stays when the owner changes or leaves the bank. Null when no team was named. */
-            ownerTeam: components["schemas"]["CasesVocabularyRef"] | null;
+            ownerTeam: components["schemas"]["VocabRef"] | null;
             /** @description The second person who signed the case off with a passkey, never the one who asked. A person in this bank, as their id and display name; the only personal data this read carries about them. Null until then. */
-            signedOffBy: components["schemas"]["PersonRef"] | null;
+            signedOffBy: components["schemas"]["NamedRef"] | null;
             /**
              * Signoffrequestedat
              * @description When sign-off was asked for, as an RFC 3339 timestamp in UTC. Null until someone asks.
@@ -33156,7 +31947,7 @@ export interface components {
              */
             signoffRequestedAt: string | null;
             /** @description Who asked for sign-off; this person can never give it. A person in this bank, as their id and display name; the only personal data this read carries about them. Null until someone asks. */
-            signoffRequestedBy: components["schemas"]["PersonRef"] | null;
+            signoffRequestedBy: components["schemas"]["NamedRef"] | null;
             /**
              * Sowhatconfirmed
              * @description Whether a person in this bank confirmed or rewrote the wording. False means it is still an AI draft and the screen labels it so (WAT-05). Another bank's copy is unaffected either way.
@@ -33182,7 +31973,7 @@ export interface components {
              */
             soWhatText: string | null;
             /** @description The bank's own finer step inside `category`, from its `case_sub_status` vocabulary, whose `kind` is the category the row sits in; day one seeds one per category, keyed like it. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/case_sub_status` for the live set and match on the key, never on the label. It changes nothing a guard decides. Null when the bank uses none here. */
-            subStatus: components["schemas"]["CasesVocabularyRef"] | null;
+            subStatus: components["schemas"]["VocabRef"] | null;
             /**
              * Triagedat
              * @description When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T08:40:00Z`). Null before triage.
@@ -33190,9 +31981,9 @@ export interface components {
              */
             triagedAt: string | null;
             /** @description Who triaged the case. A person in this bank, as their id and display name; the only personal data this read carries about them. Null before triage. */
-            triagedBy: components["schemas"]["PersonRef"] | null;
+            triagedBy: components["schemas"]["NamedRef"] | null;
             /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. It starts as the change's suggested urgency and stays a suggestion until `urgencyConfirmed` is true. Null only where no suggestion was made. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            urgency: components["schemas"]["LibraryRef"] | null;
+            urgency: components["schemas"]["VocabRef"] | null;
             /**
              * Urgencyconfirmed
              * @description Whether a person in this bank confirmed the urgency at triage. False means the value above is still the agent's suggestion; the screen says so. A reader must not report an unconfirmed urgency as this bank's decision.
@@ -33318,7 +32109,7 @@ export interface components {
              */
             authorityLabel: string;
             /** @description The kind of change, as `{key, kind, label}` from the `change_type` library vocabulary; the label is in the reader's language. The `kind` member is the `change_lifecycle_kind` the rules branch on. Never a phrase to match and never a tone. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            changeType: components["schemas"]["LibraryRef"];
+            changeType: components["schemas"]["VocabRef"];
             /**
              * Documents
              * @description The pages the change was found on, the primary page first.
@@ -33346,7 +32137,7 @@ export interface components {
              * Flags
              * @description What the change is about across subject areas, as `{key, kind, label}` rows of the `flag` library vocabulary, `ai` and `advice_perimeter` on day one. An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
              */
-            flags: components["schemas"]["LibraryRef"][];
+            flags: components["schemas"]["VocabRef"][];
             /**
              * Id
              * Format: uuid
@@ -33440,7 +32231,7 @@ export interface components {
              */
             status: "active" | "superseded" | "withdrawn";
             /** @description The agent's suggested urgency as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. A suggestion for every bank; the bank's own decision is on its case. The tone follows the row's ordinal and is never in this response (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            suggestedUrgency: components["schemas"]["VocabRef"] | null;
             /**
              * Summary
              * @description What the change says, from the public source. Library text: it holds no bank's judgement.
@@ -33451,7 +32242,7 @@ export interface components {
              * Terms
              * @description The taxonomy terms that scope the change — regime, market, product, service — as `{key, kind, label}` rows of the taxonomy vocabulary, `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one. A term's `kind` is null: its dimension is its kind. This is what the footprint is matched against; it is not a bank's footprint. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
              */
-            terms: components["schemas"]["LibraryRef"][];
+            terms: components["schemas"]["VocabRef"][];
             /**
              * Title
              * @description What the reform is called, in the source's words.
@@ -33540,9 +32331,9 @@ export interface components {
              */
             soWhatText: string | null;
             /** @description The bank's own finer step inside `category`, from its `case_sub_status` vocabulary, whose `kind` is the category the row sits in; day one seeds one per category, keyed like it. The values are rows of the bank's own vocabulary, which the bank's admin may extend, relabel or retire without a deploy, so read `GET /vocab/case_sub_status` for the live set and match on the key, never on the label. It changes nothing a guard decides. Null when the bank uses none here. */
-            subStatus: components["schemas"]["CasesVocabularyRef"] | null;
+            subStatus: components["schemas"]["VocabRef"] | null;
             /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. It starts as the change's suggested urgency and stays a suggestion until `urgencyConfirmed` is true. Null only where no suggestion was made. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            urgency: components["schemas"]["LibraryRef"] | null;
+            urgency: components["schemas"]["VocabRef"] | null;
             /**
              * Urgencyconfirmed
              * @description Whether a person in this bank confirmed the urgency at triage. False means the value above is still the agent's suggestion; the screen says so. A reader must not report an unconfirmed urgency as this bank's decision.
@@ -33557,13 +32348,13 @@ export interface components {
          *     footprint and their bank's case — and with the classification answered the way the feed
          *     answers it.
          *
-         *     `flags` and `terms` are `WatchFact` here and `LibraryRef` on `WatchChange`, because the
+         *     `flags` and `terms` are `WatchFact` here and `VocabRef` on `WatchChange`, because the
          *     write shapes answer the record as stored and this is the page a person judges a change
          *     on: an agent's suggestion has to be visible as a suggestion where the decision is taken
          *     (WAT-03). The change page used to flatten each fact to its `ref` and lose the
          *     provenance the feed row carries (2026-09-21).
          *
-         *     `changeType` stays a `LibraryRef` here, where a feed row answers a fact, so a client
+         *     `changeType` stays a `VocabRef` here, where a feed row answers a fact, so a client
          *     that reads it keeps working; since the type carries its own suggestion and confirmation
          *     (D-74, watch 0002) the same fact a feed row answers is `changeTypeFact` beside it.
          * @example {
@@ -33781,7 +32572,7 @@ export interface components {
             /** @description The reader's own bank's case with its workflow block, or null when there is none. Never another bank's, and never present for a console session. */
             case: components["schemas"]["WatchCaseWorkflow"] | null;
             /** @description The kind of change, as `{key, kind, label}` from the `change_type` library vocabulary; the label is in the reader's language. The `kind` member is the `change_lifecycle_kind` the rules branch on. Never a phrase to match and never a tone. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            changeType: components["schemas"]["LibraryRef"];
+            changeType: components["schemas"]["VocabRef"];
             /** @description The change's type as a fact, exactly as a feed row answers its `changeType`: `ref` is the same row as `changeType`, beside the agent's confidence, whether it is still a suggestion and who suggested and who confirmed it. This read always sends it; the default of null exists only because the property was added after `changeType`, which stays a bare reference so a client reading it keeps working. A type an independent agent confirmed reads machine-confirmed, never as a person's verification (WAT-03, D-74). */
             changeTypeFact?: components["schemas"]["WatchFact"] | null;
             /**
@@ -33911,7 +32702,7 @@ export interface components {
              */
             status: "active" | "superseded" | "withdrawn";
             /** @description The agent's suggested urgency as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. A suggestion for every bank; the bank's own decision is on its case. The tone follows the row's ordinal and is never in this response (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            suggestedUrgency: components["schemas"]["VocabRef"] | null;
             /**
              * Summary
              * @description What the change says, from the public source. Library text: it holds no bank's judgement.
@@ -34584,113 +33375,6 @@ export interface components {
             title?: string | null;
         };
         /**
-         * WatchChangeQuery
-         * @description The filters of `GET /changes`, carrying its own `limit` and `offset` from
-         *     `PageQuery`: 20 by default, 100 at most, and a larger `limit` is a 422 rather than a
-         *     clamp. Every value is a key or a fixed kind, never a label, so a filter a bank saves
-         *     keeps working when someone relabels a vocabulary row.
-         *
-         *     A parameter this schema does not name is a 422, not a silently dropped one. That is
-         *     what makes the departure of INPUT_DELTAS §7 visible: a client written against the
-         *     designed `inFootprint` pair is told, instead of quietly receiving the default feed.
-         * @example {
-         *       "footprint": "in",
-         *       "limit": 20,
-         *       "offset": 0,
-         *       "tab": "all",
-         *       "urgency": "act_now"
-         *     }
-         */
-        WatchChangeQuery: {
-            /**
-             * Changetype
-             * @description A key of the `change_type` library vocabulary, at most 80 characters: `proposal`, `adopted`, `supervision`, `enforcement` or `recurring_date` on day one. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
-             * @example adopted
-             */
-            changeType?: string | null;
-            /**
-             * Footprint
-             * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (only what watching adds: the changes outside the footprint that match it on every dimension but jurisdiction and whose authority reaches a market this bank watches, each with its `market`, FP-04). A change takes its jurisdiction from its authority; one with no authority is never restricted by jurisdiction. Sending the designed `inFootprint` answers 422.
-             * @default in
-             * @example in
-             * @enum {string}
-             */
-            footprint: "in" | "all" | "watched";
-            /**
-             * Infootprint
-             * @deprecated
-             * @description Not accepted: send `footprint` instead. The designed contract had a boolean pair here and the build has one value (INPUT_DELTAS §7). Any value answers 422, because ignoring it would hand a client that asked for `inFootprint=false` the opposite feed without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
-             * @example null
-             */
-            inFootprint?: null;
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
-            /**
-             * Ownerid
-             * @description Show only the cases this person in your bank owns, named by a UUID. A person of another bank matches nothing rather than answering a 403, because no id may be probed across banks.
-             * @example null
-             */
-            ownerId?: string | null;
-            /**
-             * Q
-             * @description A phrase to look for in the title and the summary, at most 200 characters. It is what someone in the bank typed, so it is tenant content: it never appears in a log, in Sentry or in a model prompt (playbook 4.7).
-             * @example research payments
-             */
-            q?: string | null;
-            /**
-             * Status
-             * @description The library's lifecycle stage: `active`, `superseded` or `withdrawn`. Omit for every stage.
-             * @example active
-             */
-            status?: ("active" | "superseded" | "withdrawn") | null;
-            /**
-             * Tab
-             * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. Triage, assessment and sign-off move a case between them.
-             * @default all
-             * @example all
-             * @enum {string}
-             */
-            tab: "all" | "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
-            /**
-             * Termid
-             * @description Taxonomy term ids to filter by, each a UUID from `GET /taxonomy/terms`, at most 50 per call; a change matches when it carries any one of them. Repeat the parameter for each term.
-             * @example [
-             *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
-             *     ]
-             */
-            termId?: string[];
-            /**
-             * Unconfirmedsowhat
-             * @description True shows only the cases whose 'So what?' is still an AI draft in this bank. Omit for both.
-             * @example true
-             */
-            unconfirmedSoWhat?: boolean | null;
-            /**
-             * Urgency
-             * @description A key of the `urgency` library vocabulary, at most 80 characters — `act_now`, `within_3_months`, `six_months_plus`, `monitor`, `no_action` on day one. It matches this bank's case urgency where there is one and the change's suggestion otherwise. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
-             * @example act_now
-             */
-            urgency?: string | null;
-            /**
-             * Week
-             * @description Any date inside the week to show, resolved to that week in the bank's own time zone. Used by the briefing; omit for every week.
-             * @example 2026-09-14
-             */
-            week?: string | null;
-        };
-        /**
          * WatchChangeRow
          * @description One line of the watch feed: the library's facts about a reform beside this bank's
          *     own case for it. The library half is the same for every bank; the `case` half is this
@@ -34854,7 +33538,7 @@ export interface components {
              *       "label": "Denmark"
              *     }
              */
-            market: components["schemas"]["LibraryRef"] | null;
+            market: components["schemas"]["VocabRef"] | null;
             /**
              * Publishedon
              * @description When the source published it, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` beside it. Null when the source states none.
@@ -34881,7 +33565,7 @@ export interface components {
              */
             status: "active" | "superseded" | "withdrawn";
             /** @description The agent's suggested urgency as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. A library fact, the same for every bank; this bank's own decision is inside `case`. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            suggestedUrgency: components["schemas"]["VocabRef"] | null;
             /**
              * Terms
              * @description The change's scope terms, each with its confidence and suggestion marker.
@@ -34977,53 +33661,6 @@ export interface components {
              * @example 7
              */
             total: number;
-        };
-        /**
-         * WatchConsoleChangeQuery
-         * @description The filters of `GET /console/changes`, the queue a library editor works, carrying
-         *     its own `limit` and `offset` from `PageQuery`: 20 by default, 100 at most, and a larger
-         *     `limit` is a 422. A parameter this schema does not name is a 422 as well.
-         * @example {
-         *       "confirmed": "false",
-         *       "limit": 20,
-         *       "offset": 0
-         *     }
-         */
-        WatchConsoleChangeQuery: {
-            /**
-             * Authorityid
-             * @description Show only the changes of one authority, named by a UUID from `GET /authorities`. Omit it for every authority.
-             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
-             */
-            authorityId?: string | null;
-            /**
-             * Confirmed
-             * @description Which changes to list, a fixed kind with two members: `false` (the default — only changes carrying at least one fact nobody has confirmed, which is the queue) or `all` (every change, for looking something up). There is no `true`: a change with nothing left to confirm is simply not in the queue.
-             * @default false
-             * @example false
-             * @enum {string}
-             */
-            confirmed: "false" | "all";
-            /**
-             * Limit
-             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-             * @default 20
-             * @example 20
-             */
-            limit: number;
-            /**
-             * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-             * @default 0
-             * @example 0
-             */
-            offset: number;
-            /**
-             * Q
-             * @description A phrase to look for in the title and the summary, at most 200 characters. A library editor's search over library rows; it names no bank.
-             * @example research
-             */
-            q?: string | null;
         };
         /**
          * WatchConsoleChangeRow
@@ -35302,7 +33939,7 @@ export interface components {
              */
             confirmedOrigin?: ("agent" | "user") | null;
             /** @description The vocabulary row or taxonomy term itself, as `{key, kind, label}`: a row of the `change_type` library vocabulary (`proposal`, `adopted`, `supervision`, `enforcement`, `recurring_date` on day one), of the `flag` vocabulary (`ai`, `advice_perimeter`) or of the taxonomy (`securities` and the other regimes). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
-            ref: components["schemas"]["LibraryRef"];
+            ref: components["schemas"]["VocabRef"];
             /**
              * Suggested
              * @description True while this is a suggestion nobody has confirmed. The screen marks it 'Suggested by the agent'. A reader must not treat a suggested fact as checked, and a bank never confirms it: it is a library fact, confirmed for every bank by an independent agent holding `proposals:review` or by a person holding `proposals.review` (WAT-03, PRO-01, D-74).
@@ -35824,7 +34461,7 @@ export interface components {
              */
             id: string;
             /** @description What kind of place this is, as `{key, kind, label}` from the `source_kind` library vocabulary. The values are rows a platform admin may extend without a deploy; seeded on day one are `authority_site` (the publisher's own site), `legal_database` (consolidated texts such as riksdagen.se and EUR-Lex), `open_web_sweep` (a search across the open web for anything the registered sources missed) and `tenant_private` (a source one bank follows, whose findings never enter the shared library; R3). The `kind` member is null for every row of this list: it carries no sub-kind. */
-            kind: components["schemas"]["LibraryRef"];
+            kind: components["schemas"]["VocabRef"];
             /**
              * Name
              * @description What the source is called in the registry, unique across the library so a run can name the source it checked without an id. A person's label, not the publisher's legal name.
@@ -36337,9 +34974,9 @@ export interface components {
          */
         WhatAppliesOutsideTerm: {
             /** @description The taxonomy dimension the term sits in, as `{key, kind, label}`, such as `licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed enum: a platform admin may extend, relabel or retire them without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key, never the label. The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`. */
-            dimension: components["schemas"]["LibraryRef"];
+            dimension: components["schemas"]["VocabRef"];
             /** @description The term itself, as `{key, kind, label}`, such as `card_issuing`, Card issuing. Terms are vocabulary rows, not a closed enum: a platform admin may add one through an approved proposal, and relabel or retire one, without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key, never the label. A term has no kind of its own, so `kind` is always null: its dimension is its kind. */
-            term: components["schemas"]["LibraryRef"];
+            term: components["schemas"]["VocabRef"];
         };
         /**
          * WhatAppliesSummary
@@ -40327,7 +38964,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["InvitationAcceptBody"];
+                "application/json": components["schemas"]["InvitationOpenBody"];
             };
         };
         responses: {
@@ -42229,7 +40866,7 @@ export interface operations {
                      *       }
                      *     ]
                      */
-                    "application/json": components["schemas"]["RoleRef"][];
+                    "application/json": components["schemas"]["VocabRef"][];
                 };
             };
         };
@@ -42260,7 +40897,7 @@ export interface operations {
                      *       }
                      *     ]
                      */
-                    "application/json": components["schemas"]["PersonRef"][];
+                    "application/json": components["schemas"]["NamedRef"][];
                 };
             };
         };

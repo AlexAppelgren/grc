@@ -67,8 +67,8 @@ describe('library api', () => {
     ]);
   });
 
-  it("tags and untags one obligation with the bank's own tag and reads a tag sent without a kind as having none", async () => {
-    const sent = installAdapter(() => ({ status: 200, data: { subjectType: 'obligation', subjectId: 'ob-1', tags: [{ key: 'q4', label: 'Q4' }] } }));
+  it("tags and untags one obligation with the bank's own tag", async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { subjectType: 'obligation', subjectId: 'ob-1', tags: [{ key: 'q4', kind: null, label: 'Q4' }] } }));
     expect(await library.tagObligation('ob-1', 'q4')).toEqual([{ key: 'q4', kind: null, label: 'Q4' }]);
     await library.untagObligation('ob-1', 'q4');
     const body = { tagKey: 'q4', subjectType: 'obligation', subjectId: 'ob-1' };

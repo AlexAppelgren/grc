@@ -9,7 +9,7 @@ type Schemas = components['schemas'];
 
 export type LibraryUpdatesPage = Schemas['LibraryUpdatesPage'];
 export type LibraryUpdateRow = Schemas['LibraryUpdateRow'];
-export type LibraryUpdateTarget = Schemas['LibraryUpdateTarget'];
+export type LibraryUpdateTarget = Schemas['ProposalTarget'];
 
 /** The two filters this screen sets, as `GET /library-updates` declares them; paging stays the route's default. */
 export type LibraryUpdatesQuery = Pick<NonNullable<operations['listLibraryUpdates']['parameters']['query']>, 'kind' | 'outsideFootprint'>;

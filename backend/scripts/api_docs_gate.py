@@ -116,8 +116,10 @@ VOCABULARY_PROPERTIES = frozenset(
     {
         "JurisdictionRow.parentKey",
         "MarketWatchBody.jurisdiction",
-        "ObligationQuery.dutyType",
-        "ObligationQuery.term",
+        # Query parameters are checked under their operation: Ninja inlines a Query model into
+        # `parameters` and the contract publishes no schema for it (review 2026-11-11 B-2).
+        "listObligations.dutyType",
+        "listObligations.term",
         "TaxonomyTermRow.parentKey",
         "VocabularyCreateBody.kind",
         "VocabularyCreateBody.key",
