@@ -39,7 +39,8 @@ from apps.library.models import Jurisdiction
 from apps.shared import factories, tenancy
 from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.tenancy import is_tenant_task, library_write
+from apps.shared.tenancy import library_write
+from apps.shared.testing import is_tenant_task
 
 TASKS = Path(tasks.__file__)
 OPENER = Path(opener.__file__)

@@ -36,6 +36,7 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.api import api
+from apps.shared.testing import gate_of
 
 SUBJECT = "11111111-1111-4111-8111-111111111111"
 THING = "22222222-2222-4222-8222-222222222222"
@@ -198,10 +199,10 @@ class CollabContractShape(TestCase):
             if op.view_func.__module__ == "apps.collab.api" and "/participants" not in op.path
         }
         self.assertEqual(set(collab), {name for name, _, _, _ in ROUTES})
-        gated = {name for name, op in collab.items() if perms.gate_of(op.view_func) is not None}
+        gated = {name for name, op in collab.items() if gate_of(op.view_func) is not None}
         self.assertEqual(gated, {"editComment", "deleteComment"})
         for name in ("editComment", "deleteComment"):
-            gate = perms.gate_of(collab[name].view_func)
+            gate = gate_of(collab[name].view_func)
             assert gate is not None
             self.assertEqual((gate.kind, gate.value), ("permission", perms.COMMENTS_WRITE))
         for name, op in collab.items():

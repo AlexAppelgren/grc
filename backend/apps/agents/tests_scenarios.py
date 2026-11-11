@@ -45,12 +45,13 @@ from apps.search.models import SearchChunk
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.tenancy import is_tenant_task, library_write
+from apps.shared.tenancy import library_write
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import FootprintTerm, Flag, ScopeItem, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
+from apps.shared.testing import is_tenant_task
 
 # One reform as a sweep files it, for the scenarios that drive the agent API. A function
 # rather than a constant because every change carries a regime (D-39, AC-AGT1), and a term's

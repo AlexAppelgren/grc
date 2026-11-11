@@ -703,9 +703,5 @@ def requires_step_up(view: F) -> F:
     return wrapper  # type: ignore[return-value]
 
 
-def gate_of(view: Callable[..., Any]) -> Gate | None:
-    return getattr(view, "__cw_gate__", None)
-
-
 def step_up_of(view: Callable[..., Any]) -> bool:
     return bool(getattr(view, "__cw_step_up__", False))

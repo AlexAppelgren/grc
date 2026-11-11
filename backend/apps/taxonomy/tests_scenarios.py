@@ -67,6 +67,7 @@ from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
+from apps.shared.testing import in_footprint_sql
 
 APPS_DIR = Path(__file__).resolve().parent.parent
 V1 = "/api/v1"
@@ -714,12 +715,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         retail = tenant_lists_logic.term_by_ref("client_category", "retail")
         branch = tenant_lists_logic.term_by_ref("channel", "branch")
         iso = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
-        self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, retail.id]))
-        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id]))
-        self.assertTrue(matching.in_footprint_sql(self.tenant.id, []))
-        self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, branch.id]))
-        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id, branch.id]))
-        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [custody.id, iso.id]))
+        self.assertTrue(in_footprint_sql(self.tenant.id, [custody.id, retail.id]))
+        self.assertFalse(in_footprint_sql(self.tenant.id, [advice.id]))
+        self.assertTrue(in_footprint_sql(self.tenant.id, []))
+        self.assertTrue(in_footprint_sql(self.tenant.id, [custody.id, branch.id]))
+        self.assertFalse(in_footprint_sql(self.tenant.id, [advice.id, branch.id]))
+        self.assertFalse(in_footprint_sql(self.tenant.id, [custody.id, iso.id]))
         # The footprint read states the rule per dimension and shows the pending request slot.
         view = self._footprint(sign_in(self.reader, tenant=self.tenant))
         by_dimension = {d["dimension"]["key"]: d for d in view["dimensions"]}
@@ -954,7 +955,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         advice = tenant_lists_logic.term_by_ref("service_type", "advice")
         custody = tenant_lists_logic.term_by_ref("service_type", "custody")
         records = {"advice-only": [advice.id], "custody": [custody.id], "unscoped": []}
-        inside = {name for name, term_ids in records.items() if matching.in_footprint_sql(self.tenant.id, term_ids)}
+        inside = {name for name, term_ids in records.items() if in_footprint_sql(self.tenant.id, term_ids)}
         self.assertEqual(inside, {"custody", "unscoped"})
         outside = set(records) - inside
         self.assertEqual(outside, {"advice-only"})
@@ -1252,7 +1253,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             with self.subTest(key):
                 self.assertEqual(set(handed[obligation.id]), {term.id for terms in scope.values() for term in terms})
                 pure = matching.in_footprint({d: {term.key for term in terms} for d, terms in scope.items()}, footprint, restricting=restricting)
-                self.assertIs(matching.in_footprint_sql(self.tenant.id, handed[obligation.id]), pure)
+                self.assertIs(in_footprint_sql(self.tenant.id, handed[obligation.id]), pure)
                 verdicts[key] = pure
         self.assertEqual(verdicts, {"eu": True, "no": True, "se": False})
         self.assertEqual(
@@ -1903,7 +1904,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             assert facts is not None
             with self.subTest(key):
                 self.assertIs(matching.in_footprint(facts.scope, footprint, restricting=restricting), expected[key])
-                self.assertIs(matching.in_footprint_sql(self.tenant.id, handed[key]), expected[key])
+                self.assertIs(in_footprint_sql(self.tenant.id, handed[key]), expected[key])
                 self.assertEqual(
                     set(TaxonomyTerm.objects.filter(id__in=handed[key]).values_list("key", flat=True)),
                     {key for keys in facts.scope.values() for key in keys},
@@ -1995,7 +1996,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             for ref in footprint_refs:
                 FootprintTerm.objects.create(tenant=self.tenant, term=terms[ref], added_by=self.admin)
             pure = matching.in_footprint(as_dict(record_refs), matching.footprint_of(self.tenant.id), restricting=matching.restricting_dimensions())
-            return pure, matching.in_footprint_sql(self.tenant.id, [terms[ref].id for ref in record_refs])
+            return pure, in_footprint_sql(self.tenant.id, [terms[ref].id for ref in record_refs])
 
         def every_combination_agrees() -> None:
             for footprint_refs in subsets:

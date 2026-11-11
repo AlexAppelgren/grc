@@ -215,7 +215,6 @@ LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
 USE_TZ = True
 USE_I18N = False
-DEFAULT_TENANT_TIMEZONE = "Europe/Stockholm"
 
 # ---- Transport security (playbook 11.2) -------------------------------------------------
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -227,8 +226,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "no-referrer"  # the invitation token rides a URL (F28)
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
 # The API serves JSON only; the docs page (DEBUG only) gets the relaxed policy.
 CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
 CONTENT_SECURITY_POLICY_DOCS = (
@@ -258,7 +255,6 @@ CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-reques
 LLM_PROVIDER = env_choice("LLM_PROVIDER", "mock", ("mock", "anthropic", "bedrock"))
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "")
 EMBEDDER_PROVIDER = env_choice("EMBEDDER_PROVIDER", "mock", ("mock", "none"))  # a model joins per D-09
-EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024, min=1, max=16000)  # D-09
 AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "managed_agents", "none"))
 RERANKER_PROVIDER = env_choice("RERANKER_PROVIDER", "mock", ("mock", "none"))  # none keeps the fused order
@@ -551,7 +547,6 @@ SESSION_IDLE_MINUTES_DEFAULT = env_int(
     "SESSION_IDLE_MINUTES_DEFAULT", 30, min=SESSION_IDLE_MINUTES_MIN, max=SESSION_IDLE_MINUTES_MAX
 )
 SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12, min=1, max=SESSION_ABSOLUTE_HOURS_MAX)
-CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14, min=0, max=365)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30, min=0, max=300)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5, min=1, max=15)
 # The rotating refresh cookie (ADR 0006): HttpOnly, SameSite=Strict, scoped to the auth path.

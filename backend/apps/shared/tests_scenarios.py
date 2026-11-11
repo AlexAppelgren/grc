@@ -50,9 +50,9 @@ from apps.shared.db_role_guard import check_role
 from apps.shared.errors import PROBLEM_CONTENT_TYPE
 from apps.shared.middleware import RequestIdLogFilter
 from apps.shared.migration_helpers import POLICY_NAME, TENANT_SETTING
-from apps.shared.permissions import UNGATED_BY_DESIGN, Ungated, UngatedReason, gate_of
+from apps.shared.permissions import UNGATED_BY_DESIGN, Ungated, UngatedReason
 from apps.shared.routes import TENANT_SCOPED_ROUTES, RegisteredOperation, iter_operations
-from apps.shared.tenancy import is_tenant_task, tenant_task
+from apps.shared.tenancy import tenant_task
 from apps.shared.testing import ScenarioTestCase, agent_principal, sign_in, stub_api_key, stub_session, user_principal
 from apps.shared.tests_production_guard import BOOT, SETTING_NAMES, _with_database
 from apps.shared.tests_rls import tenant_scoped_models
@@ -62,6 +62,7 @@ from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, 
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
 from config.celery import app as celery_app
+from apps.shared.testing import gate_of, is_tenant_task
 
 V1 = "/api/v1"
 WRITE_METHODS = frozenset({"POST", "PATCH", "PUT"})

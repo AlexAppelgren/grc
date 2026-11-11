@@ -50,9 +50,6 @@ C = CaseStatusCategory
 # The categories a case closes from on one person's word (D-92).
 ONE_PERSON_CLOSE_FROM = frozenset({C.ASSIGNED.value, C.ASSESSING.value})
 
-NOT_BUILT = "This part of the case workflow is not available yet."
-
-
 # ---------------------------------------------------------------------------------------
 # What a move is given
 # ---------------------------------------------------------------------------------------

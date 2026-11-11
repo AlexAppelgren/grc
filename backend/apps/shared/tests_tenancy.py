@@ -13,14 +13,8 @@ from django.db import DEFAULT_DB_ALIAS, connections
 from django.test import TestCase
 
 from apps.shared import tenancy
-from apps.shared.tenancy import (
-    LibraryModel,
-    LibraryQuerySet,
-    LibraryWriteRefused,
-    TenantModel,
-    library_write,
-    library_write_reason,
-)
+from apps.shared.tenancy import LibraryModel, LibraryQuerySet, LibraryWriteRefused, TenantModel, library_write
+from apps.shared.testing import identity_lookup_active, library_write_reason
 
 
 class ProbeLibraryRecord(LibraryModel):
@@ -113,9 +107,9 @@ class IdentityLookupMode(TestCase):
         tenancy.activate(tenant_a.id)
         self.assertEqual(set(Membership.objects.values_list("tenant_id", flat=True)), {tenant_a.id})
         with tenancy.identity_lookup():
-            self.assertTrue(tenancy.identity_lookup_active())
+            self.assertTrue(identity_lookup_active())
             self.assertEqual(set(Membership.objects.values_list("tenant_id", flat=True)), {tenant_a.id, tenant_b.id})
-        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertFalse(identity_lookup_active())
         self.assertEqual(set(Membership.objects.values_list("tenant_id", flat=True)), {tenant_a.id})
 
     def test_lookup_mode_refuses_to_run_outside_a_transaction(self) -> None:

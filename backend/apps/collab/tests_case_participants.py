@@ -40,6 +40,7 @@ from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.watch import testing as watch_build
 from config.api import api
+from apps.shared.testing import gate_of
 
 C = CaseStatusCategory
 
@@ -72,7 +73,7 @@ def _bank(slug: str, category: CaseStatusCategory = C.ASSIGNED) -> SimpleNamespa
 class CaseParticipantRouteGates(TestCase):
     def test_reading_needs_cases_read_adding_cases_contribute_and_removal_is_the_logics(self) -> None:
         routes = {op.operation_id: op for op in iter_operations(api) if op.path.startswith("/changes/") and "/participants" in op.path}
-        gates = {name: perms.gate_of(op.view_func) for name, op in routes.items()}
+        gates = {name: gate_of(op.view_func) for name, op in routes.items()}
         self.assertEqual(
             {name: (gate.kind, gate.value) if gate else None for name, gate in gates.items()},
             {

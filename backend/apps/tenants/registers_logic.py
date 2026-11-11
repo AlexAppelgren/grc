@@ -107,13 +107,6 @@ def _split(authority_key: str, text: str) -> list[tuple[int, str, bool]]:
     return sorted(found)
 
 
-def split_businesses(authority_key: str, text: str) -> tuple[list[str], list[str]]:
-    """The business names the mapping knows, and the comma-separated rest it does not, each in
-    the register's order."""
-    parts = _split(authority_key, text)
-    return [name for _, name, known in parts if known], [name for _, name, known in parts if not known]
-
-
 # ---------------------------------------------------------------------------------------
 # Terms
 # ---------------------------------------------------------------------------------------
@@ -206,14 +199,6 @@ def _jurisdictions_by_name() -> dict[str, str]:
     names = {text.casefold(): key for text, key in rows.order_by("vocabulary__sort_order", "language").values_list("text", "vocabulary__key")}
     # The EBA's register writes a country as its ISO code (`DK`), which is the jurisdiction's key.
     return {**{key: key for key in names.values()}, **names}
-
-
-def branch_jurisdictions(facts: RegisterFacts) -> set[str]:
-    """The jurisdiction keys of the countries the company has branches in, matched exactly,
-    case aside, on the labels of the library's active countries; a country the library does
-    not cover is left out."""
-    names = _jurisdictions_by_name()
-    return {names[branch.country_name.casefold()] for branch in facts.branches if branch.country_name.casefold() in names}
 
 
 def authority_for_country(country_code: str) -> Authority | None:

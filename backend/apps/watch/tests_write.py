@@ -24,11 +24,12 @@ from django.test import TestCase
 from apps.library.models import Authority, Obligation, Provision
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
-from apps.shared.tenancy import LibraryWriteRefused, library_write_reason
+from apps.shared.tenancy import LibraryWriteRefused
 from apps.taxonomy.models import SourceKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies
 from apps.watch.models import Source
 from apps.watch.write import WATCH_TABLES, WatchWriteRefused, watch_write
+from apps.shared.testing import library_write_reason
 
 REASON = "registering a change"
 

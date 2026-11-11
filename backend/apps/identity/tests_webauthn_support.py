@@ -22,7 +22,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from django.conf import settings
 
-from apps.identity.tokens import b64url, b64url_decode
+from apps.identity.tokens import b64url
+from apps.shared.testing import b64url_decode
 
 FLAG_UP = 0x01
 FLAG_UV = 0x04

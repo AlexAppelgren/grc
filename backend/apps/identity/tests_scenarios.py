@@ -64,6 +64,7 @@ from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from config.api import api
+from apps.shared.testing import b64url_decode, gate_of
 
 ANNA = "anna@bank.example"
 CHROME_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
@@ -303,7 +304,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         user, authenticator, body, _ = self._enrol(nickname=None)
         row = WebAuthnCredential.objects.get(user=user)
         self.assertEqual(row.credential_id, authenticator.credential_id_b64)
-        self.assertEqual(tokens.b64url_decode(row.public_key), authenticator.cose_public_key())
+        self.assertEqual(b64url_decode(row.public_key), authenticator.cose_public_key())
         self.assertEqual(row.sign_count, 0)
         self.assertEqual(row.transports, ["internal", "hybrid"])
         self.assertEqual(row.aaguid, "00000000-0000-0000-0000-000000000000")
@@ -873,7 +874,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         for operation in iter_operations(api):
             if operation.method == "GET":
                 continue
-            gate = perms.gate_of(operation.view_func)
+            gate = gate_of(operation.view_func)
             # Chunk 3 adds the first writes under these prefixes: the two problem reports,
             # which write no library row at all, and the re-verification stamp, the single
             # sanctioned exception (INV-S8). What ID-S21 claims is not that no such route

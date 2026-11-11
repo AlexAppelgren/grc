@@ -46,8 +46,8 @@ from apps.shared import factories, outbox, tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.models import AuditEvent, OutboxCursor, OutboxEvent, TenantContentLanguage
 from apps.shared.tasks import deliver_outbox
-from apps.shared.tenancy import is_tenant_task
 from config.celery import app as celery_app
+from apps.shared.testing import handlers_for, is_tenant_task
 
 ROOT = Path(__file__).resolve().parents[3]
 TOPIC = "probe.registered"
@@ -546,7 +546,7 @@ class TheRegistryHoldsOnlyItsConsumers(TestCase):
         self.assertEqual(sorted(outbox._HANDLERS), sorted(expected))
         for topic, handlers in expected.items():
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic), tuple(handlers))
+                self.assertEqual(handlers_for(topic), tuple(handlers))
 
     def test_a_cleanup_puts_back_every_consumer_the_process_started_with(self) -> None:
         outbox._HANDLERS.clear()
@@ -610,7 +610,7 @@ class RegistrationHappensWhenTheAppIsReady(TestCase):
             installed.get_app_config(label).ready()
             for topic in topics:
                 with self.subTest(app=label, topic=topic):
-                    self.assertIn(handler, outbox.handlers_for(topic))
+                    self.assertIn(handler, handlers_for(topic))
 
 
 class _ImportTimeCalls(ast.NodeVisitor):

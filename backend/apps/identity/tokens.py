@@ -31,11 +31,6 @@ def b64url(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
 
-def b64url_decode(text: str) -> bytes:
-    padding = "=" * (-len(text) % 4)
-    return base64.urlsafe_b64decode(text + padding)
-
-
 def hash_token(token: str) -> str:
     """SHA-256 of a random token (invitation tokens, refresh tokens, API key secrets).
 

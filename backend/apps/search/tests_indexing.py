@@ -69,6 +69,7 @@ from apps.shared.tests_library_fence import WRITE_METHODS
 from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from config.celery import app as celery_app
+from apps.shared.testing import handlers_for
 
 # From the prototype's data (design/prototype), so the stems and the identifiers are real.
 REF = "FFFS 2017:2"
@@ -540,8 +541,8 @@ class TheEmbeddingRelay(LibraryFixtureMixin, TestCase):
         # collab app also hears of an applied version (c10-producers, COL-02).
         for topic in tasks.INDEX_TOPICS:
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic)[0], tasks.embed_rebuilt_chunks)
-                self.assertEqual(outbox.handlers_for(topic).count(tasks.embed_rebuilt_chunks), 1)
+                self.assertEqual(handlers_for(topic)[0], tasks.embed_rebuilt_chunks)
+                self.assertEqual(handlers_for(topic).count(tasks.embed_rebuilt_chunks), 1)
 
     def test_the_sweep_is_a_beat_entry_that_takes_no_tenant(self) -> None:
         # Importing this module registered the task, which is what the worker's own

@@ -43,6 +43,7 @@ from apps.shared.models import Tenant
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.watch import testing as watch_build
 from apps.watch.curation import CURATION_CONFIRMED
+from apps.shared.testing import handlers_for
 
 V1 = "/api/v1"
 TITLES = {"en": "Assess the quality of investment research paid for", "sv": "Bedöm kvaliteten på betald analys"}
@@ -349,8 +350,8 @@ class Registration(TestCase):
         outbox._HANDLERS.clear()
         installed.get_app_config("collab").ready()
         installed.get_app_config("collab").ready()
-        self.assertEqual(outbox.handlers_for(CURATION_CONFIRMED), (producers.after_link_confirmed,))
-        self.assertEqual(outbox.handlers_for(VERSION_APPLIED), (producers.after_version_applied,))
+        self.assertEqual(handlers_for(CURATION_CONFIRMED), (producers.after_link_confirmed,))
+        self.assertEqual(handlers_for(VERSION_APPLIED), (producers.after_version_applied,))
 
     def test_no_library_or_watch_module_calls_a_producer(self) -> None:
         """The notices come off the cursor: library-zone code never reaches into collab."""

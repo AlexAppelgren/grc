@@ -12,13 +12,13 @@ Naming no department and no product narrows nothing: the entry's terms are then 
 footprint and the second pass repeats the first, through the same code. Naming departments
 or products that derive no term inside the footprint reads nothing, and says why
 (`EMPTY_SCOPE`), because an entry that silently saw everything would be the widening this
-rule exists to prevent. `admits` is the pure rule and `admits_sql` the database's, and
-apps/taxonomy/tests_entry_scope.py pins the two to each other."""
+rule exists to prevent. `admits` is the pure rule and `taxonomy_entry_admits` the
+database's, and apps/taxonomy/tests_entry_scope.py pins the two to each other."""
 
 from __future__ import annotations
 
 import uuid
-from collections.abc import Collection, Iterable, Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 
 from django.db import connection
@@ -74,12 +74,3 @@ def admits(
     )
 
 
-def admits_sql(tenant_id: uuid.UUID, entry_id: uuid.UUID, term_ids: Iterable[uuid.UUID]) -> bool:
-    """The database's verdict on one record, from `taxonomy_entry_admits` (taxonomy 0011)."""
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT taxonomy_entry_admits(%s, %s, %s::uuid[])",
-            [str(tenant_id), str(entry_id), [str(term_id) for term_id in term_ids]],
-        )
-        row = cursor.fetchone()
-    return bool(row and row[0])

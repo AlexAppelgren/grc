@@ -43,6 +43,7 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.routes import iter_operations
 from apps.watch import testing as watch_build
 from config.api import api
+from apps.shared.testing import gate_of
 
 COMPOSITE_KEYS = importlib.import_module("apps.collab.migrations.0002_participant").COMPOSITE_KEYS
 
@@ -211,7 +212,7 @@ class ParticipantRouteGates(TestCase):
         `register.read`, which every participant held when added; the logic still asks
         `register.edit` for anyone else's row (c8-ten-reassignment, on merging with ID-S21)."""
         routes = {op.operation_id: op for op in iter_operations(api) if "/participants" in op.path and op.path.startswith("/obligations/")}
-        gates = {name: perms.gate_of(op.view_func) for name, op in routes.items()}
+        gates = {name: gate_of(op.view_func) for name, op in routes.items()}
         self.assertEqual(
             {name: (gate.kind, gate.value) if gate else None for name, gate in gates.items()},
             {

@@ -318,14 +318,6 @@ LICENCE_STRINGS = ("reference", "issuer", "number")
 LICENCE_TEXTS = {"scope_note": "scopeNote", "scope_statement": "scopeStatement"}
 
 
-def licence_of(tenant: Tenant, licence_id: uuid.UUID) -> Licence:
-    """The licence, in the caller's bank and under its row-level security, or 404."""
-    licence = Licence.objects.filter(tenant=tenant, pk=licence_id).first()  # ordering: pk lookup, at most one row
-    if licence is None:
-        raise _not_found()
-    return licence
-
-
 def _licence_snapshot(licence: Licence, services: list[Term]) -> dict[str, Any]:
     return {
         "orgUnitId": ref(licence.org_unit_id),

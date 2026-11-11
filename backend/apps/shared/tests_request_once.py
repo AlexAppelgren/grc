@@ -33,6 +33,7 @@ from apps.taxonomy.models import Urgency, UrgencyLabel
 from apps.taxonomy.reading import Labels, language_order
 from apps.watch import testing as watch_build
 from apps.shared.tests_support_session import grant
+from apps.shared.testing import identity_lookup_active
 
 V1 = "/api/v1"
 COOKIE = session_logic.refresh_cookie_name()
@@ -68,7 +69,7 @@ class FixedCost(TestCase):
         tenancy.clear_tenant()
         principal = session_logic.resolve_access_token(token, want=PrincipalKind.USER)
         assert principal is not None
-        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertFalse(identity_lookup_active())
         self.assertEqual(tenancy.database_tenant_id(), self.tenant.id)
         self.assertEqual(tenancy.active_tenant_id(), self.tenant.id)
         # What the read loaded rides on the principal.
@@ -79,7 +80,7 @@ class FixedCost(TestCase):
         with self.assertRaises(RuntimeError), tenancy.identity_lookup() as lookup:
             lookup.then_activate(self.tenant.id)
             raise RuntimeError("the credential's row was unreadable")
-        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertFalse(identity_lookup_active())
         self.assertIsNone(tenancy.database_tenant_id())
 
     def test_the_step_up_rides_on_the_grants_read(self) -> None:

@@ -16,7 +16,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic
-from apps.identity.models import Invitation, InvitationKind, Membership, MembershipRole, PlatformRoleAssignment, User, UserSession
+from apps.identity.models import Invitation, Membership, MembershipRole, PlatformRoleAssignment, User, UserSession
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
@@ -340,7 +340,3 @@ def reissue_enrolment(
         tenant=tenant, user=membership.user, actor=actor, actor_user=actor_user, request=request, step_up_assertion_id=step_up_assertion_id
     )
     return issued.invitation
-
-
-def is_reenrolment(invitation: Invitation) -> bool:
-    return invitation.kind == InvitationKind.REENROLMENT.value

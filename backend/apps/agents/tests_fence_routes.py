@@ -27,9 +27,9 @@ from apps.agents.tests_tasks import published
 from apps.agents.tests_tenant_agents import TenantAgentCase
 from apps.shared import permissions as perms
 from apps.shared import tenancy
-from apps.shared.permissions import gate_of
 from apps.shared.routes import RegisteredOperation, iter_operations
 from config.api import api
+from apps.shared.testing import gate_of
 
 FENCES = ("refuse_platform_agent", "refuse_platform_run")
 NAMING_FIELDS = {"agent", "tenant_agent_id"}

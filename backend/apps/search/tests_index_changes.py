@@ -43,6 +43,7 @@ from apps.watch import curation, registration
 from apps.watch import testing as watch
 from apps.watch.models import ChangeStatus, RegulatoryChange
 from apps.watch.write import watch_write
+from apps.shared.testing import handlers_for
 
 TITLE = "FI adopts amended rules on paying for investment research"
 SUMMARY = "FI's board decided to amend three regulations in the securities area."
@@ -214,11 +215,11 @@ class TheChangeHandler(TestCase):
         )
         for topic in tasks.CHANGE_TOPICS:
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic).count(tasks.index_change), 1)
+                self.assertEqual(handlers_for(topic).count(tasks.index_change), 1)
         # A registration also opens every bank's case; that handler is still there, and it
         # is the only other one.
         self.assertEqual(
-            set(outbox.handlers_for(registration.REGISTERED)), {creation.create_cases, tasks.index_change}
+            set(handlers_for(registration.REGISTERED)), {creation.create_cases, tasks.index_change}
         )
 
     def test_each_event_rebuilds_the_change_with_no_tenant_active_and_asks_no_model(self) -> None:
