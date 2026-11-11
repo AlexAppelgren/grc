@@ -586,7 +586,7 @@ def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
         WatchObligationLink(
             obligation_id=link.obligation_id,
             title=_title_of(link.obligation, order),
-            instrument_short_name=link.obligation.instrument.short_name,
+            instrument_short_name=link.obligation.instrument.shown_short_name,
             ref_label=link.obligation.ref_label,
             origin=cast(Origin, link.origin),
             confidence=None if link.confidence is None else float(link.confidence),

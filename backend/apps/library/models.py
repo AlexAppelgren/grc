@@ -24,6 +24,7 @@ from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils import timezone
 
+from apps.library.short_names import shown_short_name
 from apps.proposals.models import OriginType
 from apps.shared.tenancy import LibraryModel
 from apps.shared.vocabulary import Vocabulary, VocabularyLabel
@@ -259,6 +260,11 @@ class Instrument(LibraryModel):
 
     def __str__(self) -> str:
         return self.stable_key
+
+    @property
+    def shown_short_name(self) -> str:
+        """The name it goes by on screen, one to three words (D-132, `short_names.py`)."""
+        return shown_short_name(self.short_name, self.official_ref)
 
 
 class InstrumentTitle(Translation):

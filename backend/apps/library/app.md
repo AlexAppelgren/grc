@@ -325,4 +325,12 @@ And "eu" alone lists only the Union duty
 And a key no jurisdiction has matches nothing, while more than 20 keys or a key longer than 80 characters is refused with validation_error
 And on the screen Country is the first filter in the sheet, each chosen country is its own chip, and removing one keeps the rest
 ```
+### INV-S18 — A pill names an instrument in one to three words `@integration` (INV-01, INV-09)
+```gherkin
+Given an instrument whose short name is "Bekendtgørelse om god skik for finansielle virksomheder" and whose reference is "BEK nr 330 af 07/04/2016"
+When a reader lists its duties, opens one of them or opens the instrument
+Then each names the instrument "BEK 330/2016", and the instrument's name still reads in full on its card
+And an instrument whose short name is three words or fewer, such as "FFFS 2017:2", keeps it
+And the short name the library holds is unchanged, so a proposal still carries and shows it
+```
 

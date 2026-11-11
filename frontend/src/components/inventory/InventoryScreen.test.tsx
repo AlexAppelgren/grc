@@ -641,6 +641,23 @@ describe('InventoryScreen', () => {
     expect(picker.getByRole('button', { name: 'LVM (2)' })).toBeVisible();
   });
 
+  it('finds a regulation shown by its reference by the name it is called', async () => {
+    const godSkik: Instrument = {
+      ...fffs,
+      id: 'in-4',
+      stableKey: 'bek-2016-330',
+      shortName: 'BEK 330/2016',
+      name: { text: 'Bekendtgørelse om god skik for finansielle virksomheder', language: 'da', isOriginal: true, isMachine: false },
+    };
+    serve({ items: [research], total: 1 }, { items: [fffs, godSkik], total: 2 });
+    renderIn(<InventoryScreen />);
+    const picker = within(within(await openFilters()).getByRole('group', { name: 'Regulation' }));
+    await picker.findByRole('button', { name: 'BEK 330/2016 (2)' });
+    fireEvent.change(picker.getByRole('searchbox', { name: 'Find a regulation' }), { target: { value: 'god skik' } });
+    expect(picker.queryByRole('button', { name: 'FFFS 2017:2 (2)' })).toBeNull();
+    expect(picker.getByRole('button', { name: 'BEK 330/2016 (2)' })).toBeVisible();
+  });
+
   it('names an instrument outside our scope in its chip while it filters, read from the instruments outside it', async () => {
     // An instrument outside our scope, reached from its own card: the list is
     // filtered by it, so the chip names it from the instruments outside our

@@ -1028,6 +1028,27 @@ class LibraryScenarioTests(ScenarioTestCase):
             response = self.client.get(URL, {"jurisdiction": refused}, **sign_in(self.reader, tenant=self.tenant))
             self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
 
+    def test_inv_s18(self) -> None:
+        """INV-S18
+
+        A pill names an instrument in one to three words (INV-01, INV-09).
+        """
+        self.activate(self.tenant)
+        long_name = "Bekendtgørelse om god skik for finansielle virksomheder"
+        instrument = build.instrument(
+            key="inv-s18-god-skik", short_name=long_name, official_ref="BEK nr 330 af 07/04/2016", regime="regime:securities", jurisdiction="dk"
+        )
+        obligation = build.obligation(instrument, key="obl-inv-s18-god-skik", ref_label="INV-S18 god skik")
+
+        row = self.read(URL, {"footprint": "all", "q": "INV-S18"})["items"][0]
+        self.assertEqual(row["instrument"]["shortName"], "BEK 330/2016")
+        self.assertEqual(self.card(obligation.stable_key)["instrument"]["shortName"], "BEK 330/2016")
+        card = self.read(f"{V1}/instruments/{instrument.id}")
+        self.assertEqual((card["shortName"], card["name"]["text"]), ("BEK 330/2016", long_name))
+        self.assertEqual(self.read(f"{V1}/instruments/{self.instrument.id}")["shortName"], "FFFS 2017:2", "three words or fewer stay")
+        instrument.refresh_from_db()
+        self.assertEqual(instrument.short_name, long_name, "nothing is stored")
+
     def _found_and_approved(self, filing: dict[str, Any], approver: User) -> Any:
         """`filing` found by the bank's own agent in the worker, then approved in the bank's
         own queue by `approver` with a passkey."""

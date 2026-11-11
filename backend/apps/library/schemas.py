@@ -25,6 +25,10 @@ MAX_QUERY_LENGTH = 200
 # (hardening H27).
 FILTER_KEY_MAX = 80
 FilterKey = Annotated[str, Field(max_length=FILTER_KEY_MAX)]
+# What an instrument's short name holds wherever the API shows it (D-132, `short_names.py`).
+SHOWN_NAME = (
+    "At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`."
+)
 # A language key is a BCP 47 primary tag (`Language.key`, a slug of at most 8 characters);
 # `?lang=` is looked up among the languages a version has, so a longer one is a 422.
 MAX_LANGUAGE_LENGTH = 8
@@ -318,7 +322,8 @@ class ObligationInstrumentRef(LibraryResponse):
         description=(
             "How the instrument is written on a pill or in a column, in its own language. It "
             "is a label a person wrote and may be reworded, so show it and never match on "
-            "it; `key` is the identifier."
+            "it; `key` is the identifier. "
+            f"{SHOWN_NAME}"
         ),
         examples=["FFFS 2017:2"],
     )
@@ -766,7 +771,8 @@ class ObligationInstrumentSummary(LibraryResponse):
     short_name: str = Field(
         description=(
             "How the instrument is written on a pill or in a column, in its own language. A "
-            "label a person wrote and may reword, so show it and match on `key` instead."
+            "label a person wrote and may reword, so show it and match on `key` instead. "
+            f"{SHOWN_NAME}"
         ),
         examples=["FFFS 2017:2"],
     )
@@ -1802,7 +1808,8 @@ class InstrumentAuthorityRef(LibraryResponse):
 
 _INSTRUMENT_SHORT_NAME = (
     "How the instrument is written on a pill or in a column, in its own language. A "
-    "label a person wrote and may be reworded, so show it and match on `key` instead."
+    "label a person wrote and may be reworded, so show it and match on `key` instead. "
+    f"{SHOWN_NAME}"
 )
 _INSTRUMENT_NAME = (
     "The instrument's full name, in the best language this reader can be served. The "
@@ -2142,7 +2149,7 @@ class InstrumentLinkRef(LibraryResponse):
 
     id: UUID = Field(description="The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.")
     key: str = Field(description="The other instrument's stable key, issued once and never changed.", examples=["se-sfs-2004-297"])
-    short_name: str = Field(description="The other instrument's short name, to print.", examples=["LBF"])
+    short_name: str = Field(description=f"The other instrument's short name, to print. {SHOWN_NAME}", examples=["LBF"])
     jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
 
 

@@ -82,7 +82,7 @@ def _facts(ranked: list[uuid.UUID]) -> list[Obligation]:
 
 def _line(row: Obligation, order: list[str]) -> str:
     title = localized(row.titles.all(), order)
-    return f"{row.instrument.short_name}, {row.ref_label}: {title.text if title else row.stable_key}"
+    return f"{row.instrument.shown_short_name}, {row.ref_label}: {title.text if title else row.stable_key}"
 
 
 def _prompt(description: str, facts: list[Obligation], order: list[str]) -> str:

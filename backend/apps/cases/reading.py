@@ -127,7 +127,7 @@ def obligation_details(obligation_id: uuid.UUID, order: list[str]) -> Obligation
     title = localized(obligation.titles.all(), order)
     return ObligationDetails(
         title=obligation.stable_key if title is None else title.text,
-        instrument_short_name=obligation.instrument.short_name,
+        instrument_short_name=obligation.instrument.shown_short_name,
         ref_label=obligation.ref_label,
     )
 

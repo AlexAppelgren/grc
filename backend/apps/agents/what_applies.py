@@ -143,7 +143,7 @@ def _items(ids: list[uuid.UUID], order: list[str], on: datetime.date, decisions:
                 stable_key=row.stable_key,
                 ref_label=row.ref_label,
                 title=localized(row.titles.all(), order),
-                instrument=ObligationInstrumentRef(key=row.instrument.stable_key, short_name=row.instrument.short_name),
+                instrument=ObligationInstrumentRef(key=row.instrument.stable_key, short_name=row.instrument.shown_short_name),
                 version=None
                 if version is None or confirmed is None
                 else ObligationVersionRef(

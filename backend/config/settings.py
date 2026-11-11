@@ -639,6 +639,10 @@ LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000)
 # in one query, so the bound keeps that query and the URL short.
 # ---------------------------------------------------------------------------------------
 LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
+# The most words an instrument's name may have where the product shows it, in a pill, a
+# citation or a heading (D-132): a longer short name gives way to the compact official
+# reference (`apps/library/short_names.py`).
+INSTRUMENT_SHORT_NAME_MAX_WORDS = env_int("INSTRUMENT_SHORT_NAME_MAX_WORDS", 3)
 
 # ---------------------------------------------------------------------------------------
 # ===== PRO-01 what a proposal may carry ==================================================

@@ -101,6 +101,7 @@ from pgvector.django import CosineDistance
 
 from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, Provision
 from apps.library.reading import OPEN, Reader, entry_admits, in_view, instrument_scope_term_ids, scope_term_ids, terms_of, today_for
+from apps.library.short_names import shown_short_name
 from apps.search import limits
 from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import (
@@ -143,6 +144,7 @@ COLUMNS = (
     "heading",
     "version_no",
     "instrument_short_name",
+    "instrument_official_ref",
     "by_keyword",
     "by_concept",
     "fused",
@@ -293,6 +295,9 @@ def _candidates(
         version_no=Subquery(ObligationVersion.objects.filter(id=OuterRef("source_id")).values("version_number")[:1]),
         instrument_short_name=Subquery(
             Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values("short_name")[:1]
+        ),
+        instrument_official_ref=Subquery(
+            Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values("official_ref")[:1]
         ),
         fused=_rank_score("by_keyword", "keyword_rank") + _rank_score("by_concept", "concept_rank"),
     )
@@ -537,6 +542,12 @@ def _best_per_record(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return list(best.values())
 
 
+def instrument_name(row: dict[str, Any]) -> str | None:
+    """The hit's instrument as the product names it, one to three words (D-132)."""
+    short_name = row["instrument_short_name"]
+    return None if short_name is None else shown_short_name(short_name, row["instrument_official_ref"] or "")
+
+
 def _hit(row: dict[str, Any], query: str) -> SearchHit:
     metadata = row["metadata"]
     return SearchHit(
@@ -547,7 +558,7 @@ def _hit(row: dict[str, Any], query: str) -> SearchHit:
         match_kind=_match_kind(row),
         score=row["score"],
         version_no=row["version_no"],
-        instrument_short_name=row["instrument_short_name"],
+        instrument_short_name=instrument_name(row),
         binding=metadata.get("binding"),
         valid_from=row["valid_from"],
         valid_to=row["valid_to"],

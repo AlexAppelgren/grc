@@ -15,7 +15,7 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field, RootModel
 
-from apps.library.schemas import AgentRef, DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
+from apps.library.schemas import SHOWN_NAME, AgentRef, DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
 from apps.shared.schemas import AgentDecision, CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
@@ -638,7 +638,7 @@ class ProposalTarget(CamelSchema):
         )
     )
     instrument_short_name: str = Field(
-        description="The short name of the law, regulation or guideline the duty was broken out of, for example \"FFFS 2017:2\", so a row says which text is changing."
+        description=f"The short name of the law, regulation or guideline the duty was broken out of, for example \"FFFS 2017:2\", so a row says which text is changing. {SHOWN_NAME}"
     )
 
 

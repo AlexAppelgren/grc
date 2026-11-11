@@ -35,7 +35,7 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field
 
-from apps.library.schemas import FilterKey, FootprintFilter
+from apps.library.schemas import SHOWN_NAME, FilterKey, FootprintFilter
 from apps.shared.schemas import CamelSchema, WriteBody
 from apps.taxonomy.schemas import TermRef
 from apps.watch.schemas import DatePrecision
@@ -467,7 +467,8 @@ class SearchHit(CamelSchema):
         description=(
             "The everyday name of the instrument the record belongs to, such as `FFFS "
             "2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as "
-            "the official citation: the formal reference is on the instrument itself."
+            "the official citation: the formal reference is on the instrument itself. "
+            f"{SHOWN_NAME}"
         ),
     )
     binding: bool | None = Field(
@@ -659,7 +660,8 @@ class AnswerCitation(CamelSchema):
         description=(
             "The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID "
             "II`, so the citation reads as a lawyer would write it. Source: the shared "
-            "library. Do not read it as the official citation, which is on the instrument."
+            "library. Do not read it as the official citation, which is on the instrument. "
+            f"{SHOWN_NAME}"
         )
     )
     ref_label: str = Field(

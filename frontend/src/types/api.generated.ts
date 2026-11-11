@@ -12096,7 +12096,7 @@ export interface components {
             index: number;
             /**
              * Instrumentshortname
-             * @description The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID II`, so the citation reads as a lawyer would write it. Source: the shared library. Do not read it as the official citation, which is on the instrument.
+             * @description The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID II`, so the citation reads as a lawyer would write it. Source: the shared library. Do not read it as the official citation, which is on the instrument. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              */
             instrumentShortName: string;
             /**
@@ -13553,7 +13553,7 @@ export interface components {
             decision: "accepted" | "removed";
             /**
              * Instrumentshortname
-             * @description The short name of the instrument the obligation sits in, from the shared library.
+             * @description The short name of the instrument the obligation sits in, from the shared library. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example FFFS 2017:2
              */
             instrumentShortName: string;
@@ -18351,7 +18351,7 @@ export interface components {
             regime: components["schemas"]["LibraryRef"];
             /**
              * Shortname
-             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
+             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example FFFS 2017:2
              */
             shortName: string;
@@ -18433,7 +18433,7 @@ export interface components {
             key: string;
             /**
              * Shortname
-             * @description The other instrument's short name, to print.
+             * @description The other instrument's short name, to print. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example LBF
              */
             shortName: string;
@@ -18696,7 +18696,7 @@ export interface components {
             regime: components["schemas"]["LibraryRef"];
             /**
              * Shortname
-             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
+             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example FFFS 2017:2
              */
             shortName: string;
@@ -20943,7 +20943,7 @@ export interface components {
             key: string;
             /**
              * Shortname
-             * @description How the instrument is written on a pill or in a column, in its own language. It is a label a person wrote and may be reworded, so show it and never match on it; `key` is the identifier.
+             * @description How the instrument is written on a pill or in a column, in its own language. It is a label a person wrote and may be reworded, so show it and never match on it; `key` is the identifier. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example FFFS 2017:2
              */
             shortName: string;
@@ -20976,7 +20976,7 @@ export interface components {
             officialRef: string;
             /**
              * Shortname
-             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may reword, so show it and match on `key` instead.
+             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may reword, so show it and match on `key` instead. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example FFFS 2017:2
              */
             shortName: string;
@@ -24837,7 +24837,7 @@ export interface components {
             id: string;
             /**
              * Instrumentshortname
-             * @description The short name of the law, regulation or guideline the duty was broken out of, for example "FFFS 2017:2", so a row says which text is changing.
+             * @description The short name of the law, regulation or guideline the duty was broken out of, for example "FFFS 2017:2", so a row says which text is changing. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              */
             instrumentShortName: string;
             /**
@@ -28885,7 +28885,7 @@ export interface components {
             id: string;
             /**
              * Instrumentshortname
-             * @description The everyday name of the instrument the record belongs to, such as `FFFS 2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as the official citation: the formal reference is on the instrument itself.
+             * @description The everyday name of the instrument the record belongs to, such as `FFFS 2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as the official citation: the formal reference is on the instrument itself. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              */
             instrumentShortName?: string | null;
             /** @description Why this record is in the list: its words matched, its meaning matched, or both. Source: computed by the server for this query. Do not read `concept` as weaker evidence, nor its absence as proof the words are missing: a record not yet embedded can only ever match by keyword. */
@@ -35801,7 +35801,7 @@ export interface components {
             confirmedOrigin?: ("agent" | "user") | null;
             /**
              * Instrumentshortname
-             * @description The short name of the instrument the obligation sits in, from the library.
+             * @description The short name of the instrument the obligation sits in, from the library. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.
              * @example FFFS 2017:2
              */
             instrumentShortName: string;

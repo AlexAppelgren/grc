@@ -255,7 +255,7 @@ def _passages(question: str, *, tenant: Tenant, lang: str | None, as_of: datetim
         Passage(
             obligation_id=row["record_id"],
             version_no=row["version_no"],
-            instrument_short_name=row["instrument_short_name"],
+            instrument_short_name=hybrid.instrument_name(row) or "",
             ref_label=facts[row["record_id"]]["ref_label"],
             body=row["body"],
             source_url=facts[row["record_id"]]["source_url"],

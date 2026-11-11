@@ -204,7 +204,11 @@ function MultiToggleGroup({ label, values, value, onChange }: { label: string; v
   );
 }
 
-/** A long list as a filter (Instrument, Owner): a find field over the rows, "all" first, and a row's count when it has one. */
+/**
+ * A long list as a filter (Instrument, Owner): a find field over the rows, "all" first, and a
+ * row's count when it has one. The find field also matches a row's `name`, so a regulation
+ * shown by its reference, BEK 330/2016, is still found by what it is called.
+ */
 function FindList({
   label,
   findLabel,
@@ -217,13 +221,13 @@ function FindList({
   findLabel: string;
   allLabel: string;
   value: string;
-  rows: readonly { key: string; label: string; count?: number }[];
+  rows: readonly { key: string; label: string; name?: string; count?: number }[];
   onChange: (next: string) => void;
 }) {
   const t = useT();
   const [find, setFind] = useState('');
   const wanted = find.trim().toLocaleLowerCase();
-  const shown = rows.filter((row) => wanted === '' || row.label.toLocaleLowerCase().includes(wanted));
+  const shown = rows.filter((row) => wanted === '' || [row.label, row.name ?? ''].some((text) => text.toLocaleLowerCase().includes(wanted)));
   const option = (key: string, name: string, count?: number) => (
     <button
       key={key}
@@ -359,7 +363,7 @@ function InventorySheetBody({ filters, onChange }: { filters: ObligationFilters;
         findLabel={t('inventory.filters.findInstrument')}
         allLabel={t('inventory.filter.allInstruments')}
         value={filters.instrument}
-        rows={instruments.map((instrument) => ({ key: instrument.stableKey, label: instrument.shortName, count: instrument.obligationCount }))}
+        rows={instruments.map((instrument) => ({ key: instrument.stableKey, label: instrument.shortName, name: instrument.name?.text, count: instrument.obligationCount }))}
         onChange={(instrument) => onChange({ instrument })}
       />
       <ToggleGroup label={t('inventory.filter.regime')} values={regimes} value={filters.regime} onChange={(regime) => onChange({ regime })} />

@@ -3129,7 +3129,7 @@
             "type": "integer"
           },
           "instrumentShortName": {
-            "description": "The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID II`, so the citation reads as a lawyer would write it. Source: the shared library. Do not read it as the official citation, which is on the instrument.",
+            "description": "The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID II`, so the citation reads as a lawyer would write it. Source: the shared library. Do not read it as the official citation, which is on the instrument. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "title": "Instrumentshortname",
             "type": "string"
           },
@@ -5544,7 +5544,7 @@
             "type": "string"
           },
           "instrumentShortName": {
-            "description": "The short name of the instrument the obligation sits in, from the shared library.",
+            "description": "The short name of the instrument the obligation sits in, from the shared library. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "FFFS 2017:2"
             ],
@@ -12601,7 +12601,7 @@
             "description": "Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key."
           },
           "shortName": {
-            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.",
+            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "FFFS 2017:2"
             ],
@@ -12762,7 +12762,7 @@
             "type": "string"
           },
           "shortName": {
-            "description": "The other instrument's short name, to print.",
+            "description": "The other instrument's short name, to print. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "LBF"
             ],
@@ -13159,7 +13159,7 @@
             "description": "Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key."
           },
           "shortName": {
-            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.",
+            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "FFFS 2017:2"
             ],
@@ -16547,7 +16547,7 @@
             "type": "string"
           },
           "shortName": {
-            "description": "How the instrument is written on a pill or in a column, in its own language. It is a label a person wrote and may be reworded, so show it and never match on it; `key` is the identifier.",
+            "description": "How the instrument is written on a pill or in a column, in its own language. It is a label a person wrote and may be reworded, so show it and never match on it; `key` is the identifier. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "FFFS 2017:2"
             ],
@@ -16601,7 +16601,7 @@
             "type": "string"
           },
           "shortName": {
-            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may reword, so show it and match on `key` instead.",
+            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may reword, so show it and match on `key` instead. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "FFFS 2017:2"
             ],
@@ -22521,7 +22521,7 @@
             "type": "string"
           },
           "instrumentShortName": {
-            "description": "The short name of the law, regulation or guideline the duty was broken out of, for example \"FFFS 2017:2\", so a row says which text is changing.",
+            "description": "The short name of the law, regulation or guideline the duty was broken out of, for example \"FFFS 2017:2\", so a row says which text is changing. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "title": "Instrumentshortname",
             "type": "string"
           },
@@ -29237,7 +29237,7 @@
                 "type": "null"
               }
             ],
-            "description": "The everyday name of the instrument the record belongs to, such as `FFFS 2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as the official citation: the formal reference is on the instrument itself.",
+            "description": "The everyday name of the instrument the record belongs to, such as `FFFS 2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as the official citation: the formal reference is on the instrument itself. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "title": "Instrumentshortname"
           },
           "matchKind": {
@@ -40362,7 +40362,7 @@
             "title": "Confirmedorigin"
           },
           "instrumentShortName": {
-            "description": "The short name of the instrument the obligation sits in, from the library.",
+            "description": "The short name of the instrument the obligation sits in, from the library. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
               "FFFS 2017:2"
             ],

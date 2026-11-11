@@ -54,7 +54,7 @@ from pydantic.json_schema import JsonDict
 from apps.cases.schemas import ASSESSMENT_EXAMPLE as CASES_ASSESSMENT_EXAMPLE
 from apps.cases.schemas import NOTE_MAX, OWNER_TEAM_REF, CasesAssessment, CasesVocabularyRef
 from apps.governance.schemas import AiCitation
-from apps.library.schemas import AgentRef, LibraryRef, LibraryResponse
+from apps.library.schemas import SHOWN_NAME, AgentRef, LibraryRef, LibraryResponse
 from apps.shared.schemas import AgentDecision, CamelSchema, PageQuery, WriteBody
 from apps.taxonomy.schemas import PersonRef
 
@@ -1083,7 +1083,7 @@ class WatchObligationLink(LibraryResponse):
         examples=["Assess the quality of investment research paid for"],
     )
     instrument_short_name: str = Field(
-        description="The short name of the instrument the obligation sits in, from the library.", examples=["FFFS 2017:2"]
+        description=f"The short name of the instrument the obligation sits in, from the library. {SHOWN_NAME}", examples=["FFFS 2017:2"]
     )
     ref_label: str = Field(
         description="Where in that instrument the obligation sits, as the instrument numbers it.", examples=["11 kap. 4 §"]

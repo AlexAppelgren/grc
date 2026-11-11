@@ -227,7 +227,7 @@ def obligation_headings(obligation_ids: Collection[uuid.UUID], order: list[str])
         headings[row.id] = RecordHeading(
             title="" if title is None else title.text,
             reference_label=row.ref_label,
-            instrument_short_name=row.instrument.short_name,
+            instrument_short_name=row.instrument.shown_short_name,
         )
     return headings
 
@@ -248,7 +248,7 @@ def instrument_headings(instrument_ids: Collection[uuid.UUID]) -> dict[uuid.UUID
     if not instrument_ids:
         return {}
     return {
-        row.id: RecordHeading(title=row.short_name, reference_label=row.official_ref, instrument_short_name=row.short_name)
+        row.id: RecordHeading(title=row.short_name, reference_label=row.official_ref, instrument_short_name=row.shown_short_name)
         for row in Instrument.objects.filter(id__in=instrument_ids)
     }
 
@@ -1069,7 +1069,7 @@ def obligation_page(
                 stable_key=obligation.stable_key,
                 ref_label=obligation.ref_label,
                 title=localized(obligation.titles.all(), order),
-                instrument=ObligationInstrumentRef(key=instrument.stable_key, short_name=instrument.short_name),
+                instrument=ObligationInstrumentRef(key=instrument.stable_key, short_name=instrument.shown_short_name),
                 binding_level=level_refs[instrument.level_id],
                 binding=instrument.binding,
                 duty_type=duty_refs[obligation.duty_type_id],
@@ -1178,7 +1178,7 @@ def _related_obligations(obligation: Obligation, order: list[str], reader: Reade
             id=relation.to_obligation_id,
             title=localized(titles.get(relation.to_obligation_id, []), order),
             instrument=ObligationInstrumentRef(
-                key=relation.to_obligation.instrument.stable_key, short_name=relation.to_obligation.instrument.short_name
+                key=relation.to_obligation.instrument.stable_key, short_name=relation.to_obligation.instrument.shown_short_name
             ),
             binding=relation.to_obligation.instrument.binding,
             relation=relation_refs[relation.relation_type_id],
@@ -1227,7 +1227,7 @@ def obligation_detail(
         title=localized(obligation.titles.all(), order),
         instrument=ObligationInstrumentSummary(
             key=instrument.stable_key,
-            short_name=instrument.short_name,
+            short_name=instrument.shown_short_name,
             name=localized(instrument.titles.all(), order),
             official_ref=instrument.official_ref,
             implements_note=instrument.implements_note,
@@ -1354,7 +1354,7 @@ def instrument_page(
             InstrumentRow(
                 id=instrument.id,
                 stable_key=instrument.stable_key,
-                short_name=instrument.short_name,
+                short_name=instrument.shown_short_name,
                 name=localized(instrument.titles.all(), order),
                 level=level_refs[instrument.level_id],
                 binding=instrument.binding,
@@ -1409,7 +1409,7 @@ def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[I
         InstrumentLineageRef(
             relation=relation_refs[relation.relation_type_id],
             direction="outgoing",
-            instrument=ObligationInstrumentRef(key=relation.to_instrument.stable_key, short_name=relation.to_instrument.short_name),
+            instrument=ObligationInstrumentRef(key=relation.to_instrument.stable_key, short_name=relation.to_instrument.shown_short_name),
             note=relation.note,
             from_ref=relation.from_ref,
             to_ref=relation.to_ref,
@@ -1420,7 +1420,7 @@ def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[I
         InstrumentLineageRef(
             relation=relation_refs[relation.relation_type_id],
             direction="incoming",
-            instrument=ObligationInstrumentRef(key=relation.from_instrument.stable_key, short_name=relation.from_instrument.short_name),
+            instrument=ObligationInstrumentRef(key=relation.from_instrument.stable_key, short_name=relation.from_instrument.shown_short_name),
             note=relation.note,
             from_ref=relation.from_ref,
             to_ref=relation.to_ref,
@@ -1442,7 +1442,7 @@ def _numbers(text: str) -> set[str]:
 def _links(instruments: Iterable[Instrument], order: list[str]) -> list[InstrumentLinkRef]:
     rows = sorted(instruments, key=lambda row: (row.jurisdiction.sort_order, row.short_name.lower()))
     refs = vocabulary_refs(JurisdictionLabel, [row.jurisdiction for row in rows], order)
-    return [InstrumentLinkRef(id=row.id, key=row.stable_key, short_name=row.short_name, jurisdiction=refs[row.jurisdiction_id]) for row in rows]
+    return [InstrumentLinkRef(id=row.id, key=row.stable_key, short_name=row.shown_short_name, jurisdiction=refs[row.jurisdiction_id]) for row in rows]
 
 
 def _implementation(instrument: Instrument, order: list[str], reader: Reader) -> tuple[list[InstrumentLinkRef], list[InstrumentLinkRef]]:
@@ -1500,7 +1500,7 @@ def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID
     return InstrumentDetail(
         id=instrument.id,
         stable_key=instrument.stable_key,
-        short_name=instrument.short_name,
+        short_name=instrument.shown_short_name,
         name=localized(instrument.titles.all(), order),
         level=level_refs[instrument.level_id],
         binding=instrument.binding,

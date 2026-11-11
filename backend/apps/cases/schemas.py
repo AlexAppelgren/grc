@@ -32,7 +32,7 @@ from ninja import Field
 from pydantic import ConfigDict
 from pydantic.json_schema import JsonDict
 
-from apps.library.schemas import LibraryRef
+from apps.library.schemas import SHOWN_NAME, LibraryRef
 from apps.shared.schemas import CamelSchema, LibraryResponse, WriteBody
 from apps.taxonomy.schemas import PersonRef
 
@@ -204,7 +204,7 @@ class CasesObligationLink(CamelSchema):
         examples=["Assess the quality of investment research paid for"],
     )
     instrument_short_name: str = Field(
-        description="The short name of the instrument the obligation sits in, from the shared library.", examples=["FFFS 2017:2"]
+        description=f"The short name of the instrument the obligation sits in, from the shared library. {SHOWN_NAME}", examples=["FFFS 2017:2"]
     )
     ref_label: str = Field(
         description="Where in that instrument the obligation sits, as the instrument numbers it.", examples=["11 kap. 4 §"]

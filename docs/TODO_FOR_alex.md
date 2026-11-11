@@ -2,6 +2,22 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## Pills name an instrument in one to three words (2026-11-11, D-132)
+
+An instrument whose short name runs past three words now shows its compact official reference,
+`BEK 330/2016` or `EU 2016/167`, wherever the product names it. That covers 252 of the 258 long
+names in the baseline. Nothing waits on you; the two lines below are yours to answer.
+
+- [ ] **FIN-FSA-SHORT-NAMES.** Six Finanssivalvonta documents, "Määräykset ja ohjeet 2/2023"
+      and five more, keep their full name, because their reference is four words and no short form
+      is in documented use. The only one found is the industry's "MOK" (Finanssiala writes
+      "Rahanpesu-MOK"). Default: the full name, wrapping in its pill. Say "MOK 2/2023" and they
+      read that way.
+- [ ] **READABLE-INSTRUMENT-NAMES.** You chose readable names later: a new proposal kind that
+      corrects an instrument's short name, an agent drafting one to three words for each of the
+      258, and a person approving them in the console, each replacing its reference as it is
+      approved. Not built yet; it is the next slice when you want it.
+
 ## The public page is a dictionary now: three defaults (2026-11-11, D-130)
 
 The Lexicon direction is built at `/welcome` from `design/public/index.html`, with the Swedish
