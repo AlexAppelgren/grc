@@ -2571,14 +2571,24 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       canonical address; a marker of one day; sign-in and every other app address unchanged. It
       is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
       are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
-- [ ] **One host, as in the owner's two other apps, is the larger step, and yours to decide.**
-      ESC-App and the older bleqq serve their pages and their API from one host (`/api` is
-      rewritten on the server) and keep a session cookie the web server can read. Compliance
-      Watch has two public hosts, and a filter has to rate both: with `api.bleqq.com` denied,
-      a person sees "Loading your session…" and then "Try again". Putting the API under
-      `app.bleqq.com/api` removes the second host and lets the server answer every first
-      request. It changes where the refresh cookie lives (D-06) and how the API sees a
-      person's address, so it needs your word and its own ADR.
+- [ ] **The browser reaches the API through the app host: built, yours to ship (D-134, ADR 0068).**
+      On 2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
+      passkey button answered "The server could not be reached": the page's calls to the second
+      host, `api.bleqq.com`, did not get through on the bank's network, while the same calls
+      answered correctly from outside. Broadcom documents that its proxy cannot authenticate
+      cross-origin calls made without credentials, which a preflight always is; which mode
+      SEB's proxy runs was not confirmed. ESC-App and the older bleqq make no such calls. So the
+      client now calls `/api/...` on its own host and the web server passes each call on to
+      the API. No Railway variable changes. Not confirmed until tried from SEB's network.
+- [ ] **After that ships: the address the API sees, and the shorter path.** Each call now
+      reaches the API from the web server. Through the API's public address the edge appends
+      its own hops again, so the rightmost `X-Forwarded-For` entries are the edge's and every
+      caller shares them: per-address rate limits count all callers together (stricter, not
+      looser) and the security log names the edge. Two steps fix it, in Railway: point `web`'s
+      `NEXT_PUBLIC_API_URL` at the api's private address (and add that address to the api's
+      `ALLOWED_HOSTS`), then sign in once and read the address on your own session in
+      Account › Sessions. If it is not yours, tell an agent what it shows before
+      `TRUSTED_PROXY_HOPS` is touched: a wrong value trusts an entry the caller wrote.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`

@@ -74,6 +74,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0065](0065-the-library-baseline-arrives-by-proposal.md) | The library's starting inventory arrives by proposal, as a researched baseline | D-118 | accepted (Alex, 2026-09-30) |
 | [0066](0066-the-organisation-and-scope-come-from-public-registers.md) | The organisation and the regulatory scope come from public registers, through the existing request | D-121 | accepted (Alex, 2026-10-05) |
 | [0067](0067-one-account-may-hold-both-zones-one-session-holds-one.md) | One account may hold both zones; one session holds one, and a passkey switches between them | D-122, supersedes hardening H13's separate accounts | accepted (Alex, 2026-11-08) |
+| [0068](0068-the-browser-reaches-the-api-through-the-app-host.md) | The browser reaches the API through the app host | D-134; keeps D-06 | proposed (on the branch, 2026-11-11) |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the

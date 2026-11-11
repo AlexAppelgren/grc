@@ -55,10 +55,11 @@ async function bearerOf(page: Page, navigate: () => Promise<unknown>): Promise<s
 
 /**
  * One call to the real API from inside the page, as the person signed in there: the request
- * passes through the page's network, so the API guard sees its answer.
+ * passes through the page's network, so the API guard sees its answer. It goes to the page's
+ * own origin, as every call of the app does (next.config.ts); the content policy allows no other.
  */
 async function callApi(page: Page, authorization: string, method: string, path: string, body?: unknown): Promise<{ status: number; body: unknown }> {
-  const url = `${process.env.E2E_BACKEND_URL ?? ''}/api/v1${path}`;
+  const url = `/api/v1${path}`;
   return page.evaluate(
     async ({ url, method, authorization, body }) => {
       const headers: Record<string, string> = { authorization, 'content-type': 'application/json' };

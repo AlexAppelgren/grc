@@ -4,9 +4,12 @@ import { clearSignedIn, markSignedIn } from '@/shared/navigation/session-marker'
 import type { components } from '@/types/api.generated';
 
 // The single axios instance (playbook 2.3, 6.1). Never a second one, never
-// raw fetch for API calls. Sessions per DECISIONS D-06: the access token lives
-// in memory only, the rotating refresh token in an HttpOnly cookie that the
-// browser sends to the refresh endpoint with `withCredentials`. Step-up per
+// raw fetch for API calls. Every call goes to this page's own origin, under
+// /api, and the web server passes it on to the API (next.config.ts, D-134):
+// the browser talks to one host, so no call is cross-origin and none needs a
+// preflight, which a bank's proxy may refuse. Sessions per DECISIONS D-06: the
+// access token lives in memory only, the rotating refresh token in an HttpOnly
+// cookie that the browser sends to the refresh endpoint. Step-up per
 // playbook 4.2: a 403 `step_up_required` opens the passkey prompt and the
 // request is retried once after a fresh assertion.
 
@@ -23,7 +26,6 @@ declare module 'axios' {
   }
 }
 
-export const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_URL ?? '';
 export const REFRESH_PATH = '/api/v1/auth/refresh';
 export const SIGN_OUT_PATH = '/api/v1/auth/sign-out';
 export const STEP_UP_REQUIRED_CODE = 'step_up_required';
@@ -95,7 +97,6 @@ export function newRequestId(): string {
 }
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: { Accept: 'application/json' },
 });

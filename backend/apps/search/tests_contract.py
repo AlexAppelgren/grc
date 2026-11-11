@@ -120,7 +120,7 @@ class AskStreamContractTests(SearchApiTestCase):
         self.assertTrue(response["Content-Type"].startswith("text/event-stream"), response["Content-Type"])
         # Nothing between the answer and the reader may hold the events back (playbook 10).
         self.assertEqual(response["X-Accel-Buffering"], "no")
-        self.assertEqual(response["Cache-Control"], "no-cache")
+        self.assertEqual(response["Cache-Control"], "no-cache, no-transform")
         events = events_of(response)
         self.assertEqual([event["event"] for event in events], ["start", "answer"])
         self.assertEqual(events[0]["id"], events[1]["answer"]["id"])
