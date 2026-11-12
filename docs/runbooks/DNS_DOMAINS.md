@@ -63,6 +63,22 @@ the API must be reachable from the web origin through the same registrable
 domain. With the hosts above (`app.bleqq.com` and
 `api.bleqq.com`) they do.
 
+## The API behind the app host (D-134, ADR 0068)
+
+A bank's proxy can refuse the browser's cross-origin call to the API host, so the browser
+is to call `/api/...` on the app host and the web server passes it on. The web server
+sends it to the API's address on the platform's private network (`API_INTERNAL_URL` on
+`web`, `RAILWAY_VARIABLES.md`). **It must never be the API's public address.** A request
+that came in through Cloudflare and goes back into the same zone is refused with "Error
+1000, DNS points to prohibited IP"; that took sign-in down for 46 minutes on 2026-11-12.
+The API's DNS record stays proxied: agents and integrations still call `api.bleqq.com`.
+
+Step one is live when `web` has the variable: `POST https://app.bleqq.com/api/v1/auth/refresh`
+answers the API's own 401 (`application/problem+json`, code `unauthenticated`). A 400 means
+the API's `ALLOWED_HOSTS` lacks the private name, a 500 the name or the port, a 403 from
+Cloudflare the public address. Until step two the browser still calls the API host, and the
+cookie rule above is unchanged.
+
 ## Site trust: what a bank's web filter checks
 
 On 2026-09-28 SEB's corporate web filter blocked `https://www.bleqq.com/` as

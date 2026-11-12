@@ -52,8 +52,8 @@ describe('routeByHost on a public host', () => {
     }
   });
 
-  it('sends an API-client path and an unknown path to the app host, which answers them as today', () => {
-    expect(routeByHost(SPLIT, request('bleqq.com', '/api/v1/auth/session'))).toEqual({ kind: 'redirect', url: 'https://app.bleqq.com/api/v1/auth/session' });
+  // The API's paths never reach these rules: next.config.ts answers /api on every host.
+  it('sends an unknown path to the app host, which answers it as today', () => {
     expect(routeByHost(SPLIT, request('bleqq.com', '/not-a-page'))).toEqual({ kind: 'redirect', url: 'https://app.bleqq.com/not-a-page' });
   });
 

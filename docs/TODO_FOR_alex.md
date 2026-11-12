@@ -2571,22 +2571,31 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       canonical address; a marker of one day; sign-in and every other app address unchanged. It
       is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
       are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
-- [ ] **The API under the app host was shipped and taken back the same hour (2026-11-12).** On
+- [ ] **The API under the app host: two variables in Railway, then tell me (2026-11-12).** On
       2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
-      passkey button answered "The server could not be reached": the page's calls to the second
-      host, `api.bleqq.com`, did not get through on the bank's network. ESC-App and the older
-      bleqq make no such calls, because their web server passes `/api` on to the backend. The
-      same was built here, passed every journey and the full CI, and reached `main` at 01:16 UTC
-      on 2026-11-12. On the live stack every API call then answered 403: the web server's call
-      to `https://api.bleqq.com` goes back into the same Cloudflare zone it came through, and
-      Cloudflare refuses it ("Error 1000, DNS points to prohibited IP"). Nobody could sign in
-      until the revert was live. The test stack has no Cloudflare, so no journey can see this.
-      Before a second attempt: (1) give `web` an address for the api that does not pass
-      Cloudflare, the platform's private address, in a variable of its own, and add that
-      address to the api's `ALLOWED_HOSTS`; (2) try one call from the web service's shell to
-      that address before anything ships; (3) only then build it again (the reverted commit
-      `c0e082c` has the code, the stream fix and the journeys). SEB sign-in stays as it was on
-      2026-11-11 until then: the page loads and the passkey call fails on the bank's network.
+      passkey button answered "The server could not be reached": the page's call to the second
+      host, `api.bleqq.com`, gets no answer on the bank's network (your Network tab: `options`,
+      no status, 0 bytes). ESC-App and the older bleqq make no such call, because their web
+      server passes `/api` on to the backend. The first attempt here sent that call to the
+      API's public address and Cloudflare refused it (error 1000); nobody could sign in from
+      01:16 to about 02:05 UTC on 2026-11-12, and it was taken back. ADR 0068 has the cause.
+      The second attempt is in two steps. Step one is on `main` and changes nothing until you
+      set a variable: the web server can pass `/api` on to the API over Railway's private
+      network. Nothing a person does uses that route yet, so a wrong value harms nobody.
+      1. `grc-backend` › Settings › Networking: read the port beside `api.bleqq.com` (the
+         edit icon shows it). It is the port the API listens on, `8000` unless Railway set
+         `PORT`.
+      2. `grc-backend` › Variables › `ALLOWED_HOSTS`: keep what is there and add
+         `,grc-backend.railway.internal` at the end. The api restarts.
+      3. `grc-front` › Variables › new variable `API_INTERNAL_URL` =
+         `http://grc-backend.railway.internal:<the port from 1>`. `http`, not `https`: the
+         private network is encrypted by the platform. Never `https://api.bleqq.com` here.
+         The web service rebuilds.
+      4. Tell me. I call `https://app.bleqq.com/api/v1/auth/refresh` from outside. The API's
+         own 401 means the route works, and step two (the browser switches to it) ships.
+         Anything else names what is wrong: a 400 is `ALLOWED_HOSTS`, a 500 is the name or the
+         port, a 403 from Cloudflare is the public address.
+      To undo: delete `API_INTERNAL_URL`. SEB sign-in stays as it is until step two is live.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`

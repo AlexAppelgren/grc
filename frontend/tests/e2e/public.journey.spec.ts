@@ -326,16 +326,31 @@ test.describe('the public site and the app on hosts of their own', () => {
     expect(welcome.status()).toBe(301);
     expect(welcome.headers().location).toBe(`${PUBLIC}/?from=a`);
 
-    for (const path of ['/sign-in', '/enrol', '/invite', '/inventory', '/admin/audit-log', '/console/queue', '/api/v1/auth/session', '/not-a-page']) {
+    for (const path of ['/sign-in', '/enrol', '/invite', '/inventory', '/admin/audit-log', '/console/queue', '/not-a-page']) {
       const moved = await crawl(request, `${PUBLIC}${path}`);
       expect(moved.status(), path).toBe(301);
       expect(moved.headers().location, path).toBe(`${APP}${path}`);
     }
 
+    // The API's paths are passed on to the API on every host (next.config.ts): this one does not exist there,
+    // and the answer is the API's own, never a move to another host.
+    const api = await crawl(request, `${PUBLIC}/api/v1/auth/session`);
+    expect(api.status()).toBe(404);
+    expect(api.headers()['content-type']).toContain('application/problem+json');
+
     // The public files stay; the sitemap lists the public host's front door.
     for (const path of ['/robots.txt', '/.well-known/security.txt']) expect((await crawl(request, `${PUBLIC}${path}`)).status(), path).toBe(200);
     const sitemap = await (await crawl(request, `${PUBLIC}/sitemap.xml`)).text();
     expect([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])).toEqual([`https://${new URL(PUBLIC).host}/`]);
+  });
+
+  test('the app host passes an API call on to the API and returns the API\'s own answer', async ({ request }) => {
+    // The API behind the web server (next.config.ts): a browser can reach it on the app's own
+    // host. Nobody is signed in here, so the API refuses, in its own words.
+    const refused = await request.post(`${APP}/api/v1/auth/refresh`, { maxRedirects: 0 });
+    expect(refused.status()).toBe(401);
+    expect(refused.headers()['content-type']).toContain('application/problem+json');
+    expect(((await refused.json()) as { code: string }).code).toBe('unauthenticated');
   });
 
   test('the app host keeps the app, marks every page noindex, and sends the public page to the public host', async ({ request }) => {

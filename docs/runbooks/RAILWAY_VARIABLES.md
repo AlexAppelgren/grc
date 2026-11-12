@@ -28,7 +28,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
-| `ALLOWED_HOSTS` | api | `localhost,127.0.0.1` | `localhost` | the api host | Explicit, never `*` |
+| `ALLOWED_HOSTS` | api | `localhost,127.0.0.1` | `localhost` | the api host, and the api's private name (`grc-backend.railway.internal`) once `web` has `API_INTERNAL_URL` | Explicit, never `*`. A call the web server passes on arrives with the private name as its `Host` (ADR 0068) |
 | `CORS_ALLOWED_ORIGINS` | api | `http://localhost:3000` | `http://localhost:3000` | `https://<web host>` | Scoped to `/api/` |
 | `PRODUCT_NAME` | api, web | `Compliance Watch` | same | `bleqq compliance` | The display name; a rebrand is a variable |
 | `WEBAUTHN_RP_ID` | api | `localhost` | `localhost` | the exact test host (`DNS_DOMAINS.md`) | A passkey belongs to one RP ID (D-02, ADR 0002). Required when deployed |
@@ -194,6 +194,9 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_API_URL` | web | `http://localhost:8000` | `http://localhost:8000` | the api's public URL | Baked at build time by Next; a change needs a rebuild |
+| `API_INTERNAL_URL` | web | unset | `http://localhost:8000` (the E2E job) | `http://grc-backend.railway.internal:<the api's port>` | Where the web server passes `/api/...` on to (D-134, ADR 0068): the api's address on the platform's private network, `http`. **Never the api's public address**: a call to it goes back through Cloudflare, which refuses it with error 1000 (the outage of 2026-11-12). Stays on the server. Fixed when the build runs; a change needs a rebuild. Unset, nothing is passed on. The api's `ALLOWED_HOSTS` must name the private host |
+| `API_INTERNAL_MAX_BODY_BYTES` | web | unset (`27262976`, 26 MiB) | unset | unset | The largest request body the web server passes on; Next cuts a larger one and the call ends in a 500. Keep it just above the api's `EVIDENCE_MAX_BYTES`: Next holds each body in memory while it passes it on. Fixed when the image is built |
+| `API_INTERNAL_TIMEOUT_MS` | web | unset (`200000`) | unset | unset | How long the web server waits through silence from the api before it gives up with a 500. Keep it above the api's `LLM_DEADLINE_S` (180 s), the longest an Ask stream may stay silent, and under the edge's five minutes. Fixed when the image is built |
 | `PUBLIC_SITE_HOST` | web | empty | empty (the host-split journey's own server sets `public.localhost:3001`) | `bleqq.com,www.bleqq.com` | The hosts that serve the public page, comma-separated (`DNS_DOMAINS.md`, "The public site and the app on their own hosts"). On them `/` is the public page, rendered on the server, `/welcome` moves to `/` and every other page moves to `APP_HOST`. Read at run time, not baked: a redeploy of `web` without a rebuild is enough. Does nothing unless `APP_HOST` is set too |
 | `APP_HOST` | web | empty | empty (the host-split journey's own server sets `localhost:3001`) | `app.bleqq.com` | The one host that serves the app. There every page sends `X-Robots-Tag: noindex` and `/welcome` moves to the first `PUBLIC_SITE_HOST`. Read at run time. Does nothing unless `PUBLIC_SITE_HOST` is set too; any other host (the service's own `*.up.railway.app` address, the health check) behaves as before |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |

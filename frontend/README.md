@@ -43,4 +43,6 @@ Where things are:
 
 Public settings: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_PRODUCT_NAME`
 (default "Compliance Watch"), `NEXT_PUBLIC_DEFAULT_LOCALE` (`en` or `sv`),
-`NEXT_PUBLIC_SUPPORT_CONTACT`.
+`NEXT_PUBLIC_SUPPORT_CONTACT`. Server-side, fixed by the build: `API_INTERNAL_URL`, where
+the web server passes `/api` on to (ADR 0068), with `API_INTERNAL_MAX_BODY_BYTES` and
+`API_INTERNAL_TIMEOUT_MS`.

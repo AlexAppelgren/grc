@@ -33,6 +33,7 @@ eyes.
 """
 
 from collections.abc import Iterator
+from typing import Generic, TypeVar
 
 from django.http import HttpRequest
 from ninja import SSE, Path, Query, Router
@@ -175,9 +176,25 @@ def find_similar(request: HttpRequest, body: SimilarRequest) -> SearchResponse:
     return hybrid.find_similar(body, caller_id=who.subject_id, tenant_id=who.tenant_id)
 
 
+_Event = TypeVar("_Event")
+
+
+class EventStream(SSE, Generic[_Event]):
+    """The framework's event stream, marked `no-transform`. A browser can reach the API
+    through the web server (D-134), which compresses what it passes on and holds a
+    compressed stream back until it ends: measured on 2026-11-11, five events 400 ms apart
+    arrived together after two seconds. A response that says `no-transform` is passed on
+    as it is, event by event, by that server and by any proxy that honours the header,
+    which is what the first-token budget needs (NFR-02)."""
+
+    @classmethod
+    def response_headers(cls) -> dict[str, str]:
+        return {**super().response_headers(), "Cache-Control": "no-cache, no-transform"}
+
+
 @router.post(
     "/ask",
-    response=SSE[AskEvent],
+    response=EventStream[AskEvent],
     auth=SESSION,
     operation_id="ask",
     by_alias=True,

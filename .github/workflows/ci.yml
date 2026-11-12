@@ -593,6 +593,8 @@ jobs:
       CI: "true"
       E2E_MODE: "true"
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      # The same API behind the web server's own /api (frontend/next.config.ts), fixed by the build below.
+      API_INTERNAL_URL: http://localhost:8000
     defaults:
       run:
         shell: bash
@@ -625,7 +627,7 @@ jobs:
 
       # The production build, the one Playwright would otherwise run first, starts here
       # so it overlaps the database and backend setup (D-90). It bakes in the job's
-      # NEXT_PUBLIC_API_URL, the address the seeded stack serves on;
+      # NEXT_PUBLIC_API_URL and API_INTERNAL_URL, the address the seeded stack serves on;
       # "Run journeys" sets E2E_PREBUILT so Playwright starts this build instead of
       # making its own.
       - name: Build the web app (in the background)
