@@ -22,7 +22,7 @@ export interface Destination {
   dockRank?: number;
   group: NavGroup;
   /**
-   * A child sits under its parent's screen (the Admin index, the who panel's
+   * A child sits under its parent's screen (Admin's tab bar, the who panel's
    * account links) and never in the rail or the dock. `account` is a virtual
    * parent: the who panel lists its children.
    */
@@ -64,7 +64,7 @@ export const destinations: readonly Destination[] = [
   { id: 'gaps', href: '/gaps', labelKey: 'nav.gaps', surface: 'tenant', anyOfPermissions: ['register.read'], group: 'secondary' },
   // The briefing (HOM-02): reached from Today's lead card and the mailed
   // link, never the rail or the More sheet. `parent` names a destination
-  // nothing renders children for (only 'admin' and the account parent do),
+  // nothing renders children for (only Admin's tab bar and the account parent do),
   // which is what keeps this out of every list while still giving the two
   // /briefing pages one typed permission to gate on, instead of a literal.
   { id: 'briefing', href: '/briefing', labelKey: 'nav.briefing', surface: 'tenant', anyOfPermissions: ['watch.read'], group: 'secondary', parent: 'today' },
@@ -92,8 +92,8 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-workflow', href: '/admin/workflow', labelKey: 'nav.admin.workflow', surface: 'tenant', anyOfPermissions: ['workflow.manage'], group: 'admin', parent: 'admin' },
   // c11-fe-admin-security
   { id: 'admin-security', href: '/admin/security', labelKey: 'nav.admin.security', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
-  // acc-fe-admin (ACC-01, ACC-03, ACC-08): the Access tab of Agents, reached from that page's tabs,
-  // never listed on the Admin index. An entry exposes its credentials and log, so reading needs the grant too.
+  // acc-fe-admin (ACC-01, ACC-03, ACC-08): Agents' Access page, a tab beside Agents in Admin's
+  // tab bar (ADMIN_GROUPS). An entry exposes its credentials and log, so reading needs the grant too.
   { id: 'admin-agents-access', href: '/admin/agents/access', labelKey: 'nav.admin.agentsAccess', surface: 'tenant', anyOfPermissions: ['agent_access.manage'], group: 'admin', parent: 'admin-agents' },
   // Account: any signed-in person, from the who panel.
   // The person's own notification inbox (COL-02), first in the account group; its unread count
@@ -129,6 +129,35 @@ export const destinations: readonly Destination[] = [
   // Support access (TEN-06): the platform admin asks a bank to read, and enters a grant it approved.
   { id: 'console-support-access', href: '/console/support-access', labelKey: 'nav.console.supportAccess', surface: 'console', anyOfPermissions: ['support_access.grant'], group: 'primary' },
 ];
+
+// Admin's tab bar (D-137): a row of groups, then the pages of the current group. Every admin
+// page sits in exactly one group (registry.test.ts holds that), Agents' Access page included.
+export interface AdminGroup {
+  id: string;
+  labelKey: MessageKey;
+  pages: readonly string[];
+}
+
+export const ADMIN_GROUPS: readonly AdminGroup[] = [
+  { id: 'people', labelKey: 'admin.group.people', pages: ['admin-members', 'admin-roles'] },
+  { id: 'organisation', labelKey: 'admin.group.organisation', pages: ['admin-organisation', 'admin-footprint', 'admin-vocabularies', 'admin-workflow'] },
+  { id: 'agents', labelKey: 'admin.group.agents', pages: ['admin-agents', 'admin-agents-access', 'admin-api-keys'] },
+  { id: 'security', labelKey: 'admin.group.security', pages: ['admin-security', 'admin-support-access'] },
+  { id: 'logs', labelKey: 'admin.group.logs', pages: ['admin-audit-log', 'admin-security-log', 'admin-ai-log'] },
+];
+
+/** The admin groups with the pages the permission list unlocks, in order; a group with none is left out. */
+export function adminGroups(permissions: readonly string[]): { id: string; labelKey: MessageKey; pages: Destination[] }[] {
+  return ADMIN_GROUPS.map((group) => ({
+    ...group,
+    pages: group.pages.map((id) => findDestination(id)).filter((d): d is Destination => d !== undefined && unlocks(d.anyOfPermissions, permissions)),
+  })).filter((group) => group.pages.length > 0);
+}
+
+/** The admin page a path is on: the matching page with the longest href, so /admin/agents/access is Access, not Agents. */
+export function currentAdminPage(pages: readonly Destination[], pathname: string): Destination | undefined {
+  return pages.filter((d) => isCurrent(d, pathname)).sort((a, b) => b.href.length - a.href.length)[0];
+}
 
 /** The console's landing: it sends each person on to the first console destination they may open. */
 export const CONSOLE_HOME = '/console';

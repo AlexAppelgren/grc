@@ -1,6 +1,12 @@
 {
   "admin.title": "Admin",
-  "admin.lede": "Your organisation, its people and its keys.",
+  "admin.sections": "Admin sections",
+  "admin.pages": "Pages in this section",
+  "admin.group.people": "People",
+  "admin.group.organisation": "Organisation",
+  "admin.group.agents": "Agents and keys",
+  "admin.group.security": "Security",
+  "admin.group.logs": "Logs",
   "admin.back": "Admin",
   "admin.organisation.title": "Organisation",
   "admin.organisation.lede": "Deadlines and digests follow this timezone and these languages.",

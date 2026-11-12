@@ -5,7 +5,7 @@ import { destinations, type Destination } from '@/shared/navigation/registry';
 import { allowAgentAccessStepUps, allowEntryReach, confirmWithPasskey, issueEntryKey, openEntry, registerEntry, revokeEntry } from './support/agent-access-screens';
 import { answered, sessionApi } from './support/agent-definitions';
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import { adminSection, allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, openAdminSection, restrictedScreen, signInAs, signOut } from './support/passkeys';
 import { approveQueueProposal } from './support/watch';
 
 // governance: the @e2e scenarios from backend/apps/governance/app.md (playbook Appendix B).
@@ -103,12 +103,12 @@ test.describe('governance journeys', () => {
       await signOut(page);
       await signInAs(page, LOGINS.reader);
       await page.goto('/admin');
-      await expect(page.locator('[data-admin-section="admin-organisation"]')).toBeVisible();
-      await expect(page.locator('[data-admin-section="admin-audit-log"]')).toBeVisible();
+      await expect(adminSection(page, 'admin-organisation')).toBeVisible();
+      await expect(adminSection(page, 'admin-audit-log')).toBeVisible();
       for (const section of ['admin-members', 'admin-roles', 'admin-vocabularies', 'admin-footprint', 'admin-api-keys', 'admin-security-log']) {
-        await expect(page.locator(`[data-admin-section="${section}"]`)).toHaveCount(0);
+        await expect(adminSection(page, section)).toHaveCount(0);
       }
-      await page.locator('[data-admin-section="admin-audit-log"]').click();
+      await openAdminSection(page, 'admin-audit-log');
       await expect(page).toHaveURL(/\/admin\/audit-log$/);
       await expect(page.getByRole('heading', { level: 1, name: 'Audit log' })).toBeVisible();
 
@@ -170,13 +170,13 @@ test.describe('governance journeys', () => {
 
     // A reader holds no ai_log.read: Admin does not offer the AI log.
     await page.goto('/admin');
-    await expect(page.locator('[data-admin-section="admin-audit-log"]')).toBeVisible();
-    await expect(page.locator('[data-admin-section="admin-ai-log"]')).toHaveCount(0);
+    await expect(adminSection(page, 'admin-audit-log')).toBeVisible();
+    await expect(adminSection(page, 'admin-ai-log')).toHaveCount(0);
 
     await signOut(page);
     await signInAs(page, LOGINS.approver);
     await page.goto('/admin');
-    await page.locator('[data-admin-section="admin-ai-log"]').click();
+    await openAdminSection(page, 'admin-ai-log');
     await expect(page).toHaveURL(/\/admin\/ai-log$/);
     await expect(page.getByRole('heading', { level: 1, name: 'AI log' })).toBeVisible();
 

@@ -3,7 +3,7 @@ import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowRegisterEntryPending } from './support/obligation-page';
 import { approveOwnProposal, reportDuties, reportInstrument } from './support/own-records';
-import { allowFreshContext, BACKEND_URL, LOGINS, signInAs } from './support/passkeys';
+import { adminSection, allowFreshContext, BACKEND_URL, LOGINS, signInAs } from './support/passkeys';
 import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 import { approveQueueProposal } from './support/watch';
 
@@ -1132,8 +1132,8 @@ test.describe('regulatory scope, markets and standards', () => {
     // in Admin, and the page opened directly is the restricted page naming the permission.
     await signInAs(page, LOGINS.reader);
     await page.goto('/admin');
-    await expect(page.locator('[data-admin-section="admin-organisation"]')).toBeVisible();
-    await expect(page.locator('[data-admin-section="admin-footprint"]')).toHaveCount(0);
+    await expect(adminSection(page, 'admin-organisation')).toBeVisible();
+    await expect(adminSection(page, 'admin-footprint')).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Regulatory scope', exact: true })).toHaveCount(0);
     await page.goto('/admin/footprint');
     const restricted = page.getByRole('alert').filter({ hasText: 'This page is not available to you' });

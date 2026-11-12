@@ -1,29 +1,20 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-import { PageHead } from '@/components/ui/PageHead';
-import { Rows } from '@/components/ui/Panel';
-import { useT } from '@/shared/i18n/LocaleProvider';
-import { childDestinations } from '@/shared/navigation/registry';
+import { adminGroups } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
-// /admin: the sections this person's permissions unlock, from the registry
-// (ADM-01, ADM-03). Nothing here checks a role name.
+// /admin (ADM-01, ADM-03, D-137): opens the first page of the first group this
+// person's permissions unlock, in place of the old list of sections. The tab bar
+// above it is the way to every other page. Nothing here checks a role name.
 export function AdminIndexScreen() {
-  const t = useT();
-  const permissions = usePermissions() ?? [];
-  const sections = childDestinations('admin', permissions);
-  return (
-    <>
-      <PageHead title={t('admin.title')} lede={t('admin.lede')} />
-      <Rows>
-        {sections.map((d) => (
-          <Link key={d.id} href={d.href} className="block rounded-card border border-line bg-surface px-4 py-3 font-medium no-underline hover:hover-fill" data-admin-section={d.id}>
-            {t(d.labelKey)}
-          </Link>
-        ))}
-      </Rows>
-    </>
-  );
+  const router = useRouter();
+  const permissions = usePermissions();
+  const first = permissions === null ? undefined : adminGroups(permissions)[0]?.pages[0];
+  useEffect(() => {
+    if (first !== undefined) router.replace(first.href);
+  }, [first, router]);
+  return null;
 }

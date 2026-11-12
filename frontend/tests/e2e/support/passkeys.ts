@@ -187,6 +187,17 @@ export async function openMore(page: Page): Promise<Locator> {
   return sheet;
 }
 
+/** Admin's tab bar (D-137): a section is offered when its group's tab lists it. */
+export function adminSection(page: Page, id: string): Locator {
+  return page.locator(`[data-admin-sections~="${id}"]`);
+}
+
+/** Opens an admin section from the tab bar: its group's tab, then the section's own tab. */
+export async function openAdminSection(page: Page, id: string): Promise<void> {
+  await adminSection(page, id).click();
+  await page.locator(`[data-admin-section="${id}"]`).click();
+}
+
 /** The quiet Restricted screen, distinct from Next's own route announcer (also role=alert). */
 export function restrictedScreen(page: Page) {
   return page.getByRole('alert').filter({ hasText: 'This page is not available to you' });

@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { AgentsTabs } from '@/components/admin/AgentsScreen';
 import { AccessScreen } from '@/features/agent-access/AccessScreen';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
@@ -276,14 +275,5 @@ describe('agent access tab', () => {
     await waitFor(() => expect(within(dialog).getAllByText('None yet.')).toHaveLength(2));
     expect(within(dialog).queryByLabelText('Old desk')).toBeNull();
     expect(within(dialog).queryByLabelText('Old product')).toBeNull();
-  });
-
-  it('offers the Access tab only to agent_access.manage', () => {
-    const { unmount } = open(['watch.read'], <AgentsTabs current="watch" />);
-    expect(screen.queryByRole('link', { name: 'Access' })).toBeNull();
-    unmount();
-    open(ACCESS_ONLY, <AgentsTabs current="access" />);
-    expect(screen.getByRole('link', { name: 'Access' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Watch and research' })).toHaveAttribute('href', '/admin/agents');
   });
 });

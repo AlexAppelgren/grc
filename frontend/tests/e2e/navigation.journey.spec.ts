@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, openMore, signInAs, signOut } from './support/passkeys';
+import { adminSection, allowFreshContext, LOGINS, openMore, signInAs, signOut } from './support/passkeys';
 
 // Navigation at every width (design/system/navigation.md 16): the floating
 // tab bar and its More sheet below 1024 px, the rail from 1024 px, and what
@@ -140,7 +140,8 @@ test.describe('navigation on a phone, 375 × 812', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.admin);
     await (await openMore(page)).getByRole('link', { name: 'Admin' }).tap();
-    await expect(page).toHaveURL(/\/admin$/);
+    // Admin opens the first page of its tab bar (D-137): Members, for the admin.
+    await expect(page).toHaveURL(/\/admin\/members$/);
     await expect(moreButton(page)).toHaveAttribute('aria-current', 'true');
   });
 
@@ -148,11 +149,12 @@ test.describe('navigation on a phone, 375 × 812', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.admin);
     await (await openMore(page)).getByRole('link', { name: 'Admin' }).tap();
-    await page.locator('[data-admin-section="admin-organisation"]').tap();
+    await expect(page).toHaveURL(/\/admin\/members$/);
+    await adminSection(page, 'admin-organisation').tap();
     await expect(page).toHaveURL(/\/admin\/organisation$/);
     await openMore(page);
     await page.goBack();
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(/\/admin\/members$/);
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 

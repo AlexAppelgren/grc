@@ -36,7 +36,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   // URL); it is ready when the permission gate has read the session and the
   // start panel is drawn. Search lives in the inventory's row (D-104).
   ask: { ready: '[data-ask-start]' },
-  admin: { ready: '[data-admin-section]' },
+  // /admin opens the first page of its tab bar (D-137): ready once that page's tab is current.
+  admin: { ready: '[data-admin-section][aria-current="page"]' },
   'admin-organisation': { ready: '[data-onboarding] [data-step]' },
   'admin-members': { ready: '[data-members-list] [data-member-id]' },
   'admin-roles': { ready: '[data-roles-list] [data-role-key]' },

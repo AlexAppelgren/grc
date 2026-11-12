@@ -113,7 +113,7 @@ Sources: Apple HIG tab bars. UIKit `UITabBarController`. Material 3 navigation b
 2. **The remaining destinations.**
    - A new helper, `moreDestinations(surface, permissions)`, returns `visibleDestinations` minus `dockDestinations`.
    - They use the rail's grouping (`groupDestinations`: primary, then secondary, then admin). Groups are separated by space, with no headings.
-   - Admin's child pages are not listed. They live on the Admin index page, as they do from the rail.
+   - Admin's child pages are not listed. They live in Admin's tab bar (section 13a), as they do from the rail.
 3. **A hairline, then the account group.**
    - The group is `role="group"`, with its `aria-label` from `shell.account` ("Account" / "Konto").
    - It carries **no** `data-who-panel`. That marker stays only on the rail's account row. The rail is still mounted at compact widths, so a second marker would give Playwright two matches and break strict mode.
@@ -469,6 +469,34 @@ Sources: `foundations.md` "Wordmark". `frontend/tests/e2e/shell.journey.spec.ts`
 Source: `design/screens/console-shell.html` ("the dock is the first four plus More, as on the tenant side"). The registry.
 
 ---
+
+## 13a. Admin's tab bar
+
+**Source.** Alex, 2026-11-12 (D-137), choosing option 2 of three mock-ups: the Admin index listed every
+section as one full-width row, 13 of them for an administrator, and it read as a long list.
+
+- **Two rows on every admin page.** Above the page's own head: the microlabel "Admin" (`admin.title`), a
+  row of group tabs, then a row with the pages of the current group. `/admin` itself opens the first page
+  of the first group the person may open and keeps no list of its own.
+- **The groups** are `ADMIN_GROUPS` in `frontend/src/shared/navigation/registry.ts`, in this order:
+  People (Members, Roles); Organisation (Organisation, Regulatory scope, Vocabularies, Workflow); Agents
+  and keys (Agents, Agent access, API keys); Security (Security, Support access); Logs (Audit log,
+  Security log, AI log). Every admin page sits in exactly one group (`registry.test.ts`). Agents' own
+  Watch | Access tabs are gone: Agent access is a page of the second row.
+- **Permissions decide, never a role name.** A page shows when the person's permissions unlock it, and a
+  group with no such page is left out. A group tab links to its first page.
+- **The current page** is the matching page with the longest `href`, so a sub-page (a member, a
+  vocabulary, an agent entry) keeps its tab, and `/admin/agents/access` is Agent access, not Agents. On a
+  page the person may not open, the groups show with none current and no second row.
+- **Look.** The group row is the underline tab row of `Tabs` (`border-b-2`, `text-muted` until
+  current). The second row uses `Chip`'s pressed look (`rounded-control`, `bg-neutral-soft`,
+  `border-line-strong`) for the current page, so the two rows never read as one. Both are `nav` landmarks
+  with `aria-current="page"` (`admin.sections`, `admin.pages`). On a phone the group row scrolls sideways
+  and the second row wraps.
+- **Test hooks.** A group tab carries `data-admin-group` and `data-admin-sections` (its page ids,
+  space-separated), so a journey asks whether a section is offered with `[data-admin-sections~="<id>"]`;
+  a page tab carries `data-admin-section`. `support/passkeys.ts` holds `adminSection` and
+  `openAdminSection`.
 
 ## 14. Deliberately not done
 

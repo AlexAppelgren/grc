@@ -1,8 +1,5 @@
 {
   "nav.admin.agentsAccess": "Agent access",
-  "agentAccess.tab.watch": "Watch and research",
-  "agentAccess.tab.access": "Access",
-  "agentAccess.tabs": "Kinds of agent",
   "agentAccess.lede": "Agents we run on our own systems. They read what applies to them here and change nothing.",
   "agentAccess.reachLine.on": "Our register decisions can be read by entries that allow it.",
   "agentAccess.reachLine.off": "Our register decisions stay in bleqq: every entry reads the shared library only. Switching this on needs two people holding security manage.",

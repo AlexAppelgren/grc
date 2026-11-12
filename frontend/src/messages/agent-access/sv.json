@@ -1,8 +1,5 @@
 {
   "nav.admin.agentsAccess": "Agentåtkomst",
-  "agentAccess.tab.watch": "Bevakning och research",
-  "agentAccess.tab.access": "Åtkomst",
-  "agentAccess.tabs": "Typer av agent",
   "agentAccess.lede": "Agenter vi kör på egna system. De läser det som gäller dem här och ändrar ingenting.",
   "agentAccess.reachLine.on": "Våra registerbeslut kan läsas av poster som tillåter det.",
   "agentAccess.reachLine.off": "Våra registerbeslut stannar i bleqq: varje post läser bara det delade biblioteket. Att slå på det kräver två personer med security manage.",

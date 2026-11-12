@@ -13,7 +13,6 @@ import { PageHead } from '@/components/ui/PageHead';
 import { useTenant } from '@/features/tenant-admin/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
-import { cn } from '@/shared/utils/cn';
 import { humaniseKey } from '@/shared/utils/format';
 
 // /admin/agents (design/screens/admin-agents.html; AGT-03, AGT-04, AGT-05,
@@ -25,34 +24,6 @@ import { humaniseKey } from '@/shared/utils/format';
 // state and links there, and never draws a second switch.
 
 const MANAGE = 'agents.manage';
-const ACCESS_MANAGE = 'agent_access.manage';
-
-// Agents is two tabs (design/screens/admin-agent-access.html): what finds and
-// writes, and what the bank runs itself, which only reads. The Access tab is
-// offered only to agent_access.manage; without it the page has no tabs.
-export function AgentsTabs({ current }: { current: 'watch' | 'access' }) {
-  const t = useT();
-  const canAccess = (usePermissions() ?? []).includes(ACCESS_MANAGE);
-  if (!canAccess) return null;
-  const tabs = [
-    { id: 'watch', href: '/admin/agents', label: t('agentAccess.tab.watch') },
-    { id: 'access', href: '/admin/agents/access', label: t('agentAccess.tab.access') },
-  ] as const;
-  return (
-    <nav aria-label={t('agentAccess.tabs')} className="mb-4 flex flex-wrap gap-1 border-b border-line" data-agents-tabs="">
-      {tabs.map((tab) => (
-        <Link
-          key={tab.id}
-          href={tab.href}
-          aria-current={tab.id === current ? 'page' : undefined}
-          className={cn('-mb-px border-b-2 px-2.5 py-2 font-medium whitespace-nowrap', tab.id === current ? 'border-fg text-fg' : 'border-transparent text-muted hover:text-fg')}
-        >
-          {tab.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
 
 function AiLine() {
   const t = useT();
@@ -78,8 +49,7 @@ export function AgentsScreen() {
 
   return (
     <>
-      <PageHead kicker={t('nav.admin')} title={t('adminAgents.title')} lede={t('adminAgents.lede')} />
-      <AgentsTabs current="watch" />
+      <PageHead title={t('adminAgents.title')} lede={t('adminAgents.lede')} />
       <AiLine />
       <PlatformWatchPanel />
       {canManage ? (

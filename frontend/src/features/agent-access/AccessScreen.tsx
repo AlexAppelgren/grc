@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { AgentsTabs } from '@/components/admin/AgentsScreen';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Notice } from '@/components/ui/Notice';
@@ -128,8 +127,7 @@ export function AccessScreen() {
 
   return (
     <>
-      <PageHead kicker={t('nav.admin')} title={t('adminAgents.title')} actions={<Button onClick={register}>{t('agentAccess.register')}</Button>} />
-      <AgentsTabs current="access" />
+      <PageHead title={t('adminAgents.title')} actions={<Button onClick={register}>{t('agentAccess.register')}</Button>} />
       <p className="mb-4 text-muted">{t('agentAccess.lede')}</p>
       <ReachLine orgReach={orgReach} />
       {registered ? <StatusLine tone="positive">{t('agentAccess.registered')}</StatusLine> : null}

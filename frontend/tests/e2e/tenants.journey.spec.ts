@@ -7,7 +7,7 @@ import { confirmWithPasskey } from './support/agent-access-screens';
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { openCase } from './support/cases-signoff';
 import { allowRegisterEntryPending } from './support/obligation-page';
-import { allowFreshContext, BACKEND_URL, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import { adminSection, allowFreshContext, BACKEND_URL, LOGINS, mailOutbox, mailsTo, openAdminSection, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // tenants: the @e2e scenarios from backend/apps/tenants/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -765,22 +765,22 @@ test.describe('tenants journeys', () => {
     await signInAs(page, LOGINS.admin);
     await page.goto('/admin');
     for (const section of ['admin-organisation', 'admin-members', 'admin-roles', 'admin-api-keys', 'admin-security-log']) {
-      await expect(page.locator(`[data-admin-section="${section}"]`)).toBeVisible();
+      await expect(adminSection(page, section)).toBeVisible();
     }
     // c11-fe-admin-security: the security page (ID-08) is the admin's by security.manage.
-    await expect(page.locator('[data-admin-section="admin-security"]')).toBeVisible();
+    await expect(adminSection(page, 'admin-security')).toBeVisible();
     await setSessionLimits(page, apiGuard);
     await signOut(page);
 
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto('/admin');
-    await expect(page.locator('[data-admin-section="admin-organisation"]')).toBeVisible();
-    await expect(page.locator('[data-admin-section="admin-members"]')).toHaveCount(0);
-    await expect(page.locator('[data-admin-section="admin-security-log"]')).toHaveCount(0);
+    await expect(adminSection(page, 'admin-organisation')).toBeVisible();
+    await expect(adminSection(page, 'admin-members')).toHaveCount(0);
+    await expect(adminSection(page, 'admin-security-log')).toHaveCount(0);
     await page.goto('/admin/members');
     await expect(restrictedScreen(page)).toContainText('Needs members manage');
     // c11-fe-admin-security: without security.manage the security page is neither listed nor open.
-    await expect(page.locator('[data-admin-section="admin-security"]')).toHaveCount(0);
+    await expect(adminSection(page, 'admin-security')).toHaveCount(0);
     await page.goto('/admin/security');
     await expect(restrictedScreen(page)).toContainText('Needs security manage');
 
@@ -789,7 +789,7 @@ test.describe('tenants journeys', () => {
     // controls are drawn only for agents.manage, which the compliance officer lacks, so the
     // page says what changing agents needs instead of answering a page-level 403.
     await page.goto('/admin');
-    await page.locator('[data-admin-section="admin-agents"]').click();
+    await openAdminSection(page, 'admin-agents');
     await expect(page).toHaveURL(/\/admin\/agents$/);
     await expect(page.getByRole('heading', { name: 'What bleqq watches' })).toBeVisible();
     // bleqq's agents, or the empty state until the seed publishes one: settled, then read.
@@ -807,7 +807,7 @@ test.describe('tenants journeys', () => {
     apiGuard.allow(/\/research-requests$/, 501, 'research requests are built by c11-research-requests');
     await signInAs(page, LOGINS.admin);
     await page.goto('/admin');
-    await page.locator('[data-admin-section="admin-agents"]').click();
+    await openAdminSection(page, 'admin-agents');
     await expect(page).toHaveURL(/\/admin\/agents$/);
     await expect(page.getByRole('heading', { name: 'What bleqq watches' })).toBeVisible();
     await expect(page.locator('[data-platform-watch]').getByRole('button')).toHaveCount(0);

@@ -7,8 +7,11 @@ import { catalogs } from '@/shared/i18n/messages';
 
 import {
   ACCOUNT_PARENT,
+  ADMIN_GROUPS,
   CONSOLE_HOME,
+  adminGroups,
   childDestinations,
+  currentAdminPage,
   destinations,
   dockDestinations,
   findDestination,
@@ -174,6 +177,17 @@ describe('navigation registry (playbook 6.2)', () => {
     for (const child of destinations.filter((d) => d.parent !== undefined && d.parent !== ACCOUNT_PARENT)) {
       expect(findDestination(child.parent ?? '')).toBeDefined();
     }
+  });
+
+  // D-137: Admin's tab bar reaches every admin page, each from exactly one group.
+  it('puts every admin page in exactly one group of the tab bar', () => {
+    const adminPages = destinations.filter((d) => d.parent === 'admin' || d.parent === 'admin-agents').map((d) => d.id);
+    const grouped = ADMIN_GROUPS.flatMap((g) => g.pages);
+    expect([...grouped].sort()).toEqual([...adminPages].sort());
+    expect(new Set(grouped).size).toBe(grouped.length);
+    expect(adminGroups(['audit.read']).map((g) => g.id)).toEqual(['organisation', 'security', 'logs']);
+    const agents = adminGroups(['watch.read', 'agent_access.manage']).find((g) => g.id === 'agents');
+    expect(currentAdminPage(agents?.pages ?? [], '/admin/agents/access')?.id).toBe('admin-agents-access');
   });
 
   // AUD-01: audit.read is in every system role, so the audit log is the one

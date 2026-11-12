@@ -1,6 +1,12 @@
 {
   "admin.title": "Admin",
-  "admin.lede": "Din organisation, dess människor och dess nycklar.",
+  "admin.sections": "Adminavsnitt",
+  "admin.pages": "Sidor i avsnittet",
+  "admin.group.people": "Personer",
+  "admin.group.organisation": "Organisation",
+  "admin.group.agents": "Agenter och nycklar",
+  "admin.group.security": "Säkerhet",
+  "admin.group.logs": "Loggar",
   "admin.back": "Admin",
   "admin.organisation.title": "Organisation",
   "admin.organisation.lede": "Deadlines och sammanfattningar följer den här tidszonen och dessa språk.",
