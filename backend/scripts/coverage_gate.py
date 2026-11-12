@@ -38,6 +38,8 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     # The code and invitation mail leaves through the worker after commit, so a code request
     # takes the same time whether or not it sends (security review F12).
     "apps/identity/tasks.py": (96, 100, 6, "2026-09-19"),
+    # Adding a device by its code (D-135): a person's passkey lets another device in.
+    "apps/identity/device_link_logic.py": (96, 100, 64, "2026-11-12"),
     "apps/shared/adapters/mailer.py": (96, 100, 38, "2026-09-19"),
     "apps/shared/sentry_scrub.py": (89, 93, 41, "2026-09-19"),
     "apps/shared/storage.py": (95, 99, 62, "2026-09-19"),

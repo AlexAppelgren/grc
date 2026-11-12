@@ -39,6 +39,7 @@ export const SESSION_BOOTSTRAP_PATHS: readonly RegExp[] = [
   /^\/api\/v1\/auth\/invitations\/(open|verify)$/,
   /^\/api\/v1\/auth\/code\/(request|verify)$/,
   /^\/api\/v1\/auth\/passkeys\/authenticate\/(options|verify)$/,
+  /^\/api\/v1\/auth\/device-links(\/(status|claim))?$/,
 ];
 
 interface TokenStore {

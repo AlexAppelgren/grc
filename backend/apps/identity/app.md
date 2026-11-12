@@ -74,7 +74,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-01 | Invitation only, roles set at invite | M | R1 | built |
 | ID-02 | First sign-in by one-time emailed code straight into passkey enrolment; the enrolment session can do nothing else | M | R1 | built |
 | ID-03 | After the first passkey, passkey only; the code stops working for that account; no password anywhere | M | R1 | built |
-| ID-04 | Users manage passkeys (add, rename, remove, never the last) and see and revoke sessions | M | R1 | built |
+| ID-04 | Users manage passkeys (add, rename, remove, never the last) and see and revoke sessions; a device that holds no passkey is let in by its code and a passkey on another device, then adds its own (D-135) | M | R1 | built |
 | ID-05 | Recovery: tenant admin re-issues enrolment behind step-up, audited, with notices; the last admin goes through platform support with an out-of-band check | M | R1 | built |
 | ID-06 | Step-up by fresh passkey assertion on the sensitive actions of playbook 4.2, recorded on the audit event | M | R1 | built |
 | ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required. It binds new registrations at once and existing passkeys from the admin's notice date; loosening applies at once (D-55) | S | after R2 (D-100) | pending |
@@ -526,6 +526,24 @@ Then they are a member with the invitation's roles, the bank's security log reco
 And the same step-up moves their session into the bank, which holds the reader's grants alone
 When they send an accepted, expired or revoked invitation, or a re-enrolment
 Then each answers 410 "invitation_expired"
+```
+
+### ID-S40 — A person lets a new device in with the code it shows and their passkey `@integration` `@e2e` (ID-04, ID-06, D-135)
+```gherkin
+Given a bank admin who holds a passkey on one device only, and a second device that holds none
+When the second device asks to be let in
+Then it shows an eight-character code, keeps a secret only it holds, and nothing names any account yet
+And asking whether it is approved answers no, and claiming a session answers 409 "device_link_pending"
+When the admin types the code on My passkeys without a fresh step-up
+Then the answer is 403 "step_up_required"
+When they step up and send the code, in any case and with or without its dash
+Then the answer names the second device's browser, and the audit trail records device_link.approved with the step-up
+And the same code sent again answers 410 "device_link_expired"
+When the second device asks again
+Then it is approved, and claiming gives it a full session for the admin in the same bank, logged as "signin" with the reason "device_link"
+And the secret works once, the admin's passkeys and their own session are unchanged
+When a code or a secret is past its window, or names nothing
+Then each answers 410 "device_link_expired"
 ```
 
 ### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)

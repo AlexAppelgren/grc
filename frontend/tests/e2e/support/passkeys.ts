@@ -96,6 +96,8 @@ export const LOGINS = {
   dual: 'dual@example-bank.test',
   /** Reserved for ID-S39 (D-122): a platform admin with a passkey, invited into tenant B; joining makes them a member. */
   joiner: 'joiner@second-bank.test',
+  /** Reserved for ID-S40 (D-135): lets a second browser in with its code; that browser's passkey stays on the account. */
+  devices: 'devices@example-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';

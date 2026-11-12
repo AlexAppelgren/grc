@@ -38,6 +38,10 @@ export type PasskeyRequestOptions = RequestOptionsJson;
 
 export type RegisterVerifyBody = Schemas['PasskeyRegisterBody'];
 
+/** A device asking to be let in by a passkey on another device (D-135). */
+export type DeviceLinkStarted = Schemas['DeviceLinkStarted'];
+export type DeviceLinkApproved = Schemas['DeviceLinkApproved'];
+
 /** `accessToken` is set when an enrolment session was upgraded to a full session; null when a full session added a passkey. */
 export type RegisterVerifyResponse = Omit<Schemas['PasskeyRegistered'], 'passkey' | 'sessionKind'> & { passkey: Passkey; sessionKind: SessionKind };
 

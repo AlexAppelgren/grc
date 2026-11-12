@@ -102,6 +102,9 @@ export function SignInScreen() {
           <button type="button" className="text-left font-semibold underline" onClick={() => router.push('/enrol')}>
             {t('auth.signIn.firstTime')}
           </button>
+          <button type="button" className="text-left font-semibold underline" onClick={() => router.push('/add-device')}>
+            {t('auth.signIn.addDevice')}
+          </button>
           <button type="button" className="text-left font-semibold underline" onClick={() => setRecovery(true)}>
             {t('auth.signIn.lostPasskeys')}
           </button>

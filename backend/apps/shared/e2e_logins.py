@@ -177,6 +177,9 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         invitation_token=E2E_INVITATION_TOKEN_JOINER,
         reserved_for=("ID-S39",),
     ),
+    # D-135: a member who lets a second browser in with its code and creates a passkey there.
+    # Reserved, because the passkey the second browser creates stays on the account.
+    SeedLogin(_id(31), "devices@example-bank.test", "Oskar Lund", TENANT_A_SLUG, ("reader",), title="Compliance analyst", reserved_for=("ID-S40",)),
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.

@@ -9,6 +9,9 @@ import {
   signOutKey,
   useAcceptInvitation,
   useAddPasskey,
+  useApproveDeviceLink,
+  useClaimDeviceLink,
+  useDeviceLinkApproved,
   useFormatContext,
   useOpenInvitation,
   usePasskeys,
@@ -23,6 +26,7 @@ import {
   useSetLanguage,
   useSignIn,
   useSignOut,
+  useStartDeviceLink,
   useStepUp,
   useSwitchContext,
   useVerifyCode,
@@ -168,6 +172,41 @@ describe('identity hooks', () => {
     await open.result.current.mutateAsync('tok-1');
     expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/code/verify', '/api/v1/auth/code/request', '/api/v1/auth/invitations/open']);
     expect(sent[2]?.body).toEqual({ token: 'tok-1' });
+  });
+
+  it('device links: start, poll until approved, claim stores the token; approve posts the code', async () => {
+    let polls = 0;
+    const sent = installAdapter((request) => {
+      if (request.path === '/api/v1/auth/device-links') return { status: 201, data: { secret: 's1', code: 'K7MPQ2XD', expiresAt: '2026-11-12T09:05:00Z' } };
+      if (request.path === '/api/v1/auth/device-links/status') return { status: 200, data: { approved: ++polls > 1 } };
+      if (request.path === '/api/v1/auth/device-links/claim') return { status: 200, data: { accessToken: 'laptop', sessionKind: 'full', expiresIn: 600 } };
+      return { status: 200, data: { device: 'Chrome on Windows' } };
+    });
+    const { wrapper } = queryWrapper();
+    const start = renderHook(() => useStartDeviceLink(), { wrapper });
+    const started = await start.result.current.mutateAsync();
+    expect(started.code).toBe('K7MPQ2XD');
+    const idle = renderHook(() => useDeviceLinkApproved(null), { wrapper });
+    expect(idle.result.current.fetchStatus).toBe('idle');
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const status = renderHook(() => useDeviceLinkApproved('s1'), { wrapper });
+      await waitFor(() => expect(status.result.current.data).toBe(false));
+      await vi.advanceTimersByTimeAsync(3000);
+      await waitFor(() => expect(status.result.current.data).toBe(true));
+    } finally {
+      vi.useRealTimers();
+    }
+    const claim = renderHook(() => useClaimDeviceLink(), { wrapper });
+    await claim.result.current.mutateAsync('s1');
+    expect(tokenStore.get()).toBe('laptop');
+    const approve = renderHook(() => useApproveDeviceLink(), { wrapper });
+    expect((await approve.result.current.mutateAsync('k7mp-q2xd')).device).toBe('Chrome on Windows');
+    const paths = sent.map((s) => [s.method, s.path, s.body, s.authorization]);
+    expect(paths[0]).toEqual(['post', '/api/v1/auth/device-links', null, undefined]);
+    expect(paths.filter((row) => row[1] === '/api/v1/auth/device-links/status').every((row) => row[0] === 'get' && row[3] === undefined)).toBe(true);
+    expect(paths).toContainEqual(['post', '/api/v1/auth/device-links/claim', { secret: 's1' }, undefined]);
+    expect(paths.at(-1)?.slice(0, 3)).toEqual(['post', '/api/v1/me/device-links/approve', { code: 'k7mp-q2xd' }]);
   });
 
   it('useVerifyInvitationCode stores the enrolment token', async () => {

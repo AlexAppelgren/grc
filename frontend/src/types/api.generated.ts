@@ -1273,6 +1273,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/device-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to be let in from a device where you are already signed in
+         * @description For a device that holds none of the person's passkeys, such as a new laptop, when the
+         *     browser cannot reach a phone's passkey. It answers a `code` to show on this device's
+         *     screen and a `secret` this device keeps in memory. Nothing is tied to any account yet:
+         *     the person types the code on My passkeys on a device where they are signed in and
+         *     confirms with their passkey (`POST /me/device-links/approve`), while this device asks
+         *     `GET /auth/device-links/status` every few seconds and then collects its session with
+         *     `POST /auth/device-links/claim`. Both stop working after
+         *     5 minutes, and each works once.
+         *
+         *     Unauthenticated. Writes nothing to the audit or security logs; the approval and the
+         *     sign-in it leads to do.
+         *
+         *     Errors: `rate_limited` (429) past 30 calls a minute from one
+         *     network address, the allowance every unauthenticated sign-in step shares.
+         */
+        post: operations["startDeviceLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/device-links/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect your session once the code this device shows has been approved
+         * @description Once `GET /auth/device-links/status` answers `approved: true`, the device calls this
+         *     once. It answers a full session for the person who approved, landing where a passkey
+         *     sign-in lands (their first bank, or the console for platform staff without one), and sets
+         *     the refresh cookie, like a passkey sign-in. Open My passkeys
+         *     there and add a passkey on this device, so it can sign in on its own next time.
+         *
+         *     Unauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed.
+         *     It writes a "signin" entry with the reason "device_link" to the security log and the
+         *     audit event `session.created`. The secret then stops working.
+         *
+         *     Errors: `device_link_pending` (409) before anyone has approved the code: keep asking
+         *     the status; `device_link_expired` (410) when the secret is unknown, already used, or
+         *     past its 5 minutes, or the person's account was closed since, one
+         *     answer for all of them: start again; `validation_error` (422) for a missing secret or one
+         *     over 128 characters.
+         */
+        post: operations["claimDeviceLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/device-links/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask whether the code this device shows has been approved
+         * @description The device that asked with `POST /auth/device-links` calls this every few seconds
+         *     while it shows its code. `approved` turns `true` once the person has approved the code;
+         *     then call `POST /auth/device-links/claim` once.
+         *
+         *     Unauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed, so
+         *     the calls spend no rate limit. A read: it writes nothing.
+         *
+         *     Errors: `device_link_expired` (410) when the secret is unknown, already used, or past
+         *     its 5 minutes, one answer for all of them: start again;
+         *     `validation_error` (422) for a missing secret or one over 128 characters.
+         */
+        get: operations["deviceLinkStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/invitations/open": {
         parameters: {
             query?: never;
@@ -4571,6 +4667,42 @@ export interface paths {
          *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["switchContext"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/device-links/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let a new device in with the code it shows
+         * @description For a person adding a device that cannot reach their passkey, such as a laptop when the
+         *     passkey is on their phone. They type the code that device shows (`POST
+         *     /auth/device-links`), and that device is then signed in as them the next time it asks,
+         *     landing where a passkey sign-in lands. Only approve a code shown on a device you are
+         *     holding: whoever shows it gets your session. Nothing about this session or any passkey
+         *     changes. The answer names the browser the new device reported.
+         *
+         *     Self-service: it needs a full session, no permission, and a passkey confirmation on this
+         *     session younger than 5 minutes. It writes the audit event
+         *     `device_link.approved`, carrying the step-up and the new device's browser.
+         *
+         *     Errors: `device_link_expired` (410) when the code is unknown, already approved or past
+         *     its 5 minutes, one answer for all of them, and nothing is written;
+         *     `validation_error` (422) for an empty code or one over 32 characters; `enrolment_only`
+         *     (403) from an enrolment session; `support_read_only` (403) from a support session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
+         */
+        post: operations["approveDeviceLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14591,6 +14723,91 @@ export interface components {
              * @description The bank to work in, a UUID from `contexts` in `GET /me`, or null for the platform console. Required: send null explicitly for the console.
              */
             tenantId: string | null;
+        };
+        /**
+         * DeviceLinkApproveBody
+         * @description The code a new device shows, typed by its owner on a device where they are signed in.
+         * @example {
+         *       "code": "K7MP-Q2XD"
+         *     }
+         */
+        DeviceLinkApproveBody: {
+            /**
+             * Code
+             * @description The eight characters the new device shows, at most 32 characters as typed. Case, spaces and dashes do not matter: `k7mp-q2xd` is the same code as `K7MPQ2XD`.
+             */
+            code: string;
+        };
+        /**
+         * DeviceLinkApproved
+         * @description The device the person has just let in.
+         * @example {
+         *       "device": "Chrome on Windows"
+         *     }
+         */
+        DeviceLinkApproved: {
+            /**
+             * Device
+             * @description The browser and system the new device reported, such as `Chrome on Windows`, so the person can see which device they let in. Empty when it could not be told.
+             */
+            device: string;
+        };
+        /**
+         * DeviceLinkClaimBody
+         * @description The waiting device asking whether it has been let in.
+         * @example {
+         *       "secret": "Hq9vExampleDeviceLinkSecretHeldByTheNewDevice"
+         *     }
+         */
+        DeviceLinkClaimBody: {
+            /**
+             * Secret
+             * @description The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters.
+             */
+            secret: string;
+        };
+        /**
+         * DeviceLinkStarted
+         * @description A new device's request to be let in (D-135). Show `code` on its screen and keep
+         *     `secret` in memory: the person types the code on a device where they are signed in, and
+         *     this device trades the secret for a session with `POST /auth/device-links/claim`.
+         * @example {
+         *       "code": "K7MPQ2XD",
+         *       "expiresAt": "2026-11-12T09:05:00Z",
+         *       "secret": "Hq9vExampleDeviceLinkSecretHeldByTheNewDevice"
+         *     }
+         */
+        DeviceLinkStarted: {
+            /**
+             * Code
+             * @description Eight characters to show on this device's screen, from capital letters and digits without the look-alikes 0, O, 1 and I, such as `K7MPQ2XD`. The person types it on My passkeys on a device where they are signed in. It works once.
+             */
+            code: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             * @description When the code and the secret stop working, as a UTC timestamp: 5 minutes after the request by default (a setting). Start again after it.
+             */
+            expiresAt: string;
+            /**
+             * Secret
+             * @description A random value only this device holds, 43 characters. Keep it in memory, never in browser storage, never in a URL, and send it to `POST /auth/device-links/claim`. It works once.
+             */
+            secret: string;
+        };
+        /**
+         * DeviceLinkStatus
+         * @description Whether the code this device shows has been approved yet.
+         * @example {
+         *       "approved": false
+         *     }
+         */
+        DeviceLinkStatus: {
+            /**
+             * Approved
+             * @description `true` once the person has approved the code on a device where they are signed in: call `POST /auth/device-links/claim` now. `false` while it waits: ask again in a few seconds.
+             */
+            approved: boolean;
         };
         /**
          * DiffSegment
@@ -36242,6 +36459,73 @@ export interface operations {
             };
         };
     };
+    startDeviceLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceLinkStarted"];
+                };
+            };
+        };
+    };
+    claimDeviceLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceLinkClaimBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+        };
+    };
+    deviceLinkStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters. A header, so no URL ever holds it. */
+                "X-Device-Link-Secret": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceLinkStatus"];
+                };
+            };
+        };
+    };
     openInvitation: {
         parameters: {
             query?: never;
@@ -38927,6 +39211,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+        };
+    };
+    approveDeviceLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceLinkApproveBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceLinkApproved"];
                 };
             };
         };

@@ -271,6 +271,92 @@ class InvitationAccepted(CamelSchema):
     tenant_name: str = Field(description="The joined bank's own name, such as `Example Bank AB`, for display.")
 
 
+class DeviceLinkStarted(CamelSchema):
+    """A new device's request to be let in (D-135). Show `code` on its screen and keep
+    `secret` in memory: the person types the code on a device where they are signed in, and
+    this device trades the secret for a session with `POST /auth/device-links/claim`."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"secret": "Hq9vExampleDeviceLinkSecretHeldByTheNewDevice", "code": "K7MPQ2XD", "expiresAt": "2026-11-12T09:05:00Z"}]
+        }
+    )
+
+    secret: str = Field(
+        description=(
+            "A random value only this device holds, 43 characters. Keep it in memory, never in "
+            "browser storage, never in a URL, and send it to `POST /auth/device-links/claim`. "
+            "It works once."
+        )
+    )
+    code: str = Field(
+        description=(
+            "Eight characters to show on this device's screen, from capital letters and digits "
+            "without the look-alikes 0, O, 1 and I, such as `K7MPQ2XD`. The person types it on "
+            "My passkeys on a device where they are signed in. It works once."
+        )
+    )
+    expires_at: datetime = Field(
+        description=(
+            "When the code and the secret stop working, as a UTC timestamp: "
+            f"{settings.DEVICE_LINK_TTL_MINUTES} minutes after the request by default (a setting). "
+            "Start again after it."
+        )
+    )
+
+
+class DeviceLinkClaimBody(CamelSchema):
+    """The waiting device asking whether it has been let in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"secret": "Hq9vExampleDeviceLinkSecretHeldByTheNewDevice"}]})
+
+    secret: str = Field(
+        max_length=128,
+        description="The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters.",
+    )
+
+
+class DeviceLinkStatus(CamelSchema):
+    """Whether the code this device shows has been approved yet."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"approved": False}]})
+
+    approved: bool = Field(
+        description=(
+            "`true` once the person has approved the code on a device where they are signed in: "
+            "call `POST /auth/device-links/claim` now. `false` while it waits: ask again in a few seconds."
+        )
+    )
+
+
+class DeviceLinkApproveBody(CamelSchema):
+    """The code a new device shows, typed by its owner on a device where they are signed in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"code": "K7MP-Q2XD"}]})
+
+    code: str = Field(
+        min_length=1,
+        max_length=32,
+        description=(
+            "The eight characters the new device shows, at most 32 characters as typed. Case, "
+            "spaces and dashes do not matter: `k7mp-q2xd` is the same code as `K7MPQ2XD`."
+        ),
+    )
+
+
+class DeviceLinkApproved(CamelSchema):
+    """The device the person has just let in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"device": "Chrome on Windows"}]})
+
+    device: str = Field(
+        description=(
+            "The browser and system the new device reported, such as `Chrome on Windows`, so "
+            "the person can see which device they let in. Empty when it could not be told."
+        )
+    )
+
+
 class SessionTokens(CamelSchema):
     """A session has just started. The access token is in the body; the refresh token is
     set as an `HttpOnly` cookie by the same response and never appears in a body."""

@@ -2,6 +2,8 @@ import type {
   AssertionVerifyBody,
   CodeRequestBody,
   CodeVerifyBody,
+  DeviceLinkApproved,
+  DeviceLinkStarted,
   InvitationAccepted,
   InvitationCodeVerifyBody,
   Me,
@@ -92,6 +94,26 @@ export async function switchContext(tenantId: string | null): Promise<TokenRespo
 // and a retry; the token rides in the body, as on every invitation route.
 export async function acceptInvitation(token: string): Promise<InvitationAccepted> {
   return (await api.post<InvitationAccepted>(`${ME}/invitations/accept`, { token })).data;
+}
+
+// D-135: a device without a passkey shows a code; the person approves it with a
+// passkey on a device where they are signed in. The secret rides in the body or a
+// header, never a URL, so no access log holds it.
+export async function startDeviceLink(): Promise<DeviceLinkStarted> {
+  return (await api.post<DeviceLinkStarted>(`${AUTH}/device-links`)).data;
+}
+
+export async function deviceLinkApproved(secret: string): Promise<boolean> {
+  return (await api.get<{ approved: boolean }>(`${AUTH}/device-links/status`, { headers: { 'X-Device-Link-Secret': secret } })).data.approved;
+}
+
+export async function claimDeviceLink(secret: string): Promise<TokenResponse> {
+  return (await api.post<TokenResponse>(`${AUTH}/device-links/claim`, { secret })).data;
+}
+
+// The route asks for a step-up, which the api client answers with the prompt and a retry.
+export async function approveDeviceLink(code: string): Promise<DeviceLinkApproved> {
+  return (await api.post<DeviceLinkApproved>(`${ME}/device-links/approve`, { code })).data;
 }
 
 export async function listPasskeys(): Promise<Passkey[]> {

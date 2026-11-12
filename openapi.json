@@ -7219,6 +7219,124 @@
         "title": "ContextSwitchBody",
         "type": "object"
       },
+      "DeviceLinkApproveBody": {
+        "description": "The code a new device shows, typed by its owner on a device where they are signed in.",
+        "examples": [
+          {
+            "code": "K7MP-Q2XD"
+          }
+        ],
+        "properties": {
+          "code": {
+            "description": "The eight characters the new device shows, at most 32 characters as typed. Case, spaces and dashes do not matter: `k7mp-q2xd` is the same code as `K7MPQ2XD`.",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "DeviceLinkApproveBody",
+        "type": "object"
+      },
+      "DeviceLinkApproved": {
+        "description": "The device the person has just let in.",
+        "examples": [
+          {
+            "device": "Chrome on Windows"
+          }
+        ],
+        "properties": {
+          "device": {
+            "description": "The browser and system the new device reported, such as `Chrome on Windows`, so the person can see which device they let in. Empty when it could not be told.",
+            "title": "Device",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device"
+        ],
+        "title": "DeviceLinkApproved",
+        "type": "object"
+      },
+      "DeviceLinkClaimBody": {
+        "description": "The waiting device asking whether it has been let in.",
+        "examples": [
+          {
+            "secret": "Hq9vExampleDeviceLinkSecretHeldByTheNewDevice"
+          }
+        ],
+        "properties": {
+          "secret": {
+            "description": "The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters.",
+            "maxLength": 128,
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret"
+        ],
+        "title": "DeviceLinkClaimBody",
+        "type": "object"
+      },
+      "DeviceLinkStarted": {
+        "description": "A new device's request to be let in (D-135). Show `code` on its screen and keep\n`secret` in memory: the person types the code on a device where they are signed in, and\nthis device trades the secret for a session with `POST /auth/device-links/claim`.",
+        "examples": [
+          {
+            "code": "K7MPQ2XD",
+            "expiresAt": "2026-11-12T09:05:00Z",
+            "secret": "Hq9vExampleDeviceLinkSecretHeldByTheNewDevice"
+          }
+        ],
+        "properties": {
+          "code": {
+            "description": "Eight characters to show on this device's screen, from capital letters and digits without the look-alikes 0, O, 1 and I, such as `K7MPQ2XD`. The person types it on My passkeys on a device where they are signed in. It works once.",
+            "title": "Code",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "When the code and the secret stop working, as a UTC timestamp: 5 minutes after the request by default (a setting). Start again after it.",
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "secret": {
+            "description": "A random value only this device holds, 43 characters. Keep it in memory, never in browser storage, never in a URL, and send it to `POST /auth/device-links/claim`. It works once.",
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret",
+          "code",
+          "expiresAt"
+        ],
+        "title": "DeviceLinkStarted",
+        "type": "object"
+      },
+      "DeviceLinkStatus": {
+        "description": "Whether the code this device shows has been approved yet.",
+        "examples": [
+          {
+            "approved": false
+          }
+        ],
+        "properties": {
+          "approved": {
+            "description": "`true` once the person has approved the code on a device where they are signed in: call `POST /auth/device-links/claim` now. `false` while it waits: ask again in a few seconds.",
+            "title": "Approved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approved"
+        ],
+        "title": "DeviceLinkStatus",
+        "type": "object"
+      },
       "DiffSegment": {
         "description": "One sentence of a diff and what happened to it (AC-INV1).",
         "properties": {
@@ -41721,6 +41839,98 @@
         ]
       }
     },
+    "/api/v1/auth/device-links": {
+      "post": {
+        "description": "For a device that holds none of the person's passkeys, such as a new laptop, when the\nbrowser cannot reach a phone's passkey. It answers a `code` to show on this device's\nscreen and a `secret` this device keeps in memory. Nothing is tied to any account yet:\nthe person types the code on My passkeys on a device where they are signed in and\nconfirms with their passkey (`POST /me/device-links/approve`), while this device asks\n`GET /auth/device-links/status` every few seconds and then collects its session with\n`POST /auth/device-links/claim`. Both stop working after\n5 minutes, and each works once.\n\nUnauthenticated. Writes nothing to the audit or security logs; the approval and the\nsign-in it leads to do.\n\nErrors: `rate_limited` (429) past 30 calls a minute from one\nnetwork address, the allowance every unauthenticated sign-in step shares.",
+        "operationId": "startDeviceLink",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceLinkStarted"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "Ask to be let in from a device where you are already signed in",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/device-links/claim": {
+      "post": {
+        "description": "Once `GET /auth/device-links/status` answers `approved: true`, the device calls this\nonce. It answers a full session for the person who approved, landing where a passkey\nsign-in lands (their first bank, or the console for platform staff without one), and sets\nthe refresh cookie, like a passkey sign-in. Open My passkeys\nthere and add a passkey on this device, so it can sign in on its own next time.\n\nUnauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed.\nIt writes a \"signin\" entry with the reason \"device_link\" to the security log and the\naudit event `session.created`. The secret then stops working.\n\nErrors: `device_link_pending` (409) before anyone has approved the code: keep asking\nthe status; `device_link_expired` (410) when the secret is unknown, already used, or\npast its 5 minutes, or the person's account was closed since, one\nanswer for all of them: start again; `validation_error` (422) for a missing secret or one\nover 128 characters.",
+        "operationId": "claimDeviceLink",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceLinkClaimBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Collect your session once the code this device shows has been approved",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/device-links/status": {
+      "get": {
+        "description": "The device that asked with `POST /auth/device-links` calls this every few seconds\nwhile it shows its code. `approved` turns `true` once the person has approved the code;\nthen call `POST /auth/device-links/claim` once.\n\nUnauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed, so\nthe calls spend no rate limit. A read: it writes nothing.\n\nErrors: `device_link_expired` (410) when the secret is unknown, already used, or past\nits 5 minutes, one answer for all of them: start again;\n`validation_error` (422) for a missing secret or one over 128 characters.",
+        "operationId": "deviceLinkStatus",
+        "parameters": [
+          {
+            "description": "The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters. A header, so no URL ever holds it.",
+            "in": "header",
+            "name": "X-Device-Link-Secret",
+            "required": true,
+            "schema": {
+              "description": "The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters. A header, so no URL ever holds it.",
+              "maxLength": 128,
+              "title": "X-Device-Link-Secret",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceLinkStatus"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Ask whether the code this device shows has been approved",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
     "/api/v1/auth/invitations/open": {
       "post": {
         "description": "Call this when an invitee opens the link in their invitation email: the page reads the\ntoken from the link's fragment (`/invite#<token>`) and posts it here. A valid token sends\na one-time enrolment code to the invited address, 6 digits and good for\n10 minutes, which the invitee then sends with the same token to\n`POST /auth/invitations/verify`. The code is for enrolment only: it opens an enrolment\nsession that can register a passkey, never a full sign-in. Opening the link again sends\na fresh code and retires the earlier one.\nThe code is never returned here: the answer is 202 with an empty body.\n\nNo session is needed; the single-use token is the grant. It writes a code-sent entry to\nthe inviting bank's security log and the audit event `invitation.opened`.\n\nErrors: `invitation_expired` (410) when the token is unknown, already used, past its\n72 hours, or revoked or replaced by an administrator; `rate_limited` (429)\npast 30 calls a minute from one network address, one allowance\nshared by opening an invitation, both code checks and both halves of passkey sign-in, or\npast 5 codes an hour for one invited address or\n20 an hour from one network address, counted together with\n`POST /auth/code/request`; `validation_error` (422) for a missing token or one over 128\ncharacters.",
@@ -46938,6 +47148,44 @@
           }
         ],
         "summary": "Switch between your bank and the platform console",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/me/device-links/approve": {
+      "post": {
+        "description": "For a person adding a device that cannot reach their passkey, such as a laptop when the\npasskey is on their phone. They type the code that device shows (`POST\n/auth/device-links`), and that device is then signed in as them the next time it asks,\nlanding where a passkey sign-in lands. Only approve a code shown on a device you are\nholding: whoever shows it gets your session. Nothing about this session or any passkey\nchanges. The answer names the browser the new device reported.\n\nSelf-service: it needs a full session, no permission, and a passkey confirmation on this\nsession younger than 5 minutes. It writes the audit event\n`device_link.approved`, carrying the step-up and the new device's browser.\n\nErrors: `device_link_expired` (410) when the code is unknown, already approved or past\nits 5 minutes, one answer for all of them, and nothing is written;\n`validation_error` (422) for an empty code or one over 32 characters; `enrolment_only`\n(403) from an enrolment session; `support_read_only` (403) from a support session.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.",
+        "operationId": "approveDeviceLink",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceLinkApproveBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceLinkApproved"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Let a new device in with the code it shows",
         "tags": [
           "Identity"
         ]

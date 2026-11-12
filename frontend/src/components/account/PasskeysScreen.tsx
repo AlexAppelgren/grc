@@ -10,7 +10,7 @@ import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { FormDialog } from '@/components/ui/Dialogs';
-import { useAddPasskey, useFormatContext, usePasskeys, useRemovePasskey, useRenamePasskey } from '@/features/identity/hooks';
+import { useAddPasskey, useApproveDeviceLink, useFormatContext, usePasskeys, useRemovePasskey, useRenamePasskey } from '@/features/identity/hooks';
 import { presentPasskey } from '@/features/identity/identity-presentation';
 import type { Passkey } from '@/features/identity/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -130,17 +130,66 @@ function AddPasskeyModal({ open, onClose, onAdded }: { open: boolean; onClose: (
   );
 }
 
+// D-135: the code a device without a passkey shows, approved here with a step-up
+// (the api client asks for the passkey and retries). The answer names the device.
+function LetDeviceInModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: (device: string) => void }) {
+  const t = useT();
+  const approve = useApproveDeviceLink();
+  const [code, setCode] = useState('');
+
+  const submit = () => {
+    approve.mutate(code.trim(), {
+      onSuccess: (response) => {
+        onDone(response.device);
+        setCode('');
+        onClose();
+      },
+    });
+  };
+
+  return open ? (
+    <FormDialog
+      title={t('me.passkeys.letIn')}
+      submitLabel={t('me.passkeys.letInSubmit')}
+      pending={approve.isPending}
+      submitDisabled={code.trim().length === 0}
+      error={approve.error}
+      codes={{ device_link_expired: t('me.passkeys.letInExpired') }}
+      onSubmit={submit}
+      onClose={onClose}
+    >
+      <p className="mb-5 text-muted">{t('me.passkeys.letInLede')}</p>
+      <Field id="device-link-code" label={t('me.passkeys.letInCode')}>
+        <TextInput id="device-link-code" value={code} autoComplete="off" autoCapitalize="characters" spellCheck={false} onChange={(e) => setCode(e.target.value)} />
+      </Field>
+    </FormDialog>
+  ) : null;
+}
+
 export function PasskeysScreen() {
   const t = useT();
   const passkeys = usePasskeys();
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState<string | null>(null);
+  const [lettingIn, setLettingIn] = useState(false);
+  const [letIn, setLetIn] = useState<string | null>(null);
 
   return (
     <>
-      <PageHead title={t('me.passkeys.title')} lede={t('me.passkeys.lede')} actions={<Button onClick={() => setAdding(true)}>{t('me.passkeys.add')}</Button>} />
+      <PageHead title={t('me.passkeys.title')} lede={t('me.passkeys.lede')} actions={
+          <ButtonBar className="mt-0">
+            <Button variant="outline" onClick={() => setLettingIn(true)}>
+              {t('me.passkeys.letIn')}
+            </Button>
+            <Button onClick={() => setAdding(true)}>{t('me.passkeys.add')}</Button>
+          </ButtonBar>
+        }
+      />
       {added !== null ? (
         <StatusLine tone="positive">{t('auth.enrol.added', { name: added })}</StatusLine>
+      ) : null}
+      {letIn !== null ? (
+        <StatusLine tone="positive">{letIn.length > 0 ? t('me.passkeys.letInDone', { device: letIn }) : t('me.passkeys.letInDoneUnknown')}</StatusLine>
       ) : null}
       <QueryState query={passkeys} errorTitle={t('me.passkeys.errorTitle')}>
         {(data) =>
@@ -156,6 +205,7 @@ export function PasskeysScreen() {
         }
       </QueryState>
       <AddPasskeyModal open={adding} onClose={() => setAdding(false)} onAdded={setAdded} />
+      <LetDeviceInModal open={lettingIn} onClose={() => setLettingIn(false)} onDone={setLetIn} />
     </>
   );
 }

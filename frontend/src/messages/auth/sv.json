@@ -60,5 +60,17 @@
   "auth.about.company": "Företag",
   "auth.about.companyName": "bleqq",
   "auth.about.privacy": "Integritet",
-  "auth.about.security": "Säkerhet"
+  "auth.about.security": "Säkerhet",
+  "auth.signIn.addDevice": "Nyckeln finns på en annan enhet? Lägg till den här enheten",
+  "auth.addDevice.title": "Lägg till den här enheten",
+  "auth.addDevice.lede": "Öppna Mina nycklar på en enhet där du är inloggad, välj Släpp in en enhet och skriv in den här koden.",
+  "auth.addDevice.codeLabel": "Din kod",
+  "auth.addDevice.hint": "Koden fungerar en gång och bara i några minuter.",
+  "auth.addDevice.starting": "Hämtar en kod…",
+  "auth.addDevice.waiting": "Väntar på godkännande…",
+  "auth.addDevice.expired": "Koden har gått ut. Börja om för att få en ny.",
+  "auth.addDevice.startAgain": "Börja om",
+  "auth.addDevice.signedInTitle": "Du är inloggad på den här enheten",
+  "auth.addDevice.signedInLede": "Lägg till en nyckel här så att enheten kan logga in själv nästa gång.",
+  "auth.addDevice.later": "Senare"
 }

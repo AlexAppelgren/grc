@@ -112,5 +112,12 @@
   "admin.securityLog.event.token_revoked": "Token återkallad",
   "admin.securityLog.event.credential_rate_limited": "Autentiseringsuppgift över sin gräns",
   "admin.securityLog.event.access_token_refused": "Åtkomsttoken avvisad",
-  "admin.securityLog.method.personal_token": "Personlig åtkomsttoken"
+  "admin.securityLog.method.personal_token": "Personlig åtkomsttoken",
+  "me.passkeys.letIn": "Släpp in en enhet",
+  "me.passkeys.letInLede": "Skriv in koden som visas på enheten du vill logga in på. Använd bara en kod som visas på en enhet du själv håller i.",
+  "me.passkeys.letInCode": "Kod",
+  "me.passkeys.letInSubmit": "Släpp in",
+  "me.passkeys.letInDone": "{device} är inloggad. Lägg till en nyckel på den under Mina nycklar.",
+  "me.passkeys.letInDoneUnknown": "Enheten är inloggad. Lägg till en nyckel på den under Mina nycklar.",
+  "me.passkeys.letInExpired": "Koden har gått ut eller har redan använts. Börja om på den nya enheten."
 }

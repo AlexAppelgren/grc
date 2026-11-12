@@ -76,6 +76,30 @@ def hash_code(code: str, salt: str) -> str:
     return hmac.new(key, f"{salt}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
+# --- The code a new device shows (ID-04, D-135) ---
+DEVICE_LINK_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O, no 1/I
+DEVICE_LINK_CODE_LENGTH = 8
+DEVICE_LINK_KEY_LABEL = b"device-link-code-v1"
+
+
+def new_device_link_code() -> str:
+    """Eight characters a person reads off one screen and types on another: 32**8 values,
+    alive for minutes and spent once."""
+    return "".join(secrets.choice(DEVICE_LINK_CODE_ALPHABET) for _ in range(DEVICE_LINK_CODE_LENGTH))
+
+
+def normalise_device_link_code(code: str) -> str:
+    """Upper case with spaces and dashes dropped, so `abcd-efgh` finds `ABCDEFGH`."""
+    return "".join(ch for ch in code.upper() if ch not in " -")
+
+
+def hash_device_link_code(code: str) -> str:
+    """A keyed hash, unsalted so the code is found by one indexed read: like the emailed code
+    (F30), a reader of the table alone cannot search the code space offline."""
+    key = hmac.new(settings.SECRET_KEY.encode("utf-8"), DEVICE_LINK_KEY_LABEL, hashlib.sha256).digest()
+    return hmac.new(key, normalise_device_link_code(code).encode(), hashlib.sha256).hexdigest()
+
+
 # --- Access tokens (D-06, ADR 0064): `v2.<session id hex>.<kind>.<tenant id hex>.<expiry epoch>.<hmac>` ---
 # The tenant part is empty for a session in no bank. It is copied from the stored session
 # and never trusted alone: the resolver refuses a row whose bank is not the claim.

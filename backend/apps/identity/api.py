@@ -10,11 +10,12 @@ from typing import TypeVar, cast
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
-from ninja import Path, Query, Router
+from ninja import Header, Path, Query, Router
 
 from apps.identity import (
     api_keys_logic,
     code_logic,
+    device_link_logic,
     invitation_logic,
     me_logic,
     members_logic,
@@ -25,7 +26,7 @@ from apps.identity import (
     session_logic,
 )
 from apps.identity.models import ApiKey, User
-from apps.identity.schemas import AgentKeyCreate, AgentKeyCreated, AgentKeyOut, AgentKeysPage, ApiKeyCreate, ApiKeyCreated, ApiKeyOut, ApiKeysPage, CodeRequestBody, CodeVerifyBody, ContextSwitchBody, Empty, ENROLMENT_SESSION_EXAMPLE, InvitationAccepted, InvitationCodeVerifyBody, InvitationOpenBody, InvitationOut, InvitationsPage, Me, MemberInvite, MemberOut, MemberPatch, MemberTeamsBody, MembersPage, MePatch, MEMBER_SESSIONS_EXAMPLE, MY_PASSKEYS_EXAMPLE, MY_SESSIONS_EXAMPLE, PasskeyAssertBody, PasskeyOut, PasskeyPatch, PasskeyRegisterBody, PasskeyRegistered, PersonalTokenCreate, PersonalTokenCreated, PersonalTokenOut, PersonalTokensPage, PERMISSIONS_EXAMPLE, PermissionOut, RefreshResult, RoleCreate, ROLES_EXAMPLE, RoleOut, RolePatch, SecurityEventOut, SecurityLogPage, SessionOut, SessionTokens, STEP_UP_OPTIONS_EXAMPLE, StepUpResult, WebAuthnCreationOptions, WebAuthnRequestOptions
+from apps.identity.schemas import AgentKeyCreate, AgentKeyCreated, AgentKeyOut, AgentKeysPage, ApiKeyCreate, ApiKeyCreated, ApiKeyOut, ApiKeysPage, CodeRequestBody, CodeVerifyBody, ContextSwitchBody, DeviceLinkApproveBody, DeviceLinkApproved, DeviceLinkClaimBody, DeviceLinkStarted, DeviceLinkStatus, Empty, ENROLMENT_SESSION_EXAMPLE, InvitationAccepted, InvitationCodeVerifyBody, InvitationOpenBody, InvitationOut, InvitationsPage, Me, MemberInvite, MemberOut, MemberPatch, MemberTeamsBody, MembersPage, MePatch, MEMBER_SESSIONS_EXAMPLE, MY_PASSKEYS_EXAMPLE, MY_SESSIONS_EXAMPLE, PasskeyAssertBody, PasskeyOut, PasskeyPatch, PasskeyRegisterBody, PasskeyRegistered, PersonalTokenCreate, PersonalTokenCreated, PersonalTokenOut, PersonalTokensPage, PERMISSIONS_EXAMPLE, PermissionOut, RefreshResult, RoleCreate, ROLES_EXAMPLE, RoleOut, RolePatch, SecurityEventOut, SecurityLogPage, SessionOut, SessionTokens, STEP_UP_OPTIONS_EXAMPLE, StepUpResult, WebAuthnCreationOptions, WebAuthnRequestOptions
 from apps.shared import permissions as perms
 from apps.shared.authentication import EnrolmentAuth, Principal, PrincipalKind, SessionAuth
 from apps.shared.models import Tenant
@@ -94,6 +95,7 @@ _SETTINGS_IN_DOCS = {
     "codes_per_ip_hour": settings.ENROLMENT_CODE_RATE_PER_IP_PER_HOUR,
     "auth_calls_per_ip_minute": settings.AUTH_RATE_PER_IP_PER_MINUTE,
     "token_max_days": settings.PERSONAL_TOKEN_MAX_DAYS,
+    "device_link_minutes": settings.DEVICE_LINK_TTL_MINUTES,
 }
 
 
@@ -743,6 +745,141 @@ def accept_invitation(request: HttpRequest, body: InvitationOpenBody) -> Invitat
         request=request,
     )
     return InvitationAccepted(tenant_id=tenant.id, tenant_name=tenant.name)
+
+
+# ---------------------------------------------------------------------------------------
+# Adding a device (ID-04, D-135): the new device shows a code, the person approves it with a
+# passkey on a device where they are signed in, and the new device collects its session.
+# ---------------------------------------------------------------------------------------
+@router.post(
+    "/auth/device-links",
+    response={201: DeviceLinkStarted},
+    auth=None,
+    operation_id="startDeviceLink",
+    by_alias=True,
+    summary="Ask to be let in from a device where you are already signed in",
+)
+@_quoting_settings
+def start_device_link(request: HttpRequest) -> tuple[int, DeviceLinkStarted]:
+    """For a device that holds none of the person's passkeys, such as a new laptop, when the
+    browser cannot reach a phone's passkey. It answers a `code` to show on this device's
+    screen and a `secret` this device keeps in memory. Nothing is tied to any account yet:
+    the person types the code on My passkeys on a device where they are signed in and
+    confirms with their passkey (`POST /me/device-links/approve`), while this device asks
+    `GET /auth/device-links/status` every few seconds and then collects its session with
+    `POST /auth/device-links/claim`. Both stop working after
+    $device_link_minutes minutes, and each works once.
+
+    Unauthenticated. Writes nothing to the audit or security logs; the approval and the
+    sign-in it leads to do.
+
+    Errors: `rate_limited` (429) past $auth_calls_per_ip_minute calls a minute from one
+    network address, the allowance every unauthenticated sign-in step shares.
+    """
+    # Ungated by design: public-token (it ties nothing to any account until a passkey approves it).
+    started = device_link_logic.start(request)
+    return 201, DeviceLinkStarted(secret=started.secret, code=started.code, expires_at=started.link.expires_at)
+
+
+@router.get(
+    "/auth/device-links/status",
+    response=DeviceLinkStatus,
+    auth=None,
+    operation_id="deviceLinkStatus",
+    by_alias=True,
+    summary="Ask whether the code this device shows has been approved",
+)
+@_quoting_settings
+def device_link_status(
+    request: HttpRequest,
+    secret: str = Header(
+        ...,
+        alias="X-Device-Link-Secret",
+        max_length=128,
+        description="The `secret` that `POST /auth/device-links` answered to this device, at most 128 characters. A header, so no URL ever holds it.",
+    ),
+) -> DeviceLinkStatus:
+    """The device that asked with `POST /auth/device-links` calls this every few seconds
+    while it shows its code. `approved` turns `true` once the person has approved the code;
+    then call `POST /auth/device-links/claim` once.
+
+    Unauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed, so
+    the calls spend no rate limit. A read: it writes nothing.
+
+    Errors: `device_link_expired` (410) when the secret is unknown, already used, or past
+    its $device_link_minutes minutes, one answer for all of them: start again;
+    `validation_error` (422) for a missing secret or one over 128 characters.
+    """
+    # Ungated by design: public-token (the secret is the grant; the answer is one yes or no).
+    return DeviceLinkStatus(approved=device_link_logic.is_approved(secret))
+
+
+@router.post(
+    "/auth/device-links/claim",
+    response=SessionTokens,
+    auth=None,
+    operation_id="claimDeviceLink",
+    by_alias=True,
+    summary="Collect your session once the code this device shows has been approved",
+)
+@_quoting_settings
+def claim_device_link(request: HttpRequest, body: DeviceLinkClaimBody, response: HttpResponse) -> SessionTokens:
+    """Once `GET /auth/device-links/status` answers `approved: true`, the device calls this
+    once. It answers a full session for the person who approved, landing where a passkey
+    sign-in lands (their first bank, or the console for platform staff without one), and sets
+    the refresh cookie, like a passkey sign-in. Open My passkeys
+    there and add a passkey on this device, so it can sign in on its own next time.
+
+    Unauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed.
+    It writes a "signin" entry with the reason "device_link" to the security log and the
+    audit event `session.created`. The secret then stops working.
+
+    Errors: `device_link_pending` (409) before anyone has approved the code: keep asking
+    the status; `device_link_expired` (410) when the secret is unknown, already used, or
+    past its $device_link_minutes minutes, or the person's account was closed since, one
+    answer for all of them: start again; `validation_error` (422) for a missing secret or one
+    over 128 characters.
+    """
+    # Ungated by design: public-token (the secret is the grant, and only an approval by passkey opens it).
+    return _session_response(device_link_logic.claim(body.secret, request), response)
+
+
+@router.post(
+    "/me/device-links/approve",
+    response=DeviceLinkApproved,
+    auth=SessionAuth(),
+    operation_id="approveDeviceLink",
+    by_alias=True,
+    summary="Let a new device in with the code it shows",
+)
+@requires_step_up
+@_quoting_settings
+def approve_device_link(request: HttpRequest, body: DeviceLinkApproveBody) -> DeviceLinkApproved:
+    """For a person adding a device that cannot reach their passkey, such as a laptop when the
+    passkey is on their phone. They type the code that device shows (`POST
+    /auth/device-links`), and that device is then signed in as them the next time it asks,
+    landing where a passkey sign-in lands. Only approve a code shown on a device you are
+    holding: whoever shows it gets your session. Nothing about this session or any passkey
+    changes. The answer names the browser the new device reported.
+
+    Self-service: it needs a full session, no permission, and a passkey confirmation on this
+    session younger than $step_up_minutes minutes. It writes the audit event
+    `device_link.approved`, carrying the step-up and the new device's browser.
+
+    Errors: `device_link_expired` (410) when the code is unknown, already approved or past
+    its $device_link_minutes minutes, one answer for all of them, and nothing is written;
+    `validation_error` (422) for an empty code or one over 32 characters; `enrolment_only`
+    (403) from an enrolment session; `support_read_only` (403) from a support session.
+    """
+    # Ungated by design: self. A person can only ever let a device in as themselves.
+    principal = _principal(request)
+    device = device_link_logic.approve(
+        user=_actor_user(request),
+        tenant_id=principal.tenant_id,
+        code=body.code,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return DeviceLinkApproved(device=device)
 
 
 _PASSKEY_ID = Path(

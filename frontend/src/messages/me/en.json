@@ -112,5 +112,12 @@
   "admin.securityLog.event.token_revoked": "Token revoked",
   "admin.securityLog.event.credential_rate_limited": "Credential over its rate",
   "admin.securityLog.event.access_token_refused": "Access token refused",
-  "admin.securityLog.method.personal_token": "Personal access token"
+  "admin.securityLog.method.personal_token": "Personal access token",
+  "me.passkeys.letIn": "Let a device in",
+  "me.passkeys.letInLede": "Type the code shown on the device you want to sign in on. Only use a code shown on a device you are holding.",
+  "me.passkeys.letInCode": "Code",
+  "me.passkeys.letInSubmit": "Let it in",
+  "me.passkeys.letInDone": "{device} is signed in. Add a passkey on it under My passkeys.",
+  "me.passkeys.letInDoneUnknown": "The device is signed in. Add a passkey on it under My passkeys.",
+  "me.passkeys.letInExpired": "That code has expired or was already used. Start again on the new device."
 }

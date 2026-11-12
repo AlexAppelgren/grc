@@ -467,6 +467,17 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # D-122: an enrolled person joins a bank through an invitation to their own address,
     # behind a step-up on their own session.
     ("POST", "/me/invitations/accept"): Ungated(UngatedReason.SELF, _SELF_ME),
+    # Adding a device (ID-04, D-135): nothing names an account until a passkey approves it.
+    ("POST", "/auth/device-links"): Ungated(
+        UngatedReason.BOOTSTRAP, "A device with no passkey asks for a code; it names no account and is rate limited (D-135)."
+    ),
+    ("GET", "/auth/device-links/status"): Ungated(
+        UngatedReason.PUBLIC_TOKEN, "The device's 256-bit secret, in a header, is the grant, and the answer is one yes or no (D-135)."
+    ),
+    ("POST", "/auth/device-links/claim"): Ungated(
+        UngatedReason.PUBLIC_TOKEN, "The device's single-use secret is the grant, and only a passkey step-up on another device opens it (D-135)."
+    ),
+    ("POST", "/me/device-links/approve"): Ungated(UngatedReason.SELF, "A person lets a device in as themselves only, behind a passkey step-up (D-135)."),
 
     # Library reads served to a session and a key alike: require_library_read decides.
     # `GET /obligations/{obligation_id}/sources` is readable with library:read alone, so a

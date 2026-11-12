@@ -432,6 +432,53 @@ test.describe('identity journeys', () => {
     });
   });
 
+  test("ID-S40: A person lets a new device in with the code it shows and their passkey", async ({ page, apiGuard, browser }) => {
+    test.setTimeout(60_000);
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/me\/device-links\/approve$/, 403, 'the approval answers step_up_required first and opens the passkey prompt');
+
+    // The new device holds no passkey of the account: it asks from the sign-in page and shows its code.
+    const laptop = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+    try {
+      await installAuthenticator(laptop);
+      const laptopPage = await laptop.newPage();
+      apiGuard.watch(laptopPage);
+      await laptopPage.goto('/sign-in');
+      await laptopPage.getByRole('button', { name: 'Passkey on another device? Add this device' }).click();
+      await expect(laptopPage.getByRole('heading', { level: 1, name: 'Add this device' })).toBeVisible();
+      const code = (await laptopPage.getByTestId('device-code').textContent())?.trim() ?? '';
+      expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+      await expect(laptopPage.getByText('Waiting for approval…')).toBeVisible();
+
+      // On the device where they are signed in, they type the code and confirm with their passkey.
+      await signInAs(page, LOGINS.devices);
+      await page.goto('/me/passkeys');
+      await page.getByRole('button', { name: 'Let a device in' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Let a device in' });
+      await dialog.getByLabel('Code', { exact: true }).fill(code.toLowerCase());
+      await dialog.getByRole('button', { name: 'Let it in' }).click();
+      const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Use passkey' }).click();
+      await expect(page.getByText(/is signed in\. Add a passkey on it under My passkeys\.$/)).toBeVisible();
+
+      // The new device notices, is signed in, and creates a passkey of its own.
+      await expect(laptopPage.getByRole('heading', { level: 1, name: 'You are signed in on this device' })).toBeVisible({ timeout: 15_000 });
+      const verified = laptopPage.waitForResponse((r) => r.url().endsWith('/auth/passkeys/register/verify') && r.request().method() === 'POST');
+      await laptopPage.getByRole('button', { name: 'Create passkey' }).click();
+      const created = (await (await verified).json()) as { passkey: { nickname: string } };
+      await expect(laptopPage.getByText(`${created.passkey.nickname} added`)).toBeVisible();
+      await laptopPage.getByRole('button', { name: 'Continue' }).click();
+      await expect(laptopPage.getByRole('navigation', { name: 'Main' })).toBeVisible();
+
+      // Both passkeys are on the account; the first device's session is untouched.
+      await page.reload();
+      await expect(page.locator('[data-passkey-id]')).toHaveCount(2);
+    } finally {
+      await laptop.close();
+    }
+  });
+
   test("ID-S18: Permissions are code and roles are rows", async ({ page, apiGuard }) => {
     // pending: ID-S18 (ID-09) -> built in chunk 1
     allowFreshContext(apiGuard);

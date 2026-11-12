@@ -544,6 +544,8 @@ AUTH_RATE_PER_IP_PER_MINUTE = env_int("AUTH_RATE_PER_IP_PER_MINUTE", 30, min=1, 
 # Proxies of ours appending to X-Forwarded-For; 0 trusts the socket address (rule 11).
 TRUSTED_PROXY_HOPS = env_int("TRUSTED_PROXY_HOPS", 1 if IS_DEPLOYED_ENVIRONMENT else 0, min=0, max=5)
 CHALLENGE_TTL_SECONDS = env_int("CHALLENGE_TTL_SECONDS", 120, min=10, max=600)  # a WebAuthn challenge
+# Adding a device (ID-04, D-135): how long the code a new device shows waits for approval.
+DEVICE_LINK_TTL_MINUTES = env_int("DEVICE_LINK_TTL_MINUTES", 5, min=1, max=15)
 # The one code E2E journeys type, read only under E2E_MODE (refused deployed, rule 4).
 E2E_FIXED_CODE = "123456"
 

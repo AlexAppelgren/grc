@@ -60,5 +60,17 @@
   "auth.about.company": "Company",
   "auth.about.companyName": "bleqq",
   "auth.about.privacy": "Privacy",
-  "auth.about.security": "Security"
+  "auth.about.security": "Security",
+  "auth.signIn.addDevice": "Passkey on another device? Add this device",
+  "auth.addDevice.title": "Add this device",
+  "auth.addDevice.lede": "On a device where you are signed in, open My passkeys, choose Let a device in and type this code.",
+  "auth.addDevice.codeLabel": "Your code",
+  "auth.addDevice.hint": "The code works once and only for a few minutes.",
+  "auth.addDevice.starting": "Getting a code…",
+  "auth.addDevice.waiting": "Waiting for approval…",
+  "auth.addDevice.expired": "This code has expired. Start again to get a new one.",
+  "auth.addDevice.startAgain": "Start again",
+  "auth.addDevice.signedInTitle": "You are signed in on this device",
+  "auth.addDevice.signedInLede": "Add a passkey here so this device can sign in on its own next time.",
+  "auth.addDevice.later": "Later"
 }

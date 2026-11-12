@@ -1591,6 +1591,83 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         return list(AgentAccessCall.objects.filter(api_key_id=key_id))
 
+    def test_id_s40(self) -> None:
+        """ID-S40
+
+        A person lets a new device in with the code it shows and their passkey (ID-04, ID-06, D-135).
+        Operations: startDeviceLink, deviceLinkStatus, claimDeviceLink, approveDeviceLink.
+        """
+        from apps.identity.models import DeviceLink, WebAuthnCredential
+
+        authenticator = self._admin_with_passkey(self.admin)
+        passkeys_before = set(WebAuthnCredential.objects.filter(user=self.admin).values_list("id", flat=True))
+
+        # The new device asks and shows its code; nothing is tied to anyone yet.
+        started = self._post("/auth/device-links", HTTP_USER_AGENT=CHROME_ON_WINDOWS)
+        self.assertEqual(started.status_code, 201, started.content)
+        secret, code = started.json()["secret"], started.json()["code"]
+        self.assertEqual(len(code), 8)
+        link = DeviceLink.objects.get()
+        self.assertNotIn(code, (link.code_hash, link.secret_hash))
+        self.assertNotEqual(link.secret_hash, secret)
+        status = self.client.get("/api/v1/auth/device-links/status", HTTP_X_DEVICE_LINK_SECRET=secret)
+        self.assertEqual(status.status_code, 200, status.content)
+        self.assertFalse(status.json()["approved"])
+        early = self._post("/auth/device-links/claim", {"secret": secret})
+        self.assertEqual(early.status_code, 409, early.content)
+        self.assertEqual(early.json()["code"], "device_link_pending")
+
+        # Approving needs a passkey confirmation on the signed-in device.
+        tenancy.clear_tenant()
+        signed_in = self._sign_in(authenticator)
+        self.assertEqual(signed_in.status_code, 200, signed_in.content)
+        phone = signed_in.json()["accessToken"]
+        typed = f"{code[:4].lower()}-{code[4:].lower()}"
+        refused = self._post("/me/device-links/approve", {"code": typed}, **self._bearer(phone))
+        self.assertEqual(refused.status_code, 403, refused.content)
+        self.assertEqual(refused.json()["code"], "step_up_required")
+        self.assertEqual(self._step_up(phone, authenticator).status_code, 200)
+        approved = self._post("/me/device-links/approve", {"code": typed}, **self._bearer(phone))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["device"], "Chrome on Windows")
+        self.activate(self.tenant)
+        audit = AuditEvent.objects.get(action="device_link.approved")
+        self.assertIsNotNone(audit.step_up_assertion_id)
+
+        # A code works once.
+        again = self._post("/me/device-links/approve", {"code": code}, **self._bearer(phone))
+        self.assertEqual(again.status_code, 410, again.content)
+        self.assertEqual(again.json()["code"], "device_link_expired")
+
+        # The new device sees the approval and collects a full session for the same person
+        # in the same bank.
+        tenancy.clear_tenant()
+        self.assertTrue(self.client.get("/api/v1/auth/device-links/status", HTTP_X_DEVICE_LINK_SECRET=secret).json()["approved"])
+        claimed = self._post("/auth/device-links/claim", {"secret": secret})
+        self.assertEqual(claimed.status_code, 200, claimed.content)
+        self.assertEqual(claimed.json()["sessionKind"], "full")
+        self.assertIn(COOKIE, claimed.cookies)
+        me = self.client.get("/api/v1/me", **self._bearer(claimed.json()["accessToken"]))
+        self.assertEqual(me.status_code, 200, me.content)
+        self.assertEqual(me.json()["user"]["id"], str(self.admin.id))
+        self.assertEqual(me.json()["tenant"]["id"], str(self.tenant.id))
+        self.activate(self.tenant)
+        self.assertTrue(LoginEvent.objects.filter(user=self.admin, tenant=self.tenant, event="signin", failure_reason="device_link").exists())
+
+        # The secret works once, and nothing about the existing passkeys changed.
+        tenancy.clear_tenant()
+        self.assertEqual(self._post("/auth/device-links/claim", {"secret": secret}).status_code, 410)
+        self.assertEqual(set(WebAuthnCredential.objects.filter(user=self.admin, retired_at__isnull=True).values_list("id", flat=True)), passkeys_before)
+        self.assertEqual(self.client.get("/api/v1/me", **self._bearer(phone)).status_code, 200)
+
+        # A code past its window is refused, and so is a secret nobody issued.
+        late = self._post("/auth/device-links")
+        with self._later(minutes=settings.DEVICE_LINK_TTL_MINUTES, seconds=1):
+            self.assertEqual(self.client.get("/api/v1/auth/device-links/status", HTTP_X_DEVICE_LINK_SECRET=late.json()["secret"]).status_code, 410)
+            stale = self._post("/me/device-links/approve", {"code": late.json()["code"]}, **sign_in(self.second_admin, tenant=self.tenant, step_up=True))
+            self.assertEqual(stale.status_code, 410, stale.content)
+        self.assertEqual(self._post("/auth/device-links/claim", {"secret": "no-such-secret"}).status_code, 410)
+
     def test_acc_s3(self) -> None:
         """ACC-S3
 

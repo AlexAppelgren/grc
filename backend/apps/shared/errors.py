@@ -29,6 +29,8 @@ STATUS_BY_CODE: dict[str, int] = {
     "registration_failed": 400,
     "challenge_expired": 400,
     "invitation_expired": 410,
+    "device_link_expired": 410,
+    "device_link_pending": 409,
     "invitation_closed": 409,
     "last_admin": 409,
     "last_passkey": 409,

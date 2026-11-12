@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
 import * as identity from '@/features/identity/api';
-import type { Me, Passkey, RegisterVerifyResponse, StepUpVerifyResponse, TokenResponse, UserSession } from '@/features/identity/types';
+import type { DeviceLinkApproved, DeviceLinkStarted, Me, Passkey, RegisterVerifyResponse, StepUpVerifyResponse, TokenResponse, UserSession } from '@/features/identity/types';
 import { defaultLocale, isLocale, type Locale } from '@/shared/i18n';
 import { ensureColdLoadRefresh, signOut, tokenStore } from '@/shared/utils/api-client';
 import { defaultFormatContext, type FormatContext } from '@/shared/utils/format';
@@ -98,6 +98,39 @@ export function useSetLanguage(): UseMutationResult<void, unknown, Locale> {
 function useInvalidateSession(): () => Promise<void> {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: identityKeys.me });
+}
+
+// Adding a device (D-135). The new device asks, shows its code, asks every few
+// seconds whether it was approved, then collects its session once.
+export const DEVICE_LINK_POLL_MS = 3000;
+
+export function useStartDeviceLink(): UseMutationResult<DeviceLinkStarted, unknown, void> {
+  return useMutation({ mutationFn: () => identity.startDeviceLink() });
+}
+
+export function useDeviceLinkApproved(secret: string | null): UseQueryResult<boolean> {
+  return useQuery({
+    queryKey: ['device-link', secret],
+    queryFn: () => identity.deviceLinkApproved(secret ?? ''),
+    enabled: secret !== null,
+    retry: false,
+    refetchInterval: (query) => (query.state.data === true || query.state.status === 'error' ? false : DEVICE_LINK_POLL_MS),
+  });
+}
+
+export function useClaimDeviceLink(): UseMutationResult<TokenResponse, unknown, string> {
+  const invalidate = useInvalidateSession();
+  return useMutation({
+    mutationFn: (secret: string) => identity.claimDeviceLink(secret),
+    onSuccess: async (response) => {
+      tokenStore.set(response.accessToken);
+      await invalidate();
+    },
+  });
+}
+
+export function useApproveDeviceLink(): UseMutationResult<DeviceLinkApproved, unknown, string> {
+  return useMutation({ mutationFn: (code: string) => identity.approveDeviceLink(code) });
 }
 
 export function useOpenInvitation(): UseMutationResult<void, unknown, string> {
