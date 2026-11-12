@@ -44,7 +44,7 @@ const configuredDatabase = process.env.E2E_DATABASE_NAME ?? 'compliance_watch_e2
 const FRONTEND_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 3000) + (OWN_STACK?.offset ?? 0);
 const BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 8000) + (OWN_STACK?.offset ?? 0);
 const DATABASE_NAME = OWN_STACK && !configuredDatabase.endsWith(OWN_STACK.suffix) ? `${configuredDatabase}${OWN_STACK.suffix}` : configuredDatabase;
-const API_URL = OWN_STACK ? `http://localhost:${BACKEND_PORT}` : (process.env.NEXT_PUBLIC_API_URL ?? `http://localhost:${BACKEND_PORT}`);
+const API_URL = OWN_STACK ? `http://localhost:${BACKEND_PORT}` : (process.env.API_INTERNAL_URL ?? `http://localhost:${BACKEND_PORT}`);
 const WEB_URL = `http://localhost:${FRONTEND_PORT}`;
 // The same build once more with the public site and the app on hosts of their
 // own (src/proxy.ts, support/split-hosts.mjs); every other journey runs on
@@ -127,7 +127,7 @@ export default defineConfig({
         ]),
     {
       // CI's E2E job builds the app earlier in the job, beside its other setup, and sets
-      // E2E_PREBUILT (D-90): the same production build with the same NEXT_PUBLIC_API_URL.
+      // E2E_PREBUILT (D-90): the same production build with the same API_INTERNAL_URL.
       command: `${process.env.E2E_PREBUILT === '1' ? '' : 'npm run build && '}npm run start -- --port ${FRONTEND_PORT}`,
       url: `${WEB_URL}/`,
       timeout: 300_000,
@@ -135,8 +135,7 @@ export default defineConfig({
       env: {
         // Same site as the web app (localhost, docs/runbooks/DNS_DOMAINS.md): the
         // refresh cookie is SameSite=Strict, and 127.0.0.1 would be another site.
-        NEXT_PUBLIC_API_URL: API_URL,
-        // The same API behind the web server's own /api (next.config.ts), fixed by the build.
+        // The API behind the web server's own /api (next.config.ts), fixed by the build.
         API_INTERNAL_URL: API_URL,
         NEXT_TELEMETRY_DISABLED: '1',
         // The /dev pages (pill gallery, Green spike) answer only with this set (src/app/dev/layout.tsx).
@@ -156,7 +155,7 @@ export default defineConfig({
               E2E_SPLIT_PORT: String(SPLIT_PORT),
               PUBLIC_SITE_HOST: new URL(SPLIT_PUBLIC_URL).host,
               APP_HOST: new URL(SPLIT_APP_URL).host,
-              NEXT_PUBLIC_API_URL: API_URL,
+              API_INTERNAL_URL: API_URL,
               NEXT_TELEMETRY_DISABLED: '1',
             },
           },

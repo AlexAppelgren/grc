@@ -224,7 +224,7 @@ if [ "$be" = 1 ] || [ "$fe" = 1 ]; then  # ci.yml `openapi-types-drift`, against
   gate "OpenAPI/TS: artefacts match the contract" . git diff --exit-code "$snapshot" -- openapi.json frontend/src/types/api.generated.ts
 fi
 
-export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
+export API_INTERNAL_URL="${API_INTERNAL_URL:-http://localhost:8000}"
 if [ "$fe" = 1 ]; then  # ci.yml `frontend`
   steps="build:tokens lint typecheck test:coverage check:messages check:copy-drift build"
   [ "$quick" = 1 ] && steps="build:tokens lint typecheck check:messages check:copy-drift"
@@ -248,7 +248,8 @@ fi
 if [ "$quick" = 0 ] && { [ "$cont" = 1 ] || [ "$lock" = 1 ]; }; then  # ci.yml `container-scan`
   trivy="$(tool trivy-0.70.0 trivy$x "$trivy_url" "$trivy_sha")"
   for image in backend frontend; do
-    gate "Container $image: build" . docker build -t "compliance-watch/$image:ci" -f "$image/Dockerfile" "$image"
+    # The web build refuses to run without the API's address; the image is scanned and never started.
+    gate "Container $image: build" . docker build --build-arg API_INTERNAL_URL=http://api.internal:8000 -t "compliance-watch/$image:ci" -f "$image/Dockerfile" "$image"
     gate "Container $image: Trivy" . "$trivy" image --scanners vuln --pkg-types os,library \
       --severity MEDIUM,HIGH,CRITICAL --ignore-unfixed=false --exit-code 1 --format table \
       --cache-dir "$TOOLS/trivy-cache" "compliance-watch/$image:ci"

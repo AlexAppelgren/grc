@@ -47,7 +47,7 @@ at a role that can bypass row-level security.
 | `EMBEDDER_PROVIDER`, its key | api, worker | per D-09 |
 | `AGENT_RUNNER` | worker | `mock` until chunk 11 |
 | `SENTRY_DSN` | all | optional, EU region |
-| `NEXT_PUBLIC_API_URL` | web | the api's public URL |
+| `API_INTERNAL_URL` | web | the api's address on the private network (`http://<api service>.railway.internal:<port>`), never its public URL |
 
 ## First run
 

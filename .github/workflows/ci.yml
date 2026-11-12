@@ -507,7 +507,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      # Where the web server passes /api on to; a production build refuses to run without it (frontend/next.config.ts).
+      API_INTERNAL_URL: http://localhost:8000
     defaults:
       run:
         shell: bash
@@ -592,8 +593,7 @@ jobs:
     env:
       CI: "true"
       E2E_MODE: "true"
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      # The same API behind the web server's own /api (frontend/next.config.ts), fixed by the build below.
+      # The API behind the web server's own /api (frontend/next.config.ts), fixed by the build below.
       API_INTERNAL_URL: http://localhost:8000
     defaults:
       run:
@@ -627,7 +627,7 @@ jobs:
 
       # The production build, the one Playwright would otherwise run first, starts here
       # so it overlaps the database and backend setup (D-90). It bakes in the job's
-      # NEXT_PUBLIC_API_URL and API_INTERNAL_URL, the address the seeded stack serves on;
+      # API_INTERNAL_URL, the address the seeded stack serves on;
       # "Run journeys" sets E2E_PREBUILT so Playwright starts this build instead of
       # making its own.
       - name: Build the web app (in the background)
@@ -796,7 +796,7 @@ jobs:
           fi
           exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
-      # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
+      # API_INTERNAL_URL is deliberately unset: the config points the build at
       # the cold stack's own port, which is not the seeded suite's.
       - name: Walk the first-run setup
         run: npm run test:e2e -- --grep @coldstart
@@ -908,7 +908,7 @@ jobs:
           fi
           exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
-      # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
+      # API_INTERNAL_URL is deliberately unset: the config points the build at
       # the demo stack's own port, which is not the seeded suite's.
       - name: Walk the demo's screens against its recordings
         run: npm run test:e2e -- --grep @demo
@@ -1050,11 +1050,15 @@ jobs:
             dockerfile: backend/Dockerfile
             cache-to: type=gha,mode=max,scope=backend
             no-cache-filters: runtime
+            build-args: ""
           - image: frontend
             context: frontend
             dockerfile: frontend/Dockerfile
             cache-to: ""
             no-cache-filters: ""
+            # The build refuses to run without the API's address (frontend/next.config.ts). The image is
+            # scanned and never started, so any address will do.
+            build-args: API_INTERNAL_URL=http://api.internal:8000
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1073,6 +1077,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: ${{ matrix.cache-to }}
           no-cache-filters: ${{ matrix.no-cache-filters }}
+          build-args: ${{ matrix.build-args }}
 
       - name: Trivy (MEDIUM and above)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

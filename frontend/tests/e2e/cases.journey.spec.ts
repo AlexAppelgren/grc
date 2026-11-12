@@ -250,7 +250,13 @@ test.describe('cases journeys', () => {
     apiGuard.allow(/\/changes\/[^/]+\/evidence$/, 422, 'a file outside the type allow-list is refused');
     const attempt = attemptOf(testInfo);
     const pdfName = `AMLR onboarding test results ${attempt}.pdf`;
-    const pdf = Buffer.from(`%PDF-1.4\n% CAS-S7 evidence, attempt ${attempt}\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n`);
+    // More than 10 MB, where Next would cut a body it passes on: the file reaches the API whole
+    // through the web server (next.config.ts), and comes back whole when it is downloaded.
+    const pdf = Buffer.concat([
+      Buffer.from(`%PDF-1.4\n% CAS-S7 evidence, attempt ${attempt}\n`),
+      Buffer.alloc(11 * 1024 * 1024, ' '),
+      Buffer.from('\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n'),
+    ]);
     const linkName = `FI guidance on customer due diligence ${attempt}`;
     const referenceName = `KYC procedure v4, compliance share ${attempt}`;
 

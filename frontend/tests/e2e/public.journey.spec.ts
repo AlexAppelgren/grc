@@ -9,14 +9,14 @@ import { allowFreshContext, BACKEND_URL, LOGINS, REFRESH_COOKIE, signInAs, signO
 const HEADWORD = { level: 1, name: 'bleqq', exact: true } as const;
 const GREEN = 'rgb(10, 58, 42)';
 // The web app's content policy (next.config.ts, review 2026-11-11 S-12): everything from
-// its own origin, the API's calls to the API, and no frame, plugin or form elsewhere.
+// its own origin, the API's calls included, and no frame, plugin or form elsewhere.
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  `connect-src 'self' ${new URL(BACKEND_URL).origin}`,
+  "connect-src 'self'",
   "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -464,6 +464,14 @@ test.describe('the public site and the app on hosts of their own', () => {
 
   test('a passkey signs in on the app host', async ({ page, context, apiGuard }) => {
     allowFreshContext(apiGuard);
+    // Every call the app makes goes to its own origin: the API sits behind the web server
+    // (next.config.ts). No call is cross-origin, so none needs the preflight a bank's proxy
+    // may refuse, and a bank's filter has one host to rate and allow.
+    const called = new Set<string>();
+    page.on('request', (sent) => {
+      const url = new URL(sent.url());
+      if (url.pathname.startsWith('/api/')) called.add(url.origin);
+    });
     await signInAs(page, LOGINS.reader);
     expect(new URL(page.url()).origin).toBe(APP);
     await page.reload();
@@ -475,6 +483,7 @@ test.describe('the public site and the app on hosts of their own', () => {
     await expect(page).toHaveURL(`${APP}/`);
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
     await expect(page.getByRole('heading', HEADWORD)).toBeHidden();
+    expect([...called]).toEqual([APP]);
   });
 
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {

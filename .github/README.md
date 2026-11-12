@@ -83,7 +83,7 @@ Both `backend` and `e2e` run against `pgvector/pgvector:pg16` (superuser
 `redis:7-alpine`, the same images as `docker-compose.yml`. The job `env`
 carries `DATABASE_URL` (as `cw_app`), `MIGRATOR_DATABASE_URL` (as
 `cw_migrator`), `REDIS_URL` and `ENVIRONMENT=ci`; `e2e` adds `E2E_MODE=true`,
-`CI=true` and `NEXT_PUBLIC_API_URL`.
+`CI=true` and `API_INTERNAL_URL`.
 
 ## Secrets and variables
 

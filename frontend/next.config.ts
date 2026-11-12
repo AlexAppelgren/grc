@@ -7,13 +7,18 @@ import { API_MAX_BODY_BYTES } from './src/shared/navigation/api-body';
 // emitted server.js; everywhere else `next start` serves the normal build,
 // because Next refuses `next start` on a standalone output. Nothing
 // Railway-specific here (DECISIONS D-16).
-// The API behind this origin, step one (D-134, ADR 0068). With API_INTERNAL_URL set, this
-// server passes /api/... on to the API at that address, so a browser can reach the API on
-// the page's own host. It names the address the two services share on the platform's
-// private network, never the API's public one: a call to the public address goes back
-// through the edge proxy the request came in by, and that proxy refuses it (the outage of
-// 2026-11-12). Read when the build runs. Unset, nothing is passed on.
-const apiInternal = URL.canParse(process.env.API_INTERNAL_URL ?? '') ? new URL(process.env.API_INTERNAL_URL as string).origin : '';
+// The API behind this origin (D-134, ADR 0068). The browser calls /api/... on the page's
+// own host and this server passes each call on to the API at API_INTERNAL_URL, so the
+// browser talks to one host: no call is cross-origin, none needs a preflight, and a bank's
+// web filter has one host to rate and allow. The variable names the address the two
+// services share on the platform's private network, never the API's public one: a call to
+// the public address goes back through the edge proxy the request came in by, and that
+// proxy refuses it (the outage of 2026-11-12). Read when the build runs. `next dev` falls
+// back to the local API; a production build without it stops here, because the app it
+// would make could not reach its API.
+const apiInternalUrl = process.env.API_INTERNAL_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+if (!URL.canParse(apiInternalUrl)) throw new Error('API_INTERNAL_URL is not set to an address: the web server passes /api on to it (docs/adr/0068).');
+const apiInternal = new URL(apiInternalUrl).origin;
 // What this server must not cut short on the way. Left alone, Next cuts a request body it
 // passes on at 10 MB and gives up on an answer after 30 s of silence (both measured
 // 2026-11-12: an 11 MiB upload and a 35 s wait each answered 500). The API has its own
@@ -23,20 +28,18 @@ const apiInternal = URL.canParse(process.env.API_INTERNAL_URL ?? '') ? new URL(p
 const apiTimeoutMs = Number(process.env.API_INTERNAL_TIMEOUT_MS) || 200_000;
 
 // The content policy (review 2026-11-11 S-12): the app loads nothing from another
-// origin, so everything is 'self' but the API, which NEXT_PUBLIC_API_URL names when it
-// is not this origin (it is inlined at build time, and so is this header). Inline
+// origin and calls nothing on another origin, so everything is 'self'. Inline
 // scripts and styles stay allowed because Next and next-themes write them; a nonce from
 // src/proxy.ts is the later, stricter step. `next dev` alone needs eval (React's dev
 // call stacks and fast refresh). object-src, base-uri and form-action close the ways a
 // stray script or markup could load a plugin, rebase links or post a form elsewhere.
-const apiOrigin = URL.canParse(process.env.NEXT_PUBLIC_API_URL ?? '') ? new URL(process.env.NEXT_PUBLIC_API_URL as string).origin : '';
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  `connect-src 'self'${apiOrigin === '' ? '' : ` ${apiOrigin}`}`,
+  "connect-src 'self'",
   "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -72,7 +75,7 @@ const nextConfig: NextConfig = {
   // (publickey-credentials-get and -create) at its default of our own origin,
   // which the passkey ceremonies and the framed demo need.
   async rewrites() {
-    return apiInternal === '' ? [] : [{ source: '/api/:path*', destination: `${apiInternal}/api/:path*` }];
+    return [{ source: '/api/:path*', destination: `${apiInternal}/api/:path*` }];
   },
   async headers() {
     return [

@@ -41,8 +41,8 @@ Where things are:
 | `tests/e2e/support/api-guard.ts` | `test` for every spec |
 | `docs/D-04-spike.md` | Green Core under `next start`: the spike result |
 
-Public settings: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_PRODUCT_NAME`
+Public settings: `NEXT_PUBLIC_PRODUCT_NAME`
 (default "Compliance Watch"), `NEXT_PUBLIC_DEFAULT_LOCALE` (`en` or `sv`),
 `NEXT_PUBLIC_SUPPORT_CONTACT`. Server-side, fixed by the build: `API_INTERNAL_URL`, where
-the web server passes `/api` on to (ADR 0068), with `API_INTERNAL_MAX_BODY_BYTES` and
-`API_INTERNAL_TIMEOUT_MS`.
+the API is. The browser calls `/api` on the page's own host and the web server passes each
+call on (ADR 0068); `API_INTERNAL_MAX_BODY_BYTES` and `API_INTERNAL_TIMEOUT_MS` bound it.

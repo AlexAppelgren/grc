@@ -106,9 +106,7 @@ def list_feeds(tenant: Tenant, user: User) -> list[HomeCalendarFeed]:
     return [_feed_out(feed) for feed in rows]
 
 
-def create_feed(
-    *, tenant: Tenant, user: User, actor: Actor, request: HttpRequest
-) -> HomeCalendarFeedCreated:
+def create_feed(*, tenant: Tenant, user: User, actor: Actor) -> HomeCalendarFeedCreated:
     """`POST /calendar-feeds`: mint one address and show it once (HOM-04, D-52).
 
     The route demanded a recent sign-in or step-up. Here: at most `CALENDAR_FEEDS_PER_USER`
@@ -139,7 +137,9 @@ def create_feed(
         tenant_id=tenant.id,
         after={"createdAt": feed.created_at.isoformat()},
     )
-    address = f"{request.build_absolute_uri(ICS_PATH)}?{urlencode({'token': plain})}"
+    # The app's own public address, never the request's host: a call that came through the web
+    # server carries the API's private name there (D-134), which no calendar client can reach.
+    address = f"{settings.APP_BASE_URL.rstrip('/')}{ICS_PATH}?{urlencode({'token': plain})}"
     return HomeCalendarFeedCreated(feed=_feed_out(feed), url=address)
 
 

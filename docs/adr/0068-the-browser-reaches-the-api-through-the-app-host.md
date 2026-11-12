@@ -1,6 +1,6 @@
 # ADR 0068 — The browser reaches the API through the app host, over the private network
 
-**Date:** 2026-11-12 · **Status:** accepted (Alex, 2026-11-11, in chat, asked whether to ship it: "yeah lets do that"; after the outage, 2026-11-12: "I still want cloudflare of course, but we should fix so it works"; D-134). Step one is built; step two waits for the route to answer on the live site.
+**Date:** 2026-11-12 · **Status:** accepted (Alex, 2026-11-11, in chat, asked whether to ship it: "yeah lets do that"; after the outage, 2026-11-12: "I still want cloudflare of course, but we should fix so it works"; D-134). Both steps are built: the route answered on the live site before the browser was switched to it.
 
 ## Context
 
@@ -43,13 +43,15 @@ stream may be silent for longer.
   platform's private network. It is never the API's public address. The variable is the
   web service's own, stays on the server, and is read when the build runs. Unset, nothing
   is passed on.
-- **Two steps, so that a wrong address cannot take sign-in down.**
-  1. *The route (built).* The web server passes `/api` on when the variable is set. The
-     browser still calls the API host, so nothing a person does depends on the route. The
-     owner sets the variable, and the route is called on the live site from outside.
-  2. *The switch (next).* Only when the route has answered on the live site: the client
-     drops its base address, `connect-src` becomes `'self'`, and the journeys run the same
-     path. The refresh cookie then belongs to the app host; D-06 is otherwise unchanged.
+- **Two steps, so that a wrong address could not take sign-in down.**
+  1. *The route.* The web server passed `/api` on once the variable was set, while the
+     browser still called the API host, so nothing a person did depended on the route. The
+     owner set the variable, and the route was called on the live site from outside.
+  2. *The switch.* Only then: the client has no base address and calls `/api/...` on the
+     page's origin, `connect-src` is `'self'`, and the journeys run the same path. The
+     refresh cookie belongs to the app host; D-06 is otherwise unchanged. A production
+     build without `API_INTERNAL_URL` stops with an error, so a web service that could not
+     reach its API is never deployed; the deployment before it stays live.
 - **The web server cuts nothing short.** `experimental.proxyClientMaxBodySize` is 26 MiB,
   just above the API's `EVIDENCE_MAX_BYTES` (25 MiB), and `experimental.proxyTimeout` is
   200 s, above `LLM_DEADLINE_S` (180 s). Both have a variable
@@ -78,22 +80,28 @@ stream may be silent for longer.
   `SECURE_SSL_REDIRECT` does not answer with a redirect; `X-Forwarded-For` arrives
   unchanged and Next appends nothing, so `client_ip`, the per-address limits and the
   security log read the same entry as on the direct path.
-- **A bank allows one host fewer** after step two. The API host stays public, behind
+- **A bank allows one host fewer.** The browser never contacts the API host. It stays public, behind
   Cloudflare as before, for agents and integrations that call it with a key.
 - **Cloudflare stays in front of everything a browser touches.** A call through the route
   has already passed Cloudflare on the app host; only the leg between our two services
   leaves it out.
-- **Step two carries two known changes besides the switch.** The calendar feed's address
-  is built from the request's host (`apps/home/feed.py`), which over the route is the
-  private name: it must come from `APP_BASE_URL`. A journey must attach a file above 10 MB
-  through the screen. A file between the API's cap and the web server's limit gets the
-  API's own sentence, as today; one above the limit gets the web server's 413.
-- **A wrong address is the remaining risk, and step one is where it shows.** The API's
-  public address in `API_INTERNAL_URL` would repeat the outage for the route alone. The
-  runbook says so, and the check after the owner's change is one call from outside.
+- **Everyone signs in once more.** A browser that signed in before the switch holds its
+  refresh cookie for the API host, which the app no longer calls.
+- **The calendar feed's address comes from `APP_BASE_URL`**, not from the request's host
+  (`apps/home/feed.py`): over the route that host is the API's private name, which no
+  calendar client can reach. Addresses handed out earlier name the API host and keep
+  working.
+- **A file's size.** A file between the API's cap and the web server's limit gets the API's
+  own sentence, as before; one above the limit gets the web server's 413. The evidence
+  journey attaches and downloads a file above 10 MB through the screen.
+- **`NEXT_PUBLIC_API_URL` is gone.** Nothing reads it: not the browser's code, not the
+  build. CORS stays configured and unused by the app; removing it is a separate change.
+- **A wrong address is the remaining risk.** The API's public address in
+  `API_INTERNAL_URL` would repeat the outage. The runbook says so, and the check after any
+  change to it is one call from outside (`DNS_DOMAINS.md`).
 
 ## Not done
 
-Step two. `NEXT_PUBLIC_API_URL` and the CORS configuration stay until the browser no longer
-needs them. Which `X-Forwarded-For` entry is the caller's on the deployed chain has still
-to be read from a real request before `TRUSTED_PROXY_HOPS` changes (`TODO_FOR_alex.md`).
+Removing the unused CORS configuration. Which `X-Forwarded-For` entry is the caller's on the
+deployed chain has still to be read from a real request before `TRUSTED_PROXY_HOPS` changes
+(`TODO_FOR_alex.md`).

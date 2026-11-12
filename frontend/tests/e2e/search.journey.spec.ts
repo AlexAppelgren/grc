@@ -141,7 +141,15 @@ test.describe('search journeys', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     await page.goto('/ask');
+    // The stream reaches the browser through the web server, on the page's own origin. That server
+    // compresses what it passes on and would hold a compressed stream back until it ended, so the
+    // answer says no-transform and arrives as it is, event by event.
+    const stream = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v1/ask');
     await askQuestion(page, ANSWERED_QUESTION);
+    const streamed = await stream;
+    expect(new URL(streamed.url()).origin).toBe(new URL(page.url()).origin);
+    expect(streamed.headers()['cache-control']).toBe('no-cache, no-transform');
+    expect(streamed.headers()['content-encoding']).toBeUndefined();
 
     // Labelled AI output, read as of today since no date was set.
     const answer = page.locator('[data-ask-answer="done"]');

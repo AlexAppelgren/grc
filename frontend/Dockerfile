@@ -18,14 +18,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Build-time settings, so the image is per environment for these only.
 # NEXT_PUBLIC_* values are inlined into the browser's code. The API_INTERNAL_*
-# three stay on the server: where it passes /api on to, and the largest body and
-# longest silence it lets through (next.config.ts; empty means its default).
-ARG NEXT_PUBLIC_API_URL=""
+# three stay on the server: where it passes /api on to, which the build refuses
+# to run without, and the largest body and longest silence it lets through
+# (next.config.ts; empty means its default).
 ARG NEXT_PUBLIC_PRODUCT_NAME="Compliance Watch"
 ARG API_INTERNAL_URL=""
 ARG API_INTERNAL_MAX_BODY_BYTES=""
 ARG API_INTERNAL_TIMEOUT_MS=""
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_PUBLIC_PRODUCT_NAME=$NEXT_PUBLIC_PRODUCT_NAME
+ENV NEXT_PUBLIC_PRODUCT_NAME=$NEXT_PUBLIC_PRODUCT_NAME
 ENV API_INTERNAL_URL=$API_INTERNAL_URL API_INTERNAL_MAX_BODY_BYTES=$API_INTERNAL_MAX_BODY_BYTES API_INTERNAL_TIMEOUT_MS=$API_INTERNAL_TIMEOUT_MS
 # next.config.ts switches to `output: 'standalone'` on this flag.
 ENV NEXT_OUTPUT_STANDALONE=1

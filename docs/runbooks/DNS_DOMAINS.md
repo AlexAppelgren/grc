@@ -35,8 +35,10 @@ against `WEBAUTHN_ORIGINS`.
 3. Set `WEBAUTHN_RP_ID=app.bleqq.com` and
    `WEBAUTHN_ORIGINS=https://app.bleqq.com` on the `api` service
    before anyone enrols.
-4. Set `NEXT_PUBLIC_API_URL` on `web` to the API's public URL and redeploy
-   `web` (the value is baked at build time).
+4. Set `API_INTERNAL_URL` on `web` to the API's address on the platform's
+   private network, never its public URL, add that private name to the
+   `api` service's `ALLOWED_HOSTS`, and redeploy `web` (the value is fixed
+   when the build runs; "The API behind the app host" below).
 5. For the mail sender's domain, add SPF and DKIM records as the provider
    instructs, so invitation codes are delivered.
 
@@ -58,26 +60,26 @@ new origin listed. Decide before the first real user enrols
 ## Cookies and paths
 
 The refresh token cookie is `HttpOnly`, `Secure`, `SameSite=Strict` and
-scoped to the auth path, so the web app and the API must share a site or
-the API must be reachable from the web origin through the same registrable
-domain. With the hosts above (`app.bleqq.com` and
-`api.bleqq.com`) they do.
+scoped to the auth path. The browser calls the API on the app host, under
+`/api` (D-134), so the cookie belongs to the app host and is first-party
+there. A browser that signed in before that change holds a cookie for the
+API host, which the app no longer calls: it signs in once more.
 
 ## The API behind the app host (D-134, ADR 0068)
 
 A bank's proxy can refuse the browser's cross-origin call to the API host, so the browser
-is to call `/api/...` on the app host and the web server passes it on. The web server
+calls `/api/...` on the app host and the web server passes it on. The web server
 sends it to the API's address on the platform's private network (`API_INTERNAL_URL` on
 `web`, `RAILWAY_VARIABLES.md`). **It must never be the API's public address.** A request
 that came in through Cloudflare and goes back into the same zone is refused with "Error
 1000, DNS points to prohibited IP"; that took sign-in down for 46 minutes on 2026-11-12.
 The API's DNS record stays proxied: agents and integrations still call `api.bleqq.com`.
 
-Step one is live when `web` has the variable: `POST https://app.bleqq.com/api/v1/auth/refresh`
-answers the API's own 401 (`application/problem+json`, code `unauthenticated`). A 400 means
-the API's `ALLOWED_HOSTS` lacks the private name, a 500 the name or the port, a 403 from
-Cloudflare the public address. Until step two the browser still calls the API host, and the
-cookie rule above is unchanged.
+The check from outside: `POST https://app.bleqq.com/api/v1/auth/refresh` answers the API's
+own 401 (`application/problem+json`, code `unauthenticated`). A 400 means the API's
+`ALLOWED_HOSTS` lacks the private name, a 500 the name or the port, a 403 from Cloudflare
+the public address. A build of `web` without the variable stops with an error, and the
+deployment before it stays live.
 
 ## Site trust: what a bank's web filter checks
 
@@ -300,7 +302,6 @@ every host.
 |---|---|---|---|
 | web | `PUBLIC_SITE_HOST` | unset | `bleqq.com,www.bleqq.com` |
 | web | `APP_HOST` | unset | `app.bleqq.com` |
-| web | `NEXT_PUBLIC_API_URL` | the api's public URL | unchanged |
 | api | `CORS_ALLOWED_ORIGINS` | `https://bleqq.com` | `https://app.bleqq.com`. The public host calls no API: the demo answers from its recordings |
 | api | `WEBAUTHN_ORIGINS` | `https://bleqq.com` | `https://app.bleqq.com` |
 | api | `WEBAUTHN_RP_ID` | `bleqq.com` | `app.bleqq.com` |

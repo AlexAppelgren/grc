@@ -41,7 +41,7 @@ from urllib.parse import parse_qs, urlsplit
 from django.conf import settings
 from django.core.management import call_command
 from django.db import DEFAULT_DB_ALIAS, OperationalError, connection, transaction
-from django.test import RequestFactory, TestCase, TransactionTestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
@@ -236,6 +236,16 @@ class MintingAnAddress(FeedFixture):
         address = urlsplit(created.json()["url"])
         self.assertEqual(address.path, feed_logic.ICS_PATH)
         self.assertEqual(list(parse_qs(address.query)), ["token"])
+
+    @override_settings(APP_BASE_URL="https://app.example.test/")
+    def test_the_address_is_on_the_apps_public_host_whatever_host_the_request_named(self) -> None:
+        """A call that reaches the API through the web server names the API's private host
+        (D-134). A calendar client can reach only the public one, so the address never
+        comes from the request."""
+        created = self.subscribe({**self.headers(), "HTTP_HOST": "127.0.0.1:8000"})
+        self.assertEqual(created.status_code, 201)
+        address = urlsplit(created.json()["url"])
+        self.assertEqual((address.scheme, address.netloc, address.path), ("https", "app.example.test", feed_logic.ICS_PATH))
 
     def test_the_token_is_a_prefix_and_a_secret_and_only_its_hash_is_stored(self) -> None:
         token = self.token_of(self.subscribe())
@@ -463,7 +473,6 @@ class TheCapHoldsUnderConcurrency(TransactionTestCase):
             tenant=self.tenant,
             user=self.member.user,
             actor=factories.user_actor(user_id=self.member.user.id),
-            request=RequestFactory().post(FEEDS),
         )
 
     def test_a_second_subscribe_waits_for_the_first(self) -> None:

@@ -541,9 +541,7 @@ def create_calendar_feed(request: HttpRequest, body: HomeCalendarFeedInput) -> A
     # so it belongs here beside the permission rather than in the module below.
     perms.enforce_recent_sign_in_or_step_up(request)
     user = caller_user(request)
-    created = feed_logic.create_feed(
-        tenant=caller_tenant(request), user=user, actor=actor_for(request, user), request=request
-    )
+    created = feed_logic.create_feed(tenant=caller_tenant(request), user=user, actor=actor_for(request, user))
     return 201, created
 
 
