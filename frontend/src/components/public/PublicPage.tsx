@@ -228,12 +228,14 @@ export function PublicPage() {
   return (
     // `dark` keeps the demo's own tokens and pictures dark on the green page.
     // The gutter is where the logo's brackets start and end (Alex, 2026-11-11), so the bar, the
-    // entries and the demo line up with them. The logo keeps the reference's size: its frame sat
-    // 0.55 of the reference margin (--margin) in from each side, and the brackets span 87.72 % of
-    // that frame (InkHead.tsx). Percentages resolve against the page's width.
+    // entries and the demo line up with them. --span is the brackets' width at the reference's
+    // size: its frame sat 0.55 of the reference margin (--margin) in from each side, and the
+    // brackets span 87.72 % of that frame (InkHead.tsx). On a wide screen the whole design is
+    // 20 % narrower than that (Alex, 2026-11-12), but never narrower than 700 px or than it was
+    // below that, so a phone and a tablet keep their width. Percentages resolve against the page.
     <div
       data-public-page=""
-      className="dark relative min-h-dvh bg-brand font-serif text-sense text-public-paper [--margin:clamp(1.25rem,5vw,5.5rem)] [--gutter:max(calc((100%_-_0.8772*(100%_-_1.1*var(--margin)))/2),env(safe-area-inset-left),env(safe-area-inset-right))]"
+      className="dark relative min-h-dvh bg-brand font-serif text-sense text-public-paper [--margin:clamp(1.25rem,5vw,5.5rem)] [--span:calc(0.8772*(100%_-_1.1*var(--margin)))] [--width:max(0.8*var(--span),min(var(--span),700px))] [--gutter:max(calc((100%_-_var(--width))/2),env(safe-area-inset-left),env(safe-area-inset-right))]"
     >
       {/* The paper's grain, over the whole page and its bar, as in the reference; the demo's dialog sits above it. */}
       <div aria-hidden="true" className="grain pointer-events-none fixed inset-0 z-30 opacity-[0.22] mix-blend-overlay" />

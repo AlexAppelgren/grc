@@ -128,11 +128,13 @@
      numbered senses; sheet the example provision on paper. The two pen roles set the
      handwritten corrections relative to the text they correct, because Reenie
      Beanie writes about half the height of the serif at the same size. */
-  --text-headword: clamp(3rem, 7.6vw, 7.25rem);
+  /* headword and lede are the reference's sizes times 0.8, since the design is a fifth
+     narrower on a wide screen (Alex, 2026-11-12); their floors are unchanged. */
+  --text-headword: clamp(3rem, 6.08vw, 5.8rem);
   --text-headword--line-height: 0.92;
   --text-headword--font-weight: 400;
   --text-headword--letter-spacing: -0.02em;
-  --text-lede: clamp(1.5rem, 2.7vw, 2.4rem);
+  --text-lede: clamp(1.5rem, 2.16vw, 1.92rem);
   --text-lede--line-height: 1.28;
   --text-lede--font-weight: 400;
   --text-lede--letter-spacing: -0.008em;

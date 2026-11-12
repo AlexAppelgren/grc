@@ -55,8 +55,8 @@ the inventory and attestera for a sign-off; every other catalog uses the same tw
 
 | Role | Face | Size |
 |---|---|---|
-| `text-headword`: a headword, the closing line | Libre Caslon Display 400 | `clamp(3rem, 7.6vw, 7.25rem)` / 0.92 |
-| `text-lede`: the deck | Libre Caslon Display 400 | `clamp(1.5rem, 2.7vw, 2.4rem)` / 1.28 |
+| `text-headword`: a headword, the closing line | Libre Caslon Display 400 | `clamp(3rem, 6.08vw, 5.8rem)` / 0.92, the reference's size times 0.8 |
+| `text-lede`: the deck | Libre Caslon Display 400 | `clamp(1.5rem, 2.16vw, 1.92rem)` / 1.28, the reference's size times 0.8 |
 | `text-sense`: senses, the page's running text | Libre Caslon Text 400 | 18 px / 1.62 |
 | `text-sheet`: the example provision | Libre Caslon Text 400 | `clamp(1.15rem, 1.6vw, 1.4rem)` / 1.45 |
 | `text-pen`, `text-pen-head`: the corrections | Reenie Beanie 400 | 1.8 times the sense; in a headword the larger of half its size and 32 px |
@@ -84,7 +84,11 @@ them.
   2026-11-11: the text narrows, the logo keeps its size). The gutter is
   `(100% - 0.8772 × (100% - 1.1 × margin)) / 2`, the margin being the reference's
   `clamp(1.25rem, 5vw, 5.5rem)`: the logo's frame used to sit 0.55 of that margin in from each
-  side, and the brackets span 87.72 % of it.
+  side, and the brackets span 87.72 % of it. Since 2026-11-12 the whole design is a fifth
+  narrower on a wide screen (Alex): 80 % of that width, but never under 700 px or under what
+  it was below that, so phones and tablets keep their width, and the headword and the deck
+  are set at 0.8 of the reference's sizes to match. Below about 1540 px the demo's frame is
+  then under 1024 px wide, so the app inside shows its tablet tab bar instead of the rail.
   A small fluid simulation on WebGL2 half-float targets carries the ink, so the pointer drags it
   in every direction and the ink settles back in a few seconds. The reference's script is the
   specification, and the component ports it with no new dependency. When the simulation cannot

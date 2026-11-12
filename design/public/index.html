@@ -28,7 +28,10 @@
   --mono:'Noto Sans Mono',ui-monospace,monospace;
   --margin:clamp(1.25rem,5vw,5.5rem);
   /* where the logo's brackets start and end, with the logo at its size of 2026-11-11: its frame sat 0.55 of the margin in, and the brackets span 87.72 % of it */
-  --gutter:calc((100% - .8772 * (100% - 1.1 * var(--margin))) / 2);
+  --span:calc(.8772 * (100% - 1.1 * var(--margin)));
+  /* 2026-11-12: a fifth narrower on a wide screen, never under 700px or under its width below that */
+  --width:max(.8 * var(--span), min(var(--span), 700px));
+  --gutter:calc((100% - var(--width)) / 2);
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;background:var(--green)}
@@ -59,7 +62,7 @@ a{color:inherit}
 
 .entry{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(1.5rem,5vw,5rem);padding:clamp(3.5rem,8vw,7.5rem) var(--gutter) 0;align-items:start}
 .entry:last-of-type{padding-bottom:clamp(3.5rem,8vw,7.5rem)}
-.hw{margin:0;font:400 clamp(3rem,7.6vw,7.25rem)/.92 var(--display);letter-spacing:-.02em;position:sticky;top:1.5rem}
+.hw{margin:0;font:400 clamp(3rem,6.08vw,5.8rem)/.92 var(--display);letter-spacing:-.02em;position:sticky;top:1.5rem}
 .hw small{display:block;font:500 1.0625rem/1.5 var(--sans);letter-spacing:0;color:var(--brass);margin-top:1.1rem}
 .hw small .ph{font:400 1rem var(--mono);font-style:normal;color:var(--dim);margin-right:.6rem}
 .senses{list-style:none;margin:0;padding:0;counter-reset:s}
@@ -69,7 +72,7 @@ a{color:inherit}
 .use{display:block;font:400 1rem/1.55 var(--sans);margin-top:.6rem;padding-left:.9rem;border-left:2px solid var(--brass)}
 .see{margin:2rem 0 0;max-width:38rem}
 .see a{color:var(--cream);text-underline-offset:.25em;text-decoration-thickness:1px}
-.lead{font:400 clamp(1.5rem,2.7vw,2.4rem)/1.28 var(--display);letter-spacing:-.008em;max-width:24em}
+.lead{font:400 clamp(1.5rem,2.16vw,1.92rem)/1.28 var(--display);letter-spacing:-.008em;max-width:24em}
 .acts{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:2rem}
 .first{padding-top:clamp(2rem,4vw,3.5rem);align-items:baseline;grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
 .first .origin{margin:0;font:500 1.0625rem/1.5 var(--sans);color:var(--brass);text-align:right;order:2}
