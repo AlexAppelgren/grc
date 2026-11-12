@@ -47,7 +47,7 @@ at a role that can bypass row-level security.
 | `EMBEDDER_PROVIDER`, its key | api, worker | per D-09 |
 | `AGENT_RUNNER` | worker | `mock` until chunk 11 |
 | `SENTRY_DSN` | all | optional, EU region |
-| `API_INTERNAL_URL` | web | the api's address on the private network (`http://<api service>.railway.internal:<port>`), never its public URL |
+| `API_INTERNAL_URL` | web | an address for the api that does not pass Cloudflare: the api service's own Railway address (`https://<api service>.up.railway.app`), or its private one once its port is pinned. Never the address behind Cloudflare |
 
 ## First run
 

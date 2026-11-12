@@ -35,10 +35,10 @@ against `WEBAUTHN_ORIGINS`.
 3. Set `WEBAUTHN_RP_ID=app.bleqq.com` and
    `WEBAUTHN_ORIGINS=https://app.bleqq.com` on the `api` service
    before anyone enrols.
-4. Set `API_INTERNAL_URL` on `web` to the API's address on the platform's
-   private network, never its public URL, add that private name to the
-   `api` service's `ALLOWED_HOSTS`, and redeploy `web` (the value is fixed
-   when the build runs; "The API behind the app host" below).
+4. Set `API_INTERNAL_URL` on `web` to an address for the API that does not
+   pass Cloudflare, make sure the `api` service's `ALLOWED_HOSTS` names that
+   host, and redeploy `web` (the value is fixed when the build runs; "The
+   API behind the app host" below).
 5. For the mail sender's domain, add SPF and DKIM records as the provider
    instructs, so invitation codes are delivered.
 
@@ -69,16 +69,17 @@ API host, which the app no longer calls: it signs in once more.
 
 A bank's proxy can refuse the browser's cross-origin call to the API host, so the browser
 calls `/api/...` on the app host and the web server passes it on. The web server
-sends it to the API's address on the platform's private network (`API_INTERNAL_URL` on
-`web`, `RAILWAY_VARIABLES.md`). **It must never be the API's public address.** A request
+sends it to an address for the API that does not pass Cloudflare (`API_INTERNAL_URL` on
+`web`, `RAILWAY_VARIABLES.md`): today the API's own Railway address. **It must never be
+the API's address behind Cloudflare.** A request
 that came in through Cloudflare and goes back into the same zone is refused with "Error
 1000, DNS points to prohibited IP"; that took sign-in down for 46 minutes on 2026-11-12.
 The API's DNS record stays proxied: agents and integrations still call `api.bleqq.com`.
 
 The check from outside: `POST https://app.bleqq.com/api/v1/auth/refresh` answers the API's
 own 401 (`application/problem+json`, code `unauthenticated`). A 400 means the API's
-`ALLOWED_HOSTS` lacks the private name, a 500 the name or the port, a 403 from Cloudflare
-the public address. A build of `web` without the variable stops with an error, and the
+`ALLOWED_HOSTS` lacks the host in the variable, a 500 that the address does not answer, a
+403 from Cloudflare the address behind Cloudflare. A build of `web` without the variable stops with an error, and the
 deployment before it stays live.
 
 ## Site trust: what a bank's web filter checks

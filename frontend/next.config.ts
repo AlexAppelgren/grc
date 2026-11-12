@@ -10,10 +10,9 @@ import { API_MAX_BODY_BYTES } from './src/shared/navigation/api-body';
 // The API behind this origin (D-134, ADR 0068). The browser calls /api/... on the page's
 // own host and this server passes each call on to the API at API_INTERNAL_URL, so the
 // browser talks to one host: no call is cross-origin, none needs a preflight, and a bank's
-// web filter has one host to rate and allow. The variable names the address the two
-// services share on the platform's private network, never the API's public one: a call to
-// the public address goes back through the edge proxy the request came in by, and that
-// proxy refuses it (the outage of 2026-11-12). Read when the build runs. `next dev` falls
+// web filter has one host to rate and allow. Deployed, the variable names an address for
+// the API that does not pass the edge proxy in front of both hosts: a call that goes back
+// through that proxy is refused by it (the outage of 2026-11-12). Read when the build runs. `next dev` falls
 // back to the local API; a production build without it stops here, because the app it
 // would make could not reach its API.
 const apiInternalUrl = process.env.API_INTERNAL_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');

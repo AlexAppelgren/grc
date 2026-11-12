@@ -51,7 +51,6 @@ from urllib.parse import parse_qs, urlsplit
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import RequestFactory
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 
@@ -345,7 +344,7 @@ def _answer() -> Call:
 def _calendar_feed() -> Call:
     tenant, reader = _tenant(), _user(READER)
     tenancy.activate(tenant.id)  # the fetch carries no session, so nothing activated the bank
-    created = feed.create_feed(tenant=tenant, user=reader, actor=session_logic.actor_of(reader), request=RequestFactory().get("/"))
+    created = feed.create_feed(tenant=tenant, user=reader, actor=session_logic.actor_of(reader))
     return Call(query={"token": parse_qs(urlsplit(created.url).query)["token"][0]}, params={"feed_id": created.feed.id})
 
 

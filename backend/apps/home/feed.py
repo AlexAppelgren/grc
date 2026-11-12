@@ -138,7 +138,7 @@ def create_feed(*, tenant: Tenant, user: User, actor: Actor) -> HomeCalendarFeed
         after={"createdAt": feed.created_at.isoformat()},
     )
     # The app's own public address, never the request's host: a call that came through the web
-    # server carries the API's private name there (D-134), which no calendar client can reach.
+    # server names the address that server reaches the API on (D-134), not one to hand out.
     address = f"{settings.APP_BASE_URL.rstrip('/')}{ICS_PATH}?{urlencode({'token': plain})}"
     return HomeCalendarFeedCreated(feed=_feed_out(feed), url=address)
 

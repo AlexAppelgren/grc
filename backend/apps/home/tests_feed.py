@@ -239,9 +239,9 @@ class MintingAnAddress(FeedFixture):
 
     @override_settings(APP_BASE_URL="https://app.example.test/")
     def test_the_address_is_on_the_apps_public_host_whatever_host_the_request_named(self) -> None:
-        """A call that reaches the API through the web server names the API's private host
-        (D-134). A calendar client can reach only the public one, so the address never
-        comes from the request."""
+        """A call that reaches the API through the web server names the host that server
+        reaches the API on (D-134), which is not an address to hand out, so the address
+        never comes from the request."""
         created = self.subscribe({**self.headers(), "HTTP_HOST": "127.0.0.1:8000"})
         self.assertEqual(created.status_code, 201)
         address = urlsplit(created.json()["url"])

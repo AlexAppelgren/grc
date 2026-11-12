@@ -1,4 +1,4 @@
-# ADR 0068 — The browser reaches the API through the app host, over the private network
+# ADR 0068 — The browser reaches the API through the app host
 
 **Date:** 2026-11-12 · **Status:** accepted (Alex, 2026-11-11, in chat, asked whether to ship it: "yeah lets do that"; after the outage, 2026-11-12: "I still want cloudflare of course, but we should fix so it works"; D-134). Both steps are built: the route answered on the live site before the browser was switched to it.
 
@@ -37,12 +37,15 @@ stream may be silent for longer.
 
 ## Decision
 
-- **One host for the browser, and the private network behind it.** The browser calls
-  `/api/...` on the page's own origin. `next.config.ts` rewrites `/api/:path*` to the
-  address in `API_INTERNAL_URL`: the address the web service and the API share on the
-  platform's private network. It is never the API's public address. The variable is the
-  web service's own, stays on the server, and is read when the build runs. Unset, nothing
-  is passed on.
+- **One host for the browser, and behind it an address that does not pass Cloudflare.**
+  The browser calls `/api/...` on the page's own origin. `next.config.ts` rewrites
+  `/api/:path*` to the address in `API_INTERNAL_URL`. It is never the API's address behind
+  Cloudflare. Since 2026-11-12 it is the API's own Railway address
+  (`https://grc-backend-staging.up.railway.app`), which the API already accepted as a host.
+  The platform's private network is the shorter leg and the intended one: it needs a fixed
+  port, and Railway picks the API's port itself and does not let another service refer to
+  it (`Verification_Log.md`), so the port must be pinned on the live API first. The
+  variable is the web service's own, stays on the server, and is read when the build runs.
 - **Two steps, so that a wrong address could not take sign-in down.**
   1. *The route.* The web server passed `/api` on once the variable was set, while the
      browser still called the API host, so nothing a person did depended on the route. The
@@ -74,12 +77,17 @@ stream may be silent for longer.
 
 ## Consequences
 
-- **What the API receives over the route** (measured with a local build and an echo server,
-  the first hop's headers as the platform's edge sets them): `Host` is the private name, so
-  the API's `ALLOWED_HOSTS` must name it; `X-Forwarded-Proto: https` arrives unchanged, so
-  `SECURE_SSL_REDIRECT` does not answer with a redirect; `X-Forwarded-For` arrives
-  unchanged and Next appends nothing, so `client_ip`, the per-address limits and the
-  security log read the same entry as on the direct path.
+- **What the API receives over the route.** Next sends `Host` as the destination's, so the
+  API's `ALLOWED_HOSTS` must name it, and passes `X-Forwarded-Proto` and `X-Forwarded-For`
+  on unchanged, appending nothing (measured with a local build and an echo server). Over
+  the private network the API would therefore read the caller's address as on the direct
+  path. Over the Railway address the call passes Railway's edge a second time, and what
+  that edge does with `X-Forwarded-For` is not documented: the per-address limits and the
+  security log may read the web service's address for every caller. That is stricter, not
+  looser, and it is open in `TODO_FOR_alex.md`.
+- **The API's Railway address is a door to the API that Cloudflare does not guard.** It
+  existed before this decision and the route now depends on it. The private network would
+  let it be closed.
 - **A bank allows one host fewer.** The browser never contacts the API host. It stays public, behind
   Cloudflare as before, for agents and integrations that call it with a key.
 - **Cloudflare stays in front of everything a browser touches.** A call through the route
@@ -88,20 +96,28 @@ stream may be silent for longer.
 - **Everyone signs in once more.** A browser that signed in before the switch holds its
   refresh cookie for the API host, which the app no longer calls.
 - **The calendar feed's address comes from `APP_BASE_URL`**, not from the request's host
-  (`apps/home/feed.py`): over the route that host is the API's private name, which no
-  calendar client can reach. Addresses handed out earlier name the API host and keep
+  (`apps/home/feed.py`): over the route that host is the address the web server reaches
+  the API on, which is not one to hand out. Addresses handed out earlier name the API host and keep
   working.
 - **A file's size.** A file between the API's cap and the web server's limit gets the API's
   own sentence, as before; one above the limit gets the web server's 413. The evidence
   journey attaches and downloads a file above 10 MB through the screen.
+- **A large upload the API refuses at once can come back as a 500.** Known and open.
+  Measured on the live route: an 11 MiB body to a call the API answers without reading the
+  body (a 401) came back as the API's 401 nine times in ten and as the web server's 500
+  once; on the API's own addresses ten in ten. The API answers and closes while Next is
+  still sending the body, and Next reports the broken send. Bodies up to 2 MiB were not
+  affected. An upload the API accepts is read whole and is not affected. The remedy is for
+  the API to read a refused body to its end before it answers; it is the next change.
 - **`NEXT_PUBLIC_API_URL` is gone.** Nothing reads it: not the browser's code, not the
   build. CORS stays configured and unused by the app; removing it is a separate change.
-- **A wrong address is the remaining risk.** The API's public address in
+- **A wrong address is the remaining risk.** The API's address behind Cloudflare in
   `API_INTERNAL_URL` would repeat the outage. The runbook says so, and the check after any
   change to it is one call from outside (`DNS_DOMAINS.md`).
 
 ## Not done
 
-Removing the unused CORS configuration. Which `X-Forwarded-For` entry is the caller's on the
-deployed chain has still to be read from a real request before `TRUSTED_PROXY_HOPS` changes
-(`TODO_FOR_alex.md`).
+The move to the private network, which needs the API's port pinned. The refused large upload
+above. Removing the unused CORS configuration. Which `X-Forwarded-For` entry is the caller's
+on the deployed chain has still to be read from a real request before `TRUSTED_PROXY_HOPS`
+changes (`TODO_FOR_alex.md`).

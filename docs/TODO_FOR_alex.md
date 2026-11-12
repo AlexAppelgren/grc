@@ -2571,31 +2571,39 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       canonical address; a marker of one day; sign-in and every other app address unchanged. It
       is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
       are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
-- [ ] **The API under the app host: two variables in Railway, then tell me (2026-11-12).** On
-      2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
+- [x] **The API under the app host: `API_INTERNAL_URL` on `grc-front` (set by you, 2026-11-12).**
+      On 2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
       passkey button answered "The server could not be reached": the page's call to the second
       host, `api.bleqq.com`, gets no answer on the bank's network (your Network tab: `options`,
       no status, 0 bytes). ESC-App and the older bleqq make no such call, because their web
       server passes `/api` on to the backend. The first attempt here sent that call to the
-      API's public address and Cloudflare refused it (error 1000); nobody could sign in from
-      01:16 to about 02:05 UTC on 2026-11-12, and it was taken back. ADR 0068 has the cause.
-      The second attempt is in two steps. Step one is on `main` and changes nothing until you
-      set a variable: the web server can pass `/api` on to the API over Railway's private
-      network. Nothing a person does uses that route yet, so a wrong value harms nobody.
-      1. `grc-backend` › Settings › Networking: read the port beside `api.bleqq.com` (the
-         edit icon shows it). It is the port the API listens on, `8000` unless Railway set
-         `PORT`.
-      2. `grc-backend` › Variables › `ALLOWED_HOSTS`: keep what is there and add
-         `,grc-backend.railway.internal` at the end. The api restarts.
-      3. `grc-front` › Variables › new variable `API_INTERNAL_URL` =
-         `http://grc-backend.railway.internal:<the port from 1>`. `http`, not `https`: the
-         private network is encrypted by the platform. Never `https://api.bleqq.com` here.
-         The web service rebuilds.
-      4. Tell me. I call `https://app.bleqq.com/api/v1/auth/refresh` from outside. The API's
-         own 401 means the route works, and step two (the browser switches to it) ships.
-         Anything else names what is wrong: a 400 is `ALLOWED_HOSTS`, a 500 is the name or the
-         port, a 403 from Cloudflare is the public address.
-      To undo: delete `API_INTERNAL_URL`. SEB sign-in stays as it is until step two is live.
+      API's address behind Cloudflare and Cloudflare refused it (error 1000); nobody could sign
+      in from 01:16 to about 02:05 UTC on 2026-11-12, and it was taken back. ADR 0068 has the
+      cause. The second attempt went in two steps: the route first, switched off until you set
+      `API_INTERNAL_URL=https://grc-backend-staging.up.railway.app`, which you did; at 04:12
+      UTC the route answered on the live site with the API's own answers; then the browser was
+      switched to it. Everyone signs in once more. To undo all of it, a revert of the switch is
+      needed first: deleting the variable alone would now stop the web service's next build.
+- [ ] **Test sign-in from the bank's network.** "Sign in with a passkey" on `app.bleqq.com`
+      from an SEB device. The browser now calls no second host. If it still fails, send the
+      Network tab with the **All** filter on.
+- [ ] **`NEXT_PUBLIC_API_URL` on `grc-front` can be deleted.** Nothing reads it any more.
+- [ ] **Move the route to the private network, in a calm hour.** Today the web server reaches
+      the API on its Railway address, over Railway's public edge. The private address is
+      shorter, would give the API the caller's own address again for certain, and would let
+      the Railway address, a door to the API that Cloudflare does not guard, be deleted. It
+      needs a fixed port, and Railway picks the API's port itself: (1) read the port the API
+      listens on in `grc-backend`'s deploy log ("Listening at"); (2) add `PORT` with that same
+      number to `grc-backend`, so nothing changes for `api.bleqq.com`; (3) add
+      `,grc-backend.railway.internal` to its `ALLOWED_HOSTS`; (4) set `API_INTERNAL_URL` on
+      `grc-front` to `http://grc-backend.railway.internal:<that port>`; (5) tell me, and I call
+      the route from outside as on 2026-11-12.
+- [ ] **Which address the API now sees for a caller.** Over the Railway address a call passes
+      Railway's edge twice, and its handling of `X-Forwarded-For` is not documented, so the
+      per-address sign-in limit (30 calls a minute) and the security log may read the web
+      service's address for everyone. Open your own row in the security log after signing in
+      and tell me which address it shows; that also settles the older `TRUSTED_PROXY_HOPS`
+      item above.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`
