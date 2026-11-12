@@ -46,10 +46,11 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
-from apps.identity import invitation_logic, passkey_names, rate_limit, session_logic
+from apps.identity import device_link_logic, invitation_logic, passkey_names, rate_limit, session_logic
 from apps.identity.models import (
     AuthChallenge,
     ChallengeKind,
+    DeviceLink,
     Invitation,
     LoginEventKind,
     LoginMethod,
@@ -192,10 +193,18 @@ def _enrolment_invitation(principal: Principal, user: User, session: UserSession
     return invitation
 
 
+def _device_link(principal: Principal, session: UserSession) -> DeviceLink | None:
+    """The link a registration-only session was claimed through (D-135); None otherwise."""
+    if principal.kind is not PrincipalKind.ENROLMENT:
+        return None
+    return device_link_logic.for_session(session.id)
+
+
 def registration_options(principal: Principal) -> dict[str, Any]:
     user = User.objects.get(pk=principal.subject_id)
     session = _session_of(principal)
-    _enrolment_invitation(principal, user, session)
+    if _device_link(principal, session) is None:
+        _enrolment_invitation(principal, user, session)
     options = generate_registration_options(
         rp_id=settings.WEBAUTHN_RP_ID,
         rp_name=settings.WEBAUTHN_RP_NAME,
@@ -241,7 +250,8 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
     user = User.objects.get(pk=principal.subject_id)
     session = _session_of(principal)
     now = timezone.now()
-    invitation = _enrolment_invitation(principal, user, session)
+    link = _device_link(principal, session)
+    invitation = None if link is not None else _enrolment_invitation(principal, user, session)
     enrolling = invitation is not None
     challenge = _consume_challenge(ChallengeKind.REGISTRATION, _challenge_from_credential(credential), user=user, session=session)
     try:
@@ -290,6 +300,11 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
         # No step-up assertion (F9, narrowed): the second-passkey prompt rides on the new
         # session's age; every `@requires_step_up` action still needs its own ceremony.
         bundle = session_logic.create_session(user=user, kind=SessionKind.FULL, tenant_id=tenant_id, request=request, now=now)
+    elif link is not None:
+        # D-135: the device let in by a code now holds a passkey of its own, and only now
+        # gets a full session; its registration-only session ends here.
+        session_logic.revoke_session(session, reason="device_added", actor=session_logic.actor_of(user), request=request)
+        bundle = session_logic.create_session(user=user, kind=SessionKind.FULL, tenant_id=session.tenant_id, request=request, now=now)
     log_event(event=LoginEventKind.ENROLLED, method=LoginMethod.PASSKEY, success=True, request=request, user=user, tenant_id=principal.tenant_id)
     record(
         action="passkey.registered",

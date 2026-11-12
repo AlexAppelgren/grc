@@ -42,6 +42,18 @@ def send_invitation(to: str, token: str, tenant_name: str | None, *, reenrolment
     _deliver(to, subject, f"{lead}\nOpen this link within {hours} hours to receive your code: {invitation_link(token)}")
 
 
+def send_device_let_in(to: str, device: str) -> None:
+    """D-135: the person learns at once that a device was let into their account, so a code
+    they were tricked into approving does not go unnoticed."""
+    what = device or "A new device"
+    _deliver(
+        to,
+        f"A device was let into your {settings.PRODUCT_NAME} account",
+        f"{what} was let into your account with your passkey. If this was not you, open My "
+        "sessions, sign out everywhere, and tell your administrator at once.",
+    )
+
+
 def send_reenrolment_notice(to: str, member_name: str, tenant_name: str | None, actor_name: str) -> None:
     where = tenant_name or settings.PRODUCT_NAME
     _deliver(

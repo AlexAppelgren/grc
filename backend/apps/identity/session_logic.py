@@ -534,6 +534,14 @@ def _load_by_refresh(value: str | None) -> tuple[UserSession | None, str | None]
     return session, presented_hash
 
 
+def session_is_live(session_id: uuid.UUID) -> bool:
+    """Whether a session is neither revoked nor expired, whichever bank it is in: a device
+    link (D-135) dies with the session that approved it, and the waiting device that asks
+    has no session or bank of its own yet."""
+    with tenancy.identity_lookup():
+        return UserSession.objects.filter(pk=session_id, revoked_at__isnull=True, expires_at__gt=timezone.now()).exists()
+
+
 def _replayed(session: UserSession, presented_hash: str, request: HttpRequest | None, now: datetime) -> tuple[str, int, None]:
     """The refresh secret the session rotated away from, presented again: inside the grace
     window a concurrent tab, answered with an access token and no third refresh token;

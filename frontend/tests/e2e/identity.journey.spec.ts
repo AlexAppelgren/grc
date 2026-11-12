@@ -460,10 +460,12 @@ test.describe('identity journeys', () => {
       const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Use passkey' }).click();
-      await expect(page.getByText(/is signed in\. Add a passkey on it under My passkeys\.$/)).toBeVisible();
+      await expect(page.getByText(/is let in and will now create its own passkey\.$/)).toBeVisible();
 
-      // The new device notices, is signed in, and creates a passkey of its own.
-      await expect(laptopPage.getByRole('heading', { level: 1, name: 'You are signed in on this device' })).toBeVisible({ timeout: 15_000 });
+      // The new device notices, names the account it was let into, and must create a passkey of its own.
+      await expect(laptopPage.getByRole('heading', { level: 1, name: 'Create a passkey on this device' })).toBeVisible({ timeout: 15_000 });
+      await expect(laptopPage.getByText('You are let in as Tove Nyberg.', { exact: false })).toBeVisible();
+      await expect(laptopPage.getByRole('button', { name: 'Later' })).toHaveCount(0);
       const verified = laptopPage.waitForResponse((r) => r.url().endsWith('/auth/passkeys/register/verify') && r.request().method() === 'POST');
       await laptopPage.getByRole('button', { name: 'Create passkey' }).click();
       const created = (await (await verified).json()) as { passkey: { nickname: string } };

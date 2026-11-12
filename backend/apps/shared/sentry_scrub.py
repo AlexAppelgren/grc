@@ -12,7 +12,7 @@ from typing import Any, cast
 from sentry_sdk.types import Event, Hint
 
 SENSITIVE_HEADERS = frozenset(
-    {"authorization", "cookie", "set-cookie", "x-api-key", "x-forwarded-for", "x-real-ip"}
+    {"authorization", "cookie", "set-cookie", "x-api-key", "x-device-link-secret", "x-forwarded-for", "x-real-ip"}
 )
 # Keys whose values are dropped wherever they appear in the event's request or extra.
 SENSITIVE_KEYS = frozenset(

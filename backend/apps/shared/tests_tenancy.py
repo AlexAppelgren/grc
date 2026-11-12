@@ -176,6 +176,10 @@ class IdentityLookupMode(TestCase):
             "apps/identity/session_logic.py::held_banks",
             "apps/identity/session_logic.py::_load_by_refresh",
             "apps/identity/session_logic.py::_refuse_claim",
+            # A device link (D-135) dies with the session that approved it; the waiting device
+            # that claims it has no session or bank yet, so the check reads the one session
+            # row by its id and answers yes or no.
+            "apps/identity/session_logic.py::session_is_live",
             "apps/identity/invitation_logic.py",
             "apps/identity/api_keys_logic.py",
             # The fifth table of the clause and the fifth caller (HOM-04, D-52, ADR 0045):

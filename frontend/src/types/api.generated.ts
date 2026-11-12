@@ -1293,8 +1293,8 @@ export interface paths {
          *     `POST /auth/device-links/claim`. Both stop working after
          *     5 minutes, and each works once.
          *
-         *     Unauthenticated. Writes nothing to the audit or security logs; the approval and the
-         *     sign-in it leads to do.
+         *     Unauthenticated. Writes the platform's audit event `device_link.started`, naming the
+         *     browser that asked and no person.
          *
          *     Errors: `rate_limited` (429) past 30 calls a minute from one
          *     network address, the allowance every unauthenticated sign-in step shares.
@@ -1318,20 +1318,24 @@ export interface paths {
         /**
          * Collect your session once the code this device shows has been approved
          * @description Once `GET /auth/device-links/status` answers `approved: true`, the device calls this
-         *     once. It answers a full session for the person who approved, landing where a passkey
-         *     sign-in lands (their first bank, or the console for platform staff without one), and sets
-         *     the refresh cookie, like a passkey sign-in. Open My passkeys
-         *     there and add a passkey on this device, so it can sign in on its own next time.
+         *     once. It answers a session of the kind `enrolment` for the person who approved, in the
+         *     bank a passkey sign-in lands in (their first bank, or the console for platform staff
+         *     without one), and sets the refresh cookie. That session can only register a passkey on
+         *     this device (`POST /auth/passkeys/register/options` and `/verify`) and read `GET /me`;
+         *     the registration answers the full session. So this device never works for the person
+         *     without a passkey of its own.
          *
          *     Unauthenticated: the secret is the grant, and as 256 random bits it cannot be guessed.
-         *     It writes a "signin" entry with the reason "device_link" to the security log and the
+         *     It writes a "signin" entry with the method "device_link" to the security log and the
          *     audit event `session.created`. The secret then stops working.
          *
          *     Errors: `device_link_pending` (409) before anyone has approved the code: keep asking
          *     the status; `device_link_expired` (410) when the secret is unknown, already used, or
-         *     past its 5 minutes, or the person's account was closed since, one
-         *     answer for all of them: start again; `validation_error` (422) for a missing secret or one
-         *     over 128 characters.
+         *     past its 5 minutes, or the person's account was closed or the session
+         *     that approved it signed out since, one answer for all of them: start again;
+         *     `validation_error` (422) for a missing secret or one over 128 characters; `origin_refused`
+         *     (403) when a browser names an `Origin` the API does not serve; `rate_limited` (429) past
+         *     30 calls a minute from one network address.
          */
         post: operations["claimDeviceLink"];
         delete?: never;
@@ -4688,15 +4692,19 @@ export interface paths {
          *     passkey is on their phone. They type the code that device shows (`POST
          *     /auth/device-links`), and that device is then signed in as them the next time it asks,
          *     landing where a passkey sign-in lands. Only approve a code shown on a device you are
-         *     holding: whoever shows it gets your session. Nothing about this session or any passkey
-         *     changes. The answer names the browser the new device reported.
+         *     holding: whoever shows it can add a passkey to your account. Nothing about this session
+         *     or any passkey changes. The answer names the browser the new device reported, and the
+         *     person is emailed that a device was let in. Signing this session out before the new
+         *     device collects its session cancels the approval.
          *
          *     Self-service: it needs a full session, no permission, and a passkey confirmation on this
-         *     session younger than 5 minutes. It writes the audit event
-         *     `device_link.approved`, carrying the step-up and the new device's browser.
+         *     session younger than 5 minutes, made after the code was shown and used for
+         *     no other device. It writes the audit event `device_link.approved`, carrying the step-up
+         *     and the new device's browser.
          *
          *     Errors: `device_link_expired` (410) when the code is unknown, already approved or past
          *     its 5 minutes, one answer for all of them, and nothing is written;
+         *     `step_up_required` (403) without a passkey confirmation made for this code;
          *     `validation_error` (422) for an empty code or one over 32 characters; `enrolment_only`
          *     (403) from an enrolment session; `support_read_only` (403) from a support session.
          *

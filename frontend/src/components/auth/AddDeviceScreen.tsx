@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 import { AuthPanel } from '@/components/auth/AuthFrame';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
-import { useAddPasskey, useClaimDeviceLink, useDeviceLinkApproved, useSession, useStartDeviceLink } from '@/features/identity/hooks';
+import { useClaimDeviceLink, useDeviceLinkApproved, useRegisterPasskey, useSession, useStartDeviceLink } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { homeOf } from '@/shared/navigation/registry';
 import { problemStatus } from '@/shared/utils/problem';
@@ -15,9 +15,9 @@ import { WebAuthnFailure } from '@/shared/webauthn';
 // Add this device (D-135, ID-04): for a device that cannot reach the person's
 // passkey, such as a laptop without Bluetooth when the passkey is on a phone.
 // It shows a code; the person approves it on My passkeys on a device where they
-// are signed in; this page notices, collects the session and offers to create a
-// passkey here. The secret stays in this component's memory and never in the
-// address, storage or a log.
+// are signed in; this page notices and collects a session that can only create
+// a passkey here, which then opens the full session. The secret stays in this
+// component's memory and never in the address, storage or a log.
 
 /** `K7MPQ2XD` as `K7MP-Q2XD`, easier to read off one screen and type on another. */
 export function formatDeviceCode(code: string): string {
@@ -30,7 +30,7 @@ export function AddDeviceScreen() {
   const session = useSession();
   const start = useStartDeviceLink();
   const claim = useClaimDeviceLink();
-  const add = useAddPasskey();
+  const add = useRegisterPasskey();
   const secret = start.data?.secret ?? null;
   const approved = useDeviceLinkApproved(claim.isIdle ? secret : null);
   const started = useRef(false);
@@ -55,7 +55,7 @@ export function AddDeviceScreen() {
         <h1 id="add-device-title" className="mb-2">
           {t('auth.addDevice.signedInTitle')}
         </h1>
-        <p className="mb-5 text-muted">{t('auth.addDevice.signedInLede')}</p>
+        <p className="mb-5 text-muted">{t('auth.addDevice.signedInLede', { name: session.me?.user.name ?? '' })}</p>
         {add.isSuccess ? <StatusLine tone="positive">{t('auth.enrol.added', { name: add.data.passkey.nickname })}</StatusLine> : null}
         {add.error instanceof WebAuthnFailure ? (
           <p role="alert" className="text-meta text-negative">
@@ -69,14 +69,9 @@ export function AddDeviceScreen() {
           {add.isSuccess ? (
             <Button onClick={goHome}>{t('auth.code.continue')}</Button>
           ) : (
-            <>
-              <Button variant="outline" onClick={goHome}>
-                {t('auth.addDevice.later')}
-              </Button>
-              <Button disabled={add.isPending} onClick={() => add.mutate()}>
-                {add.isPending ? t('auth.enrol.waiting') : t('auth.enrol.create')}
-              </Button>
-            </>
+            <Button disabled={add.isPending} onClick={() => add.mutate()}>
+              {add.isPending ? t('auth.enrol.waiting') : t('auth.enrol.create')}
+            </Button>
           )}
         </ButtonBar>
       </AuthPanel>

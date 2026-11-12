@@ -70,7 +70,6 @@
   "auth.addDevice.waiting": "Waiting for approval…",
   "auth.addDevice.expired": "This code has expired. Start again to get a new one.",
   "auth.addDevice.startAgain": "Start again",
-  "auth.addDevice.signedInTitle": "You are signed in on this device",
-  "auth.addDevice.signedInLede": "Add a passkey here so this device can sign in on its own next time.",
-  "auth.addDevice.later": "Later"
+  "auth.addDevice.signedInTitle": "Create a passkey on this device",
+  "auth.addDevice.signedInLede": "You are let in as {name}. Create a passkey here to finish: until then this device can do nothing else."
 }

@@ -3,11 +3,14 @@ walk. The ceremony itself is proven there."""
 
 from __future__ import annotations
 
+from typing import Any
+
 from django.core.cache import cache
 from django.utils import timezone
 
 from apps.identity import tokens
-from apps.identity.models import DeviceLink, UserStatus
+from apps.identity.models import DeviceLink, UserSession, UserStatus
+from apps.identity.tests_webauthn_support import SoftwareAuthenticator
 from apps.shared import factories, tenancy
 from apps.shared.testing import ScenarioTestCase, sign_in
 
@@ -30,12 +33,23 @@ class DeviceLinkTests(ScenarioTestCase):
         )
         self.assertEqual(approved.status_code, 200, approved.content)
 
+    def _claim(self, secret: str) -> Any:
+        tenancy.clear_tenant()
+        return self.client.post("/api/v1/auth/device-links/claim", {"secret": secret}, content_type="application/json")
+
+    def test_signing_the_approving_session_out_cancels_the_link(self) -> None:
+        secret, code = self._start()
+        self._approve(code)
+        UserSession.objects.filter(user=self.person).update(revoked_at=timezone.now(), revoked_reason="signed_out_everywhere")
+        refused = self._claim(secret)
+        self.assertEqual(refused.status_code, 410, refused.content)
+        self.assertIsNone(DeviceLink.objects.get().claimed_at)
+
     def test_a_person_closed_since_the_approval_gets_no_session(self) -> None:
         secret, code = self._start()
         self._approve(code)
         type(self.person).objects.filter(pk=self.person.pk).update(status=UserStatus.DEACTIVATED.value, deactivated_at=timezone.now())
-        tenancy.clear_tenant()
-        refused = self.client.post("/api/v1/auth/device-links/claim", {"secret": secret}, content_type="application/json")
+        refused = self._claim(secret)
         self.assertEqual(refused.status_code, 410, refused.content)
         self.assertEqual(refused.json()["code"], "device_link_expired")
         self.assertIsNone(DeviceLink.objects.get().claimed_at)
@@ -53,9 +67,14 @@ class DeviceLinkTests(ScenarioTestCase):
             "/api/v1/me/device-links/approve", {"code": code}, content_type="application/json", **sign_in(staff, step_up=True)
         )
         self.assertEqual(approved.status_code, 200, approved.content)
-        tenancy.clear_tenant()
-        claimed = self.client.post("/api/v1/auth/device-links/claim", {"secret": secret}, content_type="application/json")
+        claimed = self._claim(secret)
         self.assertEqual(claimed.status_code, 200, claimed.content)
-        me = self.client.get("/api/v1/me", HTTP_AUTHORIZATION=f"Bearer {claimed.json()['accessToken']}")
+        bearer: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {claimed.json()['accessToken']}"}
+        options = self.client.post("/api/v1/auth/passkeys/register/options", content_type="application/json", **bearer)
+        self.assertEqual(options.status_code, 200, options.content)
+        credential = SoftwareAuthenticator().register(options.json())
+        registered = self.client.post("/api/v1/auth/passkeys/register/verify", {"credential": credential}, content_type="application/json", **bearer)
+        self.assertEqual(registered.status_code, 201, registered.content)
+        me = self.client.get("/api/v1/me", HTTP_AUTHORIZATION=f"Bearer {registered.json()['accessToken']}")
         self.assertEqual(me.status_code, 200, me.content)
         self.assertIsNone(me.json()["tenant"])

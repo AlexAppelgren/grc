@@ -534,14 +534,20 @@ Given a bank admin who holds a passkey on one device only, and a second device t
 When the second device asks to be let in
 Then it shows an eight-character code, keeps a secret only it holds, and nothing names any account yet
 And asking whether it is approved answers no, and claiming a session answers 409 "device_link_pending"
-When the admin types the code on My passkeys without a fresh step-up
+When the admin sends the code with a passkey confirmation made before the code existed
 Then the answer is 403 "step_up_required"
-When they step up and send the code, in any case and with or without its dash
-Then the answer names the second device's browser, and the audit trail records device_link.approved with the step-up
-And the same code sent again answers 410 "device_link_expired"
-When the second device asks again
-Then it is approved, and claiming gives it a full session for the admin in the same bank, logged as "signin" with the reason "device_link"
-And the secret works once, the admin's passkeys and their own session are unchanged
+When they confirm with their passkey again and send the code, in any case and with or without its dash
+Then the answer names the second device's browser, the audit trail records device_link.approved with the step-up, and the admin is emailed that a device was let in
+And the same code sent again answers 410 "device_link_expired", and the same confirmation cannot approve another code
+When the second device claims from a page the API does not serve
+Then the answer is 403 "origin_refused"
+When it claims from the app
+Then it gets a session that can only register a passkey, logged as "signin" with the method "device_link", and removing a passkey answers 403 "enrolment_only"
+When it registers its own passkey
+Then it holds a full session for the admin in the same bank, and the claimed session ends
+And the secret works once, the admin's first passkey and their own session are unchanged
+When the approving session signs out before the claim, or the person is deactivated
+Then the claim answers 410 "device_link_expired"
 When a code or a secret is past its window, or names nothing
 Then each answers 410 "device_link_expired"
 ```

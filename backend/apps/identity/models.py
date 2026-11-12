@@ -66,6 +66,7 @@ class LoginMethod(enum.StrEnum):
     # A personal access token's mint, use and revocation (ACC-03, ADR 0056), logged apart
     # from key use so the security log shows who acted as themselves through a token.
     PERSONAL_TOKEN = "personal_token"  # noqa: S105 an enum value, not a credential
+    DEVICE_LINK = "device_link"  # a device let in by a code and a passkey on another device (D-135)
 
 
 class CredentialKind(enum.StrEnum):
@@ -308,16 +309,22 @@ class OtpCode(models.Model):
 
 
 class DeviceLink(models.Model):
-    """A new device asking to be signed in by a person's passkey on a device they already
-    use (ID-04, D-135). The new device holds `secret` and shows `code`; the person types the
-    code on their signed-in device and approves with a passkey step-up; the new device then
-    trades its secret for a full session where a passkey sign-in lands. Both values are
-    stored as hashes only; a link works once and lives DEVICE_LINK_TTL_MINUTES."""
+    """A new device asking to be let in by a person's passkey on a device they already use
+    (ID-04, D-135). The new device holds `secret` and shows `code`; the person types the
+    code on a signed-in device and approves with a passkey step-up made for this code alone
+    (`step_up_assertion_id`, unique); the new device then trades its secret for a session
+    that can only register a passkey (`session_id`), and that registration opens a full
+    session. Revoking the approving session (`approved_session_id`) before the claim cancels
+    the link. Code and secret are stored as keyed hashes; a link works once and lives
+    DEVICE_LINK_TTL_MINUTES, counted again from the approval."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     secret_hash = models.CharField(max_length=64, unique=True)
-    code_hash = models.CharField(max_length=64, unique=True)
+    code_hash = models.CharField(max_length=64, db_index=True)
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name="device_links")
+    approved_session_id = models.UUIDField(null=True, blank=True)
+    step_up_assertion_id = models.UUIDField(null=True, blank=True, unique=True)
+    session_id = models.UUIDField(null=True, blank=True, unique=True)
     expires_at = models.DateTimeField()
     approved_at = models.DateTimeField(null=True, blank=True)
     claimed_at = models.DateTimeField(null=True, blank=True)

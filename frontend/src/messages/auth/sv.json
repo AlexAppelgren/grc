@@ -70,7 +70,6 @@
   "auth.addDevice.waiting": "Väntar på godkännande…",
   "auth.addDevice.expired": "Koden har gått ut. Börja om för att få en ny.",
   "auth.addDevice.startAgain": "Börja om",
-  "auth.addDevice.signedInTitle": "Du är inloggad på den här enheten",
-  "auth.addDevice.signedInLede": "Lägg till en nyckel här så att enheten kan logga in själv nästa gång.",
-  "auth.addDevice.later": "Senare"
+  "auth.addDevice.signedInTitle": "Skapa en nyckel på den här enheten",
+  "auth.addDevice.signedInLede": "Du är insläppt som {name}. Skapa en nyckel här för att bli klar: tills dess kan enheten inte göra något annat."
 }
