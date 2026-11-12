@@ -2571,25 +2571,22 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       canonical address; a marker of one day; sign-in and every other app address unchanged. It
       is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
       are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
-- [ ] **The browser reaches the API through the app host: shipped on your word, to confirm from
-      SEB's network (D-134, ADR 0068).**
-      On 2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
+- [ ] **The API under the app host was shipped and taken back the same hour (2026-11-12).** On
+      2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
       passkey button answered "The server could not be reached": the page's calls to the second
-      host, `api.bleqq.com`, did not get through on the bank's network, while the same calls
-      answered correctly from outside. Broadcom documents that its proxy cannot authenticate
-      cross-origin calls made without credentials, which a preflight always is; which mode
-      SEB's proxy runs was not confirmed. ESC-App and the older bleqq make no such calls. So the
-      client now calls `/api/...` on its own host and the web server passes each call on to
-      the API. No Railway variable changes. Not confirmed until tried from SEB's network.
-- [ ] **After that ships: the address the API sees, and the shorter path.** Each call now
-      reaches the API from the web server. Through the API's public address the edge appends
-      its own hops again, so the rightmost `X-Forwarded-For` entries are the edge's and every
-      caller shares them: per-address rate limits count all callers together (stricter, not
-      looser) and the security log names the edge. Two steps fix it, in Railway: point `web`'s
-      `NEXT_PUBLIC_API_URL` at the api's private address (and add that address to the api's
-      `ALLOWED_HOSTS`), then sign in once and read the address on your own session in
-      Account › Sessions. If it is not yours, tell an agent what it shows before
-      `TRUSTED_PROXY_HOPS` is touched: a wrong value trusts an entry the caller wrote.
+      host, `api.bleqq.com`, did not get through on the bank's network. ESC-App and the older
+      bleqq make no such calls, because their web server passes `/api` on to the backend. The
+      same was built here, passed every journey and the full CI, and reached `main` at 01:16 UTC
+      on 2026-11-12. On the live stack every API call then answered 403: the web server's call
+      to `https://api.bleqq.com` goes back into the same Cloudflare zone it came through, and
+      Cloudflare refuses it ("Error 1000, DNS points to prohibited IP"). Nobody could sign in
+      until the revert was live. The test stack has no Cloudflare, so no journey can see this.
+      Before a second attempt: (1) give `web` an address for the api that does not pass
+      Cloudflare, the platform's private address, in a variable of its own, and add that
+      address to the api's `ALLOWED_HOSTS`; (2) try one call from the web service's shell to
+      that address before anything ships; (3) only then build it again (the reverted commit
+      `c0e082c` has the code, the stream fix and the journeys). SEB sign-in stays as it was on
+      2026-11-11 until then: the page loads and the passkey call fails on the bank's network.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`

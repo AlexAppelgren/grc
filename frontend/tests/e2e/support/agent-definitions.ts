@@ -33,8 +33,7 @@ export interface SessionApi {
 
 /** Reloads `page` and takes the bearer the web app sends with its own next API call. */
 export async function sessionApi(page: Page): Promise<SessionApi> {
-  // The app calls the API on its own origin (next.config.ts), so the call is told by its path.
-  const sent = page.waitForRequest((r) => new URL(r.url()).pathname.startsWith('/api/v1/') && r.headers()['authorization']?.startsWith('Bearer ') === true);
+  const sent = page.waitForRequest((r) => r.url().startsWith(`${BACKEND_URL}/api/v1/`) && r.headers()['authorization']?.startsWith('Bearer ') === true);
   await page.reload();
   const authorization = (await sent).headers()['authorization'] ?? '';
   return {

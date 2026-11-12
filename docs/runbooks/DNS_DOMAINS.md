@@ -58,10 +58,10 @@ new origin listed. Decide before the first real user enrols
 ## Cookies and paths
 
 The refresh token cookie is `HttpOnly`, `Secure`, `SameSite=Strict` and
-scoped to the auth path. Since D-134 (ADR 0068) the browser calls the API on
-the app host itself, under `/api`, and the web server passes each call on, so
-the cookie belongs to the app host and no call is cross-origin. The API host
-stays public for agents and integrations, which call it with a key.
+scoped to the auth path, so the web app and the API must share a site or
+the API must be reachable from the web origin through the same registrable
+domain. With the hosts above (`app.bleqq.com` and
+`api.bleqq.com`) they do.
 
 ## Site trust: what a bank's web filter checks
 
@@ -194,14 +194,13 @@ already planned for the app (D-02).
 |---|---|---|
 | A `PUBLIC_SITE_HOST` (`bleqq.com`, `www.bleqq.com`) | `/` | The public page, fully rendered on the server, 200, indexable |
 | | `/welcome` | 301 to `/` on the same host, query kept |
-| | any other path: sign-in, enrolment, invitation, the app, the console, an unknown path | 301 to the same path and query on `APP_HOST` |
+| | any other path: sign-in, enrolment, invitation, the app, the console, `/api/…`, an unknown path | 301 to the same path and query on `APP_HOST` |
 | | `robots.txt`, `sitemap.xml`, `icon.svg`, `/.well-known/…`, `/demo/…`, `/_next/…` | Served as they are |
 | `APP_HOST` (`app.bleqq.com`) | `/welcome` | 301 to `/` on the first `PUBLIC_SITE_HOST` |
 | | `/`, a page load from a browser without the session marker (a visitor, a crawler, a filter's fetcher) | The public page, fully rendered on the server, 200, with `Link: <https://bleqq.com/>; rel="canonical"` and no `noindex` (2026-11-11, "The app host's front door" below) |
 | | `/` otherwise: the session marker is present, or the request is the demo's frame or the app's own fetch | The app, with `X-Robots-Tag: noindex` |
 | | everything else | The app, as today, with `X-Robots-Tag: noindex` |
 | Any other host (the service's `*.up.railway.app` address, the health check) | anything | As today |
-| Every host | `/api/…` | Passed on to the API by the web server (`next.config.ts`, ADR 0068); these paths never reach the host rules |
 | Any host, while `PUBLIC_SITE_HOST` or `APP_HOST` is unset | anything | As today: this is the default, and every journey but the host-split one runs so |
 
 Two details a reviewer asks about:

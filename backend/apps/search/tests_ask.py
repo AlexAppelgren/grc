@@ -496,7 +496,7 @@ class AskStreamTests(AskTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response["Content-Type"].startswith("text/event-stream"), response["Content-Type"])
         self.assertEqual(response["X-Accel-Buffering"], "no")
-        self.assertEqual(response["Cache-Control"], "no-cache, no-transform")
+        self.assertEqual(response["Cache-Control"], "no-cache")
         self.assertEqual(events_of(response)[0]["event"], "start")
 
     def test_the_first_event_leaves_before_the_model_is_asked_anything(self) -> None:

@@ -41,7 +41,6 @@ Where things are:
 | `tests/e2e/support/api-guard.ts` | `test` for every spec |
 | `docs/D-04-spike.md` | Green Core under `next start`: the spike result |
 
-Build-time settings: `NEXT_PUBLIC_API_URL` (where the API is: the browser calls
-`/api` on this server's own host and `next.config.ts` passes each call on, ADR
-0068), `NEXT_PUBLIC_PRODUCT_NAME` (default "Compliance Watch"),
-`NEXT_PUBLIC_DEFAULT_LOCALE` (`en` or `sv`), `NEXT_PUBLIC_SUPPORT_CONTACT`.
+Public settings: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_PRODUCT_NAME`
+(default "Compliance Watch"), `NEXT_PUBLIC_DEFAULT_LOCALE` (`en` or `sv`),
+`NEXT_PUBLIC_SUPPORT_CONTACT`.

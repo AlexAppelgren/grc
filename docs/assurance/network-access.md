@@ -14,10 +14,10 @@ runs on separate hosts under that one domain:
 |---|---|
 | `bleqq.com` (and `www.bleqq.com`, which redirects to it) | The public page: what the service is, how to get access, the security contact (`/.well-known/security.txt`) |
 | `app.bleqq.com` | The application: sign-in with a passkey, and every screen |
-| The API host under `bleqq.com` | The API for agents and integrations, which call it with a key. A person's browser does not contact it: the application calls its API on the application host, under `/api` (ADR 0068) |
+| The API host under `bleqq.com` | The application's API, called by the browser from the application host |
 
-A person's browser uses the first two: the public page's Sign in moves to the
-application host, which also answers every API call the application makes.
+A filter that allows only one of them breaks the service: the public page's
+Sign in moves to the application host, and the application calls the API host.
 Allowing the one domain, rather than each host, keeps working when a host is
 added (production, a region) without a change request at the bank.
 
@@ -34,7 +34,7 @@ a contact.
 
 ## What the service needs from the browser
 
-- JavaScript, cookies for the application host (the rotating refresh cookie is
+- JavaScript, cookies for the API host (the rotating refresh cookie is
   `HttpOnly`, `Secure`, `SameSite=Strict`), and WebAuthn: a passkey is the only
   way in, so a proxy that strips or blocks the WebAuthn prompt, or a browser
   policy that disables passkeys, stops sign-in.

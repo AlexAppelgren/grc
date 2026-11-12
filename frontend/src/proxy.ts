@@ -30,7 +30,5 @@ export function proxy(request: NextRequest): NextResponse {
   return response;
 }
 
-// Everything but the build's own files, which every host serves, and the API's
-// paths, which next.config.ts passes on to the API on every host: a proxy would
-// buffer each request body in memory and cut it at 10 MB.
-export const config = { matcher: ['/((?!_next/|api/).*)'] };
+// Everything but the build's own files, which every host serves.
+export const config = { matcher: ['/((?!_next/).*)'] };

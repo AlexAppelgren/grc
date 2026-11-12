@@ -16,7 +16,7 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self' ${new URL(BACKEND_URL).origin}`,
   "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -322,17 +322,11 @@ test.describe('the public site and the app on hosts of their own', () => {
     expect(welcome.status()).toBe(301);
     expect(welcome.headers().location).toBe(`${PUBLIC}/?from=a`);
 
-    for (const path of ['/sign-in', '/enrol', '/invite', '/inventory', '/admin/audit-log', '/console/queue', '/not-a-page']) {
+    for (const path of ['/sign-in', '/enrol', '/invite', '/inventory', '/admin/audit-log', '/console/queue', '/api/v1/auth/session', '/not-a-page']) {
       const moved = await crawl(request, `${PUBLIC}${path}`);
       expect(moved.status(), path).toBe(301);
       expect(moved.headers().location, path).toBe(`${APP}${path}`);
     }
-
-    // The API's paths are passed on to the API on every host (next.config.ts): this one does not exist there,
-    // and the answer is the API's own, never a move to another host.
-    const api = await crawl(request, `${PUBLIC}/api/v1/auth/session`);
-    expect(api.status()).toBe(404);
-    expect(api.headers()['content-type']).toContain('application/problem+json');
 
     // The public files stay; the sitemap lists the public host's front door.
     for (const path of ['/robots.txt', '/.well-known/security.txt']) expect((await crawl(request, `${PUBLIC}${path}`)).status(), path).toBe(200);
@@ -444,14 +438,6 @@ test.describe('the public site and the app on hosts of their own', () => {
 
   test('a passkey signs in on the app host', async ({ page, context, apiGuard }) => {
     allowFreshContext(apiGuard);
-    // Every call the app makes goes to its own origin: the API sits behind the web server
-    // (next.config.ts). No call is cross-origin, so none needs the preflight a bank's proxy
-    // may refuse, and a bank's filter has one host to rate and allow.
-    const called = new Set<string>();
-    page.on('request', (sent) => {
-      const url = new URL(sent.url());
-      if (url.pathname.startsWith('/api/')) called.add(url.origin);
-    });
     await signInAs(page, LOGINS.reader);
     expect(new URL(page.url()).origin).toBe(APP);
     await page.reload();
@@ -463,7 +449,6 @@ test.describe('the public site and the app on hosts of their own', () => {
     await expect(page).toHaveURL(`${APP}/`);
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
     await expect(page.getByRole('heading', HEADWORD)).toBeHidden();
-    expect([...called]).toEqual([APP]);
   });
 
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {

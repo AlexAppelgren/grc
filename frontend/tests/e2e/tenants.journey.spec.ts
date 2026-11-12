@@ -148,10 +148,8 @@ function idNamed(items: readonly Named[], name: string): string {
  * declared where it is expected, so any other failure still fails the journey.
  */
 async function expectNotFound(page: Page, apiGuard: ApiGuard, headers: Record<string, string>, method: string, path: string, body?: object): Promise<void> {
-  // On the page's own origin, as every call of the app goes (next.config.ts); the content policy allows no other.
-  const url = `/api/v1${path}`;
-  // The path alone: a query is no part of what the guard matches.
-  apiGuard.allow(url.split('?')[0] ?? url, 404, "tenant A's record is not there for tenant B");
+  const url = `${BACKEND_URL}/api/v1${path}`;
+  apiGuard.allow(new URL(url).pathname, 404, "tenant A's record is not there for tenant B");
   const answer = await page.evaluate(
     async ({ url, method, headers, body }) => {
       const response = await fetch(url, {
@@ -205,7 +203,7 @@ async function stepUp(page: Page, headers: Record<string, string>): Promise<void
       });
       return verified.status;
     },
-    { base: '/api/v1', headers },
+    { base: `${BACKEND_URL}/api/v1`, headers },
   );
   expect(status, 'the passkey step-up').toBe(200);
 }

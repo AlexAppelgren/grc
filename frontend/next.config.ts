@@ -5,29 +5,21 @@ import type { NextConfig } from 'next';
 // emitted server.js; everywhere else `next start` serves the normal build,
 // because Next refuses `next start` on a standalone output. Nothing
 // Railway-specific here (DECISIONS D-16).
-// The API behind this origin (D-134, ADR 0068). The browser calls /api/... on the page's
-// own host and this server passes each call on to the API, so the browser talks to one
-// host: no call is cross-origin, none needs a preflight, and a bank's web filter has one
-// host to rate and allow. NEXT_PUBLIC_API_URL names where the API is. It is read here
-// and nowhere in the browser's code, and the destination is fixed when the build runs,
-// as the variable always was. Unset, nothing is passed on (the unit tests' case).
-// Requests under /api skip src/proxy.ts (its matcher): a proxy buffers a request body in
-// memory and cuts it at 10 MB, and evidence uploads are larger.
-const apiTarget = URL.canParse(process.env.NEXT_PUBLIC_API_URL ?? '') ? new URL(process.env.NEXT_PUBLIC_API_URL as string).origin : '';
-
 // The content policy (review 2026-11-11 S-12): the app loads nothing from another
-// origin and calls nothing on another origin, so everything is 'self'. Inline
+// origin, so everything is 'self' but the API, which NEXT_PUBLIC_API_URL names when it
+// is not this origin (it is inlined at build time, and so is this header). Inline
 // scripts and styles stay allowed because Next and next-themes write them; a nonce from
 // src/proxy.ts is the later, stricter step. `next dev` alone needs eval (React's dev
 // call stacks and fast refresh). object-src, base-uri and form-action close the ways a
 // stray script or markup could load a plugin, rebase links or post a form elsewhere.
+const apiOrigin = URL.canParse(process.env.NEXT_PUBLIC_API_URL ?? '') ? new URL(process.env.NEXT_PUBLIC_API_URL as string).origin : '';
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self'${apiOrigin === '' ? '' : ` ${apiOrigin}`}`,
   "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -61,9 +53,6 @@ const nextConfig: NextConfig = {
   // Permissions-Policy denies what no screen uses; it leaves WebAuthn
   // (publickey-credentials-get and -create) at its default of our own origin,
   // which the passkey ceremonies and the framed demo need.
-  async rewrites() {
-    return apiTarget === '' ? [] : [{ source: '/api/:path*', destination: `${apiTarget}/api/:path*` }];
-  },
   async headers() {
     return [
       {
