@@ -18,6 +18,8 @@ export interface ScreenBudget {
   ready: string;
   /** Milliseconds from navigation to `ready`; the default when absent. */
   budgetMs?: number;
+  /** The path a destination that opens another page lands on for the bank's administrator who measures it; its own href when absent. */
+  lands?: string;
 }
 
 const OR_EMPTY = ', [data-empty-state]';
@@ -36,8 +38,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   // URL); it is ready when the permission gate has read the session and the
   // start panel is drawn. Search lives in the inventory's row (D-104).
   ask: { ready: '[data-ask-start]' },
-  // /admin opens the first page of its tab bar (D-137): ready once that page's tab is current.
-  admin: { ready: '[data-admin-section][aria-current="page"]' },
+  // /admin opens the first page of its tab bar (D-137): Members, for the administrator who measures it.
+  admin: { ready: '[data-members-list] [data-member-id]', lands: '/admin/members' },
   'admin-organisation': { ready: '[data-onboarding] [data-step]' },
   'admin-members': { ready: '[data-members-list] [data-member-id]' },
   'admin-roles': { ready: '[data-roles-list] [data-role-key]' },
@@ -92,5 +94,5 @@ export function budgetGaps(): string[] {
 export function budgetOf(destination: Destination): Required<ScreenBudget> {
   const row = SCREEN_BUDGETS[destination.id];
   if (row === undefined) throw new Error(`screen budgets: destination "${destination.id}" has no row in support/screen-budgets.ts`);
-  return { ready: row.ready, budgetMs: row.budgetMs ?? DEFAULT_SCREEN_BUDGET_MS };
+  return { ready: row.ready, budgetMs: row.budgetMs ?? DEFAULT_SCREEN_BUDGET_MS, lands: row.lands ?? destination.href };
 }

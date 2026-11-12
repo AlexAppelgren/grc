@@ -48,9 +48,9 @@ export async function expectProductionBuild(page: Page): Promise<void> {
 
 /** One sample: milliseconds from the router push to the first frame that shows the real data. */
 async function sample(page: Page, destination: Destination): Promise<number> {
-  const { ready } = budgetOf(destination);
+  const { ready, lands } = budgetOf(destination);
   const elapsed = await page.evaluate(
-    ({ href, selector, timeout }) =>
+    ({ href, lands, selector, timeout }) =>
       new Promise<number | null>((resolve) => {
         const router = (window as unknown as { next?: { router?: { push: (href: string) => void } } }).next?.router;
         if (router === undefined) throw new Error('screen timing: the app exposes no router on window.next');
@@ -58,14 +58,14 @@ async function sample(page: Page, destination: Destination): Promise<number> {
         const frame = () => {
           const shown = [...document.querySelectorAll(selector)].some((element) => element.checkVisibility());
           const now = performance.now() - started;
-          if (shown && window.location.pathname === href) resolve(now);
+          if (shown && window.location.pathname === lands) resolve(now);
           else if (now > timeout) resolve(null);
           else requestAnimationFrame(frame);
         };
         router.push(href);
         requestAnimationFrame(frame);
       }),
-    { href: destination.href, selector: ready, timeout: READY_TIMEOUT_MS },
+    { href: destination.href, lands, selector: ready, timeout: READY_TIMEOUT_MS },
   );
   if (elapsed === null) throw new Error(`screen timing: ${destination.href} showed no "${ready}" within ${READY_TIMEOUT_MS} ms of navigation`);
   await expect(page.locator('[data-loading-state]'), `screen timing: a skeleton lingers on ${destination.href} after its real data`).toHaveCount(0);
