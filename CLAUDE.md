@@ -137,6 +137,14 @@ from the user's or the system's point of view; a body with the why, the
 requirement IDs, what now happens, what was deliberately not done; no model
 or tool names. The owner deploys; never deploy yourself.
 
+**Do not pause until the change is on `main`** (Alex, 2026-11-12: "you cant just stop
+halfway"). A change is done only when it is on `main`. Ship every finished change without
+being asked, and do not stop, end the turn or hand back to Alex while it is on a branch or
+`candidate`: when `main` moves under it, rebase, re-run the gates and ship again; when
+another session holds `candidate`, wait for its run to end and go next; when CI is blocked
+by something outside the change, fix the blocker or keep retrying. Report once, when it
+is on `main`.
+
 **Pre-push checklist: run `bash scripts/prepush.sh --quick`** before every commit to
 `main`, and push only with `bash scripts/ship.sh` (`prepush.sh --all` runs every gate locally). It mirrors CI and CodeQL with the same tools,
 versions, flags and thresholds, so a green run predicts a green CI run: CodeQL
