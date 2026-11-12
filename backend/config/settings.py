@@ -589,6 +589,10 @@ LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 250
 # D-125: a bank's only approver may approve their own scope request, with a passkey, marked
 # `sole_approver` and audited. False restores four eyes everywhere.
 FOOTPRINT_SOLE_APPROVER_ALLOWED = env_bool("FOOTPRINT_SOLE_APPROVER_ALLOWED", True)
+# D-136: every bank has one role to give, the seeded admin role holding every tenant
+# permission; the other system roles are retired. False restores the PRD's role matrix at
+# the next boot (seed_reference).
+TENANT_SINGLE_ROLE = env_bool("TENANT_SINGLE_ROLE", True)
 FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50, min=1, max=1000)
 FOOTPRINT_ENTITY_CHANGE_MAX = env_int("FOOTPRINT_ENTITY_CHANGE_MAX", 200, min=1, max=10_000)
 

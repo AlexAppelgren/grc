@@ -2,6 +2,17 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## One role for every member, for now (2026-11-12, D-136)
+
+Every bank now has one role to give, Administrator, holding every bank permission; the six other
+system roles are retired. Four eyes and every passkey step-up still apply.
+
+- [ ] **Move existing members.** A member who held another role keeps its grants: change their
+      roles to Administrator in Admin › Members if they should reach everything.
+- [ ] **Turn it off before a bank relies on segregation of duties.** Set `TENANT_SINGLE_ROLE=false`
+      on the api service; the next boot restores the PRD's seven roles and the admin role's own
+      permissions. Then give each member the role that fits their work.
+
 ## The squashed migrations (2026-11-11, review B-13)
 
 - [ ] **Deploy the commit before the squash to the test environment first.** Each app now

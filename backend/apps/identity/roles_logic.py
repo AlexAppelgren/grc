@@ -10,6 +10,7 @@ import uuid
 from collections.abc import Iterable
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
 
@@ -24,6 +25,9 @@ DEFAULT_LANGUAGE = "en"
 # The picker's default rows: the least privileged role of each list (vocabulary guard).
 DEFAULT_TENANT_ROLE = "reader"
 DEFAULT_PLATFORM_ROLE = "library_editor"
+# D-136: with `TENANT_SINGLE_ROLE` on, this system role holds every tenant permission and is
+# the only one a bank can give; the other system roles are retired until the setting is off.
+SINGLE_TENANT_ROLE = "admin"
 
 # Labels for the seeded rows, in the two UI languages of R1 (I18N-02). Tenants relabel.
 TENANT_ROLE_LABELS: dict[str, dict[str, str]] = {
@@ -77,7 +81,13 @@ def ensure_system_roles(tenant: Tenant) -> int:
     """Create or refresh the system roles of one tenant. Permissions follow the code (a
     PRD bump changes the matrix); labels and usage notes are written once and left to
     the tenant afterwards. Must run with the tenant activated. One read, then the missing
-    roles and their labels go in as one INSERT each, since a new bank has none (NFR-02)."""
+    roles and their labels go in as one INSERT each, since a new bank has none (NFR-02).
+
+    With `TENANT_SINGLE_ROLE` on (D-136) the single role holds every tenant permission and
+    is the default, and the other system roles are retired: no one can be given one, and a
+    member who already holds one keeps its grants until an admin changes their roles. Off,
+    the next run restores the PRD's matrix and every system role."""
+    single = settings.TENANT_SINGLE_ROLE
     keys = [key for key in perms.SYSTEM_ROLES if key not in perms.PLATFORM_PERMISSIONS and key not in PLATFORM_ROLE_LABELS]
     existing = {role.key: role for role in TenantRole.objects.filter(tenant=tenant, key__in=keys)}
     created: list[TenantRole] = []
@@ -85,11 +95,11 @@ def ensure_system_roles(tenant: Tenant) -> int:
         if key not in keys:
             continue
         refreshed = {
-            "permissions": sorted(perms.SYSTEM_ROLES[key]),
+            "permissions": sorted(perms.TENANT_PERMISSIONS if single and key == SINGLE_TENANT_ROLE else perms.SYSTEM_ROLES[key]),
             "is_system": True,
-            "active": True,
+            "active": not single or key == SINGLE_TENANT_ROLE,
             "sort_order": sort_order,
-            "is_default": key == DEFAULT_TENANT_ROLE,
+            "is_default": key == (SINGLE_TENANT_ROLE if single else DEFAULT_TENANT_ROLE),
         }
         role = existing.get(key)
         if role is None:

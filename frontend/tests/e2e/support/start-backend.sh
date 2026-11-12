@@ -74,6 +74,9 @@ export AGENT_RUNNER=mock
 export MAIL_PROVIDER=mock
 export REGISTERS_PROVIDER=mock
 export STORAGE_BACKEND=local
+# The PRD's role matrix (D-136): seed_e2e gives one login per system role and the journeys
+# prove what each one may not do, so the single-role mode deployments run in stays off here.
+export TENANT_SINGLE_ROLE=false
 # No persistent connections under runserver: it starts a thread per request, and each
 # thread's connection outlives it, so with a max age every request leaks one until
 # Postgres runs out of slots (CI, 2026-09-23: "too many clients already" after 84

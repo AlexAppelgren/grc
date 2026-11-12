@@ -552,6 +552,19 @@ When a code or a secret is past its window, or names nothing
 Then each answers 410 "device_link_expired"
 ```
 
+### ID-S41 — With the single-role setting on, a bank has one role to give `@integration` (ID-09, D-136)
+```gherkin
+Given a bank with an admin and a member holding the reader role, and the single-role setting on
+When the system roles are seeded
+Then the bank lists one role, the admin role, and its holder has every bank permission and no platform permission
+When the admin gives the member the reader role
+Then the answer is 422 "unknown_key", and the member keeps the reader's grants
+When the admin gives the member the admin role
+Then the member has every bank permission
+When the setting is off and the system roles are seeded again
+Then the bank lists the seven system roles, and the admin role holds the PRD's admin permissions
+```
+
 ### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)
 ```gherkin
 Given an agent access entry and a member holding tokens.create

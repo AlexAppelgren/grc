@@ -1696,6 +1696,40 @@ class IdentityScenarioTests(ScenarioTestCase):
             self.assertEqual(gone.status_code, 410, gone.content)
         self.assertEqual(self._post("/auth/device-links/claim", {"secret": "no-such-secret"}).status_code, 410)
 
+    def test_id_s41(self) -> None:
+        """ID-S41
+
+        With the single-role setting on, a bank has one role to give and it holds every tenant permission (ID-09, D-136).
+        Operations: listRoles, getMe, updateMember.
+        """
+        reader = factories.member(self.tenant, roles=("reader",)).user
+        member_url = f"/api/v1/tenant/members/{reader.id}"
+        with override_settings(TENANT_SINGLE_ROLE=True):
+            self.activate(self.tenant)
+            roles_logic.ensure_system_roles(self.tenant)
+            headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
+            listed = self.client.get("/api/v1/tenant/roles", **headers).json()
+            self.assertEqual([(role["key"], role["active"]) for role in listed], [("admin", True)])
+            me = self.client.get("/api/v1/me", **headers).json()
+            self.assertEqual(sorted(me["permissions"]), sorted(perms.TENANT_PERMISSIONS))
+            self.assertTrue(perms.PLATFORM_PERMISSIONS.isdisjoint(me["permissions"]))
+            # A retired role cannot be given, and its holder keeps its grants until moved.
+            refused = self.client.patch(member_url, data={"roleKeys": ["reader"]}, content_type="application/json", **headers)
+            self.assertEqual(refused.status_code, 422, refused.content)
+            self.assertEqual(refused.json()["code"], "unknown_key")
+            held = self.client.get("/api/v1/me", **sign_in(reader, tenant=self.tenant)).json()
+            self.assertEqual(sorted(held["permissions"]), sorted(perms.SYSTEM_ROLES["reader"]))
+            moved = self.client.patch(member_url, data={"roleKeys": ["admin"]}, content_type="application/json", **headers)
+            self.assertEqual(moved.status_code, 200, moved.content)
+            widened = self.client.get("/api/v1/me", **sign_in(reader, tenant=self.tenant)).json()
+            self.assertEqual(sorted(widened["permissions"]), sorted(perms.TENANT_PERMISSIONS))
+        # Off again, the next seed run restores the matrix and the six roles.
+        self.activate(self.tenant)
+        roles_logic.ensure_system_roles(self.tenant)
+        restored = self.client.get("/api/v1/tenant/roles", **sign_in(self.admin, tenant=self.tenant)).json()
+        self.assertEqual([role["key"] for role in restored], [key for key in perms.SYSTEM_ROLES if key not in roles_logic.PLATFORM_ROLE_LABELS])
+        self.assertEqual(sorted(next(role for role in restored if role["key"] == "admin")["permissions"]), sorted(perms.SYSTEM_ROLES["admin"]))
+
     def test_acc_s3(self) -> None:
         """ACC-S3
 
