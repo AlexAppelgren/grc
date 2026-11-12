@@ -128,6 +128,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "apps.shared.middleware.RequestIdMiddleware",  # first, so every log line is correlated
+    # Outside everything that can answer: a refused body is read to its end before the answer leaves.
+    "apps.shared.middleware.UnreadBodyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "apps.shared.middleware.ContentSecurityPolicyMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -501,6 +503,11 @@ EVIDENCE_ALLOWED_TYPES = env_list(
     "image/png,image/jpeg,text/plain,text/csv",
 )
 EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024, min=1, max=512 * 1024 * 1024)
+# The largest request body the API reads to its end when a view answered without reading it
+# (apps.shared.middleware.UnreadBodyMiddleware). The web server passes on nothing above its
+# own limit, 26 MiB (frontend API_INTERNAL_MAX_BODY_BYTES), so this covers every call that
+# comes through it; a larger body is left unread.
+UNREAD_BODY_MAX_BYTES = env_int("UNREAD_BODY_MAX_BYTES", 26 * 1024 * 1024, min=0, max=512 * 1024 * 1024)
 EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2, min=0, max=10)
 CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200, min=1, max=10_000)
 BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200, min=1, max=10_000)

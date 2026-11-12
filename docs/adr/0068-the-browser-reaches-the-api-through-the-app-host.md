@@ -102,13 +102,15 @@ stream may be silent for longer.
 - **A file's size.** A file between the API's cap and the web server's limit gets the API's
   own sentence, as before; one above the limit gets the web server's 413. The evidence
   journey attaches and downloads a file above 10 MB through the screen.
-- **A large upload the API refuses at once can come back as a 500.** Known and open.
-  Measured on the live route: an 11 MiB body to a call the API answers without reading the
-  body (a 401) came back as the API's 401 nine times in ten and as the web server's 500
-  once; on the API's own addresses ten in ten. The API answers and closes while Next is
-  still sending the body, and Next reports the broken send. Bodies up to 2 MiB were not
-  affected. An upload the API accepts is read whole and is not affected. The remedy is for
-  the API to read a refused body to its end before it answers; it is the next change.
+- **The API reads a refused body to its end before it answers.** Without that, a large
+  upload the API refuses at once could come back as the web server's 500. Measured on the
+  live route: an 11 MiB body to a call the API answers without reading the body (a 401)
+  came back as the API's 401 nine times in ten and as a 500 once; on the API's own
+  addresses ten in ten. Repeated on a laptop with gunicorn: two in twenty, each "write
+  EPIPE" in Next's log. The API answered and closed while Next was still sending, and Next
+  reports the broken send. `UnreadBodyMiddleware` (`apps/shared/middleware.py`) reads what
+  the view left unread, up to `UNREAD_BODY_MAX_BYTES` (26 MiB, the web server's own limit):
+  forty in forty then answered 401. An upload the API accepts was never affected.
 - **`NEXT_PUBLIC_API_URL` is gone.** Nothing reads it: not the browser's code, not the
   build. CORS stays configured and unused by the app; removing it is a separate change.
 - **A wrong address is the remaining risk.** The API's address behind Cloudflare in
@@ -117,7 +119,7 @@ stream may be silent for longer.
 
 ## Not done
 
-The move to the private network, which needs the API's port pinned. The refused large upload
-above. Removing the unused CORS configuration. Which `X-Forwarded-For` entry is the caller's
+The move to the private network, which needs the API's port pinned. Removing the unused CORS
+configuration. Which `X-Forwarded-For` entry is the caller's
 on the deployed chain has still to be read from a real request before `TRUSTED_PROXY_HOPS`
 changes (`TODO_FOR_alex.md`).

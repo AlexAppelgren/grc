@@ -101,6 +101,47 @@ class ServerTiming(TestCase):
         self.assertNotIn(token, getattr(logs.records[0], "route"))  # noqa: B009
 
 
+class UnreadBody(SimpleTestCase):
+    """A body the view never read is read to its end before the answer leaves (D-134): the
+    web server in front reports a send that broke, not the answer that came first."""
+
+    def answered(self, body: bytes, view: Any = None) -> tuple[HttpRequest, HttpResponse]:
+        request = RequestFactory().post("/api/v1/auth/refresh", data=body, content_type="application/octet-stream")
+        response = middleware.UnreadBodyMiddleware(view or (lambda _request: HttpResponse(status=401)))(request)
+        return request, response
+
+    def test_a_refused_body_is_read_to_its_end_and_the_answer_is_unchanged(self) -> None:
+        request, response = self.answered(b"x" * 200_000)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(request.read(), b"")
+
+    @override_settings(UNREAD_BODY_MAX_BYTES=10)
+    def test_a_body_above_the_limit_is_left_unread(self) -> None:
+        within, _ = self.answered(b"x" * 10)
+        self.assertEqual(within.read(), b"")
+        above, response = self.answered(b"x" * 11)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(above.read(), b"x" * 11)
+
+    def test_a_body_the_view_read_changes_nothing(self) -> None:
+        _, response = self.answered(b"abc", lambda request: HttpResponse(request.body, status=200))
+        self.assertEqual((response.status_code, response.content), (200, b"abc"))
+
+    def test_a_call_without_a_body_is_not_read(self) -> None:
+        request = RequestFactory().get("/api/v1/me")
+        request.read = lambda *_args: self.fail("a call without a body was read")  # type: ignore[method-assign]
+        self.assertEqual(middleware.UnreadBodyMiddleware(lambda _request: HttpResponse(status=401))(request).status_code, 401)
+
+    def test_a_sender_that_went_away_does_not_change_the_answer(self) -> None:
+        request = RequestFactory().post("/api/v1/auth/refresh", data=b"x" * 50, content_type="application/octet-stream")
+
+        def gone(*_args: Any) -> bytes:
+            raise OSError("connection reset")
+
+        request.read = gone  # type: ignore[method-assign]
+        self.assertEqual(middleware.UnreadBodyMiddleware(lambda _request: HttpResponse(status=403))(request).status_code, 403)
+
+
 class ContentSecurityPolicy(SimpleTestCase):
     def _run(self, path: str) -> HttpResponse:
         request = RequestFactory().get(path)

@@ -76,6 +76,39 @@ class RequestIdMiddleware:
         return response
 
 
+class UnreadBodyMiddleware:
+    """Reads what the view left unread of the request body before the answer goes out.
+
+    A call the API refuses at once (no session, no permission) is answered without its body
+    being read, and the server then closes the connection while the sender is still
+    sending. The web server that passes calls on to the API (D-134, ADR 0068) reports that
+    broken send and not our answer: measured on 2026-11-12, an 11 MiB upload refused with
+    401 reached the caller as that server's 500 one time in ten, live and on a laptop.
+    Reading the rest first costs the time the upload takes anyway, and the refusal arrives
+    as it was written.
+
+    Bounded by UNREAD_BODY_MAX_BYTES: a body that states more is left unread, as before,
+    so no caller can keep a worker reading for longer than that. A body that states no
+    length reads as empty here, as it does for every view.
+    """
+
+    CHUNK_BYTES = 64 * 1024
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        stated = request.META.get("CONTENT_LENGTH") or "0"
+        if stated.isdigit() and 0 < int(stated) <= settings.UNREAD_BODY_MAX_BYTES:
+            try:
+                while request.read(self.CHUNK_BYTES):
+                    pass
+            except OSError:
+                pass  # the sender went away: there is nothing left to read, and nobody to answer
+        return response
+
+
 class RequestIdLogFilter(logging.Filter):
     """Attaches the current request ID to every log record (settings.LOGGING) and changes
     nothing else: a record passes every handler's filters in turn, so a change here would

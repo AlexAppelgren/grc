@@ -2598,6 +2598,28 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       `,grc-backend.railway.internal` to its `ALLOWED_HOSTS`; (4) set `API_INTERNAL_URL` on
       `grc-front` to `http://grc-backend.railway.internal:<that port>`; (5) tell me, and I call
       the route from outside as on 2026-11-12.
+- [ ] **The cache is far from the API: every sign-in call waits 430 ms for it (2026-11-12).**
+      Measured on the live API from outside, by the time the API reports for itself
+      (`Server-Timing`). A call that touches neither the database nor the cache takes 0.4 ms.
+      Refresh, sign-out and the passkey options take 431 to 451 ms, every time. Each of them
+      asks the cache three times (the per-address limit: one `SET`, one `EXISTS`, one `INCR`),
+      so one question to the cache costs about 144 ms. The database is close: the options call
+      also writes a row and takes only 6 to 12 ms longer. 144 ms per round trip is the distance
+      between Amsterdam and the US west coast, not between two services in one region, so the
+      likely cause is that `Redis-rKYe` runs in another Railway region than `grc-backend`.
+      That is not confirmed: only you can read it. The connections are reused (three round
+      trips account for the whole time), so there is nothing to fix in the code.
+      1. Open `Redis-rKYe` › Settings and read its region; do the same for `grc-backend`,
+         `grc-worker`, `grc-beat` and `pgvector`. The runbook's rule is EU West (Amsterdam)
+         for all of them.
+      2. If Redis is elsewhere, change its region to EU West in a calm hour. Railway moves
+         the volume with it and the service is down while it moves; sign-in answers errors
+         for those minutes, and a queued background job can be lost.
+      3. If every region is the same, send me the host in `grc-backend`'s `REDIS_URL` (the
+         host only, never the password): a public proxy address there would be the cause.
+      4. Tell me. The refresh call should then report under 10 ms; I measure it again.
+      This is also a question of where data sits: the cache carries the job queue, and the
+      product's promise is the EU.
 - [ ] **Which address the API now sees for a caller.** Over the Railway address a call passes
       Railway's edge twice, and its handling of `X-Forwarded-For` is not documented, so the
       per-address sign-in limit (30 calls a minute) and the security log may read the web
