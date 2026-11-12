@@ -4,6 +4,10 @@ request for an enrolled user sends nothing") is proven (F12). `smtp` uses Django
 backend with the MAIL_* settings. `resend` posts to Resend's HTTP API and either delivers or
 raises: a failed send fails the worker task visibly, it is never dropped.
 
+A mail is its plain text and, when its composer built one, an HTML part beside it
+(`apps/shared/mail_layout.py`). Both travel together, so a mailbox that refuses HTML shows
+the text.
+
 Nothing here logs a recipient address or a body (playbook 4.7)."""
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ from dataclasses import dataclass
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.mail import EmailMessage, get_connection
+from django.core.mail import EmailMultiAlternatives, get_connection
 
 MOCK_OUTBOX_CACHE_KEY = "mock-mailer:outbox"
 
@@ -26,6 +30,7 @@ class OutgoingMail:
     to: str
     subject: str
     body: str
+    html: str = ""
 
 
 class MailerAdapter(ABC):
@@ -41,7 +46,7 @@ class _OutboxMeta(ABCMeta):
 
     @property
     def sent(cls) -> list[OutgoingMail]:
-        return [OutgoingMail(to=to, subject=subject, body=body) for to, subject, body in cache.get(MOCK_OUTBOX_CACHE_KEY) or []]
+        return [OutgoingMail(*item) for item in cache.get(MOCK_OUTBOX_CACHE_KEY) or []]
 
 
 class MockMailer(MailerAdapter, metaclass=_OutboxMeta):
@@ -50,8 +55,8 @@ class MockMailer(MailerAdapter, metaclass=_OutboxMeta):
     name = "mock"
 
     def send(self, mail: OutgoingMail) -> None:
-        items: list[tuple[str, str, str]] = list(cache.get(MOCK_OUTBOX_CACHE_KEY) or [])
-        items.append((mail.to, mail.subject, mail.body))
+        items: list[tuple[str, str, str, str]] = list(cache.get(MOCK_OUTBOX_CACHE_KEY) or [])
+        items.append((mail.to, mail.subject, mail.body, mail.html))
         cache.set(MOCK_OUTBOX_CACHE_KEY, items, timeout=None)
 
     @classmethod
@@ -71,13 +76,16 @@ class SmtpMailer(MailerAdapter):
             password=settings.MAIL_SMTP_PASSWORD,
             use_tls=True,
         )
-        EmailMessage(
+        message = EmailMultiAlternatives(
             subject=mail.subject,
             body=mail.body,
             from_email=settings.MAIL_FROM,
             to=[mail.to],
             connection=connection,
-        ).send()
+        )
+        if mail.html:
+            message.attach_alternative(mail.html, "text/html")
+        message.send()
 
 
 class MailDeliveryError(Exception):
@@ -87,9 +95,9 @@ class MailDeliveryError(Exception):
 
 
 class ResendMailer(MailerAdapter):
-    """POST https://api.resend.com/emails with a bearer key (RESEND_API_KEY) and a plain
-    text body. 2xx is delivered; anything else raises `MailDeliveryError`. Docs:
-    https://resend.com/docs/api-reference/emails/send-email"""
+    """POST https://api.resend.com/emails with a bearer key (RESEND_API_KEY), the plain text
+    as `text` and the HTML part, when there is one, as `html`. 2xx is delivered; anything else
+    raises `MailDeliveryError`. Docs: https://resend.com/docs/api-reference/emails/send-email"""
 
     name = "resend"
     API_URL = "https://api.resend.com/emails"
@@ -98,6 +106,8 @@ class ResendMailer(MailerAdapter):
         if not settings.RESEND_API_KEY:
             raise MailDeliveryError("MAIL_PROVIDER=resend but RESEND_API_KEY is empty")
         payload = {"from": settings.MAIL_FROM, "to": [mail.to], "subject": mail.subject, "text": mail.body}
+        if mail.html:
+            payload["html"] = mail.html
         request = urllib.request.Request(  # noqa: S310 - fixed https URL
             self.API_URL,
             data=json.dumps(payload).encode(),

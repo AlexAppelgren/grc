@@ -111,7 +111,9 @@ def compose(membership: Membership) -> OutgoingMail | None:
         sections.append(
             [(f"{TEMPLATE}.more", mail.MailContext(count=page.total - len(page.items)))]
         )
-    return mail.compose(membership, TEMPLATE, _summary(membership, page), sections=sections)
+    return mail.compose(
+        membership, TEMPLATE, _summary(membership, page), sections=sections, tenant_name=membership.tenant.name
+    )
 
 
 def send(membership: Membership) -> None:

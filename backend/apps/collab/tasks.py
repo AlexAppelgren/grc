@@ -69,7 +69,7 @@ def deliver_mail(
             return
         outgoing, sent_on = composed, digest.week_of(sent_on)
     else:
-        outgoing = mail.compose(membership, template, mail.MailContext.from_task(context))
+        outgoing = mail.compose(membership, template, mail.MailContext.from_task(context), tenant_name=tenant.name)
     key = {
         "tenant": tenant,
         "user": membership.user,

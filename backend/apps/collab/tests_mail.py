@@ -14,6 +14,9 @@ What these pin:
   tenant-local day writes no row and sends no mail; a refused send keeps its row as failed,
   and the next run retries that row rather than adding one.
 - **Nothing logged.** No address, subject or body reaches a log line.
+- **One catalog, two parts.** The HTML part is built from the same strings: the one line of
+  a body that ends in the link is the button, every other line is a paragraph, and a title
+  written as markup arrives as text.
 """
 
 from __future__ import annotations
@@ -210,6 +213,52 @@ class Compose(TestCase):
     def test_an_unknown_template_is_refused(self) -> None:
         with self.assertRaises(ValueError):
             mail.compose(self.recipient("en"), "comment_added", context())  # type: ignore[arg-type]
+
+    def test_every_body_has_one_action_line_and_it_alone_holds_the_link(self) -> None:
+        for language, catalog in CATALOGS.items():
+            for template in mail.TEMPLATES:
+                lines = catalog[f"{template}.body"].split("\n")
+                with self.subTest(language=language, template=template):
+                    self.assertEqual([line.endswith(mail.ACTION) for line in lines if "{link}" in line], [True])
+
+    def test_the_html_part_says_the_same_lines_with_the_link_behind_a_button(self) -> None:
+        sent = mail.compose(self.recipient("sv"), "escalation", context(), tenant_name=self.tenant.name)
+        self.assertIn('<html lang="sv">', sent.html)
+        self.assertIn(f"Hej {self.member.user.name},", sent.html)
+        self.assertIn(f"{TITLE}, som ägs av {OWNER}, skulle ha varit klar den", sent.html)
+        self.assertIn("Dagar försenad: 6", sent.html)
+        self.assertIn(f'<a href="{link()}"', sent.html)
+        self.assertIn(">Öppna</a>", sent.html)
+        self.assertNotIn("Öppna:", sent.html)
+        self.assertEqual(sent.html.count(link()), 1, "the address sits behind the button and nowhere else")
+        self.assertIn(f"Skickat av {settings.PRODUCT_NAME}. Svar till den här adressen läses inte.", sent.html)
+        self.assertIn(f"{self.tenant.name}</div>", sent.html)
+
+    def test_a_title_written_as_markup_arrives_as_text_in_the_html_part(self) -> None:
+        sent = mail.compose(self.recipient("en"), "overdue", context(title="<b>Custody</b>"))
+        self.assertIn("<b>Custody</b>", sent.body)
+        self.assertNotIn("<b>", sent.html)
+        self.assertIn("&lt;b&gt;Custody&lt;/b&gt;", sent.html)
+
+    def test_a_digest_section_is_its_heading_over_rows_that_link_to_their_pages(self) -> None:
+        first, second = link("watch/1"), link("inventory/obligations/2")
+        sections = [
+            [
+                ("weekly_digest.overdue", mail.MailContext(count=2)),
+                ("weekly_digest.item", mail.MailContext(title="First item", link=first)),
+                ("weekly_digest.item", mail.MailContext(title="Second item", link=second)),
+            ],
+            [("weekly_digest.more", mail.MailContext(count=4))],
+        ]
+        sent = mail.compose(self.recipient("en"), "weekly_digest", context(), sections=sections)
+        self.assertIn(f"- First item\n  {first}", sent.body)
+        html = sent.html
+        self.assertIn("Overdue: 2</div>", html)
+        self.assertIn(f'<a href="{first}" style="color:#0a3a2a;">First item</a>', html)
+        self.assertIn(f'<a href="{second}" style="color:#0a3a2a;">Second item</a>', html)
+        self.assertNotIn("- First item", html)
+        self.assertIn("...and 4 more.", html)
+        self.assertLess(html.index("...and 4 more."), html.index(">See them all</a>"), "the button closes the mail")
 
 
 def _values(member: Membership) -> dict[str, object]:

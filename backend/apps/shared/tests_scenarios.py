@@ -695,6 +695,54 @@ class SharedScenarioTests(ScenarioTestCase):
         self.assertEqual((empty.json()["items"], empty.json()["total"]), ([], 0))
         self.assertGreater(self.client.get(f"{V1}/audit-events", **admin).json()["total"], 0, "the filter, not an empty log, emptied it")
 
+    def test_nfr_s20(self) -> None:
+        """NFR-S20
+
+        A mail travels as plain text and HTML and loads nothing remote.
+        """
+        import datetime
+
+        from apps.collab import mail as collab_mail
+        from apps.home import mail as briefing_mail
+        from apps.identity import mail as identity_mail
+        from apps.shared.adapters.mailer import MockMailer
+
+        markup, escaped = "<b>Bold</b>", "&lt;b&gt;Bold&lt;/b&gt;"
+        base = settings.APP_BASE_URL.rstrip("/") + "/"
+        tenant = factories.tenant(name=markup, slug="mail-bank")
+        self.activate(tenant)
+        MockMailer.reset()
+        self.addCleanup(MockMailer.reset)
+        identity_mail.send_invitation("new.member@bank.example", "an-invitation-token", markup, reenrolment=False)
+        mails = [
+            MockMailer.sent[0],
+            collab_mail.compose(
+                factories.member(tenant),
+                "due_soon",
+                collab_mail.MailContext(title=markup, date=datetime.date(2026, 10, 1), link=f"{base}watch/1"),
+                tenant_name=markup,
+            ),
+            briefing_mail.weekly_briefing(
+                to="reader@bank.example",
+                locale="sv",
+                tenant_name=markup,
+                week_start=datetime.date(2026, 9, 21),
+                week_end=datetime.date(2026, 9, 27),
+                titles=[markup, markup],
+                confirmed_so_what=markup,
+            ),
+        ]
+        for mail in mails:
+            with self.subTest(subject=mail.subject):
+                self.assertIn(markup, mail.body)
+                self.assertIn(escaped, mail.html)
+                self.assertNotIn("<b>", mail.html)
+                for remote in ("<img", "<link", "<script", "<iframe", "@font-face", "@import", "url(", "src="):
+                    self.assertNotIn(remote, mail.html)
+                addresses = re.findall(r"https?://[^\s\"<]+", mail.html)
+                self.assertTrue(addresses)
+                self.assertTrue(all(address.startswith(base) for address in addresses), addresses)
+
 
 class SharedTenancyScenarioTests(TransactionTestCase):
     """The scenarios that need rows committed on one connection and read on cw_app's."""

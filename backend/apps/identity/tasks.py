@@ -14,5 +14,6 @@ from apps.shared.adapters.mailer import OutgoingMail, get_mailer
 
 
 @shared_task
-def deliver_mail(to: str, subject: str, body: str) -> None:
-    get_mailer().send(OutgoingMail(to=to, subject=subject, body=body))
+def deliver_mail(to: str, subject: str, body: str, html: str = "") -> None:
+    """`html` defaults to none, so a task queued before the HTML part existed still sends."""
+    get_mailer().send(OutgoingMail(to=to, subject=subject, body=body, html=html))

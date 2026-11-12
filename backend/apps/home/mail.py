@@ -1,5 +1,6 @@
-"""The weekly briefing mail (HOM-02, I18N-02), plain text in the recipient's language;
-English and Swedish so far, any other language falls back to English.
+"""The weekly briefing mail (HOM-02, I18N-02) in the recipient's language, as plain text
+and in the shared HTML layout (`apps/shared/mail_layout.py`); English and Swedish so far,
+any other language falls back to English.
 
 - Library facts and a confirmed judgement only: an unconfirmed "So what?" is an agent's
   reading and a mail carries no label, so it never leaves this way (WAT-05).
@@ -18,31 +19,36 @@ import uuid
 
 from django.conf import settings
 
+from apps.shared import mail_layout
 from apps.shared.adapters.mailer import OutgoingMail
+from apps.shared.mail_layout import Block, Button, Items, Lead, Text
 from apps.shared.tasks import queue_after_commit
 
 FALLBACK_LANGUAGE = "en"
 
-# Per language: subject, opening, lead "So what?" intro, heading over the rest and closing
-# line with the link. The week is named by its dates, because a person reads dates.
+# Per language: subject, opening, the labels of the lead, its "So what?", the rest and the
+# link, the line for a quiet week and the footer of the HTML part. The week is named by its
+# dates, because a person reads dates.
 _TEXTS: dict[str, dict[str, str]] = {
     "en": {
         "subject": "This week in regulation: {week_start} to {week_end}",
         "opening": "Here is what reached {tenant} between {week_start} and {week_end}.",
-        "lead": "Leading this week: {title}",
-        "so_what": "What it means for us: {so_what}",
-        "also": "Also this week:",
+        "lead": "Leading this week",
+        "so_what": "What it means for us",
+        "also": "Also this week",
         "quiet": "Nothing new matched your regulatory scope this week.",
-        "closing": "Read the full briefing: {url}",
+        "closing": "Read the full briefing",
+        "footer": "Sent by {product}. Replies to this address are not read.",
     },
     "sv": {
         "subject": "Veckans regelnyheter: {week_start} till {week_end}",
         "opening": "Det här nådde {tenant} mellan {week_start} och {week_end}.",
-        "lead": "Veckans viktigaste: {title}",
-        "so_what": "Vad det betyder för oss: {so_what}",
-        "also": "Också den här veckan:",
+        "lead": "Veckans viktigaste",
+        "so_what": "Vad det betyder för oss",
+        "also": "Också den här veckan",
         "quiet": "Inget nytt matchade er regulatoriska omfattning den här veckan.",
-        "closing": "Läs hela sammanfattningen: {url}",
+        "closing": "Läs hela sammanfattningen",
+        "footer": "Skickat av {product}. Svar till den här adressen läses inte.",
     },
 }
 
@@ -67,19 +73,39 @@ def weekly_briefing(
     An empty `confirmed_so_what` leaves that line out: a mail never presents an agent's draft
     as the bank's view.
     """
-    texts = _TEXTS.get(locale or FALLBACK_LANGUAGE, _TEXTS[FALLBACK_LANGUAGE])
+    language = locale if locale in _TEXTS else FALLBACK_LANGUAGE
+    texts = _TEXTS[language]
     dates = {"week_start": week_start.isoformat(), "week_end": week_end.isoformat()}
-    lines = [texts["opening"].format(tenant=tenant_name, **dates), ""]
+    subject = texts["subject"].format(**dates)
+    opening = texts["opening"].format(tenant=tenant_name, **dates)
+    url = briefing_url(week_start)
+    lines = [opening, ""]
+    blocks: list[Block] = [Text(opening)]
     if titles:
-        lines.append(texts["lead"].format(title=titles[0]))
+        lines.append(f"{texts['lead']}: {titles[0]}")
         if confirmed_so_what:
-            lines.append(texts["so_what"].format(so_what=confirmed_so_what))
+            lines.append(f"{texts['so_what']}: {confirmed_so_what}")
+        blocks.append(Lead(texts["lead"], titles[0], texts["so_what"], confirmed_so_what))
         if titles[1:]:
-            lines.extend(["", texts["also"], *(f"- {title}" for title in titles[1:])])
+            lines.extend(["", f"{texts['also']}:", *(f"- {title}" for title in titles[1:])])
+            blocks.append(Items(texts["also"], [(title, None) for title in titles[1:]]))
     else:
         lines.append(texts["quiet"])
-    lines.extend(["", texts["closing"].format(url=briefing_url(week_start))])
-    return OutgoingMail(to=to, subject=texts["subject"].format(**dates), body="\n".join(lines))
+        blocks.append(Text(texts["quiet"]))
+    lines.extend(["", f"{texts['closing']}: {url}"])
+    blocks.append(Button(texts["closing"], url))
+    return OutgoingMail(
+        to=to,
+        subject=subject,
+        body="\n".join(lines),
+        html=mail_layout.render(
+            title=subject,
+            blocks=blocks,
+            footer=texts["footer"].format(product=settings.PRODUCT_NAME),
+            tenant_name=tenant_name,
+            language=language,
+        ),
+    )
 
 
 def send(tenant_id: uuid.UUID, message_id: uuid.UUID) -> None:

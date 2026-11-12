@@ -1,11 +1,14 @@
 """The collab mails (COL-02, I18N-01): due-date and next-review reminders, the escalation and
 the weekly digest, in the recipient's language from `mail_strings/`. Only these leave by
-mail; every other notification stays in the product. Plain text.
+mail; every other notification stays in the product. Each is plain text and the same lines in
+the shared HTML layout (`apps/shared/mail_layout.py`).
 
 - Typed context only: `MailContext` holds a title, date, count, name or link, so a comment,
   note, assessment or summary has nowhere to go (CHUNK10_TASKS rule 13).
 - A link must start with `APP_BASE_URL`, so it cannot carry text to another host.
 - Nothing is logged (playbook 4.7), except the key of a string missing in a language.
+- One catalog for both parts: a catalog line that ends in `: {link}` is the mail's button in
+  HTML, its words before the colon the label, and a digest row is its title as a link.
 
 `send()` queues `tasks.deliver_mail` after commit; its `email_message` row makes a second
 send the same day do nothing.
@@ -25,7 +28,9 @@ from django.conf import settings
 
 from apps.collab.mail_strings import CATALOGS, FALLBACK_LANGUAGE
 from apps.identity.models import Membership
+from apps.shared import mail_layout
 from apps.shared.adapters.mailer import OutgoingMail
+from apps.shared.mail_layout import Block, Button, Items, Text
 from apps.shared.tasks import queue_after_commit
 
 logger = logging.getLogger(__name__)
@@ -34,6 +39,8 @@ Template = Literal["due_soon", "overdue", "review_due", "escalation", "weekly_di
 TEMPLATES: tuple[str, ...] = get_args(Template)
 # What the composer fills itself, beside the context: whom the mail greets and who sent it.
 COMPOSER_FIELDS = ("recipient", "product")
+# How a catalog line ends when it is the mail's action: the label, then the page it opens.
+ACTION = ": {link}"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -114,35 +121,59 @@ def compose(
     context: MailContext,
     *,
     sections: Sequence[Sequence[tuple[str, MailContext]]] = (),
+    tenant_name: str = "",
 ) -> OutgoingMail:
     """One recipient's copy of one mail in their language (English by default): header,
     body and footer under the template's subject. `sections` are extra paragraphs built from
-    the template's own keys and typed context, so they can say no more than the body."""
+    the template's own keys and typed context, so they can say no more than the body. The
+    HTML part says the same lines in the same order, under `tenant_name`, the bank the mail
+    is about: the caller passes it, so composing reads no row."""
     if template not in TEMPLATES:
         raise ValueError(f"unknown collab mail template {template!r}")
     user = membership.user
     language = user.locale.key if user.locale else FALLBACK_LANGUAGE
 
-    def render(key: str, values: MailContext) -> str:
+    def fill(text: str, values: MailContext) -> str:
         filled = {name: value for name, value in dataclasses.asdict(values).items() if value is not None}
         filled["recipient"] = user.name
         filled["product"] = settings.PRODUCT_NAME
-        return _string(language, key).format(**filled)
+        return text.format(**filled)
+
+    def render(key: str, values: MailContext) -> str:
+        return fill(_string(language, key), values)
+
+    def section_block(section: Sequence[tuple[str, MailContext]]) -> Block:
+        """A digest section in HTML: its heading over its rows, each row the title as a link.
+        A section with no row, the count the cap left out, is a paragraph."""
+        heading = " ".join(render(key, values) for key, values in section if values.link is None)
+        rows = [(values.title or "", values.link) for _key, values in section if values.link is not None]
+        return Items(heading, rows) if rows else Text(heading)
 
     for section in sections:
         for key, _values in section:
             if not key.startswith(f"{template}."):
                 raise ValueError(f"{key!r} is not a string of the {template!r} mail")
+    subject, header, footer = (render(key, context) for key in (f"{template}.subject", "header", "footer"))
+    body = _string(language, f"{template}.body")
     parts = [
-        render("header", context),
-        render(f"{template}.body", context),
+        header,
+        fill(body, context),
         *("\n".join(render(key, values) for key, values in section) for section in sections),
-        render("footer", context),
+        footer,
+    ]
+    lines = body.split("\n")
+    blocks: list[Block] = [
+        Text(header),
+        *(Text(fill(line, context)) for line in lines if not line.endswith(ACTION)),
+        *(section_block(section) for section in sections),
+        # The button closes the mail, under the sections it sums up.
+        *(Button(fill(line.removesuffix(ACTION), context), context.link or "") for line in lines if line.endswith(ACTION)),
     ]
     return OutgoingMail(
         to=user.email,
-        subject=render(f"{template}.subject", context),
+        subject=subject,
         body="\n\n".join(parts),
+        html=mail_layout.render(title=subject, blocks=blocks, footer=footer, tenant_name=tenant_name, language=language),
     )
 
 

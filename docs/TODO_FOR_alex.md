@@ -2,6 +2,19 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## The new mail layout (2026-11-12, D-138)
+
+Every mail now has an HTML part in the Letterhead layout, with no picture and no remote font.
+It was checked in a browser only: no Outlook was within reach of the build.
+
+- [ ] **Invite an address at your bank and open the mail in Outlook.** Check that the wordmark
+      reads `[blɛkː]` (its ɛ and ː are phonetic letters, and Outlook must find them in a font),
+      that the green button opens the invitation, and that nothing shows as a cross. If the
+      two letters look wrong, say so: the wordmark then becomes the plain word.
+- [ ] **Give the sender a name.** The mail arrives from a bare address. Set `MAIL_FROM` on the
+      api and worker services to `bleqq compliance <hello@bleqq.com>` so the inbox shows the
+      name.
+
 ## One role for every member, for now (2026-11-12, D-136)
 
 Every bank now has one role to give, Administrator, holding every bank permission; the six other

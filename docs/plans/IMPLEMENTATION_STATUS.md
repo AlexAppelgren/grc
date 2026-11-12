@@ -333,3 +333,10 @@ toggle between the two. It supersedes hardening H13's separate accounts.
   tab's sessionStorage across sign-in, and a signed-in visitor gets "Join with your passkey"
   (`joiner@second-bank.test` in `seed_e2e`). Not done: the join panel does not name the bank before
   joining, since nothing tells the page which bank a token belongs to until it is accepted.
+- **Built afterwards (2026-11-12, D-138):** every mail has an HTML part beside its unchanged
+  plain text, from one layout (`apps/shared/mail_layout.py`, `design/system/mail.md`): the
+  Letterhead direction Alex chose, with no picture and no remote font, every value escaped
+  and every link held to the product (NFR-S20). All twelve mails use it: identity's five,
+  the support request, the four reminders with the digest, and the weekly briefing. Not done:
+  no Outlook was within reach, so the first look in a bank's mailbox is the owner's
+  (`docs/TODO_FOR_alex.md`); identity's and the support request's mails are still English only.

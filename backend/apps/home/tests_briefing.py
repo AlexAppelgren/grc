@@ -463,3 +463,36 @@ class TheMailText(TestCase):
         body = self.compose(titles=[], confirmed_so_what="").body
         self.assertIn("Nothing new matched your regulatory scope", body)
         self.assertIn("/briefing/2026-09-21", body)
+
+    def test_the_plain_text_reads_as_it_always_did(self) -> None:
+        self.assertEqual(
+            self.compose(titles=["Research payments", "Reporting", "Custody"]).body,
+            "Here is what reached Example Bank AB between 2026-09-21 and 2026-09-27.\n\n"
+            "Leading this week: Research payments\nWhat it means for us: Three regulations change for us.\n\n"
+            "Also this week:\n- Reporting\n- Custody\n\n"
+            f"Read the full briefing: {mail.briefing_url(LAST_WEEK_START)}",
+        )
+
+    def test_the_html_part_says_the_same_week_with_the_link_behind_a_button(self) -> None:
+        html = self.compose(locale="sv").html
+        self.assertIn('<html lang="sv">', html)
+        for words in ("Veckans viktigaste", "Research payments", "Vad det betyder för oss", "Three regulations change for us."):
+            self.assertIn(words, html)
+        self.assertIn("Också den här veckan</div>", html)
+        self.assertIn("Reporting", html)
+        self.assertIn(f'<a href="{mail.briefing_url(LAST_WEEK_START)}"', html)
+        self.assertIn(">Läs hela sammanfattningen</a>", html)
+        self.assertIn("Svar till den här adressen läses inte.", html)
+
+    def test_the_html_part_leaves_out_what_the_text_leaves_out(self) -> None:
+        self.assertNotIn("What it means for us", self.compose(confirmed_so_what="").html)
+        quiet = self.compose(titles=[], confirmed_so_what="").html
+        self.assertIn("Nothing new matched your regulatory scope", quiet)
+        self.assertNotIn("Leading this week", quiet)
+        self.assertIn(">Read the full briefing</a>", quiet)
+
+    def test_a_title_written_as_markup_arrives_as_text_in_the_html_part(self) -> None:
+        html = self.compose(titles=["<b>Research</b>", "<i>Reporting</i>"]).html
+        self.assertNotIn("<b>", html)
+        self.assertNotIn("<i>", html)
+        self.assertIn("&lt;b&gt;Research&lt;/b&gt;", html)

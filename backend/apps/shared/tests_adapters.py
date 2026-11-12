@@ -128,6 +128,42 @@ class MailerAdapter(SimpleTestCase):
             {"from": "no-reply@example.test", "to": ["a@example.invalid"], "subject": "s", "text": "b"},
         )
 
+    def test_mock_keeps_the_html_part(self) -> None:
+        mail = mailer.OutgoingMail(to="a@example.invalid", subject="Code", body="123456", html="<p>123456</p>")
+        mailer.get_mailer().send(mail)
+        self.assertEqual(mailer.MockMailer.sent, [mail])
+        mailer.MockMailer.reset()
+
+    @override_settings(MAIL_PROVIDER="smtp", MAIL_SMTP_HOST="localhost", MAIL_SMTP_PORT=1)
+    def test_smtp_sends_the_html_part_beside_the_text(self) -> None:
+        from unittest import mock
+
+        with mock.patch("apps.shared.adapters.mailer.get_connection") as get_connection:
+            mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b", html="<p>b</p>"))
+        (message,) = get_connection.return_value.send_messages.call_args.args[0]
+        self.assertEqual((message.body, list(message.alternatives)), ("b", [("<p>b</p>", "text/html")]))
+
+    @override_settings(MAIL_PROVIDER="smtp", MAIL_SMTP_HOST="localhost", MAIL_SMTP_PORT=1)
+    def test_smtp_sends_text_alone_when_there_is_no_html_part(self) -> None:
+        from unittest import mock
+
+        with mock.patch("apps.shared.adapters.mailer.get_connection") as get_connection:
+            mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b"))
+        (message,) = get_connection.return_value.send_messages.call_args.args[0]
+        self.assertEqual((message.body, list(message.alternatives)), ("b", []))
+
+    @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="re_key", MAIL_FROM="no-reply@example.test")
+    def test_resend_posts_the_html_part_beside_the_text(self) -> None:
+        import json
+        from unittest import mock
+
+        with mock.patch("apps.shared.adapters.mailer.urllib.request.urlopen") as urlopen:
+            mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b", html="<p>b</p>"))
+        self.assertEqual(
+            json.loads(urlopen.call_args.args[0].data),
+            {"from": "no-reply@example.test", "to": ["a@example.invalid"], "subject": "s", "text": "b", "html": "<p>b</p>"},
+        )
+
     @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="re_key")
     def test_resend_rejection_raises_without_echoing_the_provider_text(self) -> None:
         import io

@@ -106,6 +106,8 @@ class Request(SupportGrantCase):
         self.assertEqual(recipients, sorted([self.admin.email, security.email]))
         self.assertNotIn(elsewhere.email, recipients)
         self.assertIn(PURPOSE, MockMailer.sent[0].body)
+        self.assertIn(PURPOSE, MockMailer.sent[0].html)
+        self.assertIn(f"{self.tenant.name}</div>", MockMailer.sent[0].html)
 
     def test_the_window_is_at_most_the_maximum(self) -> None:
         self.assertEqual(self.request_grant(hours=settings.SUPPORT_ACCESS_MAX_HOURS).status_code, 201)

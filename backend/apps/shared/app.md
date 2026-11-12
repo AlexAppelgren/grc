@@ -263,6 +263,16 @@ And the 403 adds requiredPermission and the 422 adds errors[]
 And a filtered list that matches nothing answers 200 with an empty collection
 ```
 
+### NFR-S20 — A mail travels as plain text and HTML and loads nothing remote `@integration` (NFR-03, ID-01, COL-02, HOM-02)
+```gherkin
+Given an invitation, a reminder and a weekly briefing whose bank, title and judgement are written as markup
+When each is composed
+Then its plain text carries the words as they were written
+And its HTML part carries them as text, never as markup
+And the HTML part holds no picture, font, stylesheet or script
+And every address in it is a page of the product
+```
+
 ### I18N-S3 — Every UI string is in the catalog for every shipped language `@e2e` (I18N-02)
 ```gherkin
 Given the message catalogs for en and sv
