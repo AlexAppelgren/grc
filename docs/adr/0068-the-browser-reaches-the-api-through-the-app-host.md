@@ -56,12 +56,19 @@ stream may be silent for longer.
   (`API_INTERNAL_MAX_BODY_BYTES`, `API_INTERNAL_TIMEOUT_MS`). The API keeps its own limits
   and refuses in its own words. Next holds each body in memory while it passes it on, which
   is why the first is no larger than it has to be.
+- **A body above the limit never reaches the API.** Next does not refuse such a body: it
+  cuts it and passes the rest on, and the API then waits for bytes that never come, with a
+  worker held until the wait ends (measured: no answer for 90 s and more). Eight such calls
+  would hold every worker. So `src/proxy.ts` answers a call under `/api` itself when its
+  `Content-Length` is above the limit (413 `payload_too_large`) or when the body does not
+  say how large it is (411 `length_required`), in the API's problem format, at once. Every
+  other call under `/api` goes on untouched, and the rules for pages do not apply to it.
 - **The Ask stream says `no-transform`.** Next compresses what it passes on and holds a
   compressed stream back until it ends: measured, five events 400 ms apart arrived together
   after two seconds, and one by one once the response said `no-transform`
   (`apps/search/api.py`; NFR-02).
-- **`/api` skips `src/proxy.ts`.** Its rules are for pages. The API's paths are answered by
-  the API on every host of the web service, the public host included.
+- **The API's paths are the API's on every host** of the web service, the public host
+  included, where they used to move to the app host.
 
 ## Consequences
 
@@ -76,12 +83,11 @@ stream may be silent for longer.
 - **Cloudflare stays in front of everything a browser touches.** A call through the route
   has already passed Cloudflare on the app host; only the leg between our two services
   leaves it out.
-- **Step two carries three known changes besides the switch.** The calendar feed's address
+- **Step two carries two known changes besides the switch.** The calendar feed's address
   is built from the request's host (`apps/home/feed.py`), which over the route is the
-  private name: it must come from `APP_BASE_URL`. A file above the web server's body limit
-  ends in a 500 after a wait, not in the API's sentence, and the upload screen sends any
-  size: it must refuse a file that is too large before sending it. A journey must upload a
-  file above 10 MB through the screen.
+  private name: it must come from `APP_BASE_URL`. A journey must attach a file above 10 MB
+  through the screen. A file between the API's cap and the web server's limit gets the
+  API's own sentence, as today; one above the limit gets the web server's 413.
 - **A wrong address is the remaining risk, and step one is where it shows.** The API's
   public address in `API_INTERNAL_URL` would repeat the outage for the route alone. The
   runbook says so, and the check after the owner's change is one call from outside.

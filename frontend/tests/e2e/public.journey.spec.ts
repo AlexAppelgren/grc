@@ -351,6 +351,13 @@ test.describe('the public site and the app on hosts of their own', () => {
     expect(refused.status()).toBe(401);
     expect(refused.headers()['content-type']).toContain('application/problem+json');
     expect(((await refused.json()) as { code: string }).code).toBe('unauthenticated');
+
+    // A body above the web server's limit never reaches the API: Next would cut it, and the API
+    // would wait for the rest with a worker held. The web server refuses it itself, in the API's format.
+    const tooLarge = await request.post(`${APP}/api/v1/auth/refresh`, { data: Buffer.alloc(27 * 1024 * 1024), headers: { 'Content-Type': 'application/octet-stream' }, maxRedirects: 0 });
+    expect(tooLarge.status()).toBe(413);
+    expect(tooLarge.headers()['content-type']).toContain('application/problem+json');
+    expect(((await tooLarge.json()) as { code: string }).code).toBe('payload_too_large');
   });
 
   test('the app host keeps the app, marks every page noindex, and sends the public page to the public host', async ({ request }) => {

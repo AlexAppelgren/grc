@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next';
 
+import { API_MAX_BODY_BYTES } from './src/shared/navigation/api-body';
+
 // Playbook 2.3 and 8.3: E2E and Docker run a production build. The Docker
 // image is built with NEXT_OUTPUT_STANDALONE=1 (see Dockerfile) and runs the
 // emitted server.js; everywhere else `next start` serves the normal build,
@@ -10,17 +12,14 @@ import type { NextConfig } from 'next';
 // the page's own host. It names the address the two services share on the platform's
 // private network, never the API's public one: a call to the public address goes back
 // through the edge proxy the request came in by, and that proxy refuses it (the outage of
-// 2026-11-12). Read when the build runs. Unset, nothing is passed on. Requests under /api
-// skip src/proxy.ts (its matcher): its rules are for pages.
+// 2026-11-12). Read when the build runs. Unset, nothing is passed on.
 const apiInternal = URL.canParse(process.env.API_INTERNAL_URL ?? '') ? new URL(process.env.API_INTERNAL_URL as string).origin : '';
 // What this server must not cut short on the way. Left alone, Next cuts a request body it
 // passes on at 10 MB and gives up on an answer after 30 s of silence (both measured
 // 2026-11-12: an 11 MiB upload and a 35 s wait each answered 500). The API has its own
-// limits and refuses in its own words, so these two sit just above them: the body above
-// EVIDENCE_MAX_BYTES (25 MiB) with room for the form around the file, the wait above
-// LLM_DEADLINE_S (180 s), the longest an Ask stream may stay silent. Next holds each body
-// in memory while it passes it on, so the first is no larger than it has to be.
-const apiMaxBodyBytes = Number(process.env.API_INTERNAL_MAX_BODY_BYTES) || 26 * 1024 * 1024;
+// limits and refuses in its own words, so these two sit just above them: the body at
+// API_MAX_BODY_BYTES, above which src/proxy.ts refuses a call before it is passed on, the
+// wait above LLM_DEADLINE_S (180 s), the longest an Ask stream may stay silent.
 const apiTimeoutMs = Number(process.env.API_INTERNAL_TIMEOUT_MS) || 200_000;
 
 // The content policy (review 2026-11-11 S-12): the app loads nothing from another
@@ -49,7 +48,7 @@ const nextConfig: NextConfig = {
   output: process.env.NEXT_OUTPUT_STANDALONE === '1' ? 'standalone' : undefined,
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: { proxyClientMaxBodySize: apiMaxBodyBytes, proxyTimeout: apiTimeoutMs },
+  experimental: { proxyClientMaxBodySize: API_MAX_BODY_BYTES, proxyTimeout: apiTimeoutMs },
   // In an agent worktree (scripts/worktree.sh), node_modules is a link to the main
   // checkout, and Turbopack refuses a link that leaves its root ("points out of the
   // filesystem root", 2026-09-19). The worktree slot sets the root to the main checkout,

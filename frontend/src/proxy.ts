@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { API_MAX_BODY_BYTES, bodyRefusal } from '@/shared/navigation/api-body';
 import { hostSettingsFrom, routeByHost, variesByRequest } from '@/shared/navigation/hosts';
 import { SESSION_MARKER } from '@/shared/navigation/session-marker';
 
@@ -7,6 +8,12 @@ import { SESSION_MARKER } from '@/shared/navigation/session-marker';
 // Read at run time, so the same build serves every environment; with
 // PUBLIC_SITE_HOST or APP_HOST unset every request passes untouched.
 export function proxy(request: NextRequest): NextResponse {
+  // The API's paths, on every host: next.config.ts passes them on to the API, and the rules
+  // for pages below are not for them. Only a body the API must never be handed is answered here.
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const refusal = bodyRefusal(request.headers.get('content-length'), request.headers.get('transfer-encoding'), API_MAX_BODY_BYTES);
+    return refusal === null ? NextResponse.next() : NextResponse.json(refusal, { status: refusal.status, headers: { 'Content-Type': 'application/problem+json' } });
+  }
   // The scheme the platform's edge saw, and only a web one: the header can come from anyone.
   const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
   const protocol = forwardedProto === 'https' || forwardedProto === 'http' ? forwardedProto : request.nextUrl.protocol.replace(/:$/, '');
@@ -30,7 +37,5 @@ export function proxy(request: NextRequest): NextResponse {
   return response;
 }
 
-// Everything but the build's own files, which every host serves, and the API's
-// paths, which next.config.ts passes on to the API on every host: a proxy would
-// buffer each request body in memory and cut it at 10 MB.
-export const config = { matcher: ['/((?!_next/|api/).*)'] };
+// Everything but the build's own files, which every host serves.
+export const config = { matcher: ['/((?!_next/).*)'] };
