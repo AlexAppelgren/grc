@@ -356,3 +356,17 @@ paths = ['''^frontend/src/features/tenant-admin/api-keys/ApiKeysScreen\.test\.ts
 [[allowlists]]
 description = "A library obligation's stable key in a test fixture (backend/apps/library/tests_scenarios.py, scenario INV-S18: key=\"obl-inv-s18-god-skik\", the Danish Bekendtgørelse om god skik). A record identifier made of the scenario ID and the act's name, never a credential; the generic-api-key rule reads it as a key because it follows `key=`. Exact literal only."
 regexes = ['''^obl-inv-s18-god-skik$''']
+
+[[allowlists]]
+description = "Stable keys the Decide all tests give the obligations they build (backend/apps/register/tests_decide_all.py, REG-S20, 2026-11-13: key=\"da-lvm-6-insurers\", key=\"da-lvm-9-custody\"). Test record keys made of the test's initials, the act, a section number and a word, never credentials; the generic-api-key rule reads them as keys because they follow `key=`. Exact literals only."
+regexes = [
+  '''^da-lvm-6-insurers$''',
+  '''^da-lvm-9-custody$''',
+]
+
+[[allowlists]]
+description = "Stable keys the INV-S20 scenario gives the two obligations it builds (backend/apps/library/tests_scenarios.py, 2026-11-13: key=\"obl-inv-s20-self-certification\", key=\"obl-inv-s20-uncited\"). Record identifiers made of the scenario ID and a word, never credentials; the generic-api-key rule reads them as keys because they follow `key=`. Exact literals only."
+regexes = [
+  '''^obl-inv-s20-self-certification$''',
+  '''^obl-inv-s20-uncited$''',
+]
