@@ -65,6 +65,7 @@ from apps.proposals.logic import (
     validated_provision,
     validated_provision_version,
     validated_recurring_duty,
+    validated_cited_provisions,
     validated_translations,
 )
 from apps.proposals.models import OriginType, Proposal, ProposalBatchRow, ProposalKind
@@ -548,14 +549,17 @@ def _scope(obligation: Obligation) -> list[str]:
 def _obligation_version(
     payload: ProposalObligationVersionPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
-    """Add the version the proposal asks for, and nothing else (INV-04, PRO-02).
+    """Add the version the proposal asks for, and nothing else (INV-04, PRO-02, D-144).
 
     Nothing is overwritten: a new summary is a new numbered row, and every earlier version
     stays as written. The obligation is checked again, since it may have been retired.
 
-    The scope is the one thing a version replaces: a term list belongs to the obligation, so
-    a payload carrying one rewrites the links and the audit row holds before and after. A
-    payload without `terms` leaves the scope alone; an empty list clears it.
+    Four parts belong to the obligation rather than to a version, so a payload carrying one
+    replaces it and the audit row holds before and after: the scope (`terms`), the title
+    (`titles`, its rows becoming exactly the given ones, every language but the original a
+    machine translation), the citation (`refLabel`) and the cited provisions (`provisions`,
+    each under the obligation's own instrument, checked again here). A part left out is left
+    alone; an empty `terms` or `provisions` clears it.
 
     The search index moves inside this transaction (`reindex`).
     """
@@ -572,7 +576,8 @@ def _obligation_version(
     # A payload without `terms` leaves the scope alone, so it asks nothing of the standard
     # term rule; an empty list clears the scope, and is checked as one.
     scope = None if payload.terms is None else [term.id for term in terms]
-    standards.check(proposal.kind, obligation.instrument, scope, proposal.field_sources, source_label=proposal.source_label)
+    standards.check(proposal.kind, obligation.instrument, scope, proposal.field_sources, payload.ref_label, proposal.source_label)
+    provisions = validated_cited_provisions(payload, obligation.id)
     highest = (
         ObligationVersion.objects.filter(obligation=obligation)
         .order_by("-version_number")
@@ -612,6 +617,21 @@ def _obligation_version(
         for term in terms:
             ObligationTerm.objects.create(obligation=obligation, term=term)
         scope_after = _scope(obligation)
+    titles_before = ref_label_before = cited_before = None
+    if payload.titles is not None:
+        titles_before = dict(ObligationTitle.objects.filter(obligation=obligation).values_list("language_id", "text"))
+        ObligationTitle.objects.filter(obligation=obligation).delete()
+        for language, text in payload.titles.items():
+            original = language == payload.original_language
+            ObligationTitle.objects.create(obligation=obligation, language_id=language, text=text, is_original=original, is_machine=not original)
+    if payload.ref_label is not None:
+        ref_label_before = obligation.ref_label
+        obligation.ref_label = payload.ref_label
+        obligation.save(update_fields=["ref_label"])
+    if payload.provisions is not None:
+        cited_before = list(ObligationProvision.objects.filter(obligation=obligation).values_list("provision__stable_key", flat=True))
+        ObligationProvision.objects.filter(obligation=obligation).delete()
+        ObligationProvision.objects.bulk_create([ObligationProvision(obligation=obligation, provision=provision) for provision in provisions])
     reindex(obligation.id)
     record(
         action="obligation.version_applied",
@@ -621,7 +641,7 @@ def _obligation_version(
         subject_title=obligation.stable_key,
         summary=f"Filed version {version.version_number} of {obligation.stable_key} (proposal {proposal.id}).",
         tenant_id=None,
-        before={"versionNumber": highest, "terms": scope_before},
+        before={"versionNumber": highest, "terms": scope_before, "titles": titles_before, "refLabel": ref_label_before, "provisions": cited_before},
         after={
             "versionNumber": version.version_number,
             "versionId": str(version.id),
@@ -629,6 +649,9 @@ def _obligation_version(
             "effectiveFromPrecision": payload.effective_from_precision,
             "languages": sorted(payload.summaries),
             "terms": scope_after,
+            "titles": payload.titles,
+            "refLabel": payload.ref_label,
+            "provisions": payload.provisions,
             "proposal": str(proposal.id),
         },
         step_up_assertion_id=step_up,

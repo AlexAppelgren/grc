@@ -362,6 +362,18 @@ def unknown_provision_keys(keys: Collection[str]) -> set[str]:
     return {key for key in keys if key not in found}
 
 
+def cited_provision_keys(obligation_id: uuid.UUID) -> list[str]:
+    """The stable keys of the provisions an obligation cites, in the law's order, in one
+    query: what a proposal that replaces its citations is compared with (D-144)."""
+    return list(ObligationProvision.objects.filter(obligation_id=obligation_id).values_list("provision__stable_key", flat=True))
+
+
+def provision_labels(keys: Collection[str]) -> dict[str, str]:
+    """How the law numbers each of these provisions (`ref_label`), by stable key, in one
+    query; a key the library does not hold is absent."""
+    return dict(Provision.objects.filter(stable_key__in=keys).values_list("stable_key", "ref_label"))
+
+
 # --- What a new instrument or obligation names (PRO-01, INV-01, INV-03) ---
 class InstrumentRefs(NamedTuple):
     """The library rows a new instrument's payload names, resolved once for the creation

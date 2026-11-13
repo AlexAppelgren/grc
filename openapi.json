@@ -18972,7 +18972,7 @@
                 "type": "null"
               }
             ],
-            "description": "The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing, and a value changed from what was proposed needs its fresh source in `fieldSources`. Each summary is at most 50000 characters per language. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds. A person's field only: an agent's key that sends it answers 409 `person_review_required`, because an agent approves a proposal as it was filed.",
+            "description": "The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known), `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope), `titles`, `refLabel` and `provisions` (which replace the obligation's title, citation and cited provisions, at most 50 provisions of its own instrument). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing, and a value changed from what was proposed needs its fresh source in `fieldSources`. Each summary is at most 50000 characters per language. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds. A person's field only: an agent's key that sends it answers 409 `person_review_required`, because an agent approves a proposal as it was filed.",
             "title": "Payloadoverrides"
           }
         },
@@ -19683,6 +19683,39 @@
         "title": "ProposalBatchRowPayload",
         "type": "object"
       },
+      "ProposalCitedProvision": {
+        "description": "A provision of the law an obligation version would start or stop citing (INV-02,\nD-144), named as the law numbers it, so a reviewer sees which sections a correction\nadds to the duty's citation and which it drops.",
+        "examples": [
+          {
+            "key": "dk-bek-2021-2018/012",
+            "referenceLabel": "\u00a7 12"
+          }
+        ],
+        "properties": {
+          "key": {
+            "description": "The provision's stable key, kept for ever: its instrument's key, a slash and its place in the instrument, for example `dk-bek-2021-2018/012`. Store and compare this.",
+            "examples": [
+              "dk-bek-2021-2018/012"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "referenceLabel": {
+            "description": "How the law numbers the provision, for example \"\u00a7 12\" or \"Art. 16\", as the library holds it. Empty when the library holds no provision under that key, which approving the proposal then refuses with 422 `unknown_key`.",
+            "examples": [
+              "\u00a7 12"
+            ],
+            "title": "Referencelabel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "referenceLabel"
+        ],
+        "title": "ProposalCitedProvision",
+        "type": "object"
+      },
       "ProposalCreateBody": {
         "additionalProperties": false,
         "description": "The body of `POST /proposals`: one change somebody wants made to the shared library,\nwith the source behind every value it would write. Nothing in the library changes when\nthis is accepted; the proposal waits for a second, independent reviewer.\n\nFields the schema does not name are refused with 422 `validation_error` rather than\ndropped, so nothing rides along unseen. The whole body is library data that every bank\nwill read once approved: it must never carry a bank's own judgement, its people's names\nor its internal documents.",
@@ -19739,7 +19772,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Per field the payload sets, where its value came from, keyed as the queue names the field (`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`, `obligations`). Each source is at most 2000 characters and is an https link, or for an obligation or provision version also the stable key of a provision the library holds. A new instrument, obligation or provision takes https links only, since it has no provision of its own yet, and so does every obligation of a standard: anything else there answers 422 `licensed_text`. A field without a source answers 422 `source_missing`; a source that is neither, or one given for a field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need none, since a person writes their wording.",
+            "description": "Per field the payload sets, where its value came from, keyed as the queue names the field (`summaries.sv`, `texts.sv`, `titles.en`, `effectiveFrom`, `terms`, `refLabel`, `provisions`, `regime`, `obligations`). Each source is at most 2000 characters and is an https link, or for an obligation or provision version also the stable key of a provision the library holds. A new instrument, obligation or provision takes https links only, since it has no provision of its own yet, and so does every obligation of a standard: anything else there answers 422 `licensed_text`. A field without a source answers 422 `source_missing`; a source that is neither, or one given for a field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need none, since a person writes their wording.",
             "examples": [
               {
                 "summaries.sv": "https://www.fi.se/en/published/news/2026/research-payments/"
@@ -19768,7 +19801,7 @@
           },
           "payload": {
             "additionalProperties": true,
-            "description": "What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, the part before the slash then being the instrument's own key, else 422 `validation_error`, at most 200 characters), `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), `originalLanguage` (the language the authority published the text in, which must be the language its instrument's jurisdiction writes law in, Swedish for Swedish law and English for a Union act, else 422 `validation_error`: a translation is never the original of the law, though a title or a summary, being bleqq's own wording, keeps the language it was written in), `officialLanguages` (the other languages of `texts` the authority itself published, such as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; at most 4 language keys of at most 8 characters; naming the original, a language with no text, or a language the authority does not publish in beside the original (today only Swedish beside a Finnish original may be named) answers 422 `validation_error`), `isMachine` (true when the provision holds a translation; every text that is neither the original nor one of `officialLanguages` is stored and labelled as a machine translation whatever this says and whoever approves), `obligations` (the stable keys of the obligations that cite the provision, each at most 120 characters, at most 50 counted as the list is sent, a key sent twice being kept once, every one a shared obligation in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to the provision), `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and `obligations`, each read as on a new provision against the provision's own instrument (an obligation the provision is already tied to stays as it is), `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.",
+            "description": "What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`), `terms` (scope as `dimension:key`, at most 20), `titles` (the obligation's title per content language, `originalLanguage` among them), `refLabel` (its citation, 1 to 200 characters) and `provisions` (the stable keys of the provisions it cites, at most 50 as sent, a key sent twice kept once, each a provision in force under the obligation's own instrument, else 422 `unknown_key` naming it). Each of `terms`, `titles`, `refLabel` and `provisions` replaces that part of the obligation whole when given and leaves it alone when left out; an empty `terms` or `provisions` clears it. `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, the part before the slash then being the instrument's own key, else 422 `validation_error`, at most 200 characters), `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), `originalLanguage` (the language the authority published the text in, which must be the language its instrument's jurisdiction writes law in, Swedish for Swedish law and English for a Union act, else 422 `validation_error`: a translation is never the original of the law, though a title or a summary, being bleqq's own wording, keeps the language it was written in), `officialLanguages` (the other languages of `texts` the authority itself published, such as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; at most 4 language keys of at most 8 characters; naming the original, a language with no text, or a language the authority does not publish in beside the original (today only Swedish beside a Finnish original may be named) answers 422 `validation_error`), `isMachine` (true when the provision holds a translation; every text that is neither the original nor one of `officialLanguages` is stored and labelled as a machine translation whatever this says and whoever approves), `obligations` (the stable keys of the obligations that cite the provision, each at most 120 characters, at most 50 counted as the list is sent, a key sent twice being kept once, every one a shared obligation in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to the provision), `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and `obligations`, each read as on a new provision against the provision's own instrument (an obligation the provision is already tied to stays as it is), `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.",
             "title": "Payload",
             "type": "object"
           },
@@ -20129,6 +20162,46 @@
             "title": "Proposedtext",
             "type": "string"
           },
+          "provisionsAdded": {
+            "description": "The provisions the obligation would start citing, in the order the proposal names them, each by its stable key and the way the law numbers it. Empty when the proposal leaves the citations alone, when it adds none, and on every kind but `new_obligation_version`.",
+            "items": {
+              "$ref": "#/components/schemas/ProposalCitedProvision"
+            },
+            "title": "Provisionsadded",
+            "type": "array"
+          },
+          "provisionsRemoved": {
+            "description": "The provisions the obligation would stop citing: the provision stays in the library, only the obligation's citation of it goes. Compared, like `titleBefore`, with what the library holds now, or for an approved proposal with what its approval found. Empty when the proposal leaves the citations alone, when it drops none, and on every kind but `new_obligation_version`.",
+            "items": {
+              "$ref": "#/components/schemas/ProposalCitedProvision"
+            },
+            "title": "Provisionsremoved",
+            "type": "array"
+          },
+          "refLabelAfter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The citation the proposal would give the obligation, at most 200 characters. Null means the proposal leaves the citation alone, and is always null on every kind but `new_obligation_version`.",
+            "examples": [
+              "\u00a7 12-13"
+            ],
+            "title": "Reflabelafter"
+          },
+          "refLabelBefore": {
+            "default": "",
+            "description": "For `new_obligation_version`, the obligation's citation before this proposal, as the source numbers it, for example \"\u00a7 12\": the citation the library holds now, or for an approved proposal that replaced it, the one its approval found. Empty on every other kind.",
+            "examples": [
+              "\u00a7 12"
+            ],
+            "title": "Reflabelbefore",
+            "type": "string"
+          },
           "rejectionCode": {
             "default": "",
             "description": "Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `outside_sector_scope`, `poor_wording` and `other`. Empty unless the status is `rejected`.",
@@ -20307,6 +20380,30 @@
           "title": {
             "description": "The one-line request as its author wrote it: an agent's own wording, or a platform editor's. It is never a bank member's words, because a proposal made inside a bank reaches the console without its proposer, and it is not the library record's title.",
             "title": "Title",
+            "type": "string"
+          },
+          "titleAfter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The title the proposal would give the obligation, in the same language, bleqq's own wording. Null means the proposal leaves the title alone, and is always null on every kind but `new_obligation_version`.",
+            "examples": [
+              "Keep a register of financial contracts"
+            ],
+            "title": "Titleafter"
+          },
+          "titleBefore": {
+            "default": "",
+            "description": "For `new_obligation_version`, the obligation's title before this proposal, in the language above (the original when it has none in that language), so a reviewer reads the old title beside the new. For a proposal that was not approved it is the title the library holds now; for an approved one that replaced the title it is the title its approval found, as the audit row of the approval recorded it. Empty on every other kind.",
+            "examples": [
+              "Keep a register of financial contracts where the resolution plan requires it"
+            ],
+            "title": "Titlebefore",
             "type": "string"
           }
         },
@@ -21201,7 +21298,7 @@
         ],
         "properties": {
           "field": {
-            "description": "The field of the payload this source belongs to, spelled as the payload spells it: `summaries.<language>` for the text in one content language, `effectiveFrom` for the date the change binds from, and `terms` for the scope facets.",
+            "description": "The field of the payload this source belongs to, spelled as the payload spells it: `summaries.<language>` for the text in one content language, `effectiveFrom` for the date the change binds from, `terms` for the scope facets, `titles.<language>` for a title, `refLabel` for a citation and `provisions` for the provisions an obligation cites.",
             "title": "Field",
             "type": "string"
           },

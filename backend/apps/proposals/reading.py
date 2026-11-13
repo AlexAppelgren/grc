@@ -25,13 +25,22 @@ from django.utils import timezone
 
 from apps.library.logic import in_force, sentence_diff
 from apps.library.models import ObligationVersion
-from apps.library.reading import localized, obligation_headings, obligation_scope_refs, shared_instrument_short_name, translatable_records
+from apps.library.reading import (
+    cited_provision_keys,
+    localized,
+    obligation_headings,
+    obligation_scope_refs,
+    provision_labels,
+    shared_instrument_short_name,
+    translatable_records,
+)
 from apps.library.schemas import DiffSegment, LibraryRef, LocalizedText
 from apps.proposals import logic
 from apps.proposals.logic import Reviewer
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalAppliedVersion,
+    ProposalCitedProvision,
     ProposalDetail,
     ProposalInstrumentSummaryPayload,
     ProposalObligationPayload,
@@ -48,8 +57,9 @@ from apps.taxonomy.reading import Labels
 from apps.shared.vocabulary import label_of
 from apps.taxonomy.registry import REGISTRY
 
-# The audit action the approval of an obligation version writes, whose `before.terms` is
-# the scope that approval found (apps/proposals/apply.py `_obligation_version`).
+# The audit action the approval of an obligation version writes, whose `before` holds the
+# scope, titles, citation and cited provisions that approval found (apps/proposals/apply.py
+# `_obligation_version`).
 VERSION_APPLIED = "obligation.version_applied"
 # The new records that sit under a shared instrument, which the detail names by its short name.
 NAMES_ITS_INSTRUMENT = (ProposalObligationPayload, ProposalInstrumentSummaryPayload, ProposalProvisionPayload)
@@ -146,19 +156,32 @@ def _replaced(target_id: uuid.UUID, applied: ObligationVersion | None) -> Obliga
     )
 
 
-def _scope_before(proposal: Proposal, target_id: uuid.UUID, applied: ObligationVersion | None) -> list[str]:
-    """The scope the proposal compares with. An approved proposal that replaced the scope
-    reads the scope its approval found, from the audit row that approval wrote (no column
-    on the proposal holds it); one that left the scope alone, and any proposal not approved,
-    reads the scope the record carries now."""
-    if applied is not None:
-        event = AuditEvent.objects.filter(
-            action=VERSION_APPLIED, subject_type=logic.OBLIGATION_TARGET, subject_id=target_id, after__proposal=str(proposal.id)
-        ).first()  # ordering: one approval writes one version_applied row
-        terms = None if event is None else event.before.get("terms")
-        if terms is not None:
-            return list(terms)
-    return obligation_scope_refs(target_id)
+def _found(proposal: Proposal, target_id: uuid.UUID, applied: ObligationVersion | None) -> dict[str, Any]:
+    """What an approved proposal's approval found on the obligation, from the audit row it
+    wrote (no column on the proposal holds it): the scope, titles, citation and cited
+    provisions it replaced, each null where it left that part alone. Empty for a proposal
+    not approved, which is compared with the record as it is now."""
+    if applied is None:
+        return {}
+    event = AuditEvent.objects.filter(
+        action=VERSION_APPLIED, subject_type=logic.OBLIGATION_TARGET, subject_id=target_id, after__proposal=str(proposal.id)
+    ).first()  # ordering: one approval writes one version_applied row
+    return {} if event is None else dict(event.before)
+
+
+def _cited_changes(payload: ProposalObligationVersionPayload, before: list[str]) -> tuple[list[ProposalCitedProvision], list[ProposalCitedProvision]]:
+    """The provisions a version would add to its obligation's citations and those it would
+    drop, each named as the law numbers it; neither when it leaves the citations alone."""
+    if payload.provisions is None:
+        return [], []
+    added = [key for key in payload.provisions if key not in before]
+    removed = [key for key in before if key not in payload.provisions]
+    labels = provision_labels(added + removed)
+
+    def cited(keys: list[str]) -> list[ProposalCitedProvision]:
+        return [ProposalCitedProvision(key=key, reference_label=labels.get(key, "")) for key in keys]
+
+    return cited(added), cited(removed)
 
 
 def _rejection_reason(proposal: Proposal, order: list[str]) -> LibraryRef | None:
@@ -178,7 +201,7 @@ def _rejection_reason(proposal: Proposal, order: list[str]) -> LibraryRef | None
 def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> ProposalDetail:
     """One proposal as a reviewer decides it: the row, the record it changes, the wording it
     replaces against what this would make it say, the source behind every changed field, and
-    the scope before and after."""
+    the scope, title, citation and cited provisions before and after (D-144)."""
     row = queue_rows([proposal], order, reviewer=reviewer)[0]
     if proposal.is_batch:
         # A batch's preview is its rows, read through `GET /proposal-batches/{batchId}`
@@ -202,6 +225,13 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
     replaced = _replaced(proposal.target_id, applied)
     summary = None if replaced is None else localized([text for text in replaced.summaries.all() if text.language_id == language], [language])
     proposed_text = payload.summaries.get(language, "")
+    found = _found(proposal, proposal.target_id, applied)
+    heading = obligation_headings([proposal.target_id], [language]).get(proposal.target_id)
+    titles_found: dict[str, str] | None = found.get("titles")
+    title_before = (titles_found.get(language) or next(iter(titles_found.values()), "")) if titles_found else (heading.title if heading else "")
+    ref_label_found: str | None = found.get("refLabel")
+    cited_found: list[str] | None = found.get("provisions")
+    added, removed = _cited_changes(payload, cited_provision_keys(proposal.target_id) if cited_found is None else cited_found)
     return ProposalDetail(
         **dict(row),
         language=language,
@@ -209,8 +239,14 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
         proposed_text=proposed_text,
         diff=[DiffSegment(op=op, text=text) for op, text in sentence_diff("" if summary is None else summary.text, proposed_text)],
         sources=_sources(proposal),
-        scope_before=_scope_before(proposal, proposal.target_id, applied),
+        scope_before=obligation_scope_refs(proposal.target_id) if found.get("terms") is None else list(found["terms"]),
         scope_after=payload.terms,
+        title_before=title_before,
+        title_after=None if payload.titles is None else payload.titles.get(language, ""),
+        ref_label_before=ref_label_found if ref_label_found is not None else (heading.reference_label if heading else ""),
+        ref_label_after=payload.ref_label,
+        provisions_added=added,
+        provisions_removed=removed,
         rejection_reason=_rejection_reason(proposal, order),
         applied_version=(
             None

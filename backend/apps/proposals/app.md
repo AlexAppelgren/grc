@@ -143,7 +143,15 @@ refuses a standard's provision in the database whatever writes it, so PRO-S10 pr
 provision version case on the check itself: there is no standard's provision to version.
 
 The kinds are chunk 2's vocabulary and term kinds plus `new_obligation_version`: a new
-summary in force from a date, with the scope terms that come with it. `new_instrument` and
+summary in force from a date, with the scope terms that come with it. A version may also
+carry the obligation's title (`titles`, the original among them), its citation (`refLabel`)
+and the provisions it cites (`provisions`, each in force under the obligation's own
+instrument, else 422 `unknown_key` naming it, at most `PROPOSAL_OBLIGATION_MAX_PROVISIONS`);
+each given replaces that part of the obligation, each left out leaves it alone, and the
+approval's audit row holds every replaced part before and after, as it holds the scope
+(D-144, Alex 2026-11-13: "Yes, go ahead and fix it, u dont need my approval to get things
+right"). Each is a sourced fact; the review screen shows the old and the new title and
+citation and the provisions added and dropped beside the summary. `new_instrument` and
 `new_obligation` bring a record the library does not hold yet: they name no target, every
 fact they set carries an https link as its source, and the proposal's `sourceUrl` becomes
 the record's own source. An instrument's regime is a term of the regime dimension, or 422

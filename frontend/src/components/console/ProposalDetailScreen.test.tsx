@@ -74,6 +74,8 @@ function detail(overrides: Partial<ProposalDetail>): ProposalDetail {
     rejectionReason: null,
     appliedVersion: null,
     instrumentShortName: '',
+    titleBefore: '',
+    refLabelBefore: '',
     ...overrides,
   };
 }
@@ -314,6 +316,37 @@ describe('the decision panel', () => {
     const blocks = [...changes.querySelectorAll('[data-language]')];
     expect(blocks.map((block) => block.querySelector('p')?.textContent)).toEqual(['Swedish', 'English (machine translation)']);
     expect(blocks[0]?.querySelector('[lang]')).toHaveAttribute('lang', 'sv');
+  });
+
+  it("shows a correction's old and new title and reference, and the provisions it adds and drops by their reference", async () => {
+    showProposal(
+      detail({
+        payload: { summaries: { en: 'The firm keeps the register.' }, originalLanguage: 'en', titles: { en: 'Keep a register' }, refLabel: '§ 13', provisions: ['dk-bek-2021-2018/013'] },
+        titleBefore: 'Keep a register where the plan requires it',
+        titleAfter: 'Keep a register',
+        refLabelBefore: '§ 12',
+        refLabelAfter: '§ 13',
+        provisionsAdded: [{ key: 'dk-bek-2021-2018/013', referenceLabel: '§ 13' }],
+        provisionsRemoved: [{ key: 'dk-bek-2021-2018/012', referenceLabel: '§ 12' }],
+      }),
+    );
+    const changes = (await screen.findByRole('heading', { name: 'What changes' })).closest('section') as HTMLElement;
+    const fact = (field: string) => changes.querySelector(`[data-proposal-fact="${field}"]`) as HTMLElement;
+    expect(fact('titles').querySelector('[data-was]')).toHaveTextContent('Keep a register where the plan requires it');
+    expect(fact('titles').querySelector('[data-becomes]')).toHaveTextContent('Keep a register');
+    expect(fact('refLabel').querySelector('[data-was]')).toHaveTextContent('§ 12');
+    expect(fact('refLabel').querySelector('[data-becomes]')).toHaveTextContent('§ 13');
+    expect(within(fact('provisions')).getByText('Starts citing')).toBeInTheDocument();
+    expect(fact('provisions').querySelector('[data-provisions="added"]')).toHaveTextContent('§ 13dk-bek-2021-2018/013');
+    expect(fact('provisions').querySelector('[data-provisions="removed"]')).toHaveTextContent('§ 12dk-bek-2021-2018/012');
+  });
+
+  it('says a summary version leaves the title, the reference and the cited provisions alone', async () => {
+    showProposal(detail({ titleBefore: 'Pay for research', titleAfter: null, refLabelBefore: '9 kap. 6 §', refLabelAfter: null, provisionsAdded: [], provisionsRemoved: [] }));
+    const changes = (await screen.findByRole('heading', { name: 'What changes' })).closest('section') as HTMLElement;
+    expect(changes.querySelector('[data-proposal-fact="titles"]')).toHaveTextContent('This proposal does not change the title.');
+    expect(changes.querySelector('[data-proposal-fact="refLabel"]')).toHaveTextContent('This proposal does not change the reference.');
+    expect(changes.querySelector('[data-proposal-fact="provisions"]')).toHaveTextContent('This proposal does not change which provisions the obligation cites.');
   });
 
   describe('a proposed provision', () => {

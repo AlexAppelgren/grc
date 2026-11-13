@@ -291,7 +291,7 @@ def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uu
                 )
             payload.extra = lists.extra_payload(entry, payload.extra)
     elif isinstance(payload, ProposalObligationVersionPayload):
-        _validate_obligation_payload(payload)
+        _validate_obligation_version(payload)
     elif isinstance(payload, ProposalInstrumentPayload):
         validated_instrument(payload)
     elif isinstance(payload, ProposalObligationPayload):
@@ -396,6 +396,46 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
     terms = terms_of(payload.terms)
     refuse_mirrored(term.dimension_id for term in terms)
     return terms
+
+
+def _validate_obligation_version(payload: ProposalObligationVersionPayload) -> None:
+    """A version's summary and scope as `_validate_obligation_payload` checks them, and the
+    parts of the obligation it may replace (D-144): a title in real content languages with
+    the original among them, a citation that is not blank, and the cited provisions each
+    once. Which instrument those provisions must sit under needs the target, so
+    `_validate_against_target` checks that."""
+    from apps.taxonomy import tenant_lists_logic as lists
+
+    _validate_obligation_payload(payload)
+    if payload.titles is not None:
+        payload.titles = lists.validated_labels(payload.titles, max_chars=None)
+        _written_in(payload.original_language, payload.titles, "title")
+    if payload.ref_label is not None:
+        payload.ref_label = payload.ref_label.strip()
+        if not payload.ref_label:
+            raise ValidationError("refLabel is the citation as the source numbers it, never blank.", code="validation_error")
+    if payload.provisions is not None:
+        payload.provisions = list(dict.fromkeys(payload.provisions))
+
+
+def validated_cited_provisions(payload: ProposalObligationVersionPayload, obligation_id: uuid.UUID) -> list[Any]:
+    """The provisions a version names as the ones its obligation cites (INV-02, D-144), each
+    in force under the obligation's own instrument, or 422 `unknown_key` naming the others:
+    a citation never reaches across instruments. Returns them in the order given, for the
+    apply, which runs this again; none when the version leaves the citations alone."""
+    if not payload.provisions:
+        return []
+    instrument = active_obligation(obligation_id).instrument
+    # Read through the instrument's own relation, so this module names no library model.
+    found = {row.stable_key: row for row in instrument.provisions.filter(stable_key__in=payload.provisions, status=RecordStatus.ACTIVE.value)}
+    unknown = [key for key in payload.provisions if key not in found]
+    if unknown:
+        raise ValidationError(
+            f"Not a provision of {instrument.stable_key!r} in force: {', '.join(unknown)}. An obligation cites "
+            "provisions of its own instrument.",
+            code="unknown_key",
+        )
+    return [found[key] for key in payload.provisions]
 
 
 def _capped(texts: dict[str, str], what: str) -> dict[str, str]:
@@ -695,9 +735,12 @@ def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUI
 
 def _validate_against_target(payload: pydantic.BaseModel, target_id: uuid.UUID | None) -> None:
     """What a payload owes the record it names, checked once that record is known to be
-    there: a provision's new text is its provision's instrument's law (`_law_of`)."""
+    there: a provision's new text is its provision's instrument's law (`_law_of`), and the
+    provisions an obligation version cites are its obligation's instrument's."""
     if isinstance(payload, ProposalProvisionVersionPayload) and target_id is not None:
         validated_provision_version(payload, target_id)
+    if isinstance(payload, ProposalObligationVersionPayload) and target_id is not None:
+        validated_cited_provisions(payload, target_id)
 
 
 def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
@@ -726,7 +769,8 @@ def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.U
 
 def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
     """The fields of `payload` that need a source, named as the console names them: the
-    summary per language, the effective date and the scope terms. A vocabulary payload is a
+    summary per language, the effective date and the scope terms, and an obligation
+    version's title per language, citation and cited provisions. A vocabulary payload is a
     person's wording and names none. A new record's are every fact it sets
     (`UNSOURCED_FIELDS` aside); a recurring duty's every field (REG-07)."""
     if isinstance(payload, NEW_RECORD_PAYLOADS):
@@ -749,8 +793,11 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
         return []
     if payload.effective_from is not None:
         fields.append("effectiveFrom")
-    if isinstance(payload, ProposalObligationVersionPayload) and payload.terms is not None:
-        fields.append("terms")
+    if isinstance(payload, ProposalObligationVersionPayload):
+        if payload.terms is not None:
+            fields.append("terms")
+        fields += [f"titles.{language}" for language in sorted(payload.titles or {})]
+        fields += [name for name, value in (("refLabel", payload.ref_label), ("provisions", payload.provisions)) if value is not None]
     if isinstance(payload, ProposalProvisionVersionPayload) and payload.obligations is not None:
         fields.append("obligations")
     return fields

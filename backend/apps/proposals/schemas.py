@@ -109,16 +109,35 @@ class ProposalTermUpdatePayload(WriteBody):
     sort_order: int | None = None
 
 
+# A new record's stable key: lowercase words joined by hyphens, as the seeded library writes
+# them (`fffs-2017-2`, `obl-research-payments`). It is the record's name for ever.
+STABLE_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+# A provision's stable key: a record's key, or one followed by a slash and the provision's
+# place in its instrument, as the seeded library writes them (`fffs-2017-2/9-6`).
+PROVISION_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)?$"
+# A provision an obligation version names as cited, by the stable key it carries.
+ProvisionKey = Annotated[str, Field(max_length=200, pattern=PROVISION_KEY_PATTERN)]
+
+
 class ProposalObligationVersionPayload(WriteBody):
-    """`new_obligation_version` (PRO-01, INV-04): the summary that comes into force on a
-    date, and the scope terms that come with it.
+    """`new_obligation_version` (PRO-01, INV-04, D-144): the summary that comes into force on
+    a date, and the scope terms, title, citation and cited provisions that come with it.
 
     `summaries` is the text per content language, never a `summaryEn` column (I18N-01);
     `originalLanguage` is the one that was written rather than translated and must be one
     of them, and `isMachine` says the translations are machine-made until a person
     confirms them (AUD-02). The date is a plain legal date with a precision (INV-S10).
-    `terms` are the obligation's scope facets as `dimension:key`; leaving it out leaves
-    the scope alone.
+
+    Four parts belong to the obligation rather than to the version, so a payload carrying
+    one replaces it, and the audit row of the approval keeps it before and after; leaving
+    one out leaves it alone. `terms` are the scope facets as `dimension:key`, an empty list
+    clearing them. `titles` is the title per content language, `originalLanguage` among
+    them: the title becomes exactly these, every other language dropped. `refLabel` is the
+    citation as the source numbers it, 1 to 200 characters. `provisions` are the stable
+    keys of the provisions the obligation cites, each a provision in force under the
+    obligation's own instrument (else 422 `unknown_key` naming it), at most
+    `PROPOSAL_OBLIGATION_MAX_PROVISIONS` as sent, a repeat kept once; an empty list removes
+    every citation.
 
     Every field here is a field the library will carry, so each one needs its source in
     `fieldSources` (`sourced_fields()` in apps/proposals/logic.py names them).
@@ -130,11 +149,9 @@ class ProposalObligationVersionPayload(WriteBody):
     effective_from: date | None = None
     effective_from_precision: str = "day"
     terms: TermRefs | None = Field(default=None, max_length=settings.PROPOSAL_SCOPE_MAX_TERMS)
-
-
-# A new record's stable key: lowercase words joined by hyphens, as the seeded library writes
-# them (`fffs-2017-2`, `obl-research-payments`). It is the record's name for ever.
-STABLE_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    titles: dict[str, str] | None = None
+    ref_label: str | None = Field(default=None, min_length=1, max_length=200)
+    provisions: list[ProvisionKey] | None = Field(default=None, max_length=settings.PROPOSAL_OBLIGATION_MAX_PROVISIONS)
 
 
 class ProposalInstrumentPayload(WriteBody):
@@ -239,9 +256,6 @@ class ProposalObligationPayload(WriteBody):
     terms: TermRefs | None = Field(default=None, max_length=settings.PROPOSAL_SCOPE_MAX_TERMS)
 
 
-# A provision's stable key: a record's key, or one followed by a slash and the provision's
-# place in its instrument, as the seeded library writes them (`fffs-2017-2/9-6`).
-PROVISION_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)?$"
 # An obligation a provision names, by the stable key it carries (`Obligation.stable_key`).
 ObligationKey = Annotated[str, Field(max_length=120, pattern=STABLE_KEY_PATTERN)]
 # A content language, by its key (`Language.key`, a slug of at most 8 characters).
@@ -390,7 +404,8 @@ class ProposalPayload(CamelSchema):
 class ProposalFieldSources(RootModel[dict[str, str]]):
     """`field_sources`: per changed field, the source its value came from (PRO-01). The
     vocabulary kinds carry none; an obligation proposal carries one per field it changes
-    (`summaries.<language>`, `effectiveFrom`, `terms`) and none for a field it does not,
+    (`summaries.<language>`, `effectiveFrom`, `terms`, `titles.<language>`, `refLabel`,
+    `provisions`) and none for a field it does not,
     or it is refused. A source is an https link or the stable key of a provision the
     library holds, at most `PROPOSAL_SOURCE_MAX_CHARS` long."""
 
@@ -697,7 +712,8 @@ class ProposalSource(CamelSchema):
         description=(
             "The field of the payload this source belongs to, spelled as the payload spells it: "
             "`summaries.<language>` for the text in one content language, `effectiveFrom` for the "
-            "date the change binds from, and `terms` for the scope facets."
+            "date the change binds from, `terms` for the scope facets, `titles.<language>` for a title, "
+            "`refLabel` for a citation and `provisions` for the provisions an obligation cites."
         )
     )
     label: str = Field(
@@ -733,6 +749,30 @@ class ProposalAppliedVersion(CamelSchema):
         default=None,
         description="The legal date this version starts binding the bank, as a plain date and never a timestamp. Null when it has been in force since the record entered the library.",
         examples=["2026-10-01"],
+    )
+
+
+class ProposalCitedProvision(CamelSchema):
+    """A provision of the law an obligation version would start or stop citing (INV-02,
+    D-144), named as the law numbers it, so a reviewer sees which sections a correction
+    adds to the duty's citation and which it drops."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "dk-bek-2021-2018/012", "referenceLabel": "§ 12"}]})
+
+    key: str = Field(
+        description=(
+            "The provision's stable key, kept for ever: its instrument's key, a slash and its place in the "
+            "instrument, for example `dk-bek-2021-2018/012`. Store and compare this."
+        ),
+        examples=["dk-bek-2021-2018/012"],
+    )
+    reference_label: str = Field(
+        description=(
+            "How the law numbers the provision, for example \"§ 12\" or \"Art. 16\", as the library holds it. Empty "
+            "when the library holds no provision under that key, which approving the proposal then refuses with "
+            "422 `unknown_key`."
+        ),
+        examples=["§ 12"],
     )
 
 
@@ -846,6 +886,60 @@ class ProposalDetail(ProposalQueueRow):
             "The scope the proposal would leave, in the same spelling, which replaces the list "
             "above whole rather than adding to it. Null means the proposal leaves the scope alone, "
             "which is not the same as an empty list: an empty list would clear it."
+        ),
+    )
+    title_before: str = Field(
+        default="",
+        description=(
+            "For `new_obligation_version`, the obligation's title before this proposal, in the language above "
+            "(the original when it has none in that language), so a reviewer reads the old title beside the new. "
+            "For a proposal that was not approved it is the title the library holds now; for an approved one "
+            "that replaced the title it is the title its approval found, as the audit row of the approval "
+            "recorded it. Empty on every other kind."
+        ),
+        examples=["Keep a register of financial contracts where the resolution plan requires it"],
+    )
+    title_after: str | None = Field(
+        default=None,
+        description=(
+            "The title the proposal would give the obligation, in the same language, bleqq's own wording. Null "
+            "means the proposal leaves the title alone, and is always null on every kind but "
+            "`new_obligation_version`."
+        ),
+        examples=["Keep a register of financial contracts"],
+    )
+    ref_label_before: str = Field(
+        default="",
+        description=(
+            "For `new_obligation_version`, the obligation's citation before this proposal, as the source numbers "
+            "it, for example \"§ 12\": the citation the library holds now, or for an approved proposal that "
+            "replaced it, the one its approval found. Empty on every other kind."
+        ),
+        examples=["§ 12"],
+    )
+    ref_label_after: str | None = Field(
+        default=None,
+        description=(
+            "The citation the proposal would give the obligation, at most 200 characters. Null means the "
+            "proposal leaves the citation alone, and is always null on every kind but `new_obligation_version`."
+        ),
+        examples=["§ 12-13"],
+    )
+    provisions_added: list[ProposalCitedProvision] = Field(
+        default_factory=list,
+        description=(
+            "The provisions the obligation would start citing, in the order the proposal names them, each by "
+            "its stable key and the way the law numbers it. Empty when the proposal leaves the citations alone, "
+            "when it adds none, and on every kind but `new_obligation_version`."
+        ),
+    )
+    provisions_removed: list[ProposalCitedProvision] = Field(
+        default_factory=list,
+        description=(
+            "The provisions the obligation would stop citing: the provision stays in the library, only the "
+            "obligation's citation of it goes. Compared, like `titleBefore`, with what the library holds now, "
+            "or for an approved proposal with what its approval found. Empty when the proposal leaves the "
+            "citations alone, when it drops none, and on every kind but `new_obligation_version`."
         ),
     )
     rejection_reason: VocabRef | None = Field(
@@ -1419,8 +1513,14 @@ class ProposalCreateBody(WriteBody):
             "field the kind does not name, or a value it does not accept, answers 422 "
             "`validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text "
             "per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, "
-            "`effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as "
-            f"`dimension:key`, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}). `new_instrument`: `key` "
+            "`effectiveFromPrecision` (`day`, `month`, `quarter` or `year`), `terms` (scope as "
+            f"`dimension:key`, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}), `titles` (the obligation's title "
+            "per content language, `originalLanguage` among them), `refLabel` (its citation, 1 to 200 "
+            "characters) and `provisions` (the stable keys of the provisions it cites, at most "
+            f"{settings.PROPOSAL_OBLIGATION_MAX_PROVISIONS} as sent, a key sent twice kept once, each a provision "
+            "in force under the obligation's own instrument, else 422 `unknown_key` naming it). Each of `terms`, "
+            "`titles`, `refLabel` and `provisions` replaces that part of the obligation whole when given and "
+            "leaves it alone when left out; an empty `terms` or `provisions` clears it. `new_instrument`: `key` "
             "(a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), "
             "`titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, "
             "`eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, "
@@ -1525,7 +1625,8 @@ class ProposalCreateBody(WriteBody):
         default_factory=dict,
         description=(
             "Per field the payload sets, where its value came from, keyed as the queue names the field "
-            "(`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`, `obligations`). Each source is at most "
+            "(`summaries.sv`, `texts.sv`, `titles.en`, `effectiveFrom`, `terms`, `refLabel`, `provisions`, `regime`, "
+            "`obligations`). Each source is at most "
             f"{settings.PROPOSAL_SOURCE_MAX_CHARS} characters and is an https link, or for an obligation "
             "or provision version also the stable key of a provision the library holds. A new "
             "instrument, obligation or provision takes https links only, since it has no provision of "
@@ -1658,9 +1759,11 @@ class ProposalApproveBody(WriteBody):
             "fields a reviewer may correct are the ones that kind's payload names: `summaries` (the "
             "whole set of texts per language, which replaces the proposed set), `originalLanguage`, "
             "`isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` "
-            "and `year`, which says how exactly the date is known) and `terms` (the scope facets as "
+            "and `year`, which says how exactly the date is known), `terms` (the scope facets as "
             f"`dimension:key`, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}, which replace the "
-            "obligation's scope). The merged payload must still carry a source for every field it "
+            "obligation's scope), `titles`, `refLabel` and `provisions` (which replace the obligation's title, "
+            f"citation and cited provisions, at most {settings.PROPOSAL_OBLIGATION_MAX_PROVISIONS} provisions of "
+            "its own instrument). The merged payload must still carry a source for every field it "
             "changes, so a correction that introduces a field the proposal never sourced answers 422 "
             "`source_missing` and applies nothing, and a value changed from what was proposed needs its "
             "fresh source in `fieldSources`. Each summary is at most "

@@ -22,6 +22,7 @@ import {
   obligationPayloadOf,
   presentProposal,
   proposerLine,
+  provisionsChange,
   refusalReason,
   scopeTermPills,
   selectionBlock,
@@ -418,6 +419,19 @@ describe('field sources', () => {
       'inForceTo',
       'terms',
     ]);
+  });
+});
+
+describe("a version's cited provisions", () => {
+  it('names the source of the provisions a version cites in words', () => {
+    expect(fieldSourceLabel('provisions', langName, t)).toBe('Provisions it cites');
+  });
+
+  it('tells a version that leaves them alone from one that keeps them and one that changes them', () => {
+    const added = [{ key: 'dk-bek-2021-2018/013', referenceLabel: '§ 13' }];
+    expect(provisionsChange({ payload: { summaries: {} }, provisionsAdded: [], provisionsRemoved: [] })).toBe('untouched');
+    expect(provisionsChange({ payload: { provisions: ['dk-bek-2021-2018/012'] }, provisionsAdded: [], provisionsRemoved: [] })).toBe('same');
+    expect(provisionsChange({ payload: { provisions: ['dk-bek-2021-2018/013'] }, provisionsAdded: added, provisionsRemoved: [] })).toBe('changed');
   });
 });
 

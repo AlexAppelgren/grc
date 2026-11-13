@@ -83,7 +83,7 @@ def check(
 ) -> None:
     """Refuse what `kind` may not say about `instrument` (the four codes above, all 422).
     `term_ids` is the scope as the proposal sets it, or None when it leaves it alone;
-    `ref_label` is a new obligation's. Under a standard both labels are its official
+    `ref_label` is a new obligation's, or the citation a version gives it. Under a standard both labels are its official
     reference, and the source label may be empty. `opt_in` is `opt_in_terms()` read once
     for a batch's many checks."""
     from apps.proposals.logic import is_link
@@ -132,7 +132,7 @@ def check_payload(
     its scope, an empty one included."""
     ref_label = None
     if isinstance(payload, ProposalObligationVersionPayload) and target_id is not None:
-        instrument, terms = active_obligation(target_id).instrument, payload.terms
+        instrument, terms, ref_label = active_obligation(target_id).instrument, payload.terms, payload.ref_label
     elif isinstance(payload, ProposalObligationPayload):
         instrument, terms, ref_label = active_instrument(payload.instrument), payload.terms or [], payload.ref_label
     elif isinstance(payload, ProposalProvisionPayload):

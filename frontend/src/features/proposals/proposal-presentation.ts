@@ -11,6 +11,7 @@ import {
   type InstrumentPayload,
   type NewObligationPayload,
   type ObligationVersionPayload,
+  type ProposalDetail,
   type ProposalKind,
   type ProposalQueueRow,
   type ProposalRow,
@@ -337,6 +338,7 @@ const FIELD_LABEL = {
   shortName: 'console.queue.field.shortName',
   officialRef: 'console.queue.field.officialRef',
   refLabel: 'console.queue.field.refLabel',
+  provisions: 'console.queue.field.provisions',
   heading: 'console.queue.field.heading',
   provisionKind: 'console.queue.field.provisionKind',
   eliUri: 'console.queue.field.eliUri',
@@ -397,6 +399,16 @@ export function fieldSourceGroups(fieldSources: Record<string, string>): { url: 
     groups.set(url, [...(groups.get(url) ?? []), field]);
   }
   return [...groups].map(([url, fields]) => ({ url, fields }));
+}
+
+/**
+ * What an obligation version does to the provisions its obligation cites (D-144):
+ * `untouched` when its payload names none, `same` when it names exactly those cited now,
+ * `changed` when the detail read finds one added or removed.
+ */
+export function provisionsChange(detail: Pick<ProposalDetail, 'payload' | 'provisionsAdded' | 'provisionsRemoved'>): 'untouched' | 'same' | 'changed' {
+  if (!('provisions' in (detail.payload ?? {}))) return 'untouched';
+  return (detail.provisionsAdded ?? []).length + (detail.provisionsRemoved ?? []).length > 0 ? 'changed' : 'same';
 }
 
 /** The proposed scope as `brand` pills, in the scope block's own slot (pills-and-labels.md). */

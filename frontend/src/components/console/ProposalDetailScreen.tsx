@@ -34,6 +34,7 @@ import {
   presentProposal,
   proposerLine,
   provisionPayloadOf,
+  provisionsChange,
   scopeTermPills,
   vocabularyPayloadOf,
   type LanguageMarks,
@@ -101,13 +102,47 @@ function SourceSection({ proposal }: { proposal: ProposalRow }) {
   );
 }
 
-function ObligationChanges({ proposal, footer }: { proposal: ProposalRow; footer: ReactNode }) {
+/** An old value and the one that replaces it, each on its line (D-144). */
+function WasBecomes({ was, becomes }: { was: ReactNode; becomes: ReactNode }) {
+  const t = useT();
+  return (
+    <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
+      <dt className="text-meta text-muted">{t('console.queue.detail.was')}</dt>
+      <dd className="m-0 text-muted line-through" data-was="">
+        {was}
+      </dd>
+      <dt className="text-meta text-muted">{t('console.queue.detail.becomes')}</dt>
+      <dd className="m-0" data-becomes="">
+        {becomes}
+      </dd>
+    </dl>
+  );
+}
+
+/** Provisions named as the law numbers them, with their keys. */
+function CitedList({ provisions, field }: { provisions: ProposalDetail['provisionsAdded']; field: string }) {
+  return (
+    <ul className="m-0 grid list-none gap-1 p-0" data-provisions={field}>
+      {(provisions ?? []).map((cited) => (
+        <li key={cited.key}>
+          <span className="mr-2">{cited.referenceLabel}</span>
+          <span className="font-mono text-meta text-muted">{cited.key}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ObligationChanges({ proposal, footer }: { proposal: ProposalDetail; footer: ReactNode }) {
   const t = useT();
   const ctx = useFormatContext();
   const payload = obligationPayloadOf(proposal);
   const terms = payload?.terms ?? null;
   const { labelOf } = useScopeTermLabels(terms ?? []);
   if (payload === null) return <Panel>{footer}</Panel>;
+  const added = proposal.provisionsAdded ?? [];
+  const removed = proposal.provisionsRemoved ?? [];
+  const cites = provisionsChange(proposal);
   return (
     <Panel title={t('console.queue.detail.whatChanges')} data-proposal-changes="">
       <LanguageTextBlocks
@@ -118,6 +153,30 @@ function ObligationChanges({ proposal, footer }: { proposal: ProposalRow; footer
         field="summaries"
       />
       <dl className="grid grid-cols-1 gap-x-3.5 gap-y-2 md:grid-cols-[140px_1fr]">
+        <dt className="text-meta text-muted">{t('console.queue.detail.titles')}</dt>
+        <dd className="m-0" data-proposal-fact="titles">
+          {proposal.titleAfter == null ? t('console.queue.detail.titleUnchanged') : <WasBecomes was={proposal.titleBefore} becomes={proposal.titleAfter} />}
+        </dd>
+        <dt className="text-meta text-muted">{t('console.queue.field.refLabel')}</dt>
+        <dd className="m-0" data-proposal-fact="refLabel">
+          {proposal.refLabelAfter == null ? t('console.queue.detail.citationUnchanged') : <WasBecomes was={proposal.refLabelBefore} becomes={proposal.refLabelAfter} />}
+        </dd>
+        <dt className="text-meta text-muted">{t('console.queue.field.provisions')}</dt>
+        <dd className="m-0 grid gap-2" data-proposal-fact="provisions">
+          {cites === 'untouched' ? t('console.queue.detail.provisionsUnchanged') : cites === 'same' ? t('console.queue.detail.provisionsSame') : null}
+          {added.length > 0 ? (
+            <div>
+              <p className="microlabel mb-1 text-muted">{t('console.queue.detail.provisionsAdded')}</p>
+              <CitedList provisions={added} field="added" />
+            </div>
+          ) : null}
+          {removed.length > 0 ? (
+            <div>
+              <p className="microlabel mb-1 text-muted">{t('console.queue.detail.provisionsRemoved')}</p>
+              <CitedList provisions={removed} field="removed" />
+            </div>
+          ) : null}
+        </dd>
         <dt className="text-meta text-muted">{t('console.queue.detail.effectiveDate')}</dt>
         <dd className="m-0">{payload.effectiveFrom ? formatDate(payload.effectiveFrom, ctx) : t('common.never')}</dd>
         <dt className="text-meta text-muted">{t('console.queue.detail.scope')}</dt>
