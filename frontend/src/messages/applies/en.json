@@ -57,6 +57,7 @@
   "applies.run.refused": "{count} could not be set",
   "applies.run.stopped.permissionRevoked": "It stopped because you no longer hold the right to decide what applies.",
   "applies.run.stopped.membershipEnded": "It stopped because you are no longer a member of the bank.",
+  "applies.run.stopped.companyGone": "It stopped because the company is no longer an active legal entity of the bank.",
   "applies.run.stopped.reasonExpired": "It stopped because the reason was no longer kept. Decide the rest again.",
   "applies.run.stopped.failed": "It stopped on an error. Decide the rest again.",
   "applies.run.already": "Your earlier decision is still running. When it has finished, decide the rest."

@@ -627,6 +627,7 @@ describe('the run', () => {
     for (const [stopped, sentence] of [
       ['permission_revoked', 'It stopped because you no longer hold the right to decide what applies.'],
       ['membership_ended', 'It stopped because you are no longer a member of the bank.'],
+      ['company_gone', 'It stopped because the company is no longer an active legal entity of the bank.'],
       ['failed', 'It stopped on an error. Decide the rest again.'],
     ] as const) {
       resetApiForTests();

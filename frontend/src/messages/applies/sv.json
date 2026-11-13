@@ -57,6 +57,7 @@
   "applies.run.refused": "{count} kunde inte sättas",
   "applies.run.stopped.permissionRevoked": "Det avbröts eftersom du inte längre har behörighet att bedöma vad som gäller.",
   "applies.run.stopped.membershipEnded": "Det avbröts eftersom du inte längre är medlem i banken.",
+  "applies.run.stopped.companyGone": "Det avbröts eftersom bolaget inte längre är en aktiv juridisk person i banken.",
   "applies.run.stopped.reasonExpired": "Det avbröts eftersom motiveringen inte längre fanns kvar. Bedöm resten igen.",
   "applies.run.stopped.failed": "Det avbröts av ett fel. Bedöm resten igen.",
   "applies.run.already": "Ditt tidigare beslut pågår fortfarande. Bedöm resten när det är klart."

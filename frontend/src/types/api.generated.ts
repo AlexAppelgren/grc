@@ -25408,9 +25408,9 @@ export interface components {
             status: "idle" | "running" | "finished";
             /**
              * Stopped
-             * @description Why the run ended before trying every target, null when it did not. `permission_revoked`: the person who started it no longer holds `applicability.approve`. `membership_ended`: they are no longer an active member of the bank. `reason_expired`: the reason was no longer kept when the worker ran, so nothing more was set. `failed`: the worker met an error. What was set before the stop stays set; start again to decide the rest.
+             * @description Why the run ended before trying every target, null when it did not. `permission_revoked`: the person who started it no longer holds `applicability.approve`. `membership_ended`: they are no longer an active member of the bank. `company_gone`: the legal entity is no longer an active legal entity of the bank. `reason_expired`: the reason was no longer kept when the worker ran, so nothing more was set. `failed`: the worker met an error. What was set before the stop stays set; start again to decide the rest.
              */
-            stopped: ("permission_revoked" | "membership_ended" | "reason_expired" | "failed") | null;
+            stopped: ("permission_revoked" | "membership_ended" | "company_gone" | "reason_expired" | "failed") | null;
             /**
              * Total
              * @description How many obligations the run set out to decide: those offered for the legal entity that nobody had answered when the call was made, read once at that moment. Always `set`, `skipped` and `refused` together once the run has tried them all.

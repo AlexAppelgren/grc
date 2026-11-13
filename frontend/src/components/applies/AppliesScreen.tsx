@@ -611,6 +611,7 @@ function writeDismissed(key: string): void {
 const STOPPED: Readonly<Record<NonNullable<DecideAll['stopped']>, MessageKey>> = {
   permission_revoked: 'applies.run.stopped.permissionRevoked',
   membership_ended: 'applies.run.stopped.membershipEnded',
+  company_gone: 'applies.run.stopped.companyGone',
   reason_expired: 'applies.run.stopped.reasonExpired',
   failed: 'applies.run.stopped.failed',
 };
