@@ -21187,7 +21187,7 @@ export interface components {
             refLabel: string;
             /**
              * Texts
-             * @description The law's own words: the verbatim text of this provision's version in force on the read's date (`asOf`, or today in the bank's time zone), on the rule the provision tree uses, in every language the library holds it in. The original, the language the authority published the rule in and whose wording governs, comes first, then every translation by language key, each one a machine made and no person has confirmed marked `isMachine`. Nothing is picked for the reader: a screen chooses the language, as it does among `translations`. An empty list when no version of the provision is in force on that date, such as a date before its first version, or when the library holds no text for it yet. It is never bleqq's summary of the duty, which is `summary`.
+             * @description The law's own words: the verbatim text of this provision's version in force on the read's date (`asOf`, or today in the bank's time zone), on the rule the provision tree uses, in every language the library holds it in. The original, the language the authority published the rule in and whose wording governs, comes first, then every other language by language key, each one a machine made and no person has confirmed marked `isMachine`. A text with neither flag is a translation a person confirmed, or one the authority itself published in a second language (Finland enacts its law in Finnish and Swedish): official, but not the original. Nothing is picked for the reader: a screen chooses the language, as it does among `translations`. An empty list when no version of the provision is in force on that date, such as a date before its first version, or when the library holds no text for it yet. It is never bleqq's summary of the duty, which is `summary`.
              */
             texts: components["schemas"]["LocalizedText"][];
         };
@@ -24524,15 +24524,21 @@ export interface components {
          * @description One verbatim text version of a provision (INV-02, INV-04): when it took effect,
          *     `effectiveTo` derived as the day before the next version did (nothing is stored,
          *     because a version row is written once and never touched afterwards), any
-         *     transitional note, and the text itself in the reader's best language.
+         *     transitional note, and the text itself: every language the version holds, the
+         *     original first (D-142), and the one of them picked for this reader.
          */
         ProvisionVersionRow: {
             /** @description The legal date this version started binding the bank, at the precision the source gave it. Null means it has been in force since the provision entered the library. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved. */
             effectiveFrom: components["schemas"]["PartialDate"] | null;
             /** @description The last day this version was in force, worked out as the day before the next version took effect. Null on the version still in force, on one whose successor carries no date, and on one corrected the same day it took effect. */
             effectiveTo: components["schemas"]["PartialDate"] | null;
-            /** @description This version's verbatim text in the best language this reader can be served. Null only when the version carries no text in any language at all. */
+            /** @description The one entry of `texts` the server picked for this reader: the first language of the reader's language order that the version holds, else the original, else any. It may be a machine translation, so a screen that shows the law's own words should start from the original in `texts` and offer this one beside it. Null only when the version carries no text in any language at all, which is exactly when `texts` is empty. */
             text: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Texts
+             * @description The law's own words: this version's verbatim text in every language the library holds it in, whoever the reader is. The original comes first, marked `isOriginal`: the language the authority published the rule in, whose wording governs wherever two languages read differently. Every other language follows by language key. One a machine made and no person has confirmed is marked `isMachine`, a translation for reading and never the law. One with neither flag is either a translation a person confirmed or a text the authority itself published in a second language, as Finland enacts its law in Finnish and Swedish: official, but not the original. Nothing is picked here; `text` is the pick. An empty list when the version holds no text in any language yet. The same list, in the same order and with the same flags, as `texts` on a cited provision of `GET /obligations/{obligationId}` for the version in force.
+             */
+            texts: components["schemas"]["LocalizedText"][];
             /**
              * Transitionalnote
              * @description How the transition to this version is handled, in the library's own words ("the annual assessment is first due for research received after 1 October 2026"). An empty string when the source gave none, never null.
@@ -40402,6 +40408,20 @@ export interface operations {
                      *                   "language": "en",
                      *                   "text": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations."
                      *                 },
+                     *                 "texts": [
+                     *                   {
+                     *                     "isMachine": false,
+                     *                     "isOriginal": true,
+                     *                     "language": "sv",
+                     *                     "text": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto eller tillsammans med utförandet på de villkor som anges i dessa föreskrifter."
+                     *                   },
+                     *                   {
+                     *                     "isMachine": true,
+                     *                     "isOriginal": false,
+                     *                     "language": "en",
+                     *                     "text": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations."
+                     *                   }
+                     *                 ],
                      *                 "transitionalNote": "",
                      *                 "versionNumber": 1
                      *               },
@@ -40417,6 +40437,20 @@ export interface operations {
                      *                   "language": "en",
                      *                   "text": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations. The institution shall assess annually the quality and value of the research it receives."
                      *                 },
+                     *                 "texts": [
+                     *                   {
+                     *                     "isMachine": false,
+                     *                     "isOriginal": true,
+                     *                     "language": "sv",
+                     *                     "text": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto eller tillsammans med utförandet på de villkor som anges i dessa föreskrifter. Institutet ska årligen bedöma kvaliteten och värdet på den analys det tar emot."
+                     *                   },
+                     *                   {
+                     *                     "isMachine": true,
+                     *                     "isOriginal": false,
+                     *                     "language": "en",
+                     *                     "text": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations. The institution shall assess annually the quality and value of the research it receives."
+                     *                   }
+                     *                 ],
                      *                 "transitionalNote": "The annual assessment is first due for research received after 1 October 2026.",
                      *                 "versionNumber": 2
                      *               }

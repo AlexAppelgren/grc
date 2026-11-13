@@ -29,6 +29,10 @@ const section: ProvisionNode = {
       effectiveTo: { date: '2026-09-30', precision: 'day' },
       transitionalNote: '',
       text: { text: 'Research payment under the earlier rules.', language: 'en', isOriginal: false, isMachine: true },
+      texts: [
+        { text: 'Betalning för analys enligt de äldre reglerna.', language: 'sv', isOriginal: true, isMachine: false },
+        { text: 'Research payment under the earlier rules.', language: 'en', isOriginal: false, isMachine: true },
+      ],
     },
     {
       versionNumber: 2,
@@ -36,6 +40,10 @@ const section: ProvisionNode = {
       effectiveTo: null,
       transitionalNote: 'The annual assessment is first due for research received after 1 October 2026.',
       text: { text: 'Research payment under the new rules.', language: 'en', isOriginal: false, isMachine: true },
+      texts: [
+        { text: 'Betalning för analys enligt de nya reglerna.', language: 'sv', isOriginal: true, isMachine: false },
+        { text: 'Research payment under the new rules.', language: 'en', isOriginal: false, isMachine: true },
+      ],
     },
   ],
   inForceVersion: 1,

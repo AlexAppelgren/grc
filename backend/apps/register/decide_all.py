@@ -263,7 +263,7 @@ def fail(*, tenant_id: uuid.UUID, user_id: uuid.UUID, run_id: str) -> None:
     held = cache.get(_key(tenant_id, user_id))
     if held is None or held["runId"] != run_id or held["state"]["status"] == FINISHED:
         return
-    held["state"].update(status=FINISHED, stopped=FAILED, updatedAt=timezone.now().isoformat())
+    held["state"] = {**held["state"], "status": FINISHED, "stopped": FAILED, "updatedAt": timezone.now().isoformat()}
     held["reason"] = ""
     _keep(tenant_id, user_id, held)
 
