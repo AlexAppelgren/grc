@@ -132,16 +132,16 @@ updating this file.
 ```gherkin
 Given a compliance officer with applicability.approve
 And an obligation that spans several legal entities, where the answer names its entity's scope row
-When they answer "Does it apply to us?" with "Does not apply" and a reason
-Then a dialog asks them to confirm before anything is stored
-When they confirm
+When they open "Does it apply to <company>?" and choose "Does not apply" with a reason
+Then nothing is stored before they press "Set to Does not apply", and nothing asks them again after it
+When they press it
 Then the obligation shows "Does not apply" with the reason at once, with no "Waiting for approval" and no step-up
 And one audit event records the person, the value before and after, and the reason
 When they cancel the dialog instead
 Then nothing is stored and no audit event is written
 ```
 `@integration` proves the confirmed call: stored at once, no step-up, one audit event. The
-dialog, its confirm and its cancel are the screen's steps, proved by the `@e2e` journey.
+dialog, its one button and its cancel are the screen's, proved by the `@e2e` journey.
 
 ### REG-S2 — Only a holder of applicability.approve sets applicability `@integration` (REG-01)
 ```gherkin

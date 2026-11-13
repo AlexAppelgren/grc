@@ -8,7 +8,7 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { tokenStore } from '@/shared/utils/api-client';
 
 import { listApplicabilityCompanies, listApplicabilityRegulations, listApplicabilityRows, readDecideAll, startDecideAll } from './api';
-import { appliesKeys, DECIDE_ALL_POLL_MS, useApplicabilityCompanies, useApplicabilityRegulations, useApplicabilityRows, useDecideAll } from './hooks';
+import { appliesKeys, DECIDE_ALL_POLL_MS, useApplicabilityCompanies, useApplicabilityRegulations, useApplicabilityRows, useDecideAll, useRefreshAnswers, useSuggestionFacts } from './hooks';
 
 // The What applies reads and Decide all: each on its route, asked only by someone holding
 // the permission it needs, the run polled while it works and everything it changed read
@@ -132,5 +132,62 @@ describe('applies', () => {
     });
     expect(queryClient.getQueryData(appliesKeys.decideAll)).toEqual(running);
     expect(sent.find((s) => s.method === 'post')?.body).toEqual({ orgUnitId: 'bank', applicability: 'not_applicable', reason: 'No funds.', obligationIds: ['o1'] });
+  });
+});
+
+describe('a suggested reason for one obligation', () => {
+  const ORG_UNITS = '/api/v1/tenant/org-units';
+  const LVF = { key: 'sfs-2004-46', shortName: 'LVF' };
+  const through = { term: { key: 'funds', label: 'Funds', kind: null, dimension: 'regime' }, lines: ['Tillstånd att driva fondverksamhet'] };
+  const lvf = { instrument: { id: 'i-lvf', key: LVF.key, shortName: 'LVF' }, through };
+
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it("reads the company's regulations by the short name and its register facts at once, and takes the entry by its key", async () => {
+    const sent = installAdapter((s) =>
+      s.path === ORG_UNITS
+        ? { status: 200, data: { items: [{ id: 'fonder', registerEntry: { authority: { name: 'Finansinspektionen' }, readAt: '2026-11-11T03:17:00Z' } }], total: 1 } }
+        : { status: 200, data: { items: [{ ...lvf, instrument: { ...lvf.instrument, key: 'sfs-2004-460' } }, lvf], total: 2 } },
+    );
+    const { result } = renderHook(() => useSuggestionFacts('fonder', LVF, true), { wrapper: wrapperFor(['register.read']) });
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current).toEqual({ basis: { term: 'Funds', lines: ['Tillstånd att driva fondverksamhet'] }, register: { authority: 'Finansinspektionen', readAt: '2026-11-11T03:17:00Z' } });
+    expect(sent.map((s) => [s.path, s.params])).toEqual(expect.arrayContaining([[REGULATIONS, { orgUnitId: 'fonder', q: 'LVF' }], [ORG_UNITS, expect.anything()]]));
+  });
+
+  it('suggests from the licence alone when the company has no register facts, and nothing when its regulations hold no entry', async () => {
+    let regulations: unknown[] = [lvf];
+    installAdapter((s) => (s.path === ORG_UNITS ? { status: 500, data: { code: 'server_error', detail: 'x' } } : { status: 200, data: { items: regulations, total: regulations.length } }));
+    const facts = renderHook(() => useSuggestionFacts('fonder', LVF, true), { wrapper: wrapperFor(['register.read']) });
+    await waitFor(() => expect(facts.result.current?.register).toBeNull());
+    regulations = [];
+    const { queryClient } = queryWrapper();
+    const none = renderHook(() => useSuggestionFacts('liv', LVF, true), { wrapper: wrapperFor(['register.read'], queryClient) });
+    // Null from the first render, so the read must have landed before the answer counts.
+    await waitFor(() => expect(queryClient.getQueryCache().findAll({ queryKey: ['applies', 'regulations'] })[0]?.state.status).toBe('success'));
+    expect(none.result.current).toBeNull();
+  });
+
+  it('asks nothing until wanted, nor for someone without register.read', async () => {
+    const sent = installAdapter((s) => ({ status: 200, data: s.path === ORG_UNITS ? { items: [], total: 0 } : { items: [lvf], total: 1 } }));
+    expect(renderHook(() => useSuggestionFacts('fonder', LVF, false), { wrapper: wrapperFor(['register.read']) }).result.current).toBeNull();
+    expect(renderHook(() => useSuggestionFacts('fonder', LVF, true), { wrapper: wrapperFor([]) }).result.current).toBeNull();
+    expect(renderHook(() => useSuggestionFacts('fonder', undefined, true), { wrapper: wrapperFor(['register.read']) }).result.current).toBeNull();
+    // A wanted read, asked after the three, settles only once anything they sent would have been sent too.
+    const control = renderHook(() => useSuggestionFacts('control', LVF, true), { wrapper: wrapperFor(['register.read']) });
+    await waitFor(() => expect(control.result.current).not.toBeNull());
+    expect(sent.map((s) => s.path).sort()).toEqual([REGULATIONS, ORG_UNITS].sort());
+    expect(sent.find((s) => s.path === REGULATIONS)?.params).toEqual({ orgUnitId: 'control', q: 'LVF' });
+  });
+
+  it('reads again what What applies and the obligation lists hold once an answer is stored', () => {
+    const { queryClient } = queryWrapper();
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(() => useRefreshAnswers(), { wrapper: wrapperFor([], queryClient) });
+    result.current();
+    expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([['applies'], ['library', 'obligations']]);
   });
 });

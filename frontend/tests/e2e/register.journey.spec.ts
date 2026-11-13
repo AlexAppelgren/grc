@@ -54,15 +54,16 @@ function statusRow(page: Page, entity: string): Locator {
   return entityBlock(page, entity).locator('[data-status-row]');
 }
 
-/** Answers for one entity: the form, then the confirmation, then Set applicability. */
+/**
+ * Answers for one entity in the one-step dialog: the answer, the reason, then "Set to <answer>".
+ * The reason is typed over any suggestion, and a suggestion that arrives later never replaces it.
+ */
 async function answer(page: Page, entity: string, value: string, reason: string): Promise<void> {
   await applicabilityRow(page, entity).getByRole('button', { name: /^(Decide|Change)$/ }).click();
   const form = page.getByRole('dialog', { name: `Does it apply to ${entity}?` });
-  await form.getByLabel('Decision').selectOption({ label: value });
+  await form.getByRole('button', { name: value, exact: true }).click();
   await form.getByLabel('Reason').fill(reason);
-  await form.getByRole('button', { name: 'Continue' }).click();
-  const confirm = page.getByRole('dialog', { name: `Set "${value}" for ${entity}?` });
-  await confirm.getByRole('button', { name: 'Set applicability' }).click();
+  await form.getByRole('button', { name: `Set to ${value}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText(`Saved: ${value}.`)).toBeVisible();
 }
@@ -294,9 +295,9 @@ async function approveWithPasskey(approver: Page): Promise<void> {
 
 test.describe('register journeys', () => {
   test("REG-S1: One compliance person sets applicability after confirming it", async ({ page, apiGuard }, testInfo) => {
-    // REG-01, D-75: one person holding applicability.approve answers for the insurer,
-    // which product governance spans and nobody answered in the seed. Nothing is sent
-    // before the confirmation's own button; there is no request, approver or passkey.
+    // REG-01, D-75, D-141: one person holding applicability.approve answers for the insurer,
+    // which product governance spans and nobody answered in the seed, in one dialog with one
+    // step. Nothing is sent before its "Set to" button; there is no request, approver or passkey.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await openObligation(page, SPANNING);
@@ -309,12 +310,11 @@ test.describe('register journeys', () => {
     try {
       await liv.getByRole('button', { name: /^(Decide|Change)$/ }).click();
       const form = page.getByRole('dialog', { name: `Does it apply to ${LIV}?` });
-      await form.getByLabel('Decision').selectOption({ label: 'Does not apply' });
+      await expect(form.getByText(/^Now: /)).toBeVisible();
+      await form.getByRole('button', { name: 'Does not apply', exact: true }).click();
       await form.getByLabel('Reason').fill(reason);
-      await form.getByRole('button', { name: 'Continue' }).click();
-      const confirm = page.getByRole('dialog', { name: `Set "Does not apply" for ${LIV}?` });
-      await expect(confirm).toContainText('It is stored at once in your name, with your reason, and kept in the audit log.');
-      await confirm.getByRole('button', { name: 'Cancel' }).click();
+      await expect(form.getByRole('button', { name: 'Set to Does not apply' })).toBeEnabled();
+      await form.getByRole('button', { name: 'Cancel' }).click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await expect(liv.getByText(reason)).toHaveCount(0);
       expect(writes).toEqual([]);

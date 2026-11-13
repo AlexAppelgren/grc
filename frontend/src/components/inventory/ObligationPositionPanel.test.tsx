@@ -1,5 +1,6 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RegisterEntityStatus, RegisterEntry, RegisterGap } from '@/features/register/types';
 import { withPanels } from '@/features/register/testing';
@@ -10,8 +11,9 @@ import { renderWith } from '@/shared/testing/render';
 import { ObligationPositionPanel, positionBlocks } from './ObligationPositionPanel';
 
 // "Our position" (design/screens/tenant-obligation.html; REG-01, REG-02, D-42,
-// D-75): one block per company with "Does it apply" and, where it applies,
-// "Where we stand"; the answer set after a confirmation step, nothing sent on
+// D-75, D-141): one block per company with "Does it apply" and, where it applies,
+// "Where we stand"; the answer set in one step through the dialog "What applies"
+// uses, its reason suggested for a company nobody answered, nothing sent on
 // cancel, no step-up; the standing edited behind register.edit, sending only
 // what changed; each stale write read from its code. Every instant is fixed.
 
@@ -116,11 +118,32 @@ const WORKED = entry({
 });
 const GAPS = { items: [gap('g-1', 'e-bank', 'open'), gap('g-2', 'e-bank', 'remediating'), gap('g-3', 'e-bank', 'closed'), gap('g-4', 'e-liv', 'open')], total: 4 };
 
+// The obligation's regulation, and what the insurer's regulations say brings it into scope.
+const REGULATIONS = '/api/v1/applicability/regulations';
+const ORG_UNITS = '/api/v1/tenant/org-units';
+const INSTRUMENT = { id: 'i-fffs', key: 'fffs-2017-2', shortName: 'FFFS 2017:2' };
+const regulation = (key: string, shortName: string) => ({
+  instrument: { id: `id-${key}`, key, shortName, jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' } },
+  offered: 3,
+  applies: 0,
+  notApplicable: 0,
+  underAssessment: 3,
+  toDecide: 3,
+  through: { term: { key: 'insurance', label: 'Insurance', kind: null, dimension: 'regime' }, lines: ['Tillstånd att driva försäkringsrörelse'] },
+});
+// A neighbour the search also finds comes first, so the entry is taken by its key.
+const LIV_REGULATIONS = [regulation('fffs-2017-20', 'FFFS 2017:20'), regulation(INSTRUMENT.key, INSTRUMENT.shortName)];
+const LIV_UNIT = { id: 'e-liv', kind: 'legal_entity', name: 'Example Liv AB', registerEntry: { authority: { key: 'fi', name: 'Finansinspektionen' }, readAt: '2026-11-11T03:17:00Z' } };
+const SUGGESTED = "Within the scope of its licence Tillstånd att driva försäkringsrörelse, which brings Insurance into scope. Read from Finansinspektionen's register on 11 Nov 2026.";
+
 type Write = (sent: Sent) => { status: number; data?: unknown };
 const ok: Write = () => ({ status: 200, data: {} });
 
-function serve(read: RegisterEntry | number, span = SPAN, write: Write = ok): Sent[] {
+function serve(read: RegisterEntry | number, span = SPAN, write: Write = ok, regulations: unknown[] = LIV_REGULATIONS): Sent[] {
   return installAdapter((sent) => {
+    if (sent.path === '/api/v1/obligations/ob-1') return { status: 200, data: { id: 'ob-1', instrument: INSTRUMENT } };
+    if (sent.path === REGULATIONS) return { status: 200, data: { items: regulations, total: regulations.length } };
+    if (sent.path === ORG_UNITS) return { status: 200, data: { items: [LIV_UNIT], total: 1 } };
     if (sent.path === '/api/v1/obligations/ob-1/register/entities') return { status: 200, data: span };
     if (sent.path === '/api/v1/obligations/ob-1/gaps') return { status: 200, data: GAPS };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: [ANNA, SARA] };
@@ -135,9 +158,16 @@ function serve(read: RegisterEntry | number, span = SPAN, write: Write = ok): Se
 
 const ALL = ['register.read', 'register.edit', 'applicability.approve'];
 
+let client: QueryClient;
+
 function renderPanel(permissions: string[] = ALL) {
-  return renderWith(<ObligationPositionPanel obligationId="ob-1" />, { permissions });
+  const view = renderWith(<ObligationPositionPanel obligationId="ob-1" />, { permissions });
+  client = view.queryClient;
+  return view;
 }
+
+/** Where the first read under a key stands: settled reads prove a late answer had its chance. */
+const queryState = (prefix: readonly unknown[]) => client.getQueryCache().findAll({ queryKey: prefix })[0]?.state.status;
 
 /** One company's block, by the heading that names it. */
 function block(name: string): HTMLElement {
@@ -237,59 +267,149 @@ describe('ObligationPositionPanel', () => {
     expect(screen.getByRole('dialog', { name: 'Does it apply to us?' })).toBeInTheDocument();
   });
 
-  it('asks to confirm before anything is stored, and a cancel stores nothing', async () => {
+  it('decides in one step: nothing is sent before its button, and a cancel stores nothing', async () => {
     const sent = serve(WORKED);
     renderPanel();
     await screen.findByRole('heading', { level: 3, name: 'Example Liv AB' });
     fireEvent.click(within(answerOf('Example Liv AB')).getByRole('button', { name: 'Decide' }));
     const form = screen.getByRole('dialog', { name: 'Does it apply to Example Liv AB?' });
-    expect(within(form).getByRole('button', { name: 'Continue' })).toBeDisabled();
-    fireEvent.change(within(form).getByLabelText('Decision'), { target: { value: 'not_applicable' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Does not apply' }));
+    expect(within(form).getByRole('button', { name: 'Set to Does not apply' })).toBeDisabled();
     fireEvent.change(within(form).getByLabelText('Reason'), { target: { value: 'No insurance advice from Liv.' } });
-    fireEvent.click(within(form).getByRole('button', { name: 'Continue' }));
-
-    const confirm = screen.getByRole('dialog', { name: 'Set "Does not apply" for Example Liv AB?' });
-    expect(confirm).toHaveAccessibleDescription(
-      'It is stored at once in your name, with your reason, and kept in the audit log. It was "Not assessed". The compliance status and gaps stay as they are and return if it applies again.',
-    );
-    fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(within(form).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(writes(sent)).toEqual([]);
   });
 
-  it('stores the confirmed answer for the company at once and says so', async () => {
+  it("suggests the reason for a company nobody answered from that company's regulations, read when the dialog opens, and stores it at once", async () => {
+    const sent = serve(WORKED);
+    const { queryClient } = renderPanel();
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    await screen.findByRole('heading', { level: 3, name: 'Example Liv AB' });
+    expect(sent.some((call) => call.path === REGULATIONS)).toBe(false);
+    fireEvent.click(within(answerOf('Example Liv AB')).getByRole('button', { name: 'Decide' }));
+    const form = screen.getByRole('dialog', { name: 'Does it apply to Example Liv AB?' });
+    expect(within(form).getByText('Now: to decide')).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Applies' })).toHaveAttribute('aria-pressed', 'true');
+    // Empty and usable while the read is out, then the suggestion.
+    expect(within(form).getByLabelText('Reason')).toHaveValue('');
+    await within(form).findByText('Suggested from the licence facts');
+    expect(within(form).getByLabelText('Reason')).toHaveValue(SUGGESTED);
+    expect(sent.filter((call) => call.path === REGULATIONS).map((call) => call.params)).toEqual([{ orgUnitId: 'e-liv', q: 'FFFS 2017:2' }]);
+
+    fireEvent.click(within(form).getByRole('button', { name: 'Set to Applies' }));
+    await screen.findByText('Saved: Applies.');
+    expect(writes(sent)).toEqual([expect.objectContaining({ path: '/api/v1/obligations/ob-1/applicability', body: { applicability: 'applies', reason: SUGGESTED, orgUnitId: 'e-liv' } })]);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // The page's own reads, What applies, the obligation lists and the regulation roll-up (under the register's) are read again.
+    const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
+    expect(keys).toEqual(expect.arrayContaining([['register'], ['applies'], ['library', 'obligations']]));
+  });
+
+  it('suggests nothing where the company has no entry for this regulation', async () => {
+    serve(WORKED, SPAN, ok, [regulation('fffs-2017-20', 'FFFS 2017:20')]);
+    renderPanel();
+    await screen.findByRole('heading', { level: 3, name: 'Example Liv AB' });
+    fireEvent.click(within(answerOf('Example Liv AB')).getByRole('button', { name: 'Decide' }));
+    const form = screen.getByRole('dialog');
+    await waitFor(() => expect(queryState(['applies', 'regulations'])).toBe('success'));
+    expect(within(form).getByLabelText('Reason')).toHaveValue('');
+    expect(within(form).queryByText('Suggested from the licence facts')).toBeNull();
+  });
+
+  it('never puts a late suggestion over what the person started typing', async () => {
+    serve(WORKED);
+    renderPanel();
+    await screen.findByRole('heading', { level: 3, name: 'Example Liv AB' });
+    fireEvent.click(within(answerOf('Example Liv AB')).getByRole('button', { name: 'Decide' }));
+    const form = screen.getByRole('dialog');
+    fireEvent.change(within(form).getByLabelText('Reason'), { target: { value: 'Liv sells no investment products.' } });
+    await waitFor(() => expect([queryState(['applies', 'regulations']), queryState(['tenant', 'org-units'])]).toEqual(['success', 'success']));
+    expect(within(form).getByLabelText('Reason')).toHaveValue('Liv sells no investment products.');
+    expect(within(form).queryByText('Suggested from the licence facts')).toBeNull();
+  });
+
+  it('reads no suggestion without register.read', async () => {
+    const sent = serve(WORKED);
+    renderPanel(['applicability.approve']);
+    await screen.findByRole('heading', { level: 3, name: 'Example Liv AB' });
+    fireEvent.click(within(answerOf('Example Liv AB')).getByRole('button', { name: 'Decide' }));
+    await waitFor(() => expect(queryState(['library', 'obligation'])).toBe('success'));
+    expect(within(screen.getByRole('dialog')).getByLabelText('Reason')).toHaveValue('');
+    expect(sent.some((call) => call.path === REGULATIONS || call.path === ORG_UNITS)).toBe(false);
+  });
+
+  it("changes a company's answer from its stored answer and reason, with no suggestion read", async () => {
     const sent = serve(WORKED);
     renderPanel();
     await screen.findByRole('heading', { level: 3, name: 'Example Bank AB' });
     fireEvent.click(within(answerOf('Example Bank AB')).getByRole('button', { name: 'Change' }));
     const form = screen.getByRole('dialog', { name: 'Does it apply to Example Bank AB?' });
+    expect(within(form).getByText('Now: Applies')).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Applies' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(form).getByLabelText('Reason')).toHaveValue('We give advice and manage portfolios.');
-    fireEvent.change(within(form).getByLabelText('Decision'), { target: { value: 'not_applicable' } });
-    fireEvent.click(within(form).getByRole('button', { name: 'Continue' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Set applicability' }));
+    expect(within(form).queryByText('Suggested from the licence facts')).toBeNull();
+    // The Applies reason never goes with Does not apply: the field empties until the person gives one.
+    fireEvent.click(within(form).getByRole('button', { name: 'Does not apply' }));
+    expect(within(form).getByLabelText('Reason')).toHaveValue('');
+    expect(within(form).getByRole('button', { name: 'Set to Does not apply' })).toBeDisabled();
+    fireEvent.change(within(form).getByLabelText('Reason'), { target: { value: 'The bank gives no advice under this rule.' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Set to Does not apply' }));
 
     await screen.findByText('Saved: Does not apply.');
     expect(writes(sent)).toEqual([
       expect.objectContaining({
         path: '/api/v1/obligations/ob-1/applicability',
-        body: { applicability: 'not_applicable', reason: 'We give advice and manage portfolios.', orgUnitId: 'e-bank' },
+        body: { applicability: 'not_applicable', reason: 'The bank gives no advice under this rule.', orgUnitId: 'e-bank' },
       }),
     ]);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(sent.some((call) => call.path === REGULATIONS)).toBe(false);
   });
 
-  it('reads a stale answer from its code and offers a reload that refetches', async () => {
+  it('opens a row a colleague set to Not assessed on Applies with the suggestion, saying what it is now', async () => {
+    const waiting = entity('e-liv', 'Example Liv AB', { applicability: 'under_assessment', applicabilityReason: 'Waiting for the legal opinion.' });
+    serve({ ...WORKED, entities: [...WORKED.entities, waiting] });
+    renderPanel();
+    await screen.findByRole('heading', { level: 3, name: 'Example Liv AB' });
+    fireEvent.click(within(answerOf('Example Liv AB')).getByRole('button', { name: 'Decide' }));
+    const form = screen.getByRole('dialog', { name: 'Does it apply to Example Liv AB?' });
+    expect(within(form).getByText('Now: Not assessed')).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Applies' })).toHaveAttribute('aria-pressed', 'true');
+    await within(form).findByText('Suggested from the licence facts');
+    expect(within(form).getByLabelText('Reason')).toHaveValue(SUGGESTED);
+    // Back on its stored answer, the stored reason.
+    fireEvent.click(within(form).getByRole('button', { name: 'Not assessed' }));
+    expect(within(form).getByLabelText('Reason')).toHaveValue('Waiting for the legal opinion.');
+  });
+
+  it('answers for the obligation as a whole with no company and no suggestion, "Not assessed" included', async () => {
+    const sent = serve(entry({ version: 3 }), [SPAN[0]!]);
+    renderPanel();
+    fireEvent.click(await screen.findByRole('button', { name: 'Decide' }));
+    const form = screen.getByRole('dialog', { name: 'Does it apply to us?' });
+    expect(within(form).getByText('Now: to decide')).toBeInTheDocument();
+    expect(within(form).getByLabelText('Reason')).toHaveValue('');
+    fireEvent.click(within(form).getByRole('button', { name: 'Not assessed' }));
+    fireEvent.change(within(form).getByLabelText('Reason'), { target: { value: 'Waiting for the legal opinion.' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Set to Not assessed' }));
+    await screen.findByText('Saved: Not assessed.');
+    expect(writes(sent)).toEqual([expect.objectContaining({ path: '/api/v1/obligations/ob-1/applicability', body: { applicability: 'under_assessment', reason: 'Waiting for the legal opinion.' } })]);
+    expect(sent.some((call) => call.path === REGULATIONS)).toBe(false);
+  });
+
+  it('reads a stale answer from its code, re-reads the register and keeps what the person typed', async () => {
     const sent = serve(WORKED, SPAN, () => ({ status: 409, data: { code: 'stale_write', detail: 'Someone changed this first. Reload and try again.' } }));
     renderPanel();
     await screen.findByRole('heading', { level: 3, name: 'Example Bank AB' });
+    const reads = () => sent.filter((call) => call.path === '/api/v1/obligations/ob-1/register').length;
+    const before = reads();
     fireEvent.click(within(answerOf('Example Bank AB')).getByRole('button', { name: 'Change' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Continue' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Set applicability' }));
-    expect(await screen.findByText('Someone changed this answer while you were deciding. Reload to see theirs, then decide again.')).toBeInTheDocument();
-    const reads = sent.filter((call) => call.path === '/api/v1/obligations/ob-1/register').length;
-    fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
-    await waitFor(() => expect(sent.filter((call) => call.path === '/api/v1/obligations/ob-1/register').length).toBeGreaterThan(reads));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    const form = screen.getByRole('dialog');
+    fireEvent.change(within(form).getByLabelText('Reason'), { target: { value: 'We advise.' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Set to Applies' }));
+    expect(await within(form).findByText('Someone changed this answer while you were deciding. Check what it is now, then set yours again.')).toBeInTheDocument();
+    await waitFor(() => expect(reads()).toBeGreaterThan(before));
+    expect(within(form).getByLabelText('Reason')).toHaveValue('We advise.');
   });
 
   it('renders any other refusal of an answer in place', async () => {
@@ -297,8 +417,7 @@ describe('ObligationPositionPanel', () => {
     renderPanel();
     await screen.findByRole('heading', { level: 3, name: 'Example Bank AB' });
     fireEvent.click(within(answerOf('Example Bank AB')).getByRole('button', { name: 'Change' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Continue' }));
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Set applicability' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Set to Applies' }));
     expect(await screen.findByText('That legal entity is not one this obligation spans.')).toBeInTheDocument();
   });
 

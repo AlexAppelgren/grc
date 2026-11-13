@@ -8,17 +8,8 @@
   "obligationApplicability.whole": "Skyldigheten som helhet",
   "obligationApplicability.decide": "Bestäm",
   "obligationApplicability.change": "Ändra",
-  "obligationApplicability.formTitle": "Gäller den {entity}?",
-  "obligationApplicability.decision": "Beslut",
-  "obligationApplicability.reason": "Skäl",
-  "obligationApplicability.reasonHint": "Ett motiverat \"gäller inte\" är lika mycket värt för en revisor som ett \"gäller\".",
-  "obligationApplicability.continue": "Fortsätt",
-  "obligationApplicability.confirmTitle": "Sätta \"{value}\" för {entity}?",
-  "obligationApplicability.confirmTitleWhole": "Sätta \"{value}\"?",
-  "obligationApplicability.confirmBody": "Det sparas direkt i ditt namn, med ditt skäl, och finns kvar i granskningsloggen. Det var \"{before}\". Efterlevnadsstatus och brister ligger kvar som de är och kommer tillbaka om den gäller igen.",
-  "obligationApplicability.confirm": "Sätt tillämplighet",
   "obligationApplicability.saved": "Sparat: {value}.",
-  "obligationApplicability.stale": "Någon ändrade svaret medan du bestämde. Ladda om för att se deras svar och bestäm sedan igen.",
+  "obligationApplicability.stale": "Någon ändrade svaret medan du bestämde. Se vad som gäller nu och sätt sedan ditt svar igen.",
   "obligationApplicability.errorTitle": "Gäller den oss? kunde inte laddas",
   "obligationApplicability.label": "Gäller den"
 }

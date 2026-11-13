@@ -4,10 +4,13 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 import { useEffect } from 'react';
 
 import { registerKeys } from '@/features/register/hooks';
+import { listOrgUnits } from '@/features/tenant-admin/organisation/api';
+import { orgKeys } from '@/features/tenant-admin/organisation/hooks';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
 import * as applies from './api';
 import type { ApplicabilityAnswerPage, ApplicabilityCompany, ApplicabilityRegulationPage, DecideAll, DecideAllBody, RegulationQuery, RowQuery } from './api';
+import { basisOf, type Basis, type RegisterRead } from './suggestion';
 
 // Query keys for "What applies" (playbook 6.1). The query is part of each list's key,
 // so a new filter or page re-reads rather than filters a stale page.
@@ -43,6 +46,42 @@ export function useApplicabilityRegulations(query: RegulationQuery, enabled = tr
 export function useApplicabilityRows(query: RowQuery, enabled = true): UseQueryResult<ApplicabilityAnswerPage> {
   const canRead = useCanRead();
   return useQuery({ queryKey: appliesKeys.rows(query), queryFn: () => applies.listApplicabilityRows(query), enabled: canRead && enabled });
+}
+
+/** What a suggested reason for one company's answer to one obligation stands on. */
+export interface SuggestionFacts {
+  basis: Basis;
+  register: RegisterRead | null;
+}
+
+/**
+ * The facts the obligation page's dialog suggests a reason from, read only while `wanted`
+ * (the dialog is open on a company's row nobody has answered) and only by someone holding
+ * register.read: the company's regulations matching the regulation's short name, of which
+ * the one with this instrument key gives what brings it into scope, and, beside it, the
+ * company's register facts. Null while either is read, and when the regulation is not among
+ * the company's: then nothing is suggested.
+ */
+export function useSuggestionFacts(orgUnitId: string, instrument: { key: string; shortName: string } | undefined, wanted: boolean): SuggestionFacts | null {
+  const on = useCanRead() && wanted && instrument !== undefined;
+  const regulations = useApplicabilityRegulations({ orgUnitId, q: instrument?.shortName }, on);
+  const units = useQuery({ queryKey: orgKeys.units, queryFn: listOrgUnits, enabled: on });
+  const regulation = regulations.data?.items.find((item) => item.instrument.key === instrument?.key);
+  if (regulation === undefined || units.isPending) return null;
+  const entry = units.data?.find((unit) => unit.id === orgUnitId)?.registerEntry ?? null;
+  return { basis: basisOf(regulation), register: entry === null ? null : { authority: entry.authority.name, readAt: entry.readAt } };
+}
+
+/**
+ * After one obligation's answer is stored from its own page: what "What applies" and the
+ * obligation lists hold about answers is read again. The register's own reads, the
+ * regulation page's roll-up among them, the register's write re-reads itself.
+ */
+export function useRefreshAnswers(): () => void {
+  const queryClient = useQueryClient();
+  return () => {
+    for (const queryKey of [appliesKeys.all, OBLIGATION_LISTS]) void queryClient.invalidateQueries({ queryKey });
+  };
 }
 
 /** How often the page reads a running Decide all run, in milliseconds. */

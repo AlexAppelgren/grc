@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from 'react';
 
-import { APPROVE_PERMISSION, answersOf, DecideDialog, type Answer } from '@/components/inventory/ObligationApplicabilityPanel';
+import { DecideDialog } from '@/components/applies/DecideDialog';
+import { APPROVE_PERMISSION, answersOf, type Answer } from '@/components/inventory/ObligationApplicabilityPanel';
 import { Facts } from '@/components/inventory/ObligationPanels';
 import { EDIT_PERMISSION, EditDialog, standing, type Editing } from '@/components/inventory/ObligationStatusPanel';
 import { Button } from '@/components/ui/Button';
@@ -10,9 +11,21 @@ import { Fold } from '@/components/ui/fold';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, StatusLine } from '@/components/ui/States';
+import { useRefreshAnswers, useSuggestionFacts } from '@/features/applies/hooks';
+import { suggestReason } from '@/features/applies/suggestion';
 import { useFormatContext } from '@/features/identity/hooks';
+import { useObligation } from '@/features/library/hooks';
 import { gapKind, REGISTER_READ } from '@/features/register/gaps/gap-view';
-import { OBLIGATION_GAPS_PAGE, useObligationGaps, useRegisterEntry, useSpannedEntities } from '@/features/register/hooks';
+import {
+  isStaleWrite,
+  OBLIGATION_GAPS_PAGE,
+  STALE_WRITE_CODE,
+  useObligationGaps,
+  useRegisterEntry,
+  useReloadRegister,
+  useSetApplicability,
+  useSpannedEntities,
+} from '@/features/register/hooks';
 import { presentApplicability, presentCompliance } from '@/features/register/register-presentation';
 import type { Applicability, RegisterEntityStatus, RegisterEntry } from '@/features/register/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -66,6 +79,55 @@ function OpenGaps({ obligationId, orgUnitId }: { obligationId: string; orgUnitId
   return open.length === 0 ? null : <span>{t('obligationStatus.openGaps', { count: open.length })}</span>;
 }
 
+/** Nobody has answered this row yet: it reads "Not assessed" with no one's name on it. */
+const unanswered = (answer: Answer): boolean => answer.decidedAt === null && answer.applicability === 'under_assessment';
+
+/**
+ * One answer set through the dialog "What applies" uses (D-141): one step, with "Not
+ * assessed" as a third choice. A company's row nobody answered opens on Applies with the
+ * reason suggested from the licence facts, read only now, and so does one stored as "Not
+ * assessed"; the obligation as a whole and a row answered either way suggest nothing. A stale write re-reads the register, so the dialog's
+ * "Now" line shows what the colleague set and the person's words stay in the field.
+ */
+function DecideOne({ obligationId, answer, onClose }: { obligationId: string; answer: Answer; onClose: (stored: Applicability | null) => void }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const set = useSetApplicability(obligationId);
+  const reload = useReloadRegister();
+  const refresh = useRefreshAnswers();
+  // A row stored as "Not assessed" is still to decide: the dialog opens it on Applies with the suggestion.
+  const toDecide = answer.applicability === 'under_assessment';
+  const instrument = useObligation(obligationId).data?.instrument;
+  const facts = useSuggestionFacts(answer.orgUnitId ?? '', instrument, toDecide && answer.orgUnitId !== null);
+  const suggestion = facts === null || answer.name === null ? '' : suggestReason([facts.basis], answer.name, facts.register, t, ctx);
+  return (
+    <DecideDialog
+      company={answer.orgUnitId === null ? null : answer.name}
+      current={unanswered(answer) ? null : { applicability: answer.applicability, reason: answer.reason }}
+      notAssessed
+      suggestion={suggestion}
+      pending={set.isPending}
+      error={set.isError ? set.error : undefined}
+      codes={{ [STALE_WRITE_CODE]: t('obligationApplicability.stale') }}
+      onSubmit={({ applicability, reason }) =>
+        set.mutate(
+          { body: { applicability, reason, ...(answer.orgUnitId === null ? {} : { orgUnitId: answer.orgUnitId }) }, version: answer.version },
+          {
+            onSuccess: () => {
+              refresh();
+              onClose(applicability);
+            },
+            onError: (error) => {
+              if (isStaleWrite(error)) void reload();
+            },
+          },
+        )
+      }
+      onClose={() => onClose(null)}
+    />
+  );
+}
+
 function ActionRow({ children, action }: { children: ReactNode; action: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -84,7 +146,8 @@ export function ObligationPositionPanel({ obligationId, children }: { obligation
   const readsGaps = permissions.includes(REGISTER_READ);
   const entry = useRegisterEntry(obligationId);
   const span = useSpannedEntities(obligationId);
-  const [deciding, setDeciding] = useState<Answer | null>(null);
+  // The block whose answer is being decided, read from the blocks each time, so a re-read brings its version.
+  const [deciding, setDeciding] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [decided, setDecided] = useState<Applicability | null>(null);
   const [saved, setSaved] = useState(false);
@@ -114,6 +177,7 @@ export function ObligationPositionPanel({ obligationId, children }: { obligation
   const data = entry.data;
   const blocks = positionBlocks(data, span.data);
   const named = blocks.length > 1;
+  const decidingAnswer = blocks.find((block) => block.key === deciding)?.answer ?? null;
 
   return (
     <Panel title={title} data-applicability-panel="" data-status-panel="">
@@ -137,7 +201,7 @@ export function ObligationPositionPanel({ obligationId, children }: { obligation
                         size="small"
                         onClick={() => {
                           setDecided(null);
-                          setDeciding(block.answer);
+                          setDeciding(block.key);
                         }}
                       >
                         {block.answer.applicability === 'under_assessment' ? t('obligationApplicability.decide') : t('obligationApplicability.change')}
@@ -201,10 +265,10 @@ export function ObligationPositionPanel({ obligationId, children }: { obligation
           {children}
         </div>
       )}
-      {deciding === null ? null : (
-        <DecideDialog
+      {decidingAnswer === null ? null : (
+        <DecideOne
           obligationId={obligationId}
-          answer={deciding}
+          answer={decidingAnswer}
           onClose={(stored) => {
             setDeciding(null);
             if (stored !== null) setDecided(stored);
