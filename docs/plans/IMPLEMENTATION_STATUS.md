@@ -369,7 +369,7 @@ they are.
   machine translation (INV-S22); the same three labels in the provision tree and both
   queues, and the kind "New provision" in the library queue's filter. Components are Radix
   and shadcn-pattern, coloured by the Green tokens (D-139).
-- **Content:** 3,222 provisions in 24 files give 1,816 of the baseline's 1,894 obligations
+- **Content:** 3,327 provisions in 24 files give 1,816 of the baseline's 1,894 obligations
   their text: Nordic statutes and supervisory regulations, EU acts, and the guidelines of
   EBA, ESMA and EIOPA. How each was read and checked:
   `docs/reviews/LAW_TEXT_REVIEW_2026-11-13.md`.

@@ -5,7 +5,7 @@ text was read, what a script was allowed to do to it, every check that was run a
 one found. D-142 is the decision; the format and each source's reuse terms are in the
 baseline README, "The law's own words".
 
-**Result.** 3,222 provisions in 24 files give 1,816 of the baseline's 1,894 obligations the
+**Result.** 3,327 provisions in 24 files (3,222 at first, 105 more with the corrections of section 10) give 1,816 of the baseline's 1,894 obligations the
 text of the sections, articles and paragraphs they cite: 1,189 in English (688 from EU acts,
 501 from the guidelines of EBA, ESMA and EIOPA), 789 in Swedish, 488 in Finnish, 427 in
 Danish and 329 in Norwegian, each national text with an English translation and the Danish,
@@ -202,7 +202,47 @@ by the duty readers instead.
 ## 9. Where the tooling is
 
 The fetchers, parsers, checkers, the converter that wrote the files, the reviewed
-translation batches and the cached official documents are not in this repository. They are
-in the build session's working folder and will be lost when it is cleaned
-(`docs/TODO_FOR_alex.md`). Every text names the page it was read from in `source`, so any
-one of them can be checked against the authority without the tooling.
+translation batches and the cached official documents are not in this repository. They were
+copied on 2026-11-13 to `C:\Users\Alex\projects\grc-law-tooling` on the owner's machine,
+with a README (`docs/TODO_FOR_alex.md`). Every text names the page it was read from in
+`source`, so any one of them can be checked against the authority without the tooling.
+
+## 10. The corrections (2026-11-13, D-144)
+
+The owner said to correct the 175 findings of section 8 ("go ahead and fix it, u dont need
+my approval to get things right"). The door gained what a correction needs: a new version of
+an obligation may replace its title, its citation and the provisions it cites, with before
+and after in the audit row. The corrections are `backend/apps/library/baseline/corrections/`,
+one file per tranche, filed by the baseline agent and approved in the queue.
+
+| | |
+|---|---|
+| Corrections | 168: 158 findings and 10 that say "income statement", Skatteverket's own English for kontrolluppgift |
+| New provisions | 105, made by the same tooling from the same official documents, two readings agreeing; 58 of them the EU regulations' articles as the Norwegian sanctions regulations print them in their annexes, 2 GDPR articles as personopplysningsloven prints them |
+| Left as they are | 17, below |
+
+Five groups (Norwegian sanctions, other Norwegian law, Swedish, Danish and Finnish, EU) each
+decided their findings from the law text: a summary that said something the law does not is
+rewritten; an element from a section not cited is cited, its text extracted where the library
+lacked it; an element from another act is named in words, since the door ties a provision only
+to duties of its own instrument. Translations of new texts were written sense for sense and
+read by a second reader, numbers cross-checked by program. Then an independent reader per
+group tried to prove each correction and each new text wrong, re-cutting the texts with
+scripts of its own: 11 of 273 were (an EEA derogation left out, a CRS exception too wide, a
+Danish consumer scope dropped, a Finnish narrowing from 20 November 2026 not named, a Russia
+reporting duty without its limits, the Guinea title too wide, an ESMA date resting on a list
+rather than the law, five Norwegian source lines without a date), and all were corrected.
+
+Left as they are, each for the reason given: the eleven Norwegian duties under the DORA,
+crypto-assets, PRIIPs, SFDR and securities trading acts, which do not print the EU text (each
+summary was checked against the EU article it names); `obl-no-vpsf-account-register-details`
+(its responsibility is in another act, which the summary names);
+`obl-dk-skatopsparbek-depot-placement` and `obl-dk-skatopsparbek-pool-information` (the
+sections holding the missing elements were amended without a consolidated text; both
+summaries already state the amended rules); `obl-eu-emir-clearing-threshold` (the summary
+names Regulation (EU) 2024/2987, whose Article 5 bears it out).
+
+Two repairs of existing texts came with it: 29 Swedish source lines that read "amended up to
+." now say "text as issued, no amendment recorded", and § 5 of BEK 1557/2024 lost the chapter
+heading that BEK 1637/2024 repealed. Wordings that change on a known day (20 November 2026, 11
+and 30 January 2027) are listed in `docs/TODO_FOR_alex.md`; nothing files them yet.

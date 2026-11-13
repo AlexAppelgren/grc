@@ -9,12 +9,15 @@ most urgent first. What the public demo shows where it has no recording is fixed
 said (design/public/README.md, "Where nothing was recorded").
 
 - [ ] **Approve the law's own words in the library queue.** After the deploy the baseline
-      files 3,222 proposals, one per section, article or guideline paragraph, within the hour,
+      files 3,327 proposals, one per section, article or guideline paragraph, within the hour,
       or at once with
       `python manage.py file_library_baseline` in the `api` shell (runbook step 17). In the
       Platform console open Queue, choose the kind "New provision", open a few, then
       "Approve all" with one passkey. Each holds the text as the authority published it and
-      its translations, marked as machine translations whoever approves.
+      its translations, marked as machine translations whoever approves. The same filing
+      brings 168 corrections of duties (kind "New obligation version", D-144): each names
+      the duty, shows the old and new title, citation and cited provisions, and says why;
+      one that cites a new provision waits until that provision is approved.
 - [ ] **Look at the four screens and say what should change.** Admin, Licences; What
       applies; a regulation's page; an obligation's page. They are built as the recommended
       layout of `design/proposals/obligations-regulations-licences.html`.
@@ -23,23 +26,30 @@ said (design/public/README.md, "Where nothing was recorded").
       model reads the chosen answer, the company's licence facts and the library's facts,
       never what anyone typed or a name. Still yours if wanted: letting it rewrite the typed
       text too.
-- [ ] **Nine summaries say something the law's words do not.** Read beside the cited text,
-      these state a deadline, an actor or a condition differently:
-      `obl-dk-kompbolig-training`, `obl-dk-afvplan-financial-contracts-register`,
-      `obl-eu-mifir-transaction-report-accuracy`, `obl-eu-mar-bb-rts-buyback-disclosure`,
-      `obl-eu-eugb-allocation-impact-reports`, `obl-fi-holdings-decree-notification-content`,
-      `obl-fi-aifml-reporting`, `obl-se-ptl-pep-measures` and
-      `obl-no-sanksjon-guinea-report` (whose cited section says the article it rests on does
-      not apply in Norway: the duty may not exist). The words at issue and what to change
-      are in `docs/reviews/law-text-2026-11-13/duty-reading.json`, with 152 more whose
-      summary holds an element from a section that is not cited. Each is a new version of
-      the obligation through the proposal door: say the word and the research agent files
-      them for your approval.
-- [ ] **Norwegian duties that rest on an EU regulation show only the clause that makes it
-      Norwegian law** (14 under the incorporation acts, 82 under the sanctions
-      regulations). That clause is the Norwegian law's own words, and the EU article is in
-      the library under the EU act. Showing the article beside the clause needs a provision
-      tied to a duty of another instrument, which the door refuses today. Say if you want it.
+- [x] **The summaries that said something the law's words do not are corrected** (done
+      2026-11-13 as you said: 158 of the 175 findings, plus "income statement" for
+      kontrolluppgift in 10 more; `backend/apps/library/baseline/corrections/`). The Guinea
+      duty now rests on the reporting article that applies in Norway. The 82 Norwegian
+      sanctions duties cite the EU article as the Norwegian regulation prints it in its annex,
+      and two GDPR duties cite GDPR as personopplysningsloven prints it. 17 stay as they are,
+      each with its reason in the review record.
+- [ ] **Eleven Norwegian duties still show only the clause that makes an EU act Norwegian
+      law** (DORA, MiCA, PRIIPs, SFDR, the anti-money laundering and securities trading
+      acts): those acts do not print the EU text, so there is no Norwegian text to cite. Their
+      summaries were checked against the EU article each names and are right. Showing the EU
+      article beside them needs a provision tied to a duty of another instrument, which the
+      door refuses. Say if you want it.
+- [ ] **Law that changes on a known day needs its new wording then.** The library holds the
+      wording in force today. On 20 November 2026 SFS 2010:1855 and 2010:1856 (SFS 2026:1031,
+      2026:1032) and FFFS 2018:16 1 kap. 3 § (FFFS 2026:34) change; on 11 January 2027
+      points 3.1 to 3.3 of EBA/GL/2015/18 (EBA/GL/2026/07); on 30 January 2027 Articles 275
+      and 300 of the Solvency II Delegated Regulation (2026/269); and the Finnish wordings
+      already printed with Finlex's note (Acts 31/2026, 32/2026, 600/2026, Decree 163/2026).
+      Each needs a dated provision version and, where the duty changes, a dated obligation
+      version. Nothing files these on its own yet. Two `effectiveFrom` dates also look wrong
+      and are not corrected yet: the Belarus ban (2025-02-25, while Art. 1u(2) was replaced
+      from 24 October 2025) and the AI Act deployer duties for Annex I systems (2027-12-02,
+      while Article 113 gives 2 August 2028).
 - [ ] **Ten obligations under the guidelines of EBA, ESMA and EIOPA stay without text.**
       The guidelines are published as PDF. The first reading against pictures of the printed
       pages found 16 faults, so the extraction was repaired and all 505 units were read
@@ -60,18 +70,14 @@ said (design/public/README.md, "Where nothing was recorded").
       `obl-eu-cd1183-reporting`, and `obl-fi-lll-remuneration` (Finlex has not published the
       Swedish text of the wording in force). Nine more sit under an amending act while the
       article is in the act it amends (`obl-eu-csdr-t1-settlement`, eight `obl-eu-ipr-*`).
-- [ ] **One word: "kontrolluppgift".** The translations follow Skatteverket's own English,
-      "income statement"; our summaries say "control statement". Pick one.
 - [ ] **Parts of five Finnish sections are not in force yet** (between 20 November 2026 and
       16 April 2027). Finlex prints them in the consolidated section with its own note, and
       the text keeps both, note included. Say if you would rather hold such parts back
       until their day.
-- [ ] **Where the extraction tooling should live.** The fetchers, parsers, checkers, the
-      reviewed translation batches and the cached official documents are in the build
-      session's working folder,
-      `C:\Users\Alex\AppData\Local\Temp\claude\6892ebcaaa7cf27b\885a81e4-7810-4df3-aca0-5949c09c3c43\scratchpad\law`,
-      and are lost when it is cleaned. Copy the folder somewhere you keep, or say that it
-      should become a tool in the repository.
+- [ ] **Where the extraction tooling should live.** Copied on 2026-11-13 to
+      `C:\Users\Alex\projects\grc-law-tooling` (2.2 GB with the cached official documents,
+      a README inside), outside the repository. Back it up, or say that its scripts should
+      become a tool in the repository.
 - [ ] **A lawyer's eye on the machine translations before a bank relies on them** (D-142's
       open point). Each was written, read by a second reader and checked by program, and
       the flagged ones by a third; all of them models.
