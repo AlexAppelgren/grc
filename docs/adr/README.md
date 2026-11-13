@@ -75,6 +75,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0066](0066-the-organisation-and-scope-come-from-public-registers.md) | The organisation and the regulatory scope come from public registers, through the existing request | D-121 | accepted (Alex, 2026-10-05) |
 | [0067](0067-one-account-may-hold-both-zones-one-session-holds-one.md) | One account may hold both zones; one session holds one, and a passkey switches between them | D-122, supersedes hardening H13's separate accounts | accepted (Alex, 2026-11-08) |
 | [0068](0068-the-browser-reaches-the-api-through-the-app-host.md) | The browser reaches the API through the app host, on an address that does not pass Cloudflare, in two steps | D-134; keeps D-06 | accepted (Alex, 2026-11-11 and 2026-11-12) |
+| [0069](0069-a-reason-is-drafted-from-the-licence-facts-only.md) | A reason may be drafted by AI from the licence facts only, the third exception beside Ask | D-143 (amends D-07) | accepted (Alex, 2026-11-13) |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the

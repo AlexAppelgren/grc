@@ -39,7 +39,12 @@ class AiPurpose(enum.StrEnum):
     from a decision.
 
     `what_applies` is the summary drafted above what applies to a bank's own agent (ACC-06),
-    counted against that bank's monthly cap."""
+    counted against that bank's monthly cap.
+
+    `reason_draft` is the reason a model drafts in the "Does it apply" dialog from the licence
+    facts and the library's facts alone (REG-01, D-143, ADR 0069). The person who sets the
+    answer reviews it: the row reads `confirmed` when the stored reason is the draft as it
+    stood, `edited` when they changed it."""
 
     SO_WHAT = "so_what"
     CHANGE_SUMMARY = "change_summary"
@@ -49,6 +54,7 @@ class AiPurpose(enum.StrEnum):
     ANSWER = "answer"
     AGENT_REVIEW = "agent_review"
     WHAT_APPLIES = "what_applies"
+    REASON_DRAFT = "reason_draft"
 
 
 class AiStatus(enum.StrEnum):

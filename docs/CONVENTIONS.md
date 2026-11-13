@@ -654,7 +654,11 @@ confirmed. Re-tag requests are one batch proposal with a preview. Every model
 call writes `ai_generation`. Ask quotes only retrieved chunks, cites every
 statement, flags pending changes, returns `noAnswer` instead of guessing.
 Until an EU-pinned inference path is contracted, no tenant-zone text goes to
-a model except the Ask question, which a tenant can switch off (D-07).
+a model except three named exceptions, each behind the tenant's AI switch: the
+Ask question (D-07), a bank's capped research text for its own agent (D-98,
+ADR 0061), and the licence facts behind a reason a person asks a model to
+draft in the "Does it apply" dialog (D-143, ADR 0069). A fourth is a decision
+of its own.
 `search_eval.py` is a gate.
 
 ## 14. Languages and jurisdictions (playbook 17)

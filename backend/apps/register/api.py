@@ -22,7 +22,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.register import agent_read, applicability, company_view, decide_all, duties, gaps, history, links, panels, soa, status_logic, units
+from apps.register import agent_read, applicability, company_view, decide_all, duties, gaps, history, links, panels, reason_draft, soa, status_logic, units
 from apps.register.schemas import (
     RegisterInternalItemPage,
     RegisterInternalItemQuery,
@@ -59,6 +59,8 @@ from apps.register.schemas import (
     RegisterInterpretation,
     RegisterInterpretationBody,
     RegisterPatch,
+    RegisterReasonDraft,
+    RegisterReasonDraftBody,
     RegisterRiskAcceptanceBody,
     RegisterSpannedEntity,
     RegisterStatementOfApplicability,
@@ -263,10 +265,13 @@ def set_applicability(
 
     A person's session holding `applicability.approve`. No step-up. Send `If-Match` with the
     row's `version`. Records one audit event naming the person, the value before and after,
-    and the reason.
+    and the reason. When the reason began as an AI draft, send its id as `reasonDraftId`: the
+    draft's AI log row then reads confirmed or edited, and the audit event records the draft's
+    id and that review.
 
-    Errors: `not_found` (404) for an obligation, entity or unit the bank cannot see, or a
-    legal entity the obligation does not span; `validation_error` (422) for an unknown
+    Errors: `not_found` (404) for an obligation, entity or unit the bank cannot see, a
+    legal entity the obligation does not span, or a `reasonDraftId` that is not a draft the
+    caller was given in this bank; `validation_error` (422) for an unknown
     value, an empty reason, or both `orgUnitId` and `unitId`; `scope_not_applicable` (422)
     for a unit whose legal entity no longer follows the standard. A unit's answer is stored
     on the unit, never on its entity's conformance row, and joins the unit's history in the
@@ -556,7 +561,9 @@ def decide_all_applicability(request: HttpRequest, body: RegisterDecideAllBody) 
 
     It writes one audit row for the decision itself, on the legal entity: how many obligations
     it lists, the regulation if any, the answer and whether rows were selected, never the
-    reason. Read the progress with `GET /applicability/decide-all`. Before each chunk the
+    reason. When the reason began as an AI draft, send its id as `reasonDraftId`: the draft's
+    AI log row then reads confirmed or edited, and that audit row records the draft's id and
+    that review. Read the progress with `GET /applicability/decide-all`. Before each chunk the
     worker checks that the person is still an active member holding `applicability.approve`,
     and otherwise stops and records why.
 
@@ -566,8 +573,9 @@ def decide_all_applicability(request: HttpRequest, body: RegisterDecideAllBody) 
 
     Errors to branch on: `decision_running` (409) while the caller's earlier run in this bank
     is still running; `not_found` (404) for an `orgUnitId` that is not one of the bank's active
-    legal entities, another bank's included, or an `obligationIds` entry the register does not
-    offer for it, in which case nothing starts; `validation_error` (422) for an answer other
+    legal entities, another bank's included, an `obligationIds` entry the register does not
+    offer for it, or a `reasonDraftId` that is not a draft the caller was given in this bank,
+    in which case nothing starts; `validation_error` (422) for an answer other
     than the two, an empty reason or one over 2000 characters, an empty selection, an
     obligation named twice, or more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by
     default.
@@ -599,6 +607,58 @@ def read_decide_all_applicability(request: HttpRequest) -> Any:
     holding `applicability.approve`.
     """
     return RegisterDecideAll.model_validate(decide_all.state_of(caller_tenant(request).id, caller_user(request).id))
+
+
+# ---------------------------------------------------------------------------------------
+# A reason drafted by AI (REG-01, D-143, ADR 0069; reason_draft.py)
+# ---------------------------------------------------------------------------------------
+@router.post(
+    "/applicability/reason-draft",
+    response=RegisterReasonDraft,
+    auth=SESSION,
+    operation_id="draftApplicabilityReason",
+    by_alias=True,
+    summary="Have AI draft the reason for an applicability answer from the licence facts",
+)
+@requires_permission(perms.APPLICABILITY_APPROVE)
+@answers_problems
+def draft_applicability_reason(request: HttpRequest, body: RegisterReasonDraftBody) -> Any:
+    """Drafts one to three plain sentences saying why the chosen answer holds for one legal
+    entity, for the "Does it apply" dialog to put in its reason field, labelled as an AI draft
+    until the person sets the answer. Call it when the person asks for a draft; it changes
+    nothing, so it writes no audit event. Send the returned `generationId` back as
+    `reasonDraftId` with `PUT /obligations/{obligationId}/applicability` or
+    `POST /applicability/decide-all`, and the draft's log row reads confirmed or edited.
+
+    The obligations are those of the same filters as Decide all: the rows named in
+    `obligationIds`, else those of `instrument`, or of every regulation, that nobody has
+    answered. The server reads every fact itself, never from the request, and the model sees
+    only these: the chosen answer, the reader's language (Swedish for a Swedish locale, else
+    English), the legal entity's licence facts (each supervisor's register line with the scope
+    terms it brings, the licences the bank recorded as type, authority, grant date and covered
+    services, and the entity's type, terms as keys and labels) and the library's shared facts
+    (each regulation's short name, official reference and regime, and up to
+    `REGISTER_REASON_DRAFT_FACTS`, 20 by default, obligations' reference, title, summary and
+    source, each text cut to `REGISTER_REASON_DRAFT_TEXT_MAX_CHARS`, 500 by default). Never the
+    company's or the bank's name, people, what anyone typed, register answers, cases or
+    comments. The draft is at most `REGISTER_REASON_DRAFT_MAX_TOKENS` tokens, 300 by default,
+    and 2000 characters. Every call leaves one row in the AI log naming the person who asked.
+
+    A person's session holding `applicability.approve`. No step-up: drafting sets nothing.
+
+    Errors to branch on: `feature_off` (403) when the bank has switched its AI features off,
+    before any model is asked; `not_found` (404) for an `orgUnitId` that is not one of the
+    bank's active legal entities, another bank's included, or an `obligationIds` entry the
+    register does not offer for it; `draft_refused` (422) when any of the obligations is the
+    bank's own record or sits under a standard, neither of which ever reaches a model;
+    `validation_error` (422) for an unknown answer, an empty selection, an obligation named
+    twice, more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default, or nothing left
+    to decide; `model_unavailable` (503) when the model failed, timed out after
+    `REGISTER_REASON_DRAFT_DEADLINE_MS`, 15000 by default, or wrote nothing, in which case the
+    person writes the reason themselves.
+    """
+    tenant = caller_tenant(request)
+    return reason_draft.draft(tenant=tenant, user=caller_user(request), order=language_order(request, tenant=tenant), body=body)
 
 
 # ---------------------------------------------------------------------------------------

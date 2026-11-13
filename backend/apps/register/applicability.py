@@ -5,7 +5,8 @@ second approver, no step-up. Value, reason, time and person are stored with one 
 per row. A unit's answer is stored on and audited as the unit (REG-08, D-41); the unit must
 be live under the obligation (404) and its entity still follow the standard (422
 `scope_not_applicable`). Many answers are one call, all or none, capped by
-`REGISTER_BULK_MAX`.
+`REGISTER_BULK_MAX`. A reason that began as the person's AI draft (D-143) is confirmed here
+(`confirm_draft`): the draft's log row reads confirmed or edited, and the audit names it.
 
 "Applies" and "we comply" are separate facts: nothing here touches a status or a gap. A read
 writes nothing; entries and scope rows are created only by the write that needs them.
@@ -28,11 +29,13 @@ from django.db import models
 from django.db.models import F
 from django.utils import timezone
 
+from apps.governance import ai_log
 from apps.library.reading import RecordHeading, obligation_headings, obligation_scopes
 from apps.register import duties
-from apps.register.logic import ensure_register_entries
+from apps.register.logic import drafted_reason, ensure_register_entries
 from apps.register.models import Applicability, SoaUnit, TenantObligation, TenantObligationScope
 from apps.register.schemas import (
+    REASON_MAX,
     RegisterApplicability,
     RegisterApplicabilityBody,
     RegisterApplicabilityMany,
@@ -64,6 +67,8 @@ class _Answer(NamedTuple):
     unit_id: uuid.UUID | None
     applicability: str
     reason: str
+    # The AI draft the reason began from and the person's review of it (D-143), for the audit.
+    drafted: dict[str, str] | None = None
 
 
 def set_applicability(
@@ -77,8 +82,21 @@ def set_applicability(
 ) -> RegisterApplicability:
     """`PUT /obligations/{obligationId}/applicability`: one confirmed answer, checked against
     `If-Match` (0 for a row nobody has written yet)."""
-    answer = _Answer(obligation_id, body.org_unit_id, body.unit_id, body.applicability, body.reason)
+    drafted = None if body.reason_draft_id is None else confirm_draft(tenant_id=tenant.id, actor=actor, draft_id=body.reason_draft_id, reason=body.reason)
+    answer = _Answer(obligation_id, body.org_unit_id, body.unit_id, body.applicability, body.reason, drafted)
     return _store(tenant=tenant, actor=actor, order=order, answers=[answer], expected_version=expected_version)[0]
+
+
+def confirm_draft(*, tenant_id: uuid.UUID, actor: Actor, draft_id: uuid.UUID, reason: str) -> dict[str, str]:
+    """A person sets an answer whose reason began as their own AI draft (D-143): the draft's log
+    row reads `confirmed` or `edited` in this transaction, naming them, and the decision's audit
+    event carries what this returns: the draft's id and that review, never its words. A draft
+    that is not the person's own in this bank is `not_found`."""
+    row = None if actor.id is None else ai_log.reason_draft_of(draft_id, tenant_id, asker_id=actor.id)
+    if row is None or actor.id is None:
+        raise ValidationError("That AI draft is not one you were given here.", code="not_found")
+    as_drafted = reason.strip() == drafted_reason(row.output, REASON_MAX)
+    return {"generationId": str(row.id), "review": ai_log.review_draft(row, as_drafted=as_drafted, reviewer_id=actor.id)}
 
 
 def set_applicability_many(
@@ -321,12 +339,15 @@ def _write(
     row.version += 1  # every row is written together by _update()
     title = f"{heading.instrument_short_name}, {heading.reference_label}"
     summary = f"Applicability set to {answer.applicability}."
-    after = {
+    after: dict[str, object] = {
         "obligationId": str(answer.obligation_id),
         "orgUnitId": None if answer.org_unit_id is None else str(answer.org_unit_id),
         "applicability": answer.applicability,
         "reason": answer.reason,
     }
+    if answer.drafted is not None:
+        summary = f"{summary} The reason began as an AI draft the person {answer.drafted['review']}."
+        after["reasonDraft"] = answer.drafted
     if isinstance(row, SoaUnit):
         # The unit is the subject, so its history is its own events (REG-S15).
         record(

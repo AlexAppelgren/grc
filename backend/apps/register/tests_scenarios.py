@@ -15,9 +15,10 @@ from unittest import mock, skip
 
 from django.core.cache import cache
 from django.db import OperationalError, transaction
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.utils import timezone
 
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.library import testing as library_build
 from apps.library import testing as library_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -36,6 +37,8 @@ from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, ComplianceAssessment, Gap, TenantObligation, TenantObligationScope
 from apps.register.tests_applicability import Bank, banks_duty, seed_library
+from apps.register.tests_company_view import FI, register_facts
+from apps.shared.adapters.llm import MockLlm
 from apps.shared.models import AuditEvent
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import ComplianceStatus, FootprintTerm, GapSource, GapStatus, RiskRating
@@ -1016,3 +1019,56 @@ class RegisterScenarioTests(TestCase):
         self.assertEqual(stopped.after, {"stopped": "failed", "set": 0, "skipped": 0, "refused": 0, "left": 1})
         self.assertNotIn(reason, str([stopped.after, stopped.summary]))
         self.assertIsNone(TenantObligationScope.objects.filter(tenant_obligation__obligation=fifth, org_unit=a.bank_ab).first())
+
+    def test_reg_s23(self) -> None:
+        """REG-S23
+
+        AI drafts the reason from the licence facts alone, and the person stands behind it
+        (REG-01, D-143).
+        Operations: `draftApplicabilityReason`, `setApplicability`.
+        """
+        seed_library()
+        library_build.authority(key=FI, short_name="FI")
+        a = Bank("reg-s23")
+        law = library_build.instrument(key="s23-lvm", short_name="LVM", official_ref="SFS 2007:528", regime="regime:securities")
+        duty = library_build.obligation(law, key="s23-lvm-1", ref_label="8 kap. 11 §", titles={"en": "Keep client assets apart"})
+        register_facts(a.tenant, a.bank_ab, "556000-0001")
+        officer = sign_in(a.officer, tenant=a.tenant)
+
+        # Asked for a draft of "Applies" for Example Bank AB on one obligation: the server
+        # reads the licence facts and the library's facts, and nothing typed or named.
+        original = MockLlm.stream
+        with mock.patch.object(MockLlm, "stream", autospec=True, side_effect=original) as model:
+            drafted = Client().post(
+                "/api/v1/applicability/reason-draft",
+                data={"orgUnitId": str(a.bank_ab.id), "obligationIds": [str(duty.id)], "applicability": "applies"},
+                content_type="application/json",
+                **officer,
+            )
+        self.assertEqual(drafted.status_code, 200, drafted.content)
+        draft = drafted.json()
+        self.assertTrue(draft["aiGenerated"])
+        prompt = model.call_args.kwargs["prompt"]
+        self.assertIn("Tillstånd att driva bankrörelse", prompt)
+        self.assertIn("Keep client assets apart", prompt)
+        for name in ("Example Bank AB", a.tenant.name, "Sara Lind"):
+            self.assertNotIn(name, prompt)
+        tenancy.activate(a.tenant.id)
+        row = AiGeneration.objects.get(pk=draft["generationId"])
+        self.assertEqual((row.purpose, row.asker_id, row.status), (AiPurpose.REASON_DRAFT.value, a.officer.id, "draft"))
+
+        # The officer sets the answer with the draft as it stood: the log row reads confirmed
+        # in their name, and the decision's audit event names the draft.
+        stored = self.client.put(
+            f"/api/v1/obligations/{duty.id}/applicability",
+            data={"orgUnitId": str(a.bank_ab.id), "applicability": "applies", "reason": draft["text"], "reasonDraftId": draft["generationId"]},
+            content_type="application/json",
+            **officer,
+        )
+        self.assertEqual(stored.status_code, 200, stored.content)
+        tenancy.activate(a.tenant.id)
+        row.refresh_from_db()
+        self.assertEqual((row.status, row.reviewed_by_id), ("confirmed", a.officer.id))
+        [event] = AuditEvent.objects.filter(action=APPLICABILITY_SET, after__obligationId=str(duty.id))
+        self.assertEqual(event.after["reasonDraft"], {"generationId": draft["generationId"], "review": "confirmed"})
+        self.assertEqual(event.after["reason"], draft["text"])

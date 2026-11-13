@@ -204,6 +204,16 @@ def start(*, tenant: Tenant, user: User, body: RegisterDecideAllBody) -> dict[st
     run_id = uuid.uuid4().hex
     held = {"state": state, "reason": body.reason if targets else "", "runId": run_id}
     with transaction.atomic():
+        after: dict[str, Any] = {
+            "count": len(targets),
+            "orgUnitId": str(company.id),
+            "instrument": body.instrument,
+            "applicability": body.applicability,
+            "selected": selected is not None,
+        }
+        if body.reason_draft_id is not None:
+            # The reason began as the person's AI draft (D-143): its id and their review, never its words.
+            after["reasonDraft"] = applicability.confirm_draft(tenant_id=tenant.id, actor=_actor(user), draft_id=body.reason_draft_id, reason=body.reason)
         record(
             action=STARTED,
             actor=_actor(user),
@@ -212,13 +222,7 @@ def start(*, tenant: Tenant, user: User, body: RegisterDecideAllBody) -> dict[st
             subject_title=company.name,
             summary=f"Started deciding all {len(targets)} unanswered obligations",
             tenant_id=tenant.id,
-            after={
-                "count": len(targets),
-                "orgUnitId": str(company.id),
-                "instrument": body.instrument,
-                "applicability": body.applicability,
-                "selected": selected is not None,
-            },
+            after=after,
         )
         _keep(tenant.id, user.id, held)
         if targets:

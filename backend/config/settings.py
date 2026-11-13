@@ -444,6 +444,13 @@ PROPOSALS_APPROVE_ALL_STALE_S = env_int("PROPOSALS_APPROVE_ALL_STALE_S", 300, mi
 REGISTER_DECIDE_ALL_KEEP_S = env_int("REGISTER_DECIDE_ALL_KEEP_S", 86_400, min=60, max=30 * 86_400)
 REGISTER_DECIDE_ALL_STALE_S = env_int("REGISTER_DECIDE_ALL_STALE_S", 300, min=30, max=86_400)
 REGISTER_DECIDE_ALL_SELECTED_MAX = env_int("REGISTER_DECIDE_ALL_SELECTED_MAX", 1000, min=1, max=10_000)
+# --- A reason drafted by AI in the "Does it apply" dialog (REG-01, D-143, ADR 0069): the
+# longest draft in tokens, how long the model may take, how many obligations the prompt names
+# and how many characters of each library or register text it carries. ---
+REGISTER_REASON_DRAFT_MAX_TOKENS = env_int("REGISTER_REASON_DRAFT_MAX_TOKENS", 300, min=1, max=LLM_MAX_TOKENS)
+REGISTER_REASON_DRAFT_DEADLINE_MS = env_int("REGISTER_REASON_DRAFT_DEADLINE_MS", 15_000, min=1, max=120_000)
+REGISTER_REASON_DRAFT_FACTS = env_int("REGISTER_REASON_DRAFT_FACTS", 20, min=1, max=200)
+REGISTER_REASON_DRAFT_TEXT_MAX_CHARS = env_int("REGISTER_REASON_DRAFT_TEXT_MAX_CHARS", 500, min=20, max=10_000)
 
 # --- Home, briefing, reminders and the workflow policy (HOM-01, HOM-02, COL-02) ---
 HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5, min=1, max=50)

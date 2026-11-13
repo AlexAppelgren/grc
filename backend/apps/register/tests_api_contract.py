@@ -46,6 +46,7 @@ AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_
 STATUS_BODY = {"complianceStatus": "partly_compliant", "statusNote": "Reconciliation runs daily; the evidence log is manual."}
 APPLICABILITY_BODY = {"applicability": "applies", "reason": "Certified", "orgUnitId": ENTITY}
 MANY_BODY = {"rows": [{"obligationId": OBLIGATION, "unitId": RECORD, "applicability": "not_applicable", "reason": "No cloud services"}]}
+REASON_DRAFT_BODY = {"orgUnitId": ENTITY, "applicability": "applies"}
 DECIDE_ALL_BODY = {"orgUnitId": ENTITY, "applicability": "applies", "reason": "Covered by the bank's securities licence"}
 GAP_BODY = {"title": "Evidence of reconciliation is manual", "severity": "high", "source": "assessment", "targetDate": "2026-12-31"}
 GAP_PATCH = {"remediation": "Automate the daily reconciliation report."}
@@ -95,6 +96,8 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     # Decide all, run by the worker (tests_decide_all.py).
     ("decideAllApplicability", "post", "/api/v1/applicability/decide-all", DECIDE_ALL_BODY, perms.APPLICABILITY_APPROVE, False),
     ("readDecideAllApplicability", "get", "/api/v1/applicability/decide-all", None, perms.APPLICABILITY_APPROVE, False),
+    # A reason drafted by AI (tests_reason_draft.py).
+    ("draftApplicabilityReason", "post", "/api/v1/applicability/reason-draft", REASON_DRAFT_BODY, perms.APPLICABILITY_APPROVE, False),
 ]
 
 
@@ -167,6 +170,7 @@ class RegisterRouteGates(TestCase):
             ("setApplicabilityMany", "post", "/api/v1/applicability", {"rows": []}, {}),
             ("decideAllApplicability", "post", "/api/v1/applicability/decide-all", {**DECIDE_ALL_BODY, "applicability": "under_assessment"}, {}),
             ("decideAllApplicability", "post", "/api/v1/applicability/decide-all", {**DECIDE_ALL_BODY, "obligationIds": []}, {}),
+            ("draftApplicabilityReason", "post", "/api/v1/applicability/reason-draft", {**REASON_DRAFT_BODY, "applicability": "maybe"}, {}),
             ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {**GAP_BODY, "source": "x" * 65}, {}),
             ("createGap", "post", f"/api/v1/obligations/{OBLIGATION}/gaps", {"severity": "high", "source": "audit"}, {}),
             ("listRegisterGaps", "get", "/api/v1/gaps?limit=101", None, {}),
@@ -233,6 +237,8 @@ BUILT = {
     # Decide all: tests_decide_all.py
     "decideAllApplicability",
     "readDecideAllApplicability",
+    # A reason drafted by AI: tests_reason_draft.py
+    "draftApplicabilityReason",
 }
 
 

@@ -54,6 +54,15 @@ UNIT_TITLE_MAX = 300
 # A pasted line is bounded generously so an over-long one is reported on its row by the dry
 # run rather than refusing the whole paste; the unit limits above decide what is created.
 PASTE_FIELD_MAX = 1000
+# Where a reason began as a model's draft (D-143): the draft's AI log row, sent back with the answer.
+_REASON_DRAFT_ID = (
+    "The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), "
+    "as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row "
+    "then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person "
+    "changed it, naming them, and the decision's audit event records the draft's id and that review. "
+    "It must be a draft the same person was given in this bank, or the call answers 404 `not_found` "
+    "and nothing is stored."
+)
 
 Applicability = Literal["applies", "not_applicable", "under_assessment"]
 AssessmentMethod = Literal["self_assessment", "second_line_review", "internal_audit", "external_audit", "regulator"]
@@ -443,6 +452,8 @@ class RegisterApplicabilityBody(RegisterApplicabilityTarget):
             ]
         }
     )
+
+    reason_draft_id: uuid.UUID | None = Field(default=None, description=_REASON_DRAFT_ID)
 
 
 class RegisterApplicabilityRow(RegisterApplicabilityTarget):
@@ -2112,6 +2123,7 @@ class RegisterDecideAllBody(WriteBody):
             "log line and rides in no message to the worker."
         ),
     )
+    reason_draft_id: uuid.UUID | None = Field(default=None, description=_REASON_DRAFT_ID)
 
     @field_validator("obligation_ids")
     @classmethod
@@ -2119,6 +2131,104 @@ class RegisterDecideAllBody(WriteBody):
         if ids is not None and len(set(ids)) < len(ids):
             raise ValueError("Name each obligation once.")
         return ids
+
+
+class RegisterReasonDraftBody(WriteBody):
+    """`POST /applicability/reason-draft`: what a reason is to be drafted for, as the "Does it
+    apply" dialog holds it. The facts themselves are read by the server, never sent."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"orgUnitId": "55555555-5555-4555-8555-555555555555", "instrument": "fffs-2017-2", "applicability": "applies"},
+                {
+                    "orgUnitId": "55555555-5555-4555-8555-555555555555",
+                    "obligationIds": ["44444444-4444-4444-8444-444444444444"],
+                    "applicability": "not_applicable",
+                },
+            ]
+        }
+    )
+
+    org_unit_id: uuid.UUID = Field(
+        description=(
+            "The legal entity the answer is for, by its UUID from `GET /applicability/companies`: one "
+            "of the bank's active legal entities. Required. An id that is not one, another bank's "
+            "included, answers 404 `not_found`. Its name is never sent to a model."
+        )
+    )
+    instrument: str | None = Field(
+        default=None,
+        max_length=STABLE_KEY_MAX,
+        pattern=STABLE_KEY,
+        description=(
+            "Draft for the obligations of one regulation, named by its stable key, such as "
+            f"`fffs-2017-2`: letters, digits, hyphens and underscores, at most {STABLE_KEY_MAX} characters; "
+            "anything else is refused with 422 `validation_error`. Left out, the obligations of every "
+            "regulation offered for the legal entity count. The same filter as `POST /applicability/decide-all`."
+        ),
+    )
+    obligation_ids: list[uuid.UUID] | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Draft for these obligations only, each by the UUID `GET /applicability/rows` gives as "
+            "`obligationId`: the rows the person ticked, or the one obligation the obligation page "
+            "decides. At least 1, each once, and at most the configured `REGISTER_DECIDE_ALL_SELECTED_MAX`, "
+            "1000 by default. Every id must be an obligation the register offers for the legal entity, "
+            "or the call answers 404 `not_found` and no model is asked. Left out, the draft covers the "
+            "obligations nobody has answered yet, as a Decide all run would set them."
+        ),
+    )
+    applicability: Applicability = Field(
+        description=(
+            "The answer the person has chosen in the dialog, which the draft explains: `applies`, "
+            "`not_applicable` (does not apply) or `under_assessment` (not assessed yet). The draft "
+            "never chooses the answer; it states why the chosen one holds by the licence facts."
+        )
+    )
+
+    @field_validator("obligation_ids")
+    @classmethod
+    def _each_once(cls, ids: list[uuid.UUID] | None) -> list[uuid.UUID] | None:
+        if ids is not None and len(set(ids)) < len(ids):
+            raise ValueError("Name each obligation once.")
+        return ids
+
+
+class RegisterReasonDraft(CamelSchema):
+    """A reason a model drafted for the "Does it apply" dialog. AI output: shown labelled as a
+    draft until the person sets the answer, and stored only as the reason they then send."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "text": "The company's licence for securities business under the Securities Market Act brings this regulation into its scope.",
+                    "generationId": "77777777-7777-4777-8777-777777777777",
+                    "aiGenerated": True,
+                }
+            ]
+        }
+    )
+
+    text: str = Field(
+        description=(
+            f"The drafted reason, plain text of one to three sentences in the reader's language "
+            f"(English or Swedish), at most {REASON_MAX} characters, the longest reason an answer "
+            "takes. Drafted from the licence facts and the library's facts alone. Never stored on "
+            "its own: put it in the reason field for the person to read, change or replace."
+        )
+    )
+    generation_id: uuid.UUID = Field(
+        description=(
+            "The AI log row of this draft, as a UUID. Send it back as `reasonDraftId` with the answer "
+            "it helped write, so the log records that the person confirmed or edited it."
+        )
+    )
+    ai_generated: bool = Field(
+        description="Always `true`: the text is a model's draft, which a screen labels as AI output until the person sets the answer."
+    )
 
 
 class RegisterDecideAllRefusal(CamelSchema):

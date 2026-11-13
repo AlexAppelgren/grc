@@ -327,8 +327,10 @@ _PURPOSES = (
     "one bank), `agent_review` (a confirming agent's decision on another agent's work: "
     "approving, correcting or rejecting a proposal, or confirming a watch item's curation, "
     "with the model behind it reported by that agent; only the platform reads these, so a "
-    "bank's log never lists one), and `what_applies` (the short summary drafted above what "
-    "applies to one bank's own agent, its cost counted against the bank's monthly cap)"
+    "bank's log never lists one), `what_applies` (the short summary drafted above what "
+    "applies to one bank's own agent, its cost counted against the bank's monthly cap), and "
+    "`reason_draft` (a reason drafted in the \"Does it apply\" dialog from a company's licence "
+    "facts and the library's facts alone, reviewed by the person who sets the answer)"
 )
 _STATUSES = (
     "`draft` (nobody has stood behind it yet, which is how every row starts and how a "

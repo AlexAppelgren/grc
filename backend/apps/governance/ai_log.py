@@ -24,6 +24,7 @@ from django.core.exceptions import ValidationError
 from django.db import connection
 from django.db.models import Case, CharField, Count, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, UUIDField, Value, When
 from django.db.models.functions import Left
+from django.utils import timezone
 
 from apps.cases.models import ChangeCase
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
@@ -125,6 +126,29 @@ def set_feedback(row: AiGeneration, *, feedback: str, note: str) -> None:
     row.feedback = feedback
     row.feedback_note = note
     row.save(update_fields=["feedback", "feedback_note"])
+
+
+def reason_draft_of(generation_id: uuid.UUID, tenant_id: uuid.UUID, *, asker_id: uuid.UUID) -> AiGeneration | None:
+    """One reason draft `asker_id` was given in their bank, by its id, or nothing: a
+    colleague's draft, another bank's or a call that failed is nothing, so nobody stands behind
+    words they were never shown (D-143)."""
+    return (
+        AiGeneration.objects.filter(pk=generation_id, tenant_id=tenant_id, asker_id=asker_id, purpose=AiPurpose.REASON_DRAFT.value)
+        .exclude(stop_reason=FAILED)
+        .first()  # ordering: pk lookup, at most one row
+    )
+
+
+def review_draft(row: AiGeneration, *, as_drafted: bool, reviewer_id: uuid.UUID) -> str:
+    """A person set an answer with a reason that began as this draft: the row reads `confirmed`
+    when they kept the draft as it stood, `edited` when they changed it, with who and when
+    (AUD-02). The words stay on the row and never reach the audit. Returns the review state."""
+    status = AiStatus.CONFIRMED.value if as_drafted else AiStatus.EDITED.value
+    row.status = status
+    row.reviewed_by_id = reviewer_id
+    row.reviewed_at = timezone.now()
+    row.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+    return status
 
 
 def logged_for(*, agent_run_id: uuid.UUID, purpose: AiPurpose, subject_type: str, subject_id: uuid.UUID) -> bool:

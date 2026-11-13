@@ -18,11 +18,11 @@ said (design/public/README.md, "Where nothing was recorded").
 - [ ] **Look at the four screens and say what should change.** Admin, Licences; What
       applies; a regulation's page; an obligation's page. They are built as the recommended
       layout of `design/proposals/obligations-regulations-licences.html`.
-- [ ] **Decide whether a model may draft the reason (D-143).** "Does it apply" suggests a
-      reason from the company's licence facts, with no model. A drafted or reworded reason
-      would send the bank's facts, or what the member typed, to a model, which D-07 allows
-      only for Ask and for the bank's own agent. Say yes and from what (licence facts only,
-      or the typed text too), or leave it as it is. Nothing is built for it.
+- [x] **Decide whether a model may draft the reason (D-143).** Answered 2026-11-13: licence
+      facts only. Built as "Draft with AI" in the "Does it apply" dialog (ADR 0069): the
+      model reads the chosen answer, the company's licence facts and the library's facts,
+      never what anyone typed or a name. Still yours if wanted: letting it rewrite the typed
+      text too.
 - [ ] **Nine summaries say something the law's words do not.** Read beside the cited text,
       these state a deadline, an actor or a condition differently:
       `obl-dk-kompbolig-training`, `obl-dk-afvplan-financial-contracts-register`,

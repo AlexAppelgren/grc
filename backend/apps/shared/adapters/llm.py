@@ -100,6 +100,8 @@ class LlmAdapter(ABC):
 # Ask renders chunks with `format_context` and an answer cites chunk n as "[n]" (AC-SRC2);
 # the mock reads the same markers back, which keeps it grounded.
 CONTEXT_LINE = re.compile(r"^\[(\d+)\] (.+)$", re.MULTILINE)
+# How a reason draft's prompt opens (apps/register/reason_draft.py), so the mock answers it short.
+REASON_DRAFT_OPENING = "Answer to explain: "
 _FIRST_SENTENCE = re.compile(r"^(.*?\.)(?:\s|$)")
 
 
@@ -124,7 +126,11 @@ class MockLlm(LlmAdapter):
         return "mock", "0"
 
     def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
-        statements = [f"{_first_sentence(text)} [{number}]" for number, text in CONTEXT_LINE.findall(prompt)]
+        chunks = CONTEXT_LINE.findall(prompt)
+        if prompt.startswith(REASON_DRAFT_OPENING):
+            # A drafted reason is one to three sentences (apps/register/reason_draft.py): the first two facts.
+            chunks = chunks[:2]
+        statements = [f"{_first_sentence(text)} [{number}]" for number, text in chunks]
         for index, statement in enumerate(statements):
             yield statement if index == len(statements) - 1 else f"{statement} "
         text = " ".join(statements)

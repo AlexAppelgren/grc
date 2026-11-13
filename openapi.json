@@ -2782,7 +2782,7 @@
             "type": "string"
           },
           "purpose": {
-            "description": "What the call was for, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap).",
+            "description": "What the call was for, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap), and `reason_draft` (a reason drafted in the \"Does it apply\" dialog from a company's licence facts and the library's facts alone, reviewed by the person who sets the answer).",
             "examples": [
               "so_what"
             ],
@@ -21924,6 +21924,19 @@
             "title": "Reason",
             "type": "string"
           },
+          "reasonDraftId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person changed it, naming them, and the decision's audit event records the draft's id and that review. It must be a draft the same person was given in this bank, or the call answers 404 `not_found` and nothing is stored.",
+            "title": "Reasondraftid"
+          },
           "unitId": {
             "anyOf": [
               {
@@ -22852,6 +22865,19 @@
             "minLength": 1,
             "title": "Reason",
             "type": "string"
+          },
+          "reasonDraftId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person changed it, naming them, and the decision's audit event records the draft's id and that review. It must be a draft the same person was given in this bank, or the call answers 404 `not_found` and nothing is stored.",
+            "title": "Reasondraftid"
           }
         },
         "required": [
@@ -26675,6 +26701,114 @@
           }
         },
         "title": "RegisterPatch",
+        "type": "object"
+      },
+      "RegisterReasonDraft": {
+        "description": "A reason a model drafted for the \"Does it apply\" dialog. AI output: shown labelled as a\ndraft until the person sets the answer, and stored only as the reason they then send.",
+        "examples": [
+          {
+            "aiGenerated": true,
+            "generationId": "77777777-7777-4777-8777-777777777777",
+            "text": "The company's licence for securities business under the Securities Market Act brings this regulation into its scope."
+          }
+        ],
+        "properties": {
+          "aiGenerated": {
+            "description": "Always `true`: the text is a model's draft, which a screen labels as AI output until the person sets the answer.",
+            "title": "Aigenerated",
+            "type": "boolean"
+          },
+          "generationId": {
+            "description": "The AI log row of this draft, as a UUID. Send it back as `reasonDraftId` with the answer it helped write, so the log records that the person confirmed or edited it.",
+            "format": "uuid",
+            "title": "Generationid",
+            "type": "string"
+          },
+          "text": {
+            "description": "The drafted reason, plain text of one to three sentences in the reader's language (English or Swedish), at most 2000 characters, the longest reason an answer takes. Drafted from the licence facts and the library's facts alone. Never stored on its own: put it in the reason field for the person to read, change or replace.",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "generationId",
+          "aiGenerated"
+        ],
+        "title": "RegisterReasonDraft",
+        "type": "object"
+      },
+      "RegisterReasonDraftBody": {
+        "additionalProperties": false,
+        "description": "`POST /applicability/reason-draft`: what a reason is to be drafted for, as the \"Does it\napply\" dialog holds it. The facts themselves are read by the server, never sent.",
+        "examples": [
+          {
+            "applicability": "applies",
+            "instrument": "fffs-2017-2",
+            "orgUnitId": "55555555-5555-4555-8555-555555555555"
+          },
+          {
+            "applicability": "not_applicable",
+            "obligationIds": [
+              "44444444-4444-4444-8444-444444444444"
+            ],
+            "orgUnitId": "55555555-5555-4555-8555-555555555555"
+          }
+        ],
+        "properties": {
+          "applicability": {
+            "description": "The answer the person has chosen in the dialog, which the draft explains: `applies`, `not_applicable` (does not apply) or `under_assessment` (not assessed yet). The draft never chooses the answer; it states why the chosen one holds by the licence facts.",
+            "enum": [
+              "applies",
+              "not_applicable",
+              "under_assessment"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Draft for the obligations of one regulation, named by its stable key, such as `fffs-2017-2`: letters, digits, hyphens and underscores, at most 120 characters; anything else is refused with 422 `validation_error`. Left out, the obligations of every regulation offered for the legal entity count. The same filter as `POST /applicability/decide-all`.",
+            "title": "Instrument"
+          },
+          "obligationIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Draft for these obligations only, each by the UUID `GET /applicability/rows` gives as `obligationId`: the rows the person ticked, or the one obligation the obligation page decides. At least 1, each once, and at most the configured `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default. Every id must be an obligation the register offers for the legal entity, or the call answers 404 `not_found` and no model is asked. Left out, the draft covers the obligations nobody has answered yet, as a Decide all run would set them.",
+            "title": "Obligationids"
+          },
+          "orgUnitId": {
+            "description": "The legal entity the answer is for, by its UUID from `GET /applicability/companies`: one of the bank's active legal entities. Required. An id that is not one, another bank's included, answers 404 `not_found`. Its name is never sent to a model.",
+            "format": "uuid",
+            "title": "Orgunitid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orgUnitId",
+          "applicability"
+        ],
+        "title": "RegisterReasonDraftBody",
         "type": "object"
       },
       "RegisterRiskAcceptance": {
@@ -42664,7 +42798,7 @@
         "operationId": "listAiGenerations",
         "parameters": [
           {
-            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap), and `reason_draft` (a reason drafted in the \"Does it apply\" dialog from a company's licence facts and the library's facts alone, reviewed by the person who sets the answer). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
             "examples": [
               "so_what"
             ],
@@ -42681,7 +42815,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), and `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+              "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank), `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one), `what_applies` (the short summary drafted above what applies to one bank's own agent, its cost counted against the bank's monthly cap), and `reason_draft` (a reason drafted in the \"Does it apply\" dialog from a company's licence facts and the library's facts alone, reviewed by the person who sets the answer). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
               "examples": [
                 "so_what"
               ],
@@ -42955,7 +43089,7 @@
         ]
       },
       "post": {
-        "description": "Decide all: call it once a person has confirmed, in one dialog, that the obligations\nthe register offers for one legal entity and that nobody has answered apply, or do not:\nall of them, those of one regulation (`instrument`), or the rows they ticked\n(`obligationIds`). One answer and one reason for all, and no limit on how many. The count\nto print on the button is `toDecide` in `GET /applicability/companies` and\n`GET /applicability/regulations`.\n\nIt reads the targets at that moment and answers 202 at once with the run's state. The\nworker then sets each one through the same logic as\n`PUT /obligations/{obligationId}/applicability`, a chunk at a time, each row with its own\naudit event naming the person, the value before and after and the reason, and with its\nrecurring duties scheduled when the answer is `applies`. An obligation a person has\nanswered is never a target, whatever the answer, one a colleague left under assessment\nwith a reason included; one answered between the call and the worker's turn is left alone\nand counted as skipped. An obligation offered after the call waits for the next decision.\nCompliance statuses and gaps are untouched.\n\nIt writes one audit row for the decision itself, on the legal entity: how many obligations\nit lists, the regulation if any, the answer and whether rows were selected, never the\nreason. Read the progress with `GET /applicability/decide-all`. Before each chunk the\nworker checks that the person is still an active member holding `applicability.approve`,\nand otherwise stops and records why.\n\nA person's session holding `applicability.approve`. No step-up and no second approver\n(D-75): the confirmation covers the run as the dialog showed it. An API key never reaches\nthis route.\n\nErrors to branch on: `decision_running` (409) while the caller's earlier run in this bank\nis still running; `not_found` (404) for an `orgUnitId` that is not one of the bank's active\nlegal entities, another bank's included, or an `obligationIds` entry the register does not\noffer for it, in which case nothing starts; `validation_error` (422) for an answer other\nthan the two, an empty reason or one over 2000 characters, an empty selection, an\nobligation named twice, or more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by\ndefault.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
+        "description": "Decide all: call it once a person has confirmed, in one dialog, that the obligations\nthe register offers for one legal entity and that nobody has answered apply, or do not:\nall of them, those of one regulation (`instrument`), or the rows they ticked\n(`obligationIds`). One answer and one reason for all, and no limit on how many. The count\nto print on the button is `toDecide` in `GET /applicability/companies` and\n`GET /applicability/regulations`.\n\nIt reads the targets at that moment and answers 202 at once with the run's state. The\nworker then sets each one through the same logic as\n`PUT /obligations/{obligationId}/applicability`, a chunk at a time, each row with its own\naudit event naming the person, the value before and after and the reason, and with its\nrecurring duties scheduled when the answer is `applies`. An obligation a person has\nanswered is never a target, whatever the answer, one a colleague left under assessment\nwith a reason included; one answered between the call and the worker's turn is left alone\nand counted as skipped. An obligation offered after the call waits for the next decision.\nCompliance statuses and gaps are untouched.\n\nIt writes one audit row for the decision itself, on the legal entity: how many obligations\nit lists, the regulation if any, the answer and whether rows were selected, never the\nreason. When the reason began as an AI draft, send its id as `reasonDraftId`: the draft's\nAI log row then reads confirmed or edited, and that audit row records the draft's id and\nthat review. Read the progress with `GET /applicability/decide-all`. Before each chunk the\nworker checks that the person is still an active member holding `applicability.approve`,\nand otherwise stops and records why.\n\nA person's session holding `applicability.approve`. No step-up and no second approver\n(D-75): the confirmation covers the run as the dialog showed it. An API key never reaches\nthis route.\n\nErrors to branch on: `decision_running` (409) while the caller's earlier run in this bank\nis still running; `not_found` (404) for an `orgUnitId` that is not one of the bank's active\nlegal entities, another bank's included, an `obligationIds` entry the register does not\noffer for it, or a `reasonDraftId` that is not a draft the caller was given in this bank,\nin which case nothing starts; `validation_error` (422) for an answer other\nthan the two, an empty reason or one over 2000 characters, an empty selection, an\nobligation named twice, or more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by\ndefault.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
         "operationId": "decideAllApplicability",
         "parameters": [],
         "requestBody": {
@@ -42986,6 +43120,44 @@
           }
         ],
         "summary": "Decide everything still unanswered for one company at once, in the background",
+        "tags": [
+          "Register"
+        ]
+      }
+    },
+    "/api/v1/applicability/reason-draft": {
+      "post": {
+        "description": "Drafts one to three plain sentences saying why the chosen answer holds for one legal\nentity, for the \"Does it apply\" dialog to put in its reason field, labelled as an AI draft\nuntil the person sets the answer. Call it when the person asks for a draft; it changes\nnothing, so it writes no audit event. Send the returned `generationId` back as\n`reasonDraftId` with `PUT /obligations/{obligationId}/applicability` or\n`POST /applicability/decide-all`, and the draft's log row reads confirmed or edited.\n\nThe obligations are those of the same filters as Decide all: the rows named in\n`obligationIds`, else those of `instrument`, or of every regulation, that nobody has\nanswered. The server reads every fact itself, never from the request, and the model sees\nonly these: the chosen answer, the reader's language (Swedish for a Swedish locale, else\nEnglish), the legal entity's licence facts (each supervisor's register line with the scope\nterms it brings, the licences the bank recorded as type, authority, grant date and covered\nservices, and the entity's type, terms as keys and labels) and the library's shared facts\n(each regulation's short name, official reference and regime, and up to\n`REGISTER_REASON_DRAFT_FACTS`, 20 by default, obligations' reference, title, summary and\nsource, each text cut to `REGISTER_REASON_DRAFT_TEXT_MAX_CHARS`, 500 by default). Never the\ncompany's or the bank's name, people, what anyone typed, register answers, cases or\ncomments. The draft is at most `REGISTER_REASON_DRAFT_MAX_TOKENS` tokens, 300 by default,\nand 2000 characters. Every call leaves one row in the AI log naming the person who asked.\n\nA person's session holding `applicability.approve`. No step-up: drafting sets nothing.\n\nErrors to branch on: `feature_off` (403) when the bank has switched its AI features off,\nbefore any model is asked; `not_found` (404) for an `orgUnitId` that is not one of the\nbank's active legal entities, another bank's included, or an `obligationIds` entry the\nregister does not offer for it; `draft_refused` (422) when any of the obligations is the\nbank's own record or sits under a standard, neither of which ever reaches a model;\n`validation_error` (422) for an unknown answer, an empty selection, an obligation named\ntwice, more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default, or nothing left\nto decide; `model_unavailable` (503) when the model failed, timed out after\n`REGISTER_REASON_DRAFT_DEADLINE_MS`, 15000 by default, or wrote nothing, in which case the\nperson writes the reason themselves.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
+        "operationId": "draftApplicabilityReason",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterReasonDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterReasonDraft"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Have AI draft the reason for an applicability answer from the licence facts",
         "tags": [
           "Register"
         ]
@@ -50246,7 +50418,7 @@
     },
     "/api/v1/obligations/{obligation_id}/applicability": {
       "put": {
-        "description": "Stores the answer to \"Does it apply to us?\" at once, with its reason: for the\nobligation as a whole, for one legal entity (`orgUnitId`) or for one unit of a standard\n(`unitId`). Call it after the person confirmed the answer in a dialog; nothing is\nrequested and nobody else approves it (D-75). An entity's scope row is created in the same\ntransaction when it does not exist yet. The compliance status and the gaps are untouched:\n\"applies\" and \"we comply\" are separate facts.\n\nA person's session holding `applicability.approve`. No step-up. Send `If-Match` with the\nrow's `version`. Records one audit event naming the person, the value before and after,\nand the reason.\n\nErrors: `not_found` (404) for an obligation, entity or unit the bank cannot see, or a\nlegal entity the obligation does not span; `validation_error` (422) for an unknown\nvalue, an empty reason, or both `orgUnitId` and `unitId`; `scope_not_applicable` (422)\nfor a unit whose legal entity no longer follows the standard. A unit's answer is stored\non the unit, never on its entity's conformance row, and joins the unit's history in the\nStatement of Applicability.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.",
+        "description": "Stores the answer to \"Does it apply to us?\" at once, with its reason: for the\nobligation as a whole, for one legal entity (`orgUnitId`) or for one unit of a standard\n(`unitId`). Call it after the person confirmed the answer in a dialog; nothing is\nrequested and nobody else approves it (D-75). An entity's scope row is created in the same\ntransaction when it does not exist yet. The compliance status and the gaps are untouched:\n\"applies\" and \"we comply\" are separate facts.\n\nA person's session holding `applicability.approve`. No step-up. Send `If-Match` with the\nrow's `version`. Records one audit event naming the person, the value before and after,\nand the reason. When the reason began as an AI draft, send its id as `reasonDraftId`: the\ndraft's AI log row then reads confirmed or edited, and the audit event records the draft's\nid and that review.\n\nErrors: `not_found` (404) for an obligation, entity or unit the bank cannot see, a\nlegal entity the obligation does not span, or a `reasonDraftId` that is not a draft the\ncaller was given in this bank; `validation_error` (422) for an unknown\nvalue, an empty reason, or both `orgUnitId` and `unitId`; `scope_not_applicable` (422)\nfor a unit whose legal entity no longer follows the standard. A unit's answer is stored\non the unit, never on its entity's conformance row, and joins the unit's history in the\nStatement of Applicability.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.",
         "operationId": "setApplicability",
         "parameters": [
           {

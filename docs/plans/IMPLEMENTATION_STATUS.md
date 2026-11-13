@@ -373,7 +373,8 @@ they are.
   their text: Nordic statutes and supervisory regulations, EU acts, and the guidelines of
   EBA, ESMA and EIOPA. How each was read and checked:
   `docs/reviews/LAW_TEXT_REVIEW_2026-11-13.md`.
-- **Left, deliberately:** a model drafting or rewording a reason (D-143, the owner's call);
+- **Reason drafted by AI (D-143, ADR 0069, answered 2026-11-13: licence facts only):** `POST /applicability/reason-draft` and "Draft with AI" in the dialog, purpose `reason_draft` (governance 0007), the draft's id carried with the answer so the AI log reads confirmed or edited; REG-S23 `@integration` green, `@e2e` fixme until run against the stack.
+- **Left, deliberately:** a model rewording what the person typed (D-143's wider option);
   78 obligations whose text waits for a reason the file states. The corrections the reading
   of duty beside text proposes for 175 obligations are listed in
   `docs/reviews/law-text-2026-11-13/duty-reading.json` and nothing in the baseline's

@@ -79,6 +79,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ACC-04 | An agent access credential holding `tenant:read`, under an entry with tenant reach on, reads the register decisions on the obligations in its scope. Never gaps, cases, comments, evidence, the audit log or a private record | M | R2 | built |
 | OWN-05 | The bank's own agent may propose a private obligation's controls as linked internal items of the control kind (REG-05), approved in the bank's own queue (D-99) | S | R2 | built |
 
+REG-01's reason may be drafted by AI on the person's request (D-143, ADR 0069, Alex
+2026-11-13: "licence facts only"): `POST /applicability/reason-draft` sends a model the chosen
+answer, the company's licence facts and the library's shared facts, and nothing typed, named or
+otherwise the bank's own; REG-S23.
+
 REG-07 is `in_progress` (c8-recurring-duty-proposal, 2026-09-25): the library half is built. A
 recurring duty is a shared library row (library 0010) whose only door is the
 `new_recurring_duty` proposal, sourced field by field at creation and over a reviewer's
@@ -479,3 +484,25 @@ The suggested reason is built in the browser from `through` and the company's re
 with no model call, and states only facts the bank holds, never the answer
 (`frontend/src/features/applies/suggestion.ts`). An answered row never reads as to decide
 again, so the journey's teardown answers each row "Not assessed", as REG-S1 leaves its row.
+
+### REG-S23 — AI drafts the reason from the licence facts alone, and the person stands behind it `@integration` `@e2e` (REG-01, D-143)
+```gherkin
+Given Example Bank AB with Finansinspektionen's register facts and a licence the bank recorded with a reference and notes of its own
+And an officer holding applicability.approve opens "Does it apply to Example Bank AB?" on an obligation of the Securities Market Act
+When they choose "Draft with AI"
+Then the reason field holds a draft labelled "AI draft — check it before you set it"
+And the model was given the answer, the register lines with the scope terms they bring, the recorded licence's type and grant date, and the regulation's and the obligation's library facts
+And it was given no company or bank name, no person's name, nothing anyone typed and none of the licence's own reference or notes
+And the AI log holds one row naming the officer, as a draft
+When they set the answer with the draft as it stood
+Then the AI log row reads confirmed in their name, and the decision's audit event names the draft
+When the bank has switched its AI features off
+Then asking for a draft answers 403 feature_off and no model is asked
+When the obligation is the bank's own record or sits under a standard
+Then asking for a draft answers 422 draft_refused and no model is asked
+```
+`@integration` proves the call and the confirmation (`draftApplicabilityReason`,
+`apps/register/reason_draft.py`); `tests_reason_draft.py` holds the rule branches: the prompt the
+mock model received, the refusals, the caps, a failed model, a colleague's draft and Decide all.
+The dialog's button, label and errors are the screen's, proved by vitest; the `@e2e` journey is
+`test.fixme()` until the mock model's draft is part of a seeded journey.

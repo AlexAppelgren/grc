@@ -1,9 +1,11 @@
 """Business logic of the register app: `ensure_register_entry()` and
 `ensure_register_entries()`, the one creator of a register entry (AST guard in
-tests_models.py), and the shared loaders. Each feature's rules live in a module of its own."""
+tests_models.py), the shared loaders, and `drafted_reason()`, the one shape of an AI-drafted
+reason. Each feature's rules live in a module of its own."""
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Mapping
 
@@ -15,6 +17,15 @@ from apps.shared.audit import Actor, record
 from apps.taxonomy.models import ComplianceStatus
 
 ENTRY_CREATED = "register.entry_created"
+# A citation marker a model may still write ("[3]"), dropped from a drafted reason (D-143).
+_MARKER = re.compile(r"\s*\[\d{1,4}\]")
+
+
+def drafted_reason(output: str, limit: int) -> str:
+    """A model's draft of a reason as the dialog is given it: citation marks dropped, white
+    space folded, at most `limit` characters. `applicability.confirm_draft` compares the reason
+    a person sets against this, so a draft kept as it stood reads confirmed."""
+    return " ".join(_MARKER.sub("", output).split())[:limit].strip()
 
 
 def ensure_register_entry(*, tenant_id: uuid.UUID, obligation_id: uuid.UUID, actor: Actor) -> TenantObligation:
