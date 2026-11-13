@@ -14,7 +14,7 @@ from typing import Any
 from unittest import mock, skip
 
 from django.core.cache import cache
-from django.db import transaction
+from django.db import OperationalError, transaction
 from django.test import TestCase
 from django.utils import timezone
 
@@ -30,7 +30,7 @@ from apps.proposals.models import Proposal
 from apps.proposals.tests_apply_private import filing
 from apps.proposals.tests_kinds import instrument_body, obligation_body
 from apps.proposals.tests_private_controls import control_body
-from apps.register import decide_all
+from apps.register import applicability, decide_all
 from apps.register import tasks as register_tasks
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
@@ -998,3 +998,21 @@ class RegisterScenarioTests(TestCase):
             self.assertEqual(on_the_page(duty)[:4], (bank, "applies", reason, "Sara Lind"))
         after = self.client.get("/api/v1/applicability/companies", **officer).json()[0]
         self.assertEqual((after["applies"], after["notApplicable"], after["toDecide"]), (2, 2, 0))
+        self.assertFalse(AuditEvent.objects.filter(action=decide_all.STOPPED).exists(), "a run that finished whole says nothing more")
+
+        # A later run whose worker fails part way: the failure hook, as Celery calls it once the
+        # chunk's transaction has rolled back, ends it and records that it stopped.
+        fifth = library_build.obligation(law, key="s20-lvm-5", ref_label="5 §")
+        with mock.patch.object(register_tasks.decide_listed, "delay") as queued, self.captureOnCommitCallbacks(execute=True):
+            self.client.post("/api/v1/applicability/decide-all", data={"orgUnitId": bank, "applicability": "applies", "reason": reason}, content_type="application/json", **officer)
+        with mock.patch.object(applicability, "_store", side_effect=OperationalError("could not serialize access")), self.assertRaises(OperationalError):
+            register_tasks.decide_listed(*queued.call_args.args)
+        register_tasks.decide_listed.on_failure(OperationalError("could not serialize access"), "task-id", queued.call_args.args, {}, None)
+        run = self.client.get("/api/v1/applicability/decide-all", **officer).json()
+        self.assertEqual((run["status"], run["total"], run["set"], run["stopped"]), ("finished", 1, 0, "failed"))
+        tenancy.activate(a.tenant.id)
+        [stopped] = AuditEvent.objects.filter(action=decide_all.STOPPED)
+        self.assertEqual((stopped.actor_id, stopped.subject_id), (a.officer.id, a.bank_ab.id))
+        self.assertEqual(stopped.after, {"stopped": "failed", "set": 0, "skipped": 0, "refused": 0, "left": 1})
+        self.assertNotIn(reason, str([stopped.after, stopped.summary]))
+        self.assertIsNone(TenantObligationScope.objects.filter(tenant_obligation__obligation=fifth, org_unit=a.bank_ab).first())

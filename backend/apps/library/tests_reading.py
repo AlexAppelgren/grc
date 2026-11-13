@@ -24,7 +24,7 @@ from unittest import mock
 from django.conf import settings
 from django.core.exceptions import ValidationError as Refusal
 from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
-from django.test import TestCase, TransactionTestCase
+from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from pydantic import ValidationError
 
@@ -32,7 +32,8 @@ from apps.agents import testing as agents_testing
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
-from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision, ProvisionVersion
+from apps.library.logic import LawText, law_read, law_text_marks
+from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision, ProvisionText, ProvisionVersion
 from apps.library.reading import instrument_scope_term_ids, instrument_scopes, obligation_scopes, scope_term_ids
 from apps.library.schemas import SAMPLE_PROVISION_TREE, ObligationDetail, ObligationRow, ProvisionNode
 from apps.library.seeds.library import seed_authorities
@@ -672,7 +673,7 @@ class ObligationDetailTests(TestCase):
 
     def test_each_cited_provision_carries_its_heading_and_the_law_s_words_original_first(self) -> None:
         # INV-02, INV-05: every language the version in force holds, the original first and
-        # then by language key, each flag as stored; nothing is picked for the reader.
+        # then by language key, each marked by its language; nothing is picked for the reader.
         cited = {row["refLabel"]: row for row in self.card(self.heavy, {"asOf": CHANGE_DAY.isoformat()})["provisions"]}
         self.assertEqual(
             cited["9 kap."]["texts"],
@@ -1786,6 +1787,93 @@ class ProvisionTreeTests(TestCase):
                 refused = self.client.get(path, HTTP_X_API_KEY=no_scope.plain_key)
                 self.assertEqual((refused.status_code, refused.json()["requiredPermission"]), (403, perms.SCOPE_LIBRARY_READ))
                 self.assertEqual(self.client.get(path, HTTP_X_API_KEY=key.plain_key).status_code, 200)
+
+
+class ATranslationStoredUnmarkedReadsAsMachineMade(TestCase):
+    """INV-05, D-142, AC-INV3: what a provision's text is follows from its language. Before
+    the door decided by language, a person who approved a provision whose payload did not
+    say `isMachine` stored its translation neither original nor machine, which the screens
+    call the authority's official text. No row is rewritten (the library changes only
+    through proposals); every read marks it by its language instead. Such rows are built
+    with `official=` naming the translated language, which stores exactly that pair."""
+
+    tenant: Tenant
+    reader: User
+    swedish: Provision
+    finnish: Provision
+    cites_swedish: Obligation
+    cites_finnish: Obligation
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        cls.tenant = factories.tenant(slug="law-text-marks")
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+        fffs = build.instrument(key="fffs-old-rule", short_name="FFFS Old", regime="regime:securities")
+        cls.swedish = build.provision(fffs, key="fffs-old-rule/1", ref_label="1 §", kind="section")
+        build.provision_version(cls.swedish, version_no=1, effective_from=D(2018, 1, 3), texts={"sv": "Äldre lydelse.", "en": "Earlier wording."}, official=("en",))
+        build.provision_version(cls.swedish, version_no=2, effective_from=D(2020, 1, 1), texts={"sv": "Ny lydelse.", "en": "New wording."}, official=("en",))
+        cls.cites_swedish = build.obligation(fffs, key="obl-old-rule-sv", cites=(cls.swedish,))
+        act = build.instrument(key="fi-old-rule", short_name="Laki 2012:748", regime="regime:securities", jurisdiction="fi")
+        cls.finnish = build.provision(act, key="fi-old-rule/1", ref_label="1 §", kind="section")
+        build.provision_version(
+            cls.finnish, texts={"fi": "Laki sanoo näin.", "sv": "Lagen säger så.", "en": "The law says so."}, official=("sv", "en")
+        )
+        cls.cites_finnish = build.obligation(act, key="obl-old-rule-fi", cites=(cls.finnish,))
+
+    def read(self, path: str, params: dict[str, Any] | None = None) -> Any:
+        response = self.client.get(path, params or {}, **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        return response.json()
+
+    def marks(self, texts: list[dict[str, Any]]) -> list[tuple[str, bool, bool]]:
+        return [(text["language"], text["isOriginal"], text["isMachine"]) for text in texts]
+
+    def test_an_english_beside_a_swedish_original_reads_machine_made_everywhere(self) -> None:
+        expected = [("sv", True, False), ("en", False, True)]
+        (cited,) = self.read(f"{URL}/{self.cites_swedish.id}")["provisions"]
+        self.assertEqual(self.marks(cited["texts"]), expected, "the obligation read")
+        (node,) = self.read(f"/api/v1/instruments/{self.swedish.instrument_id}/provisions")
+        for row in node["versions"]:
+            self.assertEqual(self.marks(row["texts"]), expected, "the provision tree")
+            self.assertIn(row["text"], row["texts"], "the reader's pick carries the same marks")
+        self.assertEqual(node["versions"][0]["text"]["isMachine"], True, "an English reader is picked the English, marked")
+        diff = self.read(f"/api/v1/provisions/{self.swedish.id}/diff", {"lang": "en"})
+        self.assertEqual((diff["language"], diff["isMachine"]), ("en", True), "the diff")
+        self.assertEqual(self.read(f"/api/v1/provisions/{self.swedish.id}/diff", {"lang": "sv"})["isMachine"], False, "the original's diff")
+
+    def test_beside_a_finnish_original_the_swedish_stays_official_and_the_english_is_machine_made(self) -> None:
+        expected = [("fi", True, False), ("en", False, True), ("sv", False, False)]
+        (cited,) = self.read(f"{URL}/{self.cites_finnish.id}")["provisions"]
+        self.assertEqual(self.marks(cited["texts"]), expected, "the obligation read")
+        (node,) = self.read(f"/api/v1/instruments/{self.finnish.instrument_id}/provisions")
+        self.assertEqual(self.marks(node["versions"][0]["texts"]), expected, "the provision tree")
+
+    def test_no_row_is_rewritten(self) -> None:
+        self.read(f"/api/v1/instruments/{self.swedish.instrument_id}/provisions")
+        stored = ProvisionText.objects.filter(version__provision=self.swedish, language_id="en").values_list("is_original", "is_machine")
+        self.assertEqual(set(stored), {(False, False)}, "the read answers by the language and writes nothing")
+
+
+class LawTextMarks(SimpleTestCase):
+    """The one rule the door stores by and every read answers by (INV-05, D-142)."""
+
+    def test_the_language_decides_and_a_mark_only_makes_a_text_humbler(self) -> None:
+        cases = [
+            (("sv", "sv", False), (True, False)),
+            (("sv", "sv", True), (True, False)),
+            (("en", "sv", False), (False, True)),
+            (("sv", "fi", False), (False, False)),
+            (("sv", "fi", True), (False, True)),
+            (("en", "fi", False), (False, True)),
+        ]
+        for (language, original, marked), expected in cases:
+            with self.subTest(language=language, original=original, marked=marked):
+                self.assertEqual(law_text_marks(language, original, marked), expected)
+
+    def test_a_version_without_an_original_keeps_its_flags_as_stored(self) -> None:
+        stored = [LawText("en", "Words.", False, False), LawText("sv", "Ord.", False, True)]
+        self.assertEqual(law_read(stored), stored)
 
 
 class ProvisionTreeCitationIsolation(TransactionTestCase):

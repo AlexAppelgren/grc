@@ -19179,7 +19179,7 @@ export interface components {
         LocalizedText: {
             /**
              * Ismachine
-             * @description True while a machine made this translation and no person has confirmed it, so a screen has to label it as such (INV-05). It says nothing about whether the translation is faithful, only that nobody has checked it. It is never true of an original. On a provision's text the original is the wording that governs; on a title or a summary bleqq wrote, the original is bleqq's own wording and governs nothing, because neither the summary nor its translation is the law.
+             * @description True while a machine made this translation and no person has confirmed it, so a screen has to label it as such (INV-05). It says nothing about whether the translation is faithful, only that nobody has checked it. It is never true of an original. On a provision's text the original is the wording that governs, and the language decides: true of every language that is neither the original nor one the authority itself publishes beside it, whoever approved the text; on a title or a summary bleqq wrote, the flag is as the approval stored it, the original is bleqq's own wording and governs nothing, because neither the summary nor its translation is the law.
              * @example true
              */
             isMachine: boolean;
@@ -21187,7 +21187,7 @@ export interface components {
             refLabel: string;
             /**
              * Texts
-             * @description The law's own words: the verbatim text of this provision's version in force on the read's date (`asOf`, or today in the bank's time zone), on the rule the provision tree uses, in every language the library holds it in. The original, the language the authority published the rule in and whose wording governs, comes first, then every other language by language key, each one a machine made and no person has confirmed marked `isMachine`. A text with neither flag is a translation a person confirmed, or one the authority itself published in a second language (Finland enacts its law in Finnish and Swedish): official, but not the original. Nothing is picked for the reader: a screen chooses the language, as it does among `translations`. An empty list when no version of the provision is in force on that date, such as a date before its first version, or when the library holds no text for it yet. It is never bleqq's summary of the duty, which is `summary`.
+             * @description The law's own words: the verbatim text of this provision's version in force on the read's date (`asOf`, or today in the bank's time zone), on the rule the provision tree uses, in every language the library holds it in. The original, the language the authority published the rule in and whose wording governs, comes first, then every other language by language key. What each one is follows from its language: a text with neither flag is one the authority itself publishes in a second language beside the original (today only Swedish beside a Finnish original, as Finland enacts its law in both): official, but not the original. Every other language is marked `isMachine`, a translation for reading and never the law, whoever approved it. Nothing is picked for the reader: a screen chooses the language, as it does among `translations`. An empty list when no version of the provision is in force on that date, such as a date before its first version, or when the library holds no text for it yet. It is never bleqq's summary of the duty, which is `summary`.
              */
             texts: components["schemas"]["LocalizedText"][];
         };
@@ -24536,7 +24536,7 @@ export interface components {
             text: components["schemas"]["LocalizedText"] | null;
             /**
              * Texts
-             * @description The law's own words: this version's verbatim text in every language the library holds it in, whoever the reader is. The original comes first, marked `isOriginal`: the language the authority published the rule in, whose wording governs wherever two languages read differently. Every other language follows by language key. One a machine made and no person has confirmed is marked `isMachine`, a translation for reading and never the law. One with neither flag is either a translation a person confirmed or a text the authority itself published in a second language, as Finland enacts its law in Finnish and Swedish: official, but not the original. Nothing is picked here; `text` is the pick. An empty list when the version holds no text in any language yet. The same list, in the same order and with the same flags, as `texts` on a cited provision of `GET /obligations/{obligationId}` for the version in force.
+             * @description The law's own words: this version's verbatim text in every language the library holds it in, whoever the reader is. The original comes first, marked `isOriginal`: the language the authority published the rule in, whose wording governs wherever two languages read differently. Every other language follows by language key, and its language says what it is. One with neither flag is a text the authority itself publishes in a second language beside the original (today only Swedish beside a Finnish original, as Finland enacts its law in both): official, but not the original. Every other language is marked `isMachine`, a translation for reading and never the law, whoever approved it. `text` carries the same flags as its entry here. Nothing is picked here; `text` is the pick. An empty list when the version holds no text in any language yet. The same list, in the same order and with the same flags, as `texts` on a cited provision of `GET /obligations/{obligationId}` for the version in force.
              */
             texts: components["schemas"]["LocalizedText"][];
             /**
@@ -32509,7 +32509,7 @@ export interface components {
             fromVersion: number;
             /**
              * Ismachine
-             * @description True when either side of the comparison is a machine translation nobody has confirmed, so a screen must label the whole diff as machine-made (INV-05). It does not say the difference is wrong; it says the words compared are a machine's and not the original's. On a provision's diff the original is the wording that governs; on an obligation's diff both sides are bleqq's summary, never the law's wording.
+             * @description True when either side of the comparison is a machine translation nobody has confirmed, so a screen must label the whole diff as machine-made (INV-05). It does not say the difference is wrong; it says the words compared are a machine's and not the original's. On a provision's diff the original is the wording that governs, and a language that is neither the original nor one the authority itself publishes beside it counts as a machine translation on the provision tree's rule; on an obligation's diff both sides are bleqq's summary, never the law's wording.
              * @example true
              */
             isMachine: boolean;

@@ -36,7 +36,7 @@ from unittest import mock
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import connection, transaction
+from django.db import OperationalError, connection, transaction
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.utils import timezone
 
@@ -602,7 +602,7 @@ class TheWorker(DecideAllCase):
                 # Not yet committed, and its progress is already kept.
                 self.assertEqual(self.progress(), ("running", 4, 2, 0, 0, None))
 
-    def test_a_chunk_whose_task_fails_at_its_commit_ends_its_run_as_failed(self) -> None:
+    def test_a_chunk_whose_task_fails_before_it_keeps_its_progress_ends_its_run_as_failed(self) -> None:
         with override_settings(REGISTER_BULK_MAX=2):
             _, args = self.start_held()
             with mock.patch.object(tasks.decide_listed, "delay"):
@@ -612,11 +612,15 @@ class TheWorker(DecideAllCase):
         tasks.decide_listed.on_failure(RuntimeError("the connection went away at the commit"), "task-id", args, {}, None)
         self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
         self.assertEqual(cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))["reason"], "")
+        # The trail says the run ended, with what the state counted.
+        [stopped] = self.events(decide_all.STOPPED)
+        self.assertEqual(stopped.after, {"stopped": "failed", "set": 2, "skipped": 0, "refused": 0, "left": 2})
         # A finished run, and another run's state, are left as they are.
         before = cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))
         tasks.decide_listed.on_failure(RuntimeError("again"), "task-id", args, {}, None)
         tasks.decide_listed.on_failure(RuntimeError("another run"), "task-id", (*args[:5], uuid.uuid4().hex), {}, None)
         self.assertEqual(cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id)), before)
+        self.assertEqual(len(self.events(decide_all.STOPPED)), 1)
 
     def test_the_work_lands_in_the_runs_own_bank_and_another_bank_reads_none_of_it(self) -> None:
         self.start()
@@ -773,6 +777,179 @@ class WhatStopsARun(DecideAllCase):
                 self.work(args)
         self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
         self.assertEqual(len(self.set_by_the_run()), 2)
+
+
+class AFailedRunIsInTheTrail(DecideAllCase):
+    """A run whose chunk fails ends with one `register.decide_all_stopped` row saying "failed"
+    and what it counted, written by the task's failure hook once the failed transaction has
+    rolled back, so the trail says the run ended after the cache has let the state go."""
+
+    def fail_on_single(self) -> Any:
+        """The door of a single answer, raising a database error on the chunk that names `single`."""
+        door = applicability._store
+
+        def store(**call: Any) -> Any:
+            if any(row.obligation_id == self.single.id for row in call["answers"]):
+                raise OperationalError("could not serialize access due to concurrent update")
+            return door(**call)
+
+        return mock.patch.object(applicability, "_store", side_effect=store)
+
+    def run_failing(self) -> list[tuple[Any, ...]]:
+        """A run of two chunks whose second fails, then the failure hook as Celery calls it once
+        the task's transaction has rolled back, with the task's arguments (an eager task that
+        propagates its error never calls it). The arguments of each chunk's task, in order."""
+        queued: list[tuple[Any, ...]] = []
+        deliver = tasks.decide_listed.delay
+
+        def keep(*args: Any) -> Any:
+            queued.append(args)
+            return deliver(*args)
+
+        with (
+            override_settings(REGISTER_BULK_MAX=2),
+            mock.patch.object(tasks.decide_listed, "delay", side_effect=keep),
+            self.fail_on_single(),
+            self.assertRaises(OperationalError),
+        ):
+            self.start()
+        self.assertEqual(len(queued), 2)
+        self.assertEqual(self.stopped(), [], "nothing in the trail until the hook")
+        tasks.decide_listed.on_failure(OperationalError("could not serialize access"), "task-id", queued[1], {}, None)
+        return queued
+
+    def stopped(self) -> list[dict[str, Any]]:
+        events = self.events(decide_all.STOPPED)
+        for event in events:
+            self.assertEqual((event.actor_type, event.actor_id, event.subject_type, event.subject_id), ("user", self.a.officer.id, "org_unit", self.a.bank_ab.id))
+            self.assertNotIn(REASON, json.dumps([event.summary, event.after]))
+        return [event.after for event in events]
+
+    def test_a_chunk_that_raises_a_database_error_ends_the_run_with_one_row_and_keeps_what_was_set(self) -> None:
+        self.run_failing()
+        self.assertEqual(self.stopped(), [{"stopped": "failed", "set": 2, "skipped": 0, "refused": 0, "left": 2}])
+        self.assertEqual(sorted(event.after["obligationId"] for event in self.set_by_the_run()), sorted(str(duty.id) for duty in self.targets[:2]))
+        self.assertIsNone(self.row(self.single), "the failed chunk left nothing behind")
+        self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
+        held = cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))
+        self.assertEqual((held["reason"], decide_all.UNCOMMITTED in held), ("", False))
+
+    def test_the_hook_fired_again_writes_no_second_row(self) -> None:
+        second = self.run_failing()[1]
+        tasks.decide_listed.on_failure(OperationalError("again"), "task-id", second, {}, None)
+        self.assertEqual(len(self.stopped()), 1)
+        self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
+
+    def test_a_run_that_stopped_for_a_named_reason_gets_no_failed_row(self) -> None:
+        door = applicability._store
+
+        def store_then_lose_the_grant(**call: Any) -> Any:
+            stored = door(**call)
+            MembershipRole.objects.filter(membership__user=self.a.officer, membership__tenant=self.a.tenant).delete()
+            return stored
+
+        with override_settings(REGISTER_BULK_MAX=2):
+            _, args = self.start_held()
+            with mock.patch.object(tasks.decide_listed, "delay") as queued:
+                with mock.patch.object(applicability, "_store", side_effect=store_then_lose_the_grant):
+                    self.work(args)
+                self.work(queued.call_args.args)
+        tasks.decide_listed.on_failure(OperationalError("late"), "task-id", queued.call_args.args, {}, None)
+        self.assertEqual([row["stopped"] for row in self.stopped()], ["permission_revoked"])
+        self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "permission_revoked"))
+
+    def test_a_run_that_finished_whole_gets_no_row_from_a_late_hook(self) -> None:
+        _, args = self.start_held()
+        self.work(args)  # the chunk commits, and its commit callbacks run
+        self.assertNotIn(decide_all.UNCOMMITTED, cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id)))
+        tasks.decide_listed.on_failure(OperationalError("late"), "task-id", args, {}, None)
+        self.assertEqual(self.progress(), ("finished", 4, 4, 0, 0, None))
+        self.assertEqual(self.stopped(), [])
+
+    def uncommitted(self, args: tuple[Any, ...]) -> None:
+        """One chunk's task whose commit fails: its body runs and keeps its progress, then
+        everything it wrote rolls back and its commit callbacks never run."""
+        with mock.patch.object(tasks.decide_listed, "delay") as queued, self.captureOnCommitCallbacks(execute=False), transaction.atomic():
+            tasks.decide_listed(*args)
+            transaction.set_rollback(True)
+        queued.assert_not_called()
+
+    def test_a_single_chunk_run_whose_commit_fails_ends_with_one_failed_row_counting_nothing_set(self) -> None:
+        _, args = self.start_held()
+        self.uncommitted(args)
+        # What the chunk kept before its commit failed counts the rows that were rolled back.
+        self.assertEqual(self.progress(), ("finished", 4, 4, 0, 0, None))
+        tasks.decide_listed.on_failure(OperationalError("the connection went away at the commit"), "task-id", args, {}, None)
+        self.assertEqual(self.stopped(), [{"stopped": "failed", "set": 0, "skipped": 0, "refused": 0, "left": 4}])
+        self.assertEqual(self.progress(), ("finished", 4, 0, 0, 0, "failed"))
+        self.assertEqual(self.set_by_the_run(), [])
+        tasks.decide_listed.on_failure(OperationalError("again"), "task-id", args, {}, None)
+        self.assertEqual(len(self.stopped()), 1)
+
+    def test_a_named_stop_whose_commit_fails_ends_with_one_failed_row(self) -> None:
+        _, args = self.start_held()
+        self.activate(self.a.tenant)
+        OrgUnit.objects.filter(pk=self.a.bank_ab.pk).update(active=False)
+        self.uncommitted(args)
+        self.assertEqual(self.progress(), ("finished", 4, 0, 0, 0, "company_gone"))
+        self.assertEqual(self.stopped(), [], "the named stop's row went with the commit")
+        tasks.decide_listed.on_failure(OperationalError("the connection went away at the commit"), "task-id", args, {}, None)
+        self.assertEqual(self.stopped(), [{"stopped": "failed", "set": 0, "skipped": 0, "refused": 0, "left": 4}])
+        self.assertEqual(self.progress(), ("finished", 4, 0, 0, 0, "failed"))
+
+    def test_a_middle_chunk_whose_commit_fails_counts_only_what_the_run_committed(self) -> None:
+        with override_settings(REGISTER_BULK_MAX=2):
+            _, first = self.start_held()
+            with mock.patch.object(tasks.decide_listed, "delay") as queued:
+                self.work(first)  # committed: two set
+            second = queued.call_args.args
+            self.uncommitted(second)  # the last chunk: its two rows roll back
+        self.assertEqual(self.progress(), ("finished", 4, 4, 0, 0, None))
+        tasks.decide_listed.on_failure(OperationalError("the connection went away at the commit"), "task-id", second, {}, None)
+        self.assertEqual(self.stopped(), [{"stopped": "failed", "set": 2, "skipped": 0, "refused": 0, "left": 2}])
+        self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
+        self.assertEqual(len(self.set_by_the_run()), 2)
+
+    def test_the_run_is_claimed_as_ended_under_its_lock_before_its_row_is_written(self) -> None:
+        """A second hook that takes the run's lock while the first writes the row reads the run
+        as ended, so it writes no second row."""
+        seen: list[bool] = []
+        stop = decide_all._stop
+
+        def write(*call: Any) -> None:
+            seen.append(decide_all._failing(cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id)), args[5]))
+            stop(*call)
+
+        _, args = self.start_held()
+        self.uncommitted(args)
+        with mock.patch.object(decide_all, "_stop", side_effect=write):
+            tasks.decide_listed.on_failure(OperationalError("the connection went away at the commit"), "task-id", args, {}, None)
+        self.assertEqual(seen, [False])
+        self.assertEqual(len(self.stopped()), 1)
+
+    def test_a_replaced_runs_hook_writes_nothing(self) -> None:
+        with override_settings(REGISTER_BULK_MAX=2):
+            _, first = self.start_held()
+            with mock.patch.object(tasks.decide_listed, "delay") as queued, self.fail_on_single():
+                self.work(first)
+                with self.assertRaises(OperationalError):
+                    self.work(queued.call_args.args)  # the body raised; its hook has not fired yet
+        failed = queued.call_args.args
+        self.start_held()  # a newer run takes the state's place
+        before = cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))
+        tasks.decide_listed.on_failure(OperationalError("late"), "task-id", failed, {}, None)
+        self.assertEqual(self.stopped(), [])
+        self.assertEqual(cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id)), before)
+
+    def test_a_row_that_cannot_be_written_is_logged_by_the_run_alone_and_the_run_still_ends(self) -> None:
+        with mock.patch.object(decide_all, "_stop", side_effect=OperationalError("the database went away")), self.assertLogs(decide_all.logger, "ERROR") as logged:
+            self.run_failing()
+        run_id = cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))["runId"]
+        self.assertEqual(len(logged.records), 1)
+        self.assertIn(run_id, logged.records[0].getMessage())
+        self.assertNotIn(REASON, "\n".join(logged.output))
+        self.assertEqual(self.stopped(), [])
+        self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
 
 
 class TheReasonStaysInTheBank(DecideAllCase):

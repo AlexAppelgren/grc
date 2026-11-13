@@ -4,7 +4,8 @@ in apps/register/decide_all.py).
 `decide_listed` is a `@tenant_task`, so each chunk is one transaction in the bank's own zone,
 committed before the next chunk's task is queued. It takes ids and the answer, never the
 reason: Celery's failure line and an error tracker print a task's arguments. A chunk whose
-task fails, at its commit as well as in its body, ends its run as failed (`_ended_by`).
+task fails, at its commit as well as in its body, ends its run as failed (`_ended_by`), and the
+audit trail says so.
 """
 
 from __future__ import annotations
@@ -19,10 +20,10 @@ from apps.shared import tenancy
 
 
 def _ended_by(task: Task, exc: BaseException, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any], einfo: Any) -> None:
-    """Celery's failure hook: the run of the failed chunk ends as failed, unless its body
-    already said so."""
-    tenant_id, user_id, _, _, _, run_id = args
-    decide_all.fail(tenant_id=uuid.UUID(str(tenant_id)), user_id=uuid.UUID(user_id), run_id=run_id)
+    """Celery's failure hook: the run of the failed chunk ends as failed, with one audit row
+    saying so, unless it already ended with its own."""
+    tenant_id, user_id, org_unit_id, _, _, run_id = args
+    decide_all.fail(tenant_id=uuid.UUID(str(tenant_id)), user_id=uuid.UUID(user_id), company_id=uuid.UUID(org_unit_id), run_id=run_id)
 
 
 @shared_task(on_failure=_ended_by)

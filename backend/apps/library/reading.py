@@ -43,7 +43,7 @@ from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterR
 from django.db.models.functions import JSONObject, Lower
 from django.utils import timezone
 
-from apps.library.logic import in_force, version_diff
+from apps.library.logic import TranslatedText, in_force, law_read, version_diff
 from apps.library.models import (
     Authority,
     Instrument,
@@ -130,7 +130,7 @@ from apps.taxonomy.schemas import PersonRef, TaggingTagRef
 
 
 # --- Shared helpers ---
-def localized(rows: Iterable[Translation], order: list[str]) -> LocalizedText | None:
+def localized(rows: Iterable[TranslatedText], order: list[str]) -> LocalizedText | None:
     """The text in the first language of `order` that has one, then the original, then any
     (INV-05). Says which language it is and whether a machine wrote it."""
     by_language = {row.language_id: row for row in rows}
@@ -140,7 +140,7 @@ def localized(rows: Iterable[Translation], order: list[str]) -> LocalizedText | 
     return None if chosen is None else text_of(chosen)
 
 
-def text_of(row: Translation) -> LocalizedText:
+def text_of(row: TranslatedText) -> LocalizedText:
     """One translation row as the screen reads it: the text, its language, and whether it is
     the original or a machine translation still waiting for a person (INV-05)."""
     return LocalizedText(text=row.text, language=row.language_id, is_original=row.is_original, is_machine=row.is_machine)
@@ -148,10 +148,11 @@ def text_of(row: Translation) -> LocalizedText:
 
 def law_texts(rows: Iterable[ProvisionText]) -> list[LocalizedText]:
     """Every language of one provision version's text, the law's own words (INV-02, INV-05,
-    D-142): the original first, then by language key, each flag as stored, so the authority's
-    own second language (neither original nor machine) reads as what it is. Nothing is
-    picked for the reader. The one ordering the obligation read and the tree both give."""
-    return [text_of(row) for row in sorted(rows, key=lambda row: (not row.is_original, row.language_id))]
+    D-142): the original first, then by language key, each marked by its language
+    (`logic.law_read`), so the authority's own second language (neither original nor
+    machine) reads as what it is and a translation never does. Nothing is picked for the
+    reader. The one ordering the obligation read and the tree both give."""
+    return [text_of(row) for row in sorted(law_read(rows), key=lambda row: (not row.is_original, row.language_id))]
 
 
 def partial_date(value: datetime.date | None, precision: str) -> PartialDate | None:
@@ -1519,7 +1520,7 @@ def _provision_version_rows(versions: list[ProvisionVersion], texts: Mapping[uui
                 effective_from=partial_date(version.effective_from, version.effective_from_precision),
                 effective_to=ends,
                 transitional_note=version.transitional_note,
-                text=localized(held, order),
+                text=localized(law_read(held), order),
                 texts=law_texts(held),
             )
         )
@@ -1599,7 +1600,7 @@ def provision_diff(order: list[str], provision_id: uuid.UUID, query: VersionDiff
         raise ValidationError("There are not two versions of this provision to compare.")
     older = _numbered_provision(versions, query.from_version) if query.from_version is not None else versions[-2]
     newer = _numbered_provision(versions, query.to_version) if query.to_version is not None else versions[-1]
-    compared = version_diff(older.texts.all(), newer.texts.all(), order, query.lang)
+    compared = version_diff(law_read(older.texts.all()), law_read(newer.texts.all()), order, query.lang)
     if compared is None:
         raise ValidationError("These two versions have no language in common, so there is nothing to compare.")
     language, is_machine, segments = compared

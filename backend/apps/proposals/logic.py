@@ -40,6 +40,7 @@ from apps.agents.screen import screen_all
 from apps.governance import ai_log
 from apps.governance.models import AiPurpose
 from apps.library import recurrence
+from apps.library.logic import OFFICIAL_BESIDE
 from apps.library.models import DatePrecision, RecordStatus, SubjectType
 from apps.library.reading import (
     InstrumentRefs,
@@ -190,11 +191,6 @@ UNSOURCED_FIELDS = frozenset(
 )
 # The records a translation is for (D-129).
 TRANSLATION_TARGETS = (SubjectType.INSTRUMENT.value, SubjectType.OBLIGATION.value)
-# The languages an authority itself publishes its law in beside the original, by that
-# original: Finland enacts its law in Swedish too. Only these may be named in a provision's
-# `officialLanguages`, so a machine translation never loses its mark (the baseline checker's
-# `OFFICIAL` holds the same).
-OFFICIAL_BESIDE: dict[str, frozenset[str]] = {"fi": frozenset({"sv"})}
 
 
 @dataclass(frozen=True)

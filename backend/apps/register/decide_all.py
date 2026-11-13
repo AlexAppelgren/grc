@@ -35,12 +35,18 @@ state only under it, before the commit as `approve_all` writes its own: two star
 one start and one 409, and a chunk delivered twice at once is decided once. A task acts only
 on its own run and its own place in it: a chunk delivered again finds its place moved and
 decides nothing, and a run replaced meanwhile decides nothing and records that it stopped. A
-chunk whose commit fails ends its run as failed through the task's failure hook (`fail`); the
-state may then count that chunk's rows as set, and what a new start reads is the truth.
+chunk whose body raises or whose commit fails ends its run as failed through the task's failure
+hook (`fail`), with one `register.decide_all_stopped` row in a transaction of its own, so the
+trail says the run ended even once the cache has let the state go. Every chunk keeps its state
+marked uncommitted until its commit has happened, and only then keeps its counts as the run's
+committed ones: a chunk whose commit fails, the last or only one and one that stopped for a
+named reason among them, is still the hook's to record, and the row and the ended state count
+what the run committed and never what was rolled back.
 """
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime
 from typing import Any, NamedTuple
@@ -48,7 +54,7 @@ from typing import Any, NamedTuple
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import connection, transaction
+from django.db import DatabaseError, connection, transaction
 from django.utils import timezone
 
 from apps.identity import api_keys_logic
@@ -59,10 +65,13 @@ from apps.register import applicability, company_view
 from apps.register.schemas import REFUSALS_KEPT, RegisterDecideAllBody
 from apps.shared import permissions as perms
 from apps.register.logic import ensure_register_entries
+from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.models import Tenant
 from apps.taxonomy.reading import FALLBACK_LANGUAGE
 from apps.tenants.models import OrgUnit, OrgUnitKind
+
+logger = logging.getLogger(__name__)
 
 IDLE = "idle"
 RUNNING = "running"
@@ -79,6 +88,11 @@ FAILED = "failed"
 COMPANY_GONE = "company_gone"
 # Only in a stopped row's audit event: the run's own state was taken by a newer run's.
 REPLACED = "replaced"
+# Beside the state, never in it: the latest chunk kept its progress and has not committed yet.
+UNCOMMITTED = "uncommitted"
+# Beside the state: what the run's committed chunks counted, which a failed run's end reports.
+COMMITTED = "committed"
+COUNTS = ("set", "skipped", "refused")
 
 
 class _Run(NamedTuple):
@@ -243,29 +257,92 @@ def decide_chunk(*, tenant_id: uuid.UUID, user_id: uuid.UUID, company_id: uuid.U
             _tally(state, _decide(run, [uuid.UUID(obligation_id) for obligation_id in obligation_ids[:chunk]]), run.order)
             rest = obligation_ids[chunk:]
         else:
-            _stop(tenant_id, run.actor, company_id, {count: state[count] for count in ("set", "skipped", "refused")}, why, left)
+            _stop(tenant_id, run.actor, company_id, {count: state[count] for count in COUNTS}, why, left)
         state["stopped"] = why
     finally:
         if not rest:
             state["status"], held["reason"] = FINISHED, ""
+        # Until this chunk has committed, a failure of its body or of its commit is the failure
+        # hook's to record: `_committed` drops the mark once it has.
+        held[UNCOMMITTED] = True
         state["updatedAt"] = timezone.now().isoformat()
         # Kept under the run's lock, so a delivery of this chunk waiting on it finds its place
         # moved. The rest is queued only once this chunk has committed.
         _keep(tenant_id, user_id, held)
+    transaction.on_commit(lambda: _committed(tenant_id, user_id, run_id))
     if rest:
         _queue(tenant_id, user_id, company_id, rest, word, run_id)
 
 
-def fail(*, tenant_id: uuid.UUID, user_id: uuid.UUID, run_id: str) -> None:
-    """End the run as failed when its chunk's task failed after the body, at the commit: the
-    task's failure hook. A run already finished, or replaced, is left as it is. No database
-    here, since the connection may be the one that failed."""
-    held = cache.get(_key(tenant_id, user_id))
-    if held is None or held["runId"] != run_id or held["state"]["status"] == FINISHED:
-        return
-    held["state"] = {**held["state"], "status": FINISHED, "stopped": FAILED, "updatedAt": timezone.now().isoformat()}
+def _committed(tenant_id: uuid.UUID, user_id: uuid.UUID, run_id: str) -> None:
+    """Once a chunk has committed: its counts are the run's committed ones and the mark that it
+    had not committed goes, read and kept under the run's lock and only for this run."""
+    with transaction.atomic():
+        _lock_run(tenant_id, user_id)
+        held = cache.get(_key(tenant_id, user_id))
+        if isinstance(held, dict) and held["runId"] == run_id and held.pop(UNCOMMITTED, False):
+            held[COMMITTED] = {count: held["state"][count] for count in COUNTS}
+            _keep(tenant_id, user_id, held)
+
+
+def _failing(held: Any, run_id: str) -> bool:
+    """Whether the run `run_id` failed and the trail does not say so yet: it is still the
+    person's latest run, and it is either still running (a chunk's task failed before it kept
+    its progress, or kept it and never committed) or its last chunk kept its progress and never
+    committed, whether its body raised, its commit failed or it had stopped for a reason it
+    named. A run whose last chunk committed has its end in the trail already, and a replaced
+    run is not this one."""
+    if not isinstance(held, dict) or held["runId"] != run_id:
+        return False
+    return held["state"]["status"] != FINISHED or bool(held.get(UNCOMMITTED))
+
+
+def _end_failed(tenant_id: uuid.UUID, user_id: uuid.UUID, held: dict[str, Any]) -> None:
+    """Keep the run as finished and failed, counting what it committed, without its reason."""
+    committed = held.get(COMMITTED) or dict.fromkeys(COUNTS, 0)
+    held["state"] = {**held["state"], **committed, "status": FINISHED, "stopped": FAILED, "updatedAt": timezone.now().isoformat()}
     held["reason"] = ""
+    held.pop(UNCOMMITTED, None)
     _keep(tenant_id, user_id, held)
+
+
+def fail(*, tenant_id: uuid.UUID, user_id: uuid.UUID, company_id: uuid.UUID, run_id: str) -> None:
+    """End the run as failed when its chunk's task failed, in its body or at its commit: the
+    task's failure hook, which runs once the task's transaction has rolled back. One
+    `register.decide_all_stopped` row says so (`_record_failure`), unless the run already
+    ended with its own row or was replaced; a hook fired again finds it recorded. The state
+    then reads finished and failed, claimed under the run's lock in that row's transaction and
+    written all the same when the row could not be: the screen never shows a failed run as
+    running for ever."""
+    if not _failing(cache.get(_key(tenant_id, user_id)), run_id):
+        return
+    try:
+        # A connection the failure left unusable is closed, so the row is written on a new one.
+        if not connection.in_atomic_block:
+            connection.close_if_unusable_or_obsolete()
+        _record_failure(tenant_id, user_id, company_id, run_id)
+    except DatabaseError:
+        logger.exception("Could not record that the Decide all run %s failed", run_id)
+    finally:
+        held = cache.get(_key(tenant_id, user_id))
+        if _failing(held, run_id):
+            _end_failed(tenant_id, user_id, held)
+
+
+@tenancy.tenant_task
+def _record_failure(tenant_id: uuid.UUID, user_id: uuid.UUID, company_id: uuid.UUID, run_id: str) -> None:
+    """The failed run's one end row, in a transaction of its own with the bank activated, read
+    again under the run's lock: what its committed chunks counted, and how many were left. The
+    run is claimed as ended under that same lock before the row is written, so a second hook
+    waiting on the lock finds nothing left to record. The person who confirmed the run is its
+    actor; the reason is never in it."""
+    _lock_run(tenant_id, user_id)
+    held = cache.get(_key(tenant_id, user_id))
+    if not _failing(held, run_id):
+        return
+    _end_failed(tenant_id, user_id, held)
+    counts = {count: held["state"][count] for count in COUNTS}
+    _stop(tenant_id, _actor(User.objects.get(pk=user_id)), company_id, counts, FAILED, held["state"]["total"] - sum(counts.values()))
 
 
 def _why_not(run: _Run) -> str | None:

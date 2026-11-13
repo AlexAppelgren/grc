@@ -410,6 +410,8 @@ And the worker carries out the run
 Then the two others read "Applies" with the reason, each with its own audit event naming the officer and the reason
 And the colleague's answer survives, counted by the run as skipped, and the obligation answered before the run is as it was
 And the obligation page shows the run's answer, and "What applies" reads none left to decide
+When a later run's worker fails part way
+Then that run reads finished and failed, and one audit event records that it stopped, with what it had set and without the reason
 ```
 `@integration` proves `decideAllApplicability` and `readDecideAllApplicability`
 (`apps/register/decide_all.py`, `tasks.decide_listed`), each a person's session holding
@@ -447,7 +449,9 @@ transaction of its own, and the screen reads the progress from the cache
   person, so two starts at once are one start and one 409. A task acts only on its own run and
   its own place in it, so a chunk delivered twice, even at once, decides nothing the second
   time, and a replaced run decides nothing and records that it stopped. A chunk whose task
-  fails, at its commit too, ends its run as finished and failed.
+  fails, at its commit too, ends its run as finished and failed, and the task's failure hook
+  writes one `register.decide_all_stopped` row with `stopped` "failed" and what its committed chunks counted, in
+  a transaction of its own once the failed one has rolled back, never the reason (D-140).
 
 `tests_decide_all.py` holds the rule branches: the filters, the refusals, a grant taken away
 part way, a row the door refuses, the chunks, the reason kept out of arguments and logs, and

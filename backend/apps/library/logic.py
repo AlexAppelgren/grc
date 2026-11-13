@@ -7,6 +7,7 @@ import datetime
 import difflib
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Literal, Protocol, TypeVar
 
 from django.conf import settings
@@ -108,6 +109,48 @@ class TranslatedText(Protocol):
 
     @property
     def is_machine(self) -> bool: ...
+
+
+# --- What a provision's text is (INV-05, D-142) ---
+# The languages an authority itself publishes its law in beside the original, by that
+# original: Finland enacts its law in Swedish too. The proposal door lets only these be named
+# in a provision's `officialLanguages`; the baseline checker, which runs without Django, holds
+# the same as its own `OFFICIAL`, and a test ties the two together.
+OFFICIAL_BESIDE: dict[str, frozenset[str]] = {"fi": frozenset({"sv"})}
+
+
+@dataclass(frozen=True)
+class LawText:
+    """One language of a provision version's text as it is read: the text, and what it is."""
+
+    language_id: str
+    text: str
+    is_original: bool
+    is_machine: bool
+
+
+def law_text_marks(language: str, original: str, marked_machine: bool) -> tuple[bool, bool]:
+    """`(is_original, is_machine)` of one language of a provision's text, from its language
+    and the original's (INV-05, D-142). The original is the language the authority published
+    in; a language the authority itself publishes beside it (`OFFICIAL_BESIDE`) is official,
+    neither original nor machine, unless it was marked machine-made; every other language is
+    a machine translation, whatever was marked and whoever approved it. A mark can make a
+    text humbler, never official: the store and every read decide by this one rule."""
+    if language == original:
+        return True, False
+    return False, marked_machine or language not in OFFICIAL_BESIDE.get(original, frozenset())
+
+
+def law_read(rows: Iterable[TranslatedText]) -> list[LawText]:
+    """A provision version's stored texts as they are read, each marked by `law_text_marks`
+    from the version's original, so a translation an earlier rule stored unmarked never
+    reads as the authority's own. A version without an original row (the door requires
+    one, so it should not exist) keeps the flags as stored: there is nothing to judge by."""
+    held = list(rows)
+    original = next((row.language_id for row in held if row.is_original), None)
+    if original is None:
+        return [LawText(row.language_id, row.text, row.is_original, row.is_machine) for row in held]
+    return [LawText(row.language_id, row.text, *law_text_marks(row.language_id, original, row.is_machine)) for row in held]
 
 
 def version_diff(

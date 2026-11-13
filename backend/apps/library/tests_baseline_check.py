@@ -214,9 +214,9 @@ class TheRealBaseline(SimpleTestCase):
         self.assertEqual(check_baseline.PROVISION_KINDS, {row.key for row in LIBRARY_SYSTEM_ROWS["provision_kind"][1]})
         self.assertEqual(set(check_baseline.TRANSLATIONS), set(legal.values()), "every legal language says which translations stand beside it")
         self.assertLessEqual(set(check_baseline.OFFICIAL), set(check_baseline.TRANSLATIONS))
-        from apps.proposals.logic import OFFICIAL_BESIDE
+        from apps.library.logic import OFFICIAL_BESIDE
 
-        self.assertEqual(check_baseline.OFFICIAL, {original: set(beside) for original, beside in OFFICIAL_BESIDE.items()}, "the checker and the door name the same official languages")
+        self.assertEqual(check_baseline.OFFICIAL, {original: set(beside) for original, beside in OFFICIAL_BESIDE.items()}, "the checker and the library name the same official languages")
         self.assertEqual(check_baseline.MAX_TEXT, settings.PROPOSAL_TEXT_MAX_CHARS)
         self.assertEqual(check_baseline.MAX_OBLIGATIONS, settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
         # The filer's retry key, `baseline:<key>:<32 hex>`, fits the proposal's own column.

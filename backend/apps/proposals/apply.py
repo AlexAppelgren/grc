@@ -30,6 +30,7 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from pydantic.alias_generators import to_camel
 
+from apps.library.logic import law_text_marks
 from apps.library.models import (
     Instrument,
     InstrumentSummary,
@@ -705,13 +706,12 @@ def _provision_texts(version: ProvisionVersion, payload: ProposalProvisionPayloa
     """One row per language (INV-05, D-142): the original, the other languages the authority
     itself published, which are neither the original nor machine-made, and every remaining
     text a machine translation, whatever the payload says and whoever approves it. A
-    translation of law is never stored unmarked, or it would read as the authority's own."""
+    translation of law is never stored unmarked, or it would read as the authority's own.
+    The rule is the library's (`law_text_marks`), the one every read of the text answers by."""
     official = set(payload.official_languages or [])
     for language, text in payload.texts.items():
-        is_original = language == payload.original_language
-        ProvisionText.objects.create(
-            version=version, language_id=language, text=text, is_original=is_original, is_machine=not is_original and language not in official
-        )
+        is_original, is_machine = law_text_marks(language, payload.original_language, language not in official)
+        ProvisionText.objects.create(version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine)
 
 
 def _cite(provision: Provision, obligations: list[Obligation]) -> list[str]:

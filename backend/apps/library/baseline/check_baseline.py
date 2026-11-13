@@ -80,6 +80,7 @@ LEGAL_LANGUAGE = {"eu": "en", "se": "sv", "dk": "da", "no": "nb", "fi": "fi"}
 # Swedish beside Danish, Norwegian and Finnish.
 TRANSLATIONS: dict[str, set[str]] = {"en": set(), "sv": {"en"}, "da": {"en", "sv"}, "nb": {"en", "sv"}, "fi": {"en", "sv"}}
 # Of those, the ones the authority itself publishes: Finland enacts its law in Swedish too.
+# The library's `apps.library.logic.OFFICIAL_BESIDE` holds the same; a test ties the two.
 OFFICIAL: dict[str, set[str]] = {"fi": {"sv"}}
 MAX_TEXT = 50000  # PROPOSAL_TEXT_MAX_CHARS
 MAX_OBLIGATIONS = 50  # PROPOSAL_PROVISION_MAX_OBLIGATIONS
