@@ -40,12 +40,13 @@ from django.db.models import Q, prefetch_related_objects
 from apps.agents.screen import screen
 from apps.governance.models import AiPurpose
 from apps.governance.schemas import AiCitation
+from apps.identity import rate_limit
 from apps.identity.models import User
 from apps.library import logic as library_logic
 from apps.library.models import Instrument, Obligation, SubjectType
 from apps.library.reading import localized, today_for
 from apps.register import company_view
-from apps.register.logic import drafted_reason
+from apps.register.logic import drafted_reason, reason_draft_template
 from apps.register.schemas import REASON_MAX, RegisterReasonDraft, RegisterReasonDraftBody
 from apps.shared import ai
 from apps.shared.errors import ProblemError
@@ -56,7 +57,10 @@ from apps.tenants import registers_logic
 from apps.tenants.models import Licence, OrgUnit, RegisterEntry
 from apps.tenants.schemas import RegisterFacts
 
-PROMPT_TEMPLATE = "register/reason-draft/v1"
+# A rate window, in seconds.
+MINUTE = 60
+# What the log row's subject names: the company the draft explains an answer for.
+COMPANY_SUBJECT = "org_unit"
 SYSTEM_PROMPT = (
     "You draft the reason a compliance officer at a bank records beside an answer to the "
     "question whether a regulation's obligations apply to one of the bank's companies. The "
@@ -76,6 +80,8 @@ def draft(*, tenant: Tenant, user: User, order: list[str], body: RegisterReasonD
     """`POST /applicability/reason-draft`: the obligations the dialog covers, read as a Decide
     all run reads them, then one model call over their facts and the company's licence facts."""
     ai.ensure_enabled()
+    # Each draft is a model call held inside the request: a person may ask for so many a minute.
+    rate_limit.enforce("reason-draft", str(user.id), settings.REGISTER_REASON_DRAFT_RATE_PER_USER_PER_MINUTE, MINUTE)
     selected = body.obligation_ids
     cap = settings.REGISTER_DECIDE_ALL_SELECTED_MAX
     if selected is not None and len(selected) > cap:
@@ -102,17 +108,22 @@ def draft(*, tenant: Tenant, user: User, order: list[str], body: RegisterReasonD
         f"Obligations the answer covers: {len(obligations)}, of which the first {len(shown)} are listed\n\n"
         f"Facts:\n{ai.format_context(kept)}"
     )
+    # Every instrument whose facts the prompt carries reads as a shared one (INV-07, D-57).
+    for instrument in instruments:
+        ai.refuse_private(SubjectType.INSTRUMENT.value, instrument.id)
     try:
         generated = ai.generate(
             purpose=AiPurpose.REASON_DRAFT,
             system=SYSTEM_PROMPT,
             prompt=prompt,
-            prompt_template=PROMPT_TEMPLATE,
+            # The template names the answer, and the subject the company: a draft is confirmed
+            # only for the answer and the company it was written for (confirm_draft).
+            prompt_template=reason_draft_template(body.applicability),
             citations=[AiCitation(label=row.stable_key, url=row.source_url) for row in shown],
             tenant_id=tenant.id,
             asker_id=user.id,
-            subject_type=SubjectType.INSTRUMENT.value,
-            subject_id=instruments[0].id,
+            subject_type=COMPANY_SUBJECT,
+            subject_id=company.id,
             max_tokens=settings.REGISTER_REASON_DRAFT_MAX_TOKENS,
             deadline_s=settings.REGISTER_REASON_DRAFT_DEADLINE_MS / 1000,
         )
@@ -203,11 +214,14 @@ def _licence_lines(company: OrgUnit, tenant: Tenant, order: list[str]) -> _Licen
             lines.append(f"Licence fact: {where}, no longer lists the company")
             continue
         for text, given in registers_logic.line_terms(entry.authority.key, facts):
+            # A register line is the register's own words; one that names the company stays out (D-143).
+            if company.name and company.name.casefold() in text.casefold():
+                continue
             brings = [label[by_pair[pair].id] for pair in given or () if pair in by_pair]
             tail = f", which brings {', '.join(brings)}" if brings else ", which brings no scope term"
             lines.append(f'Licence fact: {where}, lists "{_cut(text)}"{tail}')
         for pair, texts in registers_logic.term_sources(entry.authority.key, facts).items():
-            sources.setdefault(pair, []).extend(_cut(text) for text in texts)
+            sources.setdefault(pair, []).extend(_cut(text) for text in texts if not (company.name and company.name.casefold() in text.casefold()))
     for licence in licences:
         parts = [f"Licence fact: the bank records the licence {label[licence.licence_type.id]}"]
         if licence.authority is not None:

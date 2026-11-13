@@ -655,7 +655,10 @@ def draft_applicability_reason(request: HttpRequest, body: RegisterReasonDraftBo
     twice, more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default, or nothing left
     to decide; `model_unavailable` (503) when the model failed, timed out after
     `REGISTER_REASON_DRAFT_DEADLINE_MS`, 15000 by default, or wrote nothing, in which case the
-    person writes the reason themselves.
+    person writes the reason themselves; `rate_limited` (429) after
+    `REGISTER_REASON_DRAFT_RATE_PER_USER_PER_MINUTE` drafts, 6 by default, in one minute by
+    the same person. A draft confirms one decision only: its `generationId` sent again, with
+    another answer or for another legal entity is `not_found` there.
     """
     tenant = caller_tenant(request)
     return reason_draft.draft(tenant=tenant, user=caller_user(request), order=language_order(request, tenant=tenant), body=body)

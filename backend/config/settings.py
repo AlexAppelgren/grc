@@ -453,6 +453,8 @@ REGISTER_REASON_DRAFT_MAX_TOKENS = env_int("REGISTER_REASON_DRAFT_MAX_TOKENS", 3
 REGISTER_REASON_DRAFT_DEADLINE_MS = env_int("REGISTER_REASON_DRAFT_DEADLINE_MS", 15_000, min=1, max=120_000)
 REGISTER_REASON_DRAFT_FACTS = env_int("REGISTER_REASON_DRAFT_FACTS", 20, min=1, max=200)
 REGISTER_REASON_DRAFT_TEXT_MAX_CHARS = env_int("REGISTER_REASON_DRAFT_TEXT_MAX_CHARS", 500, min=20, max=10_000)
+# How many reason drafts one person may ask for in a minute: each is a model call held inside the request.
+REGISTER_REASON_DRAFT_RATE_PER_USER_PER_MINUTE = env_int("REGISTER_REASON_DRAFT_RATE_PER_USER_PER_MINUTE", 6, min=1, max=1000)
 
 # --- Home, briefing, reminders and the workflow policy (HOM-01, HOM-02, COL-02) ---
 HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5, min=1, max=50)

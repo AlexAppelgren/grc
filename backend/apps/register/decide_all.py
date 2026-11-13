@@ -213,7 +213,9 @@ def start(*, tenant: Tenant, user: User, body: RegisterDecideAllBody) -> dict[st
         }
         if body.reason_draft_id is not None:
             # The reason began as the person's AI draft (D-143): its id and their review, never its words.
-            after["reasonDraft"] = applicability.confirm_draft(tenant_id=tenant.id, actor=_actor(user), draft_id=body.reason_draft_id, reason=body.reason)
+            after["reasonDraft"] = applicability.confirm_draft(
+                tenant_id=tenant.id, actor=_actor(user), draft_id=body.reason_draft_id, reason=body.reason, org_unit_id=body.org_unit_id, applicability=body.applicability
+            )
         record(
             action=STARTED,
             actor=_actor(user),

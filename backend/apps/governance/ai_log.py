@@ -133,9 +133,10 @@ def reason_draft_of(generation_id: uuid.UUID, tenant_id: uuid.UUID, *, asker_id:
     colleague's draft, another bank's or a call that failed is nothing, so nobody stands behind
     words they were never shown (D-143)."""
     return (
-        AiGeneration.objects.filter(pk=generation_id, tenant_id=tenant_id, asker_id=asker_id, purpose=AiPurpose.REASON_DRAFT.value)
+        AiGeneration.objects.select_for_update()
+        .filter(pk=generation_id, tenant_id=tenant_id, asker_id=asker_id, purpose=AiPurpose.REASON_DRAFT.value)
         .exclude(stop_reason=FAILED)
-        .first()  # ordering: pk lookup, at most one row
+        .first()  # ordering: pk lookup, at most one row; locked so two decisions cannot both confirm it
     )
 
 

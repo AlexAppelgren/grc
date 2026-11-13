@@ -21,6 +21,12 @@ ENTRY_CREATED = "register.entry_created"
 _MARKER = re.compile(r"\s*\[\d{1,4}\]")
 
 
+def reason_draft_template(applicability: str) -> str:
+    """The prompt template a reason draft for `applicability` is logged under (D-143): the answer
+    it explains is part of it, so the draft is confirmed only beside that answer."""
+    return f"register/reason-draft/v1:{applicability}"
+
+
 def drafted_reason(output: str, limit: int) -> str:
     """A model's draft of a reason as the dialog is given it: citation marks dropped, white
     space folded, at most `limit` characters. `applicability.confirm_draft` compares the reason

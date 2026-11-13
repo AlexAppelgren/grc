@@ -165,7 +165,7 @@ class Drafting(ReasonDraftCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn("Write in: Swedish", self.prompt(model))
 
-    def test_a_regulation_drafts_for_what_nobody_answered_and_names_its_instrument_as_the_subject(self) -> None:
+    def test_a_regulation_drafts_for_what_nobody_answered_and_logs_the_company_and_the_answer(self) -> None:
         response, model = self.draft({"orgUnitId": str(self.a.bank_ab.id), "instrument": "rd-lvm", "applicability": "not_applicable"})
         self.assertEqual(response.status_code, 200, response.content)
         prompt = self.prompt(model)
@@ -173,9 +173,9 @@ class Drafting(ReasonDraftCase):
         self.assertIn("Keep client assets apart", prompt)
         (row,) = self.rows()
         self.assertEqual(str(row.id), response.json()["generationId"])
-        self.assertEqual((row.subject_type, row.subject_id), ("instrument", self.law.id))
+        self.assertEqual((row.subject_type, row.subject_id), ("org_unit", self.a.bank_ab.id))
         self.assertEqual((row.tenant_id, row.asker_id, row.status), (self.a.tenant.id, self.a.officer.id, "draft"))
-        self.assertEqual(row.prompt_template, reason_draft.PROMPT_TEMPLATE)
+        self.assertEqual(row.prompt_template, "register/reason-draft/v1:not_applicable")
         self.assertFalse(AuditEvent.objects.filter(tenant_id=self.a.tenant.id, created__gte=row.created_at).exists(), "drafting changes nothing")
 
     def test_a_line_the_injection_screen_flags_never_reaches_the_model(self) -> None:
@@ -248,6 +248,17 @@ class Refusals(ReasonDraftCase):
         self.assertEqual(response.status_code, 422, response.content)
         model.assert_not_called()
 
+    @override_settings(RATE_LIMITING_ENABLED=True, REGISTER_REASON_DRAFT_RATE_PER_USER_PER_MINUTE=1)
+    def test_a_person_may_ask_for_so_many_drafts_a_minute(self) -> None:
+        first, _ = self.draft()
+        self.assertEqual(first.status_code, 200, first.content)
+        original = MockLlm.stream
+        with mock.patch.object(MockLlm, "stream", autospec=True, side_effect=original) as model:
+            second = Client().post(ROUTE, data=self.body(), content_type="application/json", **sign_in(self.a.officer, tenant=self.a.tenant))
+        self.assertEqual(second.status_code, 429, second.content)
+        self.assertEqual(second.json()["code"], "rate_limited")
+        model.assert_not_called()
+
     def test_a_failed_model_answers_model_unavailable_and_its_row_stays_logged(self) -> None:
         with mock.patch.object(MockLlm, "stream", autospec=True, side_effect=LlmError("down")):
             response = Client().post(ROUTE, data=self.body(), content_type="application/json", **sign_in(self.a.officer, tenant=self.a.tenant))
@@ -298,6 +309,28 @@ class Confirming(ReasonDraftCase):
         (row,) = self.rows()
         self.assertEqual(row.status, "draft")
         self.assertFalse(AuditEvent.objects.filter(action=APPLICABILITY_SET, tenant_id=self.a.tenant.id, subject_title__contains="8 kap. 11 §").exists())
+
+    def test_a_draft_stands_behind_one_decision_only(self) -> None:
+        drafted = self.drafted()
+        first = self.put({"reason": drafted["text"], "reasonDraftId": drafted["generationId"]})
+        self.assertEqual(first.status_code, 200, first.content)
+        again = self.client.put(
+            f"/api/v1/obligations/{self.kept.id}/applicability",
+            data={"orgUnitId": str(self.a.bank_ab.id), "applicability": "applies", "reason": drafted["text"], "reasonDraftId": drafted["generationId"]},
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{first.json()["version"]}"',
+            **sign_in(self.a.officer, tenant=self.a.tenant),
+        )
+        self.assertEqual(again.status_code, 404, again.content)
+        (row,) = self.rows()
+        self.assertEqual(row.status, "confirmed")
+
+    def test_a_draft_written_for_another_answer_is_not_found_and_nothing_is_stored(self) -> None:
+        drafted = self.drafted()
+        response = self.put({"applicability": "not_applicable", "reason": drafted["text"], "reasonDraftId": drafted["generationId"]})
+        self.assertEqual(response.status_code, 404, response.content)
+        (row,) = self.rows()
+        self.assertEqual(row.status, "draft")
 
     def test_decide_all_records_the_draft_on_its_decision(self) -> None:
         drafted = self.drafted()

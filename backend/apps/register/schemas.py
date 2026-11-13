@@ -60,8 +60,8 @@ _REASON_DRAFT_ID = (
     "as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row "
     "then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person "
     "changed it, naming them, and the decision's audit event records the draft's id and that review. "
-    "It must be a draft the same person was given in this bank, or the call answers 404 `not_found` "
-    "and nothing is stored."
+    "It must be a draft the same person was given in this bank, for this legal entity and this answer, "
+    "not yet used for another decision, or the call answers 404 `not_found` and nothing is stored."
 )
 
 Applicability = Literal["applies", "not_applicable", "under_assessment"]

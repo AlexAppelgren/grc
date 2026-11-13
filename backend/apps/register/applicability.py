@@ -30,9 +30,10 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.governance import ai_log
+from apps.governance.models import AiStatus
 from apps.library.reading import RecordHeading, obligation_headings, obligation_scopes
 from apps.register import duties
-from apps.register.logic import drafted_reason, ensure_register_entries
+from apps.register.logic import drafted_reason, ensure_register_entries, reason_draft_template
 from apps.register.models import Applicability, SoaUnit, TenantObligation, TenantObligationScope
 from apps.register.schemas import (
     REASON_MAX,
@@ -82,18 +83,31 @@ def set_applicability(
 ) -> RegisterApplicability:
     """`PUT /obligations/{obligationId}/applicability`: one confirmed answer, checked against
     `If-Match` (0 for a row nobody has written yet)."""
-    drafted = None if body.reason_draft_id is None else confirm_draft(tenant_id=tenant.id, actor=actor, draft_id=body.reason_draft_id, reason=body.reason)
+    drafted = (
+        None
+        if body.reason_draft_id is None
+        else confirm_draft(tenant_id=tenant.id, actor=actor, draft_id=body.reason_draft_id, reason=body.reason, org_unit_id=body.org_unit_id, applicability=body.applicability)
+    )
     answer = _Answer(obligation_id, body.org_unit_id, body.unit_id, body.applicability, body.reason, drafted)
     return _store(tenant=tenant, actor=actor, order=order, answers=[answer], expected_version=expected_version)[0]
 
 
-def confirm_draft(*, tenant_id: uuid.UUID, actor: Actor, draft_id: uuid.UUID, reason: str) -> dict[str, str]:
+def confirm_draft(
+    *, tenant_id: uuid.UUID, actor: Actor, draft_id: uuid.UUID, reason: str, org_unit_id: uuid.UUID | None, applicability: str
+) -> dict[str, str]:
     """A person sets an answer whose reason began as their own AI draft (D-143): the draft's log
     row reads `confirmed` or `edited` in this transaction, naming them, and the decision's audit
     event carries what this returns: the draft's id and that review, never its words. A draft
-    that is not the person's own in this bank is `not_found`."""
+    that is not the person's own in this bank, was written for another company or another
+    answer, or was already confirmed, is `not_found`: a draft stands behind one decision."""
     row = None if actor.id is None else ai_log.reason_draft_of(draft_id, tenant_id, asker_id=actor.id)
-    if row is None or actor.id is None:
+    if (
+        row is None
+        or actor.id is None
+        or row.subject_id != org_unit_id
+        or row.prompt_template != reason_draft_template(applicability)
+        or row.status != AiStatus.DRAFT.value
+    ):
         raise ValidationError("That AI draft is not one you were given here.", code="not_found")
     as_drafted = reason.strip() == drafted_reason(row.output, REASON_MAX)
     return {"generationId": str(row.id), "review": ai_log.review_draft(row, as_drafted=as_drafted, reviewer_id=actor.id)}
