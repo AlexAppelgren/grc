@@ -1,5 +1,8 @@
 import enAdminAgents from '@/messages/admin-agents/en.json';
 import svAdminAgents from '@/messages/admin-agents/sv.json';
+// What applies: one company's regulations and obligations, decided in one go.
+import enApplies from '@/messages/applies/en.json';
+import svApplies from '@/messages/applies/sv.json';
 import enAuth from '@/messages/auth/en.json';
 import svAuth from '@/messages/auth/sv.json';
 import enBriefing from '@/messages/briefing/en.json';
@@ -109,6 +112,7 @@ import svAgentAccess from '@/messages/agent-access/sv.json';
 // missing in one language fails `tsc` as well as the check.
 const en = {
   ...enAdminAgents,
+  ...enApplies,
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
@@ -165,6 +169,7 @@ const en = {
 
 const sv = {
   ...svAdminAgents,
+  ...svApplies,
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,

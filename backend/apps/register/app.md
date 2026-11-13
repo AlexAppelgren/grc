@@ -452,3 +452,26 @@ transaction of its own, and the screen reads the progress from the cache
 `tests_decide_all.py` holds the rule branches: the filters, the refusals, a grant taken away
 part way, a row the door refuses, the chunks, the reason kept out of arguments and logs, and
 the query counts of the start and of one chunk.
+
+### REG-S22 — A compliance officer decides what a company's licences bring in, in one go `@e2e` (REG-01, FP-05, AC-REG1)
+```gherkin
+Given Example Liv Försäkring AB, for which the register offers the ISK control statements under SFL and nobody has answered them for the company
+When a compliance officer opens "What applies" from the menu and picks Example Liv Försäkring AB
+Then the company shows how many obligations it has to decide, and SFL is listed with why it is listed and how many of its obligations are to decide
+When the officer opens SFL and chooses "Decide" on it
+Then one dialog asks "Does it apply to Example Liv Försäkring AB?", names how many obligations in SFL it covers, and has "Applies" chosen
+And the reason holds a sentence suggested from the licence facts, labelled as suggested until the officer changes it
+When the officer confirms "Set" to Applies
+Then the run's progress shows until it has finished, saying how many it set
+And each of those obligations reads "Applies" in the officer's name, and nothing is left to tick on them
+And the obligation page shows the reason the run stored
+```
+`@e2e` proves the screen over REG-S19's reads and REG-S20's run (`frontend/src/components/applies/`,
+`frontend/tests/e2e/register.journey.spec.ts`): the address carries the company, the open
+regulation and the filter; a regulation's rows are read only while it is open; the same dialog
+serves everything to decide, one regulation and the ticked rows, and starts one run with no
+limit; a member without `applicability.approve` reads the page with no box and no Decide button.
+The suggested reason is built in the browser from `through` and the company's register facts,
+with no model call, and states only facts the bank holds, never the answer
+(`frontend/src/features/applies/suggestion.ts`). An answered row never reads as to decide
+again, so the journey's teardown answers each row "Not assessed", as REG-S1 leaves its row.

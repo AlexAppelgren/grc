@@ -87,7 +87,7 @@ What today's registry produces:
 
 | Who | Tabs | In More |
 |---|---|---|
-| Every system role. All hold `library.read`, `watch.read`, `roadmap.read` and `search.use` (`backend/apps/shared/permissions.py`) | Today, Watch, Inventory, Ask | Roadmap. Admin, for a role holding any tenant admin permission. The account |
+| Every system role. All hold `library.read`, `watch.read`, `roadmap.read` and `search.use` (`backend/apps/shared/permissions.py`) | Today, Watch, Inventory, Ask | My work, Roadmap, then Gaps and What applies directly after it, for a role holding `register.read` (every system role). Admin, for a role holding any tenant admin permission. The account |
 | A custom role holding none of those four | Today | The account |
 | Console, holding every platform permission | Queue, Vocabularies, Sources | The account |
 

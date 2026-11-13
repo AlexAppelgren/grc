@@ -62,6 +62,9 @@ export const destinations: readonly Destination[] = [
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
   // c8-ui-gaps-risk: the bank's gaps across the register (REG-03).
   { id: 'gaps', href: '/gaps', labelKey: 'nav.gaps', surface: 'tenant', anyOfPermissions: ['register.read'], group: 'secondary' },
+  // What applies (REG-01, FP-05): one company at a time, what its licences and the bank's
+  // scope bring in, decided in one go; directly after Gaps, under the same grant.
+  { id: 'applies', href: '/applies', labelKey: 'nav.applies', surface: 'tenant', anyOfPermissions: ['register.read'], group: 'secondary' },
   // The briefing (HOM-02): reached from Today's lead card and the mailed
   // link, never the rail or the More sheet. `parent` names a destination
   // nothing renders children for (only Admin's tab bar and the account parent do),

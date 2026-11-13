@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: what applies (/applies)</title>
+<script>
+/* Card only: ?theme=light|dark fixes the theme. Not part of the screen. */
+(function(){var t=new URLSearchParams(location.search).get('theme');
+if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4) by way of
+   admin-licences.html: the tenant shell, .panel, .field, .row, .btn, .pill. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;--brand-pill:#ece5d6;--brand-text:#6a5730;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;letter-spacing:-.01em;line-height:1.2;font-weight:500}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}
+p{margin:0 0 .75rem}a{color:var(--text);text-underline-offset:3px}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 8px 20px}.logo{display:block;width:100%;height:auto;max-width:196px}
+.nav button{display:flex;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
+.nav button[aria-current="page"]{background:#f8f6f1;color:#003824;font-weight:600}
+.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
+.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
+.who b{display:block;color:#fff;font-weight:600}
+main{padding:32px 36px 96px;max-width:1100px;width:100%}
+.mbrand{display:none}
+.back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel.sand{background:var(--sand);border-color:var(--sand-2)}
+.panel>h2{margin-bottom:12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:grid;gap:5px;margin-bottom:14px}.field label{font-weight:600;font-size:.9rem}
+.field input,.field select{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.field .hint{color:var(--muted);font-size:.82rem}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand)}
+.check .done{text-decoration:line-through;color:var(--muted)}
+.check small{display:block;color:var(--muted);font-size:.82rem}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.err{color:var(--red);font-size:.88rem;margin-top:6px}
+.ok{color:var(--green);font-size:.88rem;margin-top:6px}
+.meter{height:10px;border-radius:999px;background:var(--grey-soft);overflow:hidden;margin:10px 0 6px}
+.meter i{display:block;height:100%;border-radius:999px;background:var(--brand);width:25%}
+.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.rows{display:grid;gap:10px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.row h3{font-size:1rem;font-weight:600;margin:0 0 4px}
+.row .meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row .bar{margin-top:0}
+.empty h2{color:var(--text);margin-bottom:8px}
+.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+/* Chunk 8: legal entities, licences and certificates, products. Pills are the
+   scope block's brand pills (pills-and-labels.md), plus the plain information
+   pill; values are Green's l3-brand-02 / content-brand-02 and l3-neutral-02. */
+.pill{display:inline-block;border-radius:999px;padding:0 8px;font-size:.8rem;line-height:20px;font-weight:500;background:var(--grey-soft);color:var(--text);white-space:nowrap}
+.pill.brand{background:var(--brand-pill);color:var(--brand-text)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
+.tree{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tree .tree{margin:10px 0 0 20px;padding-left:12px;border-left:1px solid var(--line)}
+.dim{opacity:.6}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 14px;font-size:.9rem;margin:8px 0 0}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.mono{font-family:"Noto Sans Mono",ui-monospace,Menlo,monospace;font-size:.86rem}
+.sub{font-size:.95rem;font-weight:600;margin:16px 0 8px}
+.theme.light{--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;--brand-pill:#ece5d6;--brand-text:#6a5730}
+.theme.dark{--bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9}
+.theme{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:12px}
+.phones{display:flex;flex-wrap:wrap;gap:16px}
+.phones>*{flex:0 1 375px;min-width:0}
+.phones .kv{grid-template-columns:1fr;gap:0}.phones .kv dd{margin-bottom:6px}
+.tabbar{display:none}
+@media (max-width:820px){
+  .kv{grid-template-columns:1fr;gap:0}.kv dd{margin-bottom:6px}
+  .app{grid-template-columns:1fr}.side{display:none}
+  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
+  main{padding:20px 16px 100px}h1{font-size:1.6rem}
+  .g2,.pair{grid-template-columns:1fr}
+  .bar{flex-wrap:nowrap}.bar .btn{order:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .btn:not(.ghost){order:3}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem}
+}
+/* What applies (REG-01, FP-05, AC-REG1; REG-S22): one company at a time, the
+   regulations its licences and the bank's scope bring in, decided in one go
+   through one dialog and a background run with no limit. */
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--muted);font-weight:500;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--grey-soft);color:var(--text)}
+.chip b{color:var(--text)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.link{font-weight:500;white-space:nowrap}
+.meta{color:var(--muted);font-size:.86rem}
+.line{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:12px}
+.line>.end{margin-left:auto}
+.filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px;margin-bottom:12px}
+.filters .field{flex:1 1 220px;max-width:30rem;margin:0 0 0 auto}
+.reg{border-top:1px solid var(--line)}.reg:first-child{border-top:0}
+.reghead{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding-top:12px}
+.reghead h3{font-size:1rem;font-weight:500;margin:0}.reghead .btn{margin-left:auto}
+.reghead .all{width:20px;height:20px;margin:0;flex:none}.reghead .gap{width:20px;flex:none}
+.fold>summary{cursor:pointer;padding:12px 0;list-style:none;display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px}
+.fold>summary::-webkit-details-marker{display:none}
+.reg>.fold>summary{color:var(--muted);font-size:.86rem}
+.pick{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.pick input{width:20px;height:20px;margin:2px 0 0;flex:none}.pick .gap{width:20px;flex:none}
+.pick .t{flex:1;display:grid;grid-template-columns:7rem minmax(0,1fr) auto;gap:2px 12px;align-items:baseline}
+.pick .ref{color:var(--muted)}.pick .state{color:var(--muted);font-size:.86rem;text-align:right}
+.pick .why{grid-column:1 / -1;color:var(--muted);font-size:.86rem}
+.pill.positive{background:#d7eedc;color:#0e4a24}
+.stickybar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);padding:12px 16px;margin-top:16px}
+.stickybar .bar{margin:0 0 0 auto}
+.progress{height:8px;border-radius:999px;background:var(--grey-soft);overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--brand);border-radius:999px}
+.runline{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px}
+.box{max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.box h2{margin-bottom:6px}.box .desc{color:var(--muted)}
+.box textarea{width:100%;min-height:76px;border:1px solid var(--line-strong);border-radius:6px;padding:8px 10px;font:inherit;background:var(--surface);color:var(--text)}
+.box textarea::placeholder{font-style:italic;color:var(--muted)}
+.quiet{color:var(--muted);font-size:.86rem;margin:0 0 4px}
+.micro{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.notice{background:var(--surface-2);border-radius:6px;padding:10px 12px;margin-bottom:16px}
+@media (max-width:820px){.pick .t{grid-template-columns:minmax(0,1fr)}.pick .state{text-align:left}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced bläck"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <nav class="nav" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Ask</button><hr><button>My work</button><button>Roadmap</button><button>Gaps</button><button aria-current="page">What applies</button><hr><button>Admin</button></nav>
+    <div class="who">Signed in as<b>Sara Lindqvist</b>Example Bank AB · Compliance officer</div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced bläck"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <div class="head"><h1>What applies</h1></div>
+
+    <div class="line">
+      <div class="line" role="group" aria-label="Company" style="margin:0">
+        <button class="chip" aria-pressed="false">Example Bank AB <b>31</b><span class="sr"> to decide</span></button>
+        <button class="chip" aria-pressed="true">Example Fonder AB <b>41</b><span class="sr"> to decide</span></button>
+        <button class="chip" aria-pressed="false">Example Liv Försäkring AB <b>12</b><span class="sr"> to decide</span></button>
+      </div>
+      <a class="end link" href="admin-licences.html">Licences</a>
+    </div>
+    <div class="line" style="margin-bottom:16px">
+      <span>58 obligations in 6 regulations · 41 to decide</span>
+      <button class="btn end">Decide all 41</button>
+    </div>
+
+    <div class="filters">
+      <div class="line" role="group" aria-label="Show" style="margin:0 0 14px">
+        <button class="chip" aria-pressed="true">To decide 41</button>
+        <button class="chip" aria-pressed="false">Decided 17</button>
+        <button class="chip" aria-pressed="false">All 58</button>
+      </div>
+      <div class="field"><label for="find">Find a regulation</label><input id="find" type="search" placeholder="e.g. penningtvätt"></div>
+    </div>
+
+    <section class="panel" style="padding-top:4px;padding-bottom:4px" data-regulations>
+      <div class="reg" data-regulation="sfs-2004-46">
+        <div class="reghead"><input type="checkbox" class="all" data-mixed aria-label="Select all to decide in Lag (2004:46) om värdepappersfonder"><h3><a href="tenant-instrument.html" lang="sv">Lag (2004:46) om värdepappersfonder</a></h3><button class="btn ghost small">Decide 9</button></div>
+        <details class="fold" open><summary><span>From its licence: <span lang="sv">Tillstånd att driva fondverksamhet</span></span><span>9 of 12 to decide</span></summary>
+          <div class="pick"><input type="checkbox" aria-labelledby="o1"><div class="t"><span class="mono ref">2 kap. 8 §</span><a id="o1" href="tenant-obligation.html">Hold own funds that match the assets under management</a><span class="state">to decide</span></div></div>
+          <div class="pick"><input type="checkbox" aria-labelledby="o2" checked><div class="t"><span class="mono ref">2 kap. 17 b §</span><a id="o2" href="tenant-obligation.html">Run a risk management system for every fund</a><span class="state">to decide</span></div></div>
+          <div class="pick"><span class="gap" aria-hidden="true"></span><div class="t"><span class="mono ref">4 kap. 2 §</span><a href="tenant-obligation.html">Act only in the unit holders' common interest</a><span class="state"><span class="pill positive">Applies</span> Sara Lindqvist, 20 Sep 2026</span></div></div>
+          <div class="pick"><span class="gap" aria-hidden="true"></span><div class="t"><span class="mono ref">4 kap. 9 §</span><a href="tenant-obligation.html">Keep a register of unit holders</a><span class="state"><span class="pill">Not assessed</span> Johan Berg, 1 Oct 2026</span></div></div>
+          <div class="pick"><input type="checkbox" aria-labelledby="o3" checked><div class="t"><span class="mono ref">7 kap. 3 §</span><a id="o3" href="tenant-obligation.html">Follow the investor protection rules when managing a client's portfolio</a><span class="state">to decide</span><span class="why">Covers: Portfolio management</span></div></div>
+        </details>
+      </div>
+      <div class="reg" data-regulation="sfs-2017-630">
+        <div class="reghead"><span class="gap" aria-hidden="true"></span><h3><a href="tenant-instrument.html" lang="sv">Lag (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism</a></h3><button class="btn ghost small">Decide 4</button></div>
+        <details class="fold"><summary><span>From the bank's scope: Anti-money laundering</span><span>4 of 8 to decide</span></summary></details>
+      </div>
+      <div class="reg" data-regulation="celex-32014r0600">
+        <div class="reghead"><span class="gap" aria-hidden="true"></span><h3><a href="tenant-instrument.html">MiFIR</a></h3><button class="btn ghost small">Decide 2</button></div>
+        <details class="fold"><summary><span>From its licence: <span lang="sv">Portföljförvaltning</span></span><span>2 of 7 to decide</span></summary></details>
+      </div>
+    </section>
+
+    <div class="stickybar" role="region" aria-label="Selected obligations"><span role="status">2 selected</span><div class="bar"><button class="btn ghost small">Clear</button><button class="btn small">Decide 2</button></div></div>
+
+    <div class="states">
+    <h2 class="k">The dialog, the same for every way in: you pick Applies (it opens so)</h2>
+    <div class="box" role="dialog" aria-labelledby="d1">
+      <h2 id="d1">Does it apply to Example Fonder AB?</h2>
+      <p class="desc">41 obligations in 6 regulations</p>
+      <div class="field"><span style="font-weight:600;font-size:.9rem">Decision</span>
+        <div class="line" role="group" aria-label="Decision" style="margin:0"><button class="chip" aria-pressed="true">Applies</button><button class="chip" aria-pressed="false">Does not apply</button></div></div>
+      <div class="field"><label for="r1">Reason</label><span class="micro">Suggested from the licence facts</span>
+        <textarea id="r1">Within the scope of Example Fonder AB's licences and the bank's regulatory scope. Read from Finansinspektionen's register on 11 Nov 2026.</textarea></div>
+      <p class="quiet">Each obligation gets its own entry in the audit log, with this reason.</p>
+      <p class="quiet">Anything a colleague decides in the meantime is left as it is.</p>
+      <div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Set 41 to Applies</button></div>
+    </div>
+
+    <h2 class="k">You edit it: the label goes, and your words stay through a change of answer</h2>
+    <div class="box" role="dialog" aria-labelledby="d2">
+      <h2 id="d2">Does it apply to Example Fonder AB?</h2>
+      <p class="desc">9 obligations in Lag (2004:46) om värdepappersfonder</p>
+      <div class="field"><span style="font-weight:600;font-size:.9rem">Decision</span>
+        <div class="line" role="group" aria-label="Decision" style="margin:0"><button class="chip" aria-pressed="true">Applies</button><button class="chip" aria-pressed="false">Does not apply</button></div></div>
+      <div class="field"><label for="r2">Reason</label>
+        <textarea id="r2">Within the scope of its licence Tillstånd att driva fondverksamhet, which brings Funds into scope. The company manages eleven UCITS funds.</textarea></div>
+      <p class="quiet">Each obligation gets its own entry in the audit log, with this reason.</p>
+      <p class="quiet">Anything a colleague decides in the meantime is left as it is.</p>
+      <div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Set 9 to Applies</button></div>
+    </div>
+
+    <h2 class="k">You pick Does not apply: the reason is yours to give, and the button waits for it</h2>
+    <div class="box" role="dialog" aria-labelledby="d3">
+      <h2 id="d3">Does it apply to Example Fonder AB?</h2>
+      <p class="desc">2 selected obligations</p>
+      <div class="field"><span style="font-weight:600;font-size:.9rem">Decision</span>
+        <div class="line" role="group" aria-label="Decision" style="margin:0"><button class="chip" aria-pressed="false">Applies</button><button class="chip" aria-pressed="true">Does not apply</button></div></div>
+      <div class="field"><label for="r3">Reason</label><textarea id="r3" placeholder="e.g. The company holds no client money"></textarea></div>
+      <p class="quiet">Each obligation gets its own entry in the audit log, with this reason.</p>
+      <p class="quiet">Anything a colleague decides in the meantime is left as it is.</p>
+      <div class="bar"><button class="btn ghost">Cancel</button><button class="btn" disabled>Set 2 to Does not apply</button></div>
+    </div>
+
+    <h2 class="k">The run, above the filter: running (every Decide waits), then finished until Done</h2>
+    <section class="panel" data-decide-run="running" style="margin-bottom:10px">
+      <div class="runline"><span role="status" style="font-weight:500">Setting 41 obligations to Applies</span><span class="meta">18 of 41</span></div>
+      <div class="progress" role="progressbar" aria-label="Obligations set so far" aria-valuemin="0" aria-valuemax="41" aria-valuenow="18"><i style="width:44%"></i></div>
+    </section>
+    <section class="panel" data-decide-run="finished">
+      <p role="status" style="font-weight:500;margin:0">39 set to Applies.</p>
+      <p style="margin:4px 0 0">1 left as a colleague had answered it.</p>
+      <details class="fold" style="margin-top:8px"><summary>1 could not be set</summary><p><b>Report each fund's holdings to Finansinspektionen</b> <span class="meta">The obligation is no longer offered for this legal entity.</span></p></details>
+      <button class="btn ghost small" style="margin-top:8px">Done</button>
+    </section>
+    <div class="notice" role="status" style="margin-top:10px">Your earlier decision is still running. When it has finished, decide the rest.</div>
+
+    <h2 class="k">A member without applicability.approve: everything to read, no box and no Decide</h2>
+    <section class="panel" style="padding-top:4px;padding-bottom:4px">
+      <div class="reg"><div class="reghead"><h3><a href="#" lang="sv">Lag (2004:46) om värdepappersfonder</a></h3></div>
+        <details class="fold" open><summary><span>From its licence: <span lang="sv">Tillstånd att driva fondverksamhet</span></span><span>9 of 12 to decide</span></summary>
+          <div class="pick"><div class="t"><span class="mono ref">2 kap. 8 §</span><a href="#">Hold own funds that match the assets under management</a><span class="state">to decide</span></div></div>
+          <div class="pick"><div class="t"><span class="mono ref">4 kap. 2 §</span><a href="#">Act only in the unit holders' common interest</a><span class="state"><span class="pill positive">Applies</span> Sara Lindqvist, 20 Sep 2026</span></div></div>
+        </details></div>
+    </section>
+
+    <h2 class="k">Everything decided under the default filter</h2>
+    <div class="empty"><h2>Everything is decided for Example Bank AB.</h2><a href="#">Show the decided ones</a></div>
+
+    <h2 class="k">A company the register offers nothing for (Regulatory scope only for someone who may open it)</h2>
+    <p class="line"><span>The register offers nothing for Example Liv Försäkring AB yet.</span><a href="admin-licences.html">Licences</a><a href="admin-footprint.html">Regulatory scope</a></p>
+
+    <h2 class="k">No legal entity yet</h2>
+    <div class="empty"><h2>No legal entities yet</h2><p>Add the bank's legal entities, then decide here what applies to each.</p><a href="admin-organisation.html">Go to Organisation</a></div>
+
+    <h2 class="k">At 375 px, light and dark: actions on the right</h2>
+    <div class="phones">
+      <div class="theme light"><section class="panel" style="padding-top:4px">
+        <div class="reg"><div class="reghead"><h3><a href="#">FFFS 2013:9</a></h3><button class="btn ghost small">Decide 18</button></div>
+          <details class="fold" open><summary><span>From its licence: Tillstånd att driva fondverksamhet</span><span>18 of 18 to decide</span></summary>
+            <div class="pick"><input type="checkbox" aria-label="Run an internal audit function"><div class="t"><span class="mono ref">6 kap. 1 §</span><a href="#">Run an internal audit function</a><span class="state">to decide</span></div></div></details></div>
+      </section></div>
+      <div class="theme dark"><section class="panel" style="padding-top:4px">
+        <div class="reg"><div class="reghead"><h3><a href="#">FFFS 2013:9</a></h3><button class="btn ghost small">Decide 18</button></div>
+          <details class="fold" open><summary><span>From its licence: Tillstånd att driva fondverksamhet</span><span>18 of 18 to decide</span></summary>
+            <div class="pick"><input type="checkbox" aria-label="Run an internal audit function"><div class="t"><span class="mono ref">6 kap. 1 §</span><a href="#">Run an internal audit function</a><span class="state">to decide</span></div></div></details></div>
+      </section></div>
+    </div>
+
+    <h2 class="k">Loading and error</h2>
+    <div class="panel" aria-busy="true" style="height:160px;background:var(--surface-2)"></div>
+    <div class="notice" role="alert" style="margin-top:10px">The regulations could not be read. Try again.</div>
+    </div>
+
+    <p class="note">What applies (REG-01, FP-05, AC-REG1; REG-S22; Alex 2026-11-12: set what applies from each company's licences, with no limit on how many). Step 2 of three: Licences, What applies, the obligation page. One company at a time, chosen by the chips (each with what it has to decide) or by the address, which also carries the open regulation and the filter. One line per regulation, a fold whose closed line says why it is listed (its licence lines, or the bank's scope) and how many of its obligations are left; its name opens its page outside the toggle. Rows are read only while a regulation is open. A row to decide has a box; an answered one, a colleague's Not assessed with a reason included, shows its pill, name and date and is never a target. Decide all, Decide on a regulation and the ticked rows open the same dialog, whose reason is suggested from the licence facts with no model call and is yours to edit; with Does not apply it starts empty. One confirming button, no second step. The run works in the background and is read again when you come back; its result stays until Done. No AI link: whether a model may rewrite the reason is not decided.</p>
+  </main>
+</div>
+<nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Ask</button><button>More</button></nav>
+<script>document.querySelectorAll("[data-mixed]").forEach(function (box) { box.indeterminate = true; });</script>
+</body>
+</html>

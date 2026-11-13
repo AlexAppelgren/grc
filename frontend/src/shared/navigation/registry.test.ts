@@ -110,7 +110,7 @@ describe('navigation registry (playbook 6.2)', () => {
 
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'admin']);
+    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'applies', 'admin']);
     expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-agents', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
@@ -121,7 +121,16 @@ describe('navigation registry (playbook 6.2)', () => {
     // and the empty slot stays empty rather than taking Roadmap or Admin.
     const noWatch = all.filter((p) => p !== 'watch.read');
     expect(dockDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['today', 'inventory', 'ask']);
-    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'admin']);
+    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['my-work', 'roadmap', 'gaps', 'applies', 'admin']);
+  });
+
+  // What applies sits in the main menu directly after Gaps, under the same grant, and has its page.
+  it('puts What applies after Gaps for a reader of the register, with its page', () => {
+    expect(visibleDestinations('tenant', ['register.read']).map((d) => d.id)).toEqual(['today', 'my-work', 'gaps', 'applies']);
+    expect(findDestination('applies')).toMatchObject({ href: '/applies', labelKey: 'nav.applies', anyOfPermissions: ['register.read'], group: 'secondary' });
+    expect(catalogs.en['nav.applies']).toBe('What applies');
+    expect(catalogs.sv['nav.applies']).toBe('Vad som gäller');
+    expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(tenant)', 'applies', 'page.tsx'))).toBe(true);
   });
 
   it('knows when the current page lives in More, account pages included', () => {

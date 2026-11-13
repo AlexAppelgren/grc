@@ -24,6 +24,10 @@ const STANDARD = 'iso-iec-27001-2022-conformance';
 const BANK = 'Example Bank AB';
 const FONDER = 'Example Fonder AB';
 const LIV = 'Example Liv Försäkring AB';
+// REG-S22: the regulation whose duty for the insurer nobody has answered in the seed
+// (Skatteförfarandelagen, the ISK control statements), so What applies offers it to decide.
+const SFL = 'sfs-2011-1244';
+const SFL_NAME = 'SFL';
 // What the seed wrote, which each journey's teardown puts back.
 const SPANNING_REASON = 'We both manufacture and distribute instruments.';
 const FONDER_NOTE = 'Negative target markets are not yet set for the two newest funds.';
@@ -628,6 +632,77 @@ test.describe('register journeys', () => {
 
   test.fixme("REG-S9: Yearly attestation and waivers", async () => {
     // pending: REG-S9 (REG-06)
+  });
+
+  test("REG-S22: A compliance officer decides what a company's licences bring in, in one go", async ({ page, apiGuard }, testInfo) => {
+    // REG-01, AC-REG1: from What applies, the insurer's SFL duties nobody has answered (the
+    // ISK control statements span the bank and the insurer, and the seed answers neither
+    // company's own row) are set to Applies through one dialog with the reason suggested from
+    // the licence facts, by the worker's run. Each row then reads Applies in the officer's
+    // name, and the obligation page shows the reason. The teardown answers each row "Not
+    // assessed" again, as REG-S1 leaves its row: an answered row never reads as to decide again.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    const mark = runMark(testInfo);
+    const decided: string[] = [];
+    try {
+      await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'What applies', exact: true }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'What applies' })).toBeVisible();
+      await page.getByRole('group', { name: 'Company' }).getByRole('button', { name: new RegExp(`^${LIV} \\d+ to decide$`) }).click();
+      await expect(page.getByRole('group', { name: 'Company' }).getByRole('button', { name: new RegExp(`^${LIV} `) })).toHaveAttribute('aria-pressed', 'true');
+
+      // Open the regulation unless it is the first, which opens by itself.
+      const sfl = page.locator(`[data-regulation="${SFL}"]`);
+      const toggle = sfl.locator('[data-slot="fold-trigger"]');
+      // An answered row never reads as to decide again, so a retry after an attempt that got
+      // as far as the run finds nothing here: it says so, and points at the first failure.
+      const earlier =
+        testInfo.retry > 0 ? `An earlier attempt of this journey already answered ${SFL_NAME} for ${LIV}, so nothing is left to decide: read the first attempt's failure, not this one.` : undefined;
+      await expect(toggle, earlier).toBeVisible();
+      if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+      const open = sfl.locator('[data-row][data-to-decide]');
+      await expect(open.first(), earlier).toBeVisible();
+      decided.push(...(await open.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-row') ?? ''))));
+
+      const decide = sfl.locator('[data-decide-regulation]');
+      await expect(decide).toHaveText(`Decide ${decided.length}`);
+      await decide.click();
+      const dialog = page.getByRole('dialog', { name: `Does it apply to ${LIV}?` });
+      await expect(dialog).toContainText(`in ${SFL_NAME}`);
+      await expect(dialog.getByRole('button', { name: 'Applies', exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await expect(dialog.getByText('Suggested from the licence facts')).toBeVisible();
+      const field = dialog.getByLabel('Reason');
+      await expect(field).toHaveValue(/^Within /);
+      const reason = `${await field.inputValue()} (${mark})`;
+      await field.fill(reason);
+      await expect(dialog.getByText('Suggested from the licence facts')).toHaveCount(0);
+      await dialog.getByRole('button', { name: `Set ${decided.length} to Applies` }).click();
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+
+      // The run, read until it finishes, then the decided rows in the officer's name.
+      await expect(page.locator('[data-decide-run="finished"]').getByText(`${decided.length} set to Applies.`)).toBeVisible({ timeout: 30_000 });
+      await page.getByRole('group', { name: 'Show' }).getByRole('button', { name: /^Decided \d+$/ }).click();
+      await expect(page).toHaveURL(/[?&]state=decided(&|$)/);
+      if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+      for (const id of decided) {
+        const row = sfl.locator(`[data-row="${id}"]`);
+        await expect(row.locator('[data-pill]')).toHaveText('Applies');
+        await expect(row).toContainText('Sara Lindqvist');
+        await expect(row.getByRole('checkbox')).toHaveCount(0);
+      }
+
+      // The obligation page reads the reason the run stored.
+      await sfl.locator(`[data-row="${decided[0]}"]`).getByRole('link').click();
+      await expect(page).toHaveURL(new RegExp(`/inventory/obligations/${decided[0]}$`));
+      await expect(applicabilityRow(page, LIV).getByText(reason)).toBeVisible();
+    } finally {
+      for (const id of decided) {
+        await page.goto(`/inventory/obligations/${id}`);
+        const pillOf = applicabilityRow(page, LIV).locator('[data-pill]');
+        await expect(pillOf).toBeVisible();
+        if ((await pillOf.textContent()) === 'Applies') await answer(page, LIV, 'Not assessed', `Reset after REG-S22 (${mark}).`);
+      }
+    }
   });
 });
 
