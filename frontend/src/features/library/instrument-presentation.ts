@@ -74,13 +74,18 @@ export function obligationsTitleOf(levelKey: string, t: Translate): string {
 /** The level whose duties sit in each country's implementing law, not under the record itself (ADR 0065). */
 export const DIRECTIVE_LEVEL = 'eu_directive';
 
-/** A directive's national laws as its page opens them: the laws with duties in the bank's scope first, and the totals over every law listed. */
-export function nationalLawsOf(implementedBy: readonly InstrumentLinkRef[]): { laws: InstrumentLinkRef[]; obligations: number; inScope: number } {
+/**
+ * A directive's national laws as its page opens them: the laws with duties in the bank's scope
+ * first, and the totals over every law listed. An act of the directive's own jurisdiction that
+ * names it (a delegated regulation supplementing it) is not a national law and is left out.
+ */
+export function nationalLawsOf(implementedBy: readonly InstrumentLinkRef[], jurisdiction: string): { laws: InstrumentLinkRef[]; obligations: number; inScope: number } {
+  const national = implementedBy.filter((law) => law.jurisdiction.key !== jurisdiction);
   return {
     // A stable sort: within each half the laws keep the order the read answers them in.
-    laws: [...implementedBy].sort((a, b) => Number(b.obligationCounts.inScope > 0) - Number(a.obligationCounts.inScope > 0)),
-    obligations: implementedBy.reduce((sum, law) => sum + law.obligationCounts.inLibrary, 0),
-    inScope: implementedBy.reduce((sum, law) => sum + law.obligationCounts.inScope, 0),
+    laws: [...national].sort((a, b) => Number(b.obligationCounts.inScope > 0) - Number(a.obligationCounts.inScope > 0)),
+    obligations: national.reduce((sum, law) => sum + law.obligationCounts.inLibrary, 0),
+    inScope: national.reduce((sum, law) => sum + law.obligationCounts.inScope, 0),
   };
 }
 

@@ -226,7 +226,7 @@ function Rollup({ rollup, answer, onAnswer, stableKey }: { rollup: RegisterInstr
  */
 function NationalLaws({ instrument }: { instrument: InstrumentDetail }) {
   const t = useT();
-  const { laws, obligations, inScope } = nationalLawsOf(instrument.implementedBy);
+  const { laws, obligations, inScope } = nationalLawsOf(instrument.implementedBy, instrument.jurisdiction.key);
   return (
     <div className="grid gap-2 text-body" data-what-applies="">
       <p>{t('inventory.instrument.applies.directive')}</p>

@@ -89,14 +89,21 @@ describe('nationalLawsOf', () => {
 
   it('opens the laws with obligations in scope first, keeping the order the read answers within each half, and sums every law', () => {
     const answered = [law('dk', 21, 0), law('se', 34, 23), law('fi', 18, 0), law('no', 9, 2)];
-    const { laws, obligations, inScope } = nationalLawsOf(answered);
+    const { laws, obligations, inScope } = nationalLawsOf(answered, 'eu');
     expect(laws.map((row) => row.key)).toEqual(['se', 'no', 'dk', 'fi']);
     expect([obligations, inScope]).toEqual([82, 25]);
     expect(answered.map((row) => row.key)).toEqual(['dk', 'se', 'fi', 'no']);
   });
 
+  it("leaves out an act of the directive's own jurisdiction that names it, from the list and from the totals", () => {
+    const delegated: InstrumentLinkRef = { ...law('celex-32017r0565', 12, 7), jurisdiction: { key: 'eu', kind: 'union', label: 'EU' } };
+    const { laws, obligations, inScope } = nationalLawsOf([delegated, law('se', 34, 23)], 'eu');
+    expect(laws.map((row) => row.key)).toEqual(['se']);
+    expect([obligations, inScope]).toEqual([34, 23]);
+  });
+
   it('holds nothing when the library holds no national law', () => {
-    expect(nationalLawsOf([])).toEqual({ laws: [], obligations: 0, inScope: 0 });
+    expect(nationalLawsOf([], 'eu')).toEqual({ laws: [], obligations: 0, inScope: 0 });
   });
 });
 

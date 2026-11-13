@@ -230,13 +230,10 @@ test.describe('library journeys', () => {
     await expect(obligations.locator('[data-applies-counts]')).toContainText('in the library.');
   });
 
-  // Pending on the seed, not the screen: `implementedBy` matches a directive's official number
-  // (2014/65) in a law's implementsNote, and the seeded directives carry CELEX numbers as their
-  // official reference (backend/apps/library/fixtures/prototype_data.json: "CELEX 32014L0065"),
-  // so no seeded directive has a national law yet. Un-fixme once celex-32014l0065 reads
-  // "Directive 2014/65/EU", which LVM (SE, in tenant A's scope) and Verdipapirhandelloven (NO,
-  // outside it) both name.
-  test.fixme("INV-S21: A directive opens its national laws in place, with their obligations", async ({ page, apiGuard }) => {
+  // The seeded directive carries the reference real directives carry ("Directive 2014/65/EU"),
+  // which LVM (SE, in tenant A's scope) and Verdipapirhandelloven (NO, outside it) both name in
+  // what they implement (backend/apps/library/fixtures/prototype_data.json).
+  test("INV-S21: A directive opens its national laws in place, with their obligations", async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto('/inventory?tab=instruments');
