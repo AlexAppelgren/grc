@@ -12,21 +12,31 @@ locks, audit event per row and recurring duties, as the person who started the r
 
 Four rules the door alone does not give:
 
-- A person's answer is never overwritten. Before the door, each chunk locks the rows its
-  targets name and drops those a person has answered meanwhile, counted as skipped.
+- A person's answer is never overwritten. Before the door, each chunk creates the rows its
+  targets name that do not exist yet (an insert that skips a row another write created), then
+  locks them all and drops those a person has answered meanwhile, counted as skipped. A
+  colleague's answer to the same row, written at the same moment, meets this chunk on the
+  row's key or lock and is read under it: it is never taken for an unanswered row.
 - Only what is still offered is set. The door checks an obligation's span and never the
   bank's working inventory, so each chunk reads afresh which of its targets the register
   still offers for the company and refuses the others.
 - The person must still be allowed. Before each chunk the run reads afresh that they are an
-  active member holding `applicability.approve`, and otherwise stops with an audit row.
+  active member holding `applicability.approve` and that the company is still an active legal
+  entity, and otherwise stops with an audit row.
 - The reason never leaves the bank. It is kept beside the run's state in the cache, under
   the bank and the person, read there by the worker and dropped when the run ends: a task
   argument is printed by a broker and by an error tracker. Nothing here logs, and no
   exception carries it.
 
 One run per person and bank: a second start answers 409 `decision_running` unless the running
-one is silent past `REGISTER_DECIDE_ALL_STALE_S`. A task acts only on its own run and its own
-place in it, so a run replaced meanwhile and a chunk delivered twice decide nothing.
+one is silent past `REGISTER_DECIDE_ALL_STALE_S`. The start and every chunk hold one advisory
+lock of the bank and the person for their whole transaction, and read and write the run's
+state only under it, before the commit as `approve_all` writes its own: two starts at once are
+one start and one 409, and a chunk delivered twice at once is decided once. A task acts only
+on its own run and its own place in it: a chunk delivered again finds its place moved and
+decides nothing, and a run replaced meanwhile decides nothing and records that it stopped. A
+chunk whose commit fails ends its run as failed through the task's failure hook (`fail`); the
+state may then count that chunk's rows as set, and what a new start reads is the truth.
 """
 
 from __future__ import annotations
@@ -38,7 +48,7 @@ from typing import Any, NamedTuple
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
 from apps.identity import api_keys_logic
@@ -48,10 +58,11 @@ from apps.library.models import Obligation
 from apps.register import applicability, company_view
 from apps.register.schemas import REFUSALS_KEPT, RegisterDecideAllBody
 from apps.shared import permissions as perms
-from apps.shared.audit import Actor, ActorType, record
+from apps.register.logic import ensure_register_entries
+from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.models import Tenant
 from apps.taxonomy.reading import FALLBACK_LANGUAGE
-from apps.tenants.models import OrgUnit
+from apps.tenants.models import OrgUnit, OrgUnitKind
 
 IDLE = "idle"
 RUNNING = "running"
@@ -65,6 +76,9 @@ PERMISSION_REVOKED = "permission_revoked"
 MEMBERSHIP_ENDED = "membership_ended"
 REASON_EXPIRED = "reason_expired"
 FAILED = "failed"
+COMPANY_GONE = "company_gone"
+# Only in a stopped row's audit event: the run's own state was taken by a newer run's.
+REPLACED = "replaced"
 
 
 class _Run(NamedTuple):
@@ -120,6 +134,12 @@ def _keep(tenant_id: uuid.UUID, user_id: uuid.UUID, held: dict[str, Any]) -> Non
     cache.set(_key(tenant_id, user_id), held, timeout=settings.REGISTER_DECIDE_ALL_KEEP_S)
 
 
+def _lock_run(tenant_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    """Hold the run's lock of the bank and the person until the open transaction ends."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [_key(tenant_id, user_id)])
+
+
 def _stale(state: dict[str, Any]) -> bool:
     updated = state.get("updatedAt")
     return not updated or (timezone.now() - datetime.fromisoformat(updated)).total_seconds() > settings.REGISTER_DECIDE_ALL_STALE_S
@@ -140,7 +160,9 @@ def _actor(user: User) -> Actor:
 # --- POST /applicability/decide-all ---
 def start(*, tenant: Tenant, user: User, body: RegisterDecideAllBody) -> dict[str, Any]:
     """Read what is to decide under the body's filters, record the decision and queue the run.
-    The state is kept, and the worker queued, only once the request has committed."""
+    The state is read and kept under the run's lock; the worker is queued once the request
+    has committed."""
+    _lock_run(tenant.id, user.id)
     current = state_of(tenant.id, user.id)
     if current["status"] == RUNNING and not _stale(current):
         raise ValidationError("Your earlier Decide all is still running. Wait for it to finish.", code="decision_running")
@@ -184,7 +206,7 @@ def start(*, tenant: Tenant, user: User, body: RegisterDecideAllBody) -> dict[st
                 "selected": selected is not None,
             },
         )
-        transaction.on_commit(lambda: _keep(tenant.id, user.id, held))
+        _keep(tenant.id, user.id, held)
         if targets:
             _queue(tenant.id, user.id, company.id, targets, body.applicability, run_id)
     return state
@@ -195,14 +217,19 @@ def decide_chunk(*, tenant_id: uuid.UUID, user_id: uuid.UUID, company_id: uuid.U
     """Decide the first `REGISTER_BULK_MAX` of `obligation_ids`, save the progress and queue the
     rest. Runs in the task's transaction with the bank activated. Whatever happens, a run this
     call ends reads as finished, and `stopped` says why when it did not try every target."""
+    _lock_run(tenant_id, user_id)
     held = cache.get(_key(tenant_id, user_id))
     if held is None:
         # The run's state went before the worker came to it, and the reason with it.
         held = {"state": {**idle(), "total": len(obligation_ids), "orgUnitId": str(company_id), "applicability": word}, "reason": "", "runId": run_id}
+    if held["runId"] != run_id:
+        # A newer run took this one's place, so the rest of this one is never tried.
+        _stop(tenant_id, _actor(User.objects.get(pk=user_id)), company_id, {}, REPLACED, len(obligation_ids))
+        return
     state = held["state"]
     left = state["total"] - state["set"] - state["skipped"] - state["refused"]
-    if held["runId"] != run_id or state["status"] == FINISHED or left != len(obligation_ids):
-        return  # another run replaced this one, or this chunk was delivered before: nothing to do
+    if state["status"] == FINISHED or left != len(obligation_ids):
+        return  # this chunk was delivered before: nothing to do
     rest: list[str] = []
     state["stopped"] = FAILED  # unless this chunk gets through, or stops for a reason it names
     try:
@@ -216,43 +243,59 @@ def decide_chunk(*, tenant_id: uuid.UUID, user_id: uuid.UUID, company_id: uuid.U
             _tally(state, _decide(run, [uuid.UUID(obligation_id) for obligation_id in obligation_ids[:chunk]]), run.order)
             rest = obligation_ids[chunk:]
         else:
-            _stop(run, state, why, left)
+            _stop(tenant_id, run.actor, company_id, {count: state[count] for count in ("set", "skipped", "refused")}, why, left)
         state["stopped"] = why
     finally:
         if not rest:
             state["status"], held["reason"] = FINISHED, ""
         state["updatedAt"] = timezone.now().isoformat()
-        if state["stopped"] == FAILED:
-            _keep(tenant_id, user_id, held)  # this chunk's transaction is lost, so say so now
-    # The progress is kept once the chunk has committed, and only then is the rest queued: a
-    # chunk that never commits is delivered again and finds its place unchanged.
-    transaction.on_commit(lambda: _keep(tenant_id, user_id, held))
+        # Kept under the run's lock, so a delivery of this chunk waiting on it finds its place
+        # moved. The rest is queued only once this chunk has committed.
+        _keep(tenant_id, user_id, held)
     if rest:
         _queue(tenant_id, user_id, company_id, rest, word, run_id)
 
 
+def fail(*, tenant_id: uuid.UUID, user_id: uuid.UUID, run_id: str) -> None:
+    """End the run as failed when its chunk's task failed after the body, at the commit: the
+    task's failure hook. A run already finished, or replaced, is left as it is. No database
+    here, since the connection may be the one that failed."""
+    held = cache.get(_key(tenant_id, user_id))
+    if held is None or held["runId"] != run_id or held["state"]["status"] == FINISHED:
+        return
+    held["state"].update(status=FINISHED, stopped=FAILED, updatedAt=timezone.now().isoformat())
+    held["reason"] = ""
+    _keep(tenant_id, user_id, held)
+
+
 def _why_not(run: _Run) -> str | None:
     """Why the run may not go on, or None while it may: its reason is no longer kept, the
-    person is no longer an active member of the bank, or their roles no longer hold
-    `applicability.approve`. Read afresh before every chunk, never from the run's start."""
+    person is no longer an active member of the bank, their roles no longer hold
+    `applicability.approve`, or the company is no longer an active legal entity of the bank.
+    Read afresh before every chunk, never from the run's start."""
     if not run.reason:
         return REASON_EXPIRED
     held = api_keys_logic.person_permissions(run.tenant.id, run.user_id)
     if held is None:
         return MEMBERSHIP_ENDED
-    return None if perms.APPLICABILITY_APPROVE in held else PERMISSION_REVOKED
+    if perms.APPLICABILITY_APPROVE not in held:
+        return PERMISSION_REVOKED
+    company = OrgUnit.objects.filter(pk=run.company_id, kind=OrgUnitKind.LEGAL_ENTITY.value, active=True)
+    return None if company.exists() else COMPANY_GONE
 
 
-def _stop(run: _Run, state: dict[str, Any], why: str, left: int) -> None:
+def _stop(tenant_id: uuid.UUID, actor: Actor, company_id: uuid.UUID, counts: dict[str, int], why: str, left: int) -> None:
+    """One audit row for a run that ends before trying every target: why, what it counted
+    (nothing for a replaced run, whose counts went with its state) and how many were left."""
     record(
         action=STOPPED,
-        actor=run.actor,
+        actor=actor,
         subject_type=SUBJECT_TYPE,
-        subject_id=run.company_id,
-        subject_title=OrgUnit.objects.values_list("name", flat=True).get(pk=run.company_id),
+        subject_id=company_id,
+        subject_title=next(iter(OrgUnit.objects.filter(pk=company_id).values_list("name", flat=True)), ""),
         summary=f"Stopped deciding all unanswered obligations with {left} left",
-        tenant_id=run.tenant.id,
-        after={"stopped": why, "set": state["set"], "skipped": state["skipped"], "refused": state["refused"], "left": left},
+        tenant_id=tenant_id,
+        after={"stopped": why, **counts, "left": left},
     )
 
 
@@ -276,13 +319,19 @@ def _decide(run: _Run, obligation_ids: list[uuid.UUID]) -> _Outcome:
 
 
 def _through_the_door(run: _Run, obligation_ids: list[uuid.UUID]) -> _Outcome:
-    """Lock the rows these targets name, leave those a person has answered and those no longer
-    offered for the company, and store the rest through `applicability._store`. A row that does
-    not exist yet has no lock to take: a first answer written in the same instant meets this
-    one in the door as two single answers meet, the later one standing and both audited."""
+    """Create the rows these targets name that do not exist yet, lock them all, leave those a
+    person has answered and those no longer offered for the company, and store the rest
+    through `applicability._store`. Every target has a row before its answer is read: a
+    colleague's first answer written at the same moment either created the row first (the
+    insert here skips it, and the lock waits for the colleague's commit and reads the answer),
+    or waits on this chunk's row and lands after it, as a later single answer does."""
     company, targets = company_view.targets_for(tenant=run.tenant, org_unit_id=run.company_id, obligations=Obligation.objects.filter(pk__in=obligation_ids))
-    entries = applicability._locked_entries(obligation_ids)
-    rows = applicability._locked_scopes([entry.id for entry in entries.values()], {company.id})
+    headings = reading.obligation_headings(targets.keys(), run.order)
+    status = applicability._default_status()
+    with batched():  # the entries it creates are audited in one statement, as the door's are
+        entries = ensure_register_entries(tenant_id=run.tenant.id, headings=headings, actor=run.actor, status=status)
+    pairs = {(entries[obligation_id].id, company.id) for obligation_id, target in targets.items() if target is not None and obligation_id in entries}
+    rows = applicability._new_scopes(run.tenant, pairs, status)
     answers: list[applicability._Answer] = []
     skipped = 0
     refused: list[tuple[uuid.UUID, str, str]] = []

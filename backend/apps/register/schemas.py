@@ -65,7 +65,7 @@ PasteProblem = Literal[
 PastedAnswer = Literal["applies", "not_applicable"]
 DecisionState = Literal["to_decide", "decided"]
 DecideAllStatus = Literal["idle", "running", "finished"]
-DecideAllStopped = Literal["permission_revoked", "membership_ended", "reason_expired", "failed"]
+DecideAllStopped = Literal["permission_revoked", "membership_ended", "company_gone", "reason_expired", "failed"]
 
 _APPLICABILITY = (
     "Whether the obligation applies to the bank here: `applies` when it binds this bank, "
@@ -2176,7 +2176,8 @@ class RegisterDecideAll(CamelSchema):
         description=(
             "Why the run ended before trying every target, null when it did not. `permission_revoked`: "
             "the person who started it no longer holds `applicability.approve`. `membership_ended`: "
-            "they are no longer an active member of the bank. `reason_expired`: the reason was no "
+            "they are no longer an active member of the bank. `company_gone`: the legal entity is no "
+            "longer an active legal entity of the bank. `reason_expired`: the reason was no "
             "longer kept when the worker ran, so nothing more was set. `failed`: the worker met an "
             "error. What was set before the stop stays set; start again to decide the rest."
         )

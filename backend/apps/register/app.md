@@ -434,14 +434,20 @@ transaction of its own, and the screen reads the progress from the cache
   on a row to decide.
 - **Who.** Every row's audit event names the person who started the run; nothing is written as
   the system. Before each chunk the worker reads afresh that the person is an active member
-  holding `applicability.approve`, and otherwise stops with `register.decide_all_stopped`.
+  holding `applicability.approve` and that the company is still an active legal entity, and
+  otherwise stops once with `register.decide_all_stopped`. A chunk creates the rows its targets
+  name before it reads who answered them, so a colleague's first answer written at the same
+  moment is read under the row's lock and never overwritten.
 - **The reason.** Stored on every row and in that row's audit event, as a single answer stores
   it. It rides in no task argument and no log line: the worker reads it from the cache beside
   the run's state, where it is dropped when the run ends.
 - **One run at a time.** A second start by the same person in the same bank is 409
-  `decision_running` unless the running one has said nothing for `REGISTER_DECIDE_ALL_STALE_S`. A
-  task acts only on its own run and its own place in it, so a replaced run and a chunk
-  delivered twice decide nothing.
+  `decision_running` unless the running one has said nothing for `REGISTER_DECIDE_ALL_STALE_S`.
+  The start and each chunk read and keep the run's state under one lock of the bank and the
+  person, so two starts at once are one start and one 409. A task acts only on its own run and
+  its own place in it, so a chunk delivered twice, even at once, decides nothing the second
+  time, and a replaced run decides nothing and records that it stopped. A chunk whose task
+  fails, at its commit too, ends its run as finished and failed.
 
 `tests_decide_all.py` holds the rule branches: the filters, the refusals, a grant taken away
 part way, a row the door refuses, the chunks, the reason kept out of arguments and logs, and

@@ -45,9 +45,10 @@ from apps.identity.session_logic import actor_of
 from apps.library import testing as library_build
 from apps.library.models import Obligation, RecurringDuty
 from apps.library.tests_reading import set_footprint
-from apps.register import applicability, decide_all, tasks
+from apps.register import applicability, company_view, decide_all, tasks
 from apps.register.applicability import APPLICABILITY_SET
 from apps.register.duties import DUTY_SCHEDULED
+from apps.register.logic import ENTRY_CREATED
 from apps.register.models import DutyOccurrence, TenantObligation, TenantObligationScope
 from apps.register.schemas import RegisterApplicabilityBody
 from apps.register.tests_applicability import Bank, seed_library
@@ -329,10 +330,13 @@ class Starting(DecideAllCase):
         cache.set(key, held)
         _, second = self.start_held({"applicability": "not_applicable", "reason": "Decided again"})
         # The replaced run's worker wakes up late: the state it finds is another run's, so it
-        # decides nothing, least of all under that run's reason.
+        # decides nothing, least of all under that run's reason, leaves the new run's state as
+        # it was and records that it stopped.
         self.work(first)
         self.assertEqual(self.set_by_the_run(), [])
         self.assertEqual(self.progress(), ("running", 4, 0, 0, 0, None))
+        [stopped] = self.events(decide_all.STOPPED)
+        self.assertEqual((stopped.actor_id, stopped.subject_id, stopped.after), (self.a.officer.id, self.a.bank_ab.id, {"stopped": "replaced", "left": 4}))
         self.work(second)
         self.assertEqual(self.progress(), ("finished", 4, 4, 0, 0, None))
         self.assertEqual({(event.after["applicability"], event.after["reason"]) for event in self.set_by_the_run()}, {("not_applicable", "Decided again")})
@@ -550,6 +554,70 @@ class TheWorker(DecideAllCase):
         self.assertEqual(self.progress(), ("finished", 4, 4, 0, 0, None))
         self.assertEqual(len(self.set_by_the_run()), 4)
 
+    def test_every_target_has_its_row_before_the_run_reads_who_answered_it(self) -> None:
+        """A row that does not exist has no lock to wait on, so a colleague's first answer
+        written at the same moment would read as unanswered and be overwritten. The run creates
+        each missing row first, once, with its one creation event, and reads the answer under
+        the row's lock."""
+        _, args = self.start_held()
+        read: list[Any] = []
+        answered = company_view.answered
+
+        def reads(row: Any) -> bool:
+            read.append(row)
+            return answered(row)
+
+        with mock.patch.object(company_view, "answered", side_effect=reads):
+            self.work(args)
+        self.assertEqual(len(read), 4)
+        self.assertNotIn(None, read)
+        self.assertEqual(self.progress(), ("finished", 4, 4, 0, 0, None))
+        created = [event.after["obligationId"] for event in self.events(ENTRY_CREATED)][2:]  # after the fixture's two
+        self.assertEqual(sorted(created), sorted(str(duty.id) for duty in self.targets))
+
+    def test_a_chunk_reads_and_keeps_the_runs_state_under_the_runs_lock_before_its_commit(self) -> None:
+        """Two starts at once, a chunk delivered twice at once and a stale run's chunk beside a
+        new start each meet on the run's lock: each reads the state only once it holds it, and
+        writes it before it lets go."""
+        happened: list[str] = []
+        lock = decide_all._lock_run
+        held = cache.get
+
+        def take(*ids: Any) -> None:
+            happened.append("lock")
+            lock(*ids)
+
+        def read(key: str, *rest: Any) -> Any:
+            if key.startswith("register:decide-all:"):  # the session's own reads are not the run's
+                happened.append("read")
+            return held(key, *rest)
+
+        with override_settings(REGISTER_BULK_MAX=2), mock.patch.object(decide_all, "_lock_run", side_effect=take), mock.patch.object(decide_all.cache, "get", side_effect=read):
+            _, args = self.start_held()
+            self.assertEqual(happened[:2], ["lock", "read"])
+            happened.clear()
+            with mock.patch.object(tasks.decide_listed, "delay"), self.captureOnCommitCallbacks(execute=False):
+                tasks.decide_listed(*args)
+                self.assertEqual(happened[:2], ["lock", "read"])
+                # Not yet committed, and its progress is already kept.
+                self.assertEqual(self.progress(), ("running", 4, 2, 0, 0, None))
+
+    def test_a_chunk_whose_task_fails_at_its_commit_ends_its_run_as_failed(self) -> None:
+        with override_settings(REGISTER_BULK_MAX=2):
+            _, args = self.start_held()
+            with mock.patch.object(tasks.decide_listed, "delay"):
+                self.work(args)
+        self.assertEqual(self.progress(), ("running", 4, 2, 0, 0, None))
+        # Celery calls the task's failure hook with the task's arguments.
+        tasks.decide_listed.on_failure(RuntimeError("the connection went away at the commit"), "task-id", args, {}, None)
+        self.assertEqual(self.progress(), ("finished", 4, 2, 0, 0, "failed"))
+        self.assertEqual(cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))["reason"], "")
+        # A finished run, and another run's state, are left as they are.
+        before = cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id))
+        tasks.decide_listed.on_failure(RuntimeError("again"), "task-id", args, {}, None)
+        tasks.decide_listed.on_failure(RuntimeError("another run"), "task-id", (*args[:5], uuid.uuid4().hex), {}, None)
+        self.assertEqual(cache.get(decide_all._key(self.a.tenant.id, self.a.officer.id)), before)
+
     def test_the_work_lands_in_the_runs_own_bank_and_another_bank_reads_none_of_it(self) -> None:
         self.start()
         self.activate(self.b.tenant)
@@ -604,6 +672,16 @@ class WhatStopsARun(DecideAllCase):
         self.assertEqual(len(self.set_by_the_run()), 2)
         self.assertIsNone(self.row(self.single))
         self.assertIsNone(self.row(self.everyone, self.a.bank_ab))
+
+    def test_a_company_no_longer_an_active_legal_entity_stops_the_run_once_with_an_audit_row(self) -> None:
+        _, args = self.start_held()
+        self.activate(self.a.tenant)
+        OrgUnit.objects.filter(pk=self.a.bank_ab.pk).update(active=False)
+        self.work(args)
+        self.assertEqual(self.progress(), ("finished", 4, 0, 0, 0, "company_gone"))
+        self.assertEqual(self.state()["refusals"], [])
+        self.assertEqual(self.stopped(), {"stopped": "company_gone", "set": 0, "skipped": 0, "refused": 0, "left": 4})
+        self.assertEqual(self.set_by_the_run(), [])
 
     def test_a_run_whose_reason_is_gone_when_the_worker_starts_sets_nothing_and_says_why(self) -> None:
         _, args = self.start_held()
@@ -778,7 +856,9 @@ class TheSameQueriesHoweverManyTargets(DecideAllCase):
     def test_start_costs_the_same_for_four_targets_and_for_twelve(self) -> None:
         def cost() -> tuple[int, int]:
             headers = sign_in(self.a.officer, tenant=self.a.tenant)
-            # Never committed here, so nothing is kept or queued and the next call starts again.
+            # Never committed here, so nothing is queued; the state kept is cleared so the next
+            # call starts again.
+            cache.clear()
             with CaptureQueriesContext(connection) as queries:
                 response = self.client.post(ROUTE, data=self.body(), content_type="application/json", **headers)
             self.assertEqual(response.status_code, 202, response.content)
