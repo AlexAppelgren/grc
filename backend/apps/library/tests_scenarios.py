@@ -59,6 +59,7 @@ from apps.library.models import (
     ObligationVersion,
     ProblemReport,
     Provision,
+    ProvisionVersion,
     Verification,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -1121,6 +1122,63 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(card["summary"], {"text": summary, "language": "en", "isOriginal": True, "isMachine": False})
         self.assertEqual(card["translations"], [card["summary"]])
         self.assertEqual(self.card(uncited.stable_key)["provisions"], [], "a duty citing no provision carries no words")
+
+    def test_inv_s23(self) -> None:
+        """INV-S23
+
+        The provision tree gives every language of a provision's text (INV-02, INV-05).
+        """
+        self.activate(self.tenant)
+        # Given a Swedish act's section in two versions, each published in Swedish with an
+        # English machine translation, and a Finnish act's section the authority published in
+        # Finnish and in Swedish, with an English machine translation beside them.
+        swedish_act = build.instrument(key="inv-s23-lag", short_name="SFS 2007:528", regime="regime:securities", jurisdiction="se")
+        swedish = build.provision(swedish_act, key="inv-s23-lag/1", ref_label="1 §", kind="section")
+        for number, day in ((1, D(2018, 1, 1)), (2, D(2026, 11, 1))):
+            build.provision_version(
+                swedish, version_no=number, effective_from=day, texts={"sv": f"Lydelse {number}.", "en": f"Wording {number}."}
+            )
+        finnish_act = build.instrument(key="inv-s23-laki", short_name="FINLEX 2012:747", regime="regime:securities", jurisdiction="fi")
+        finnish = build.provision(finnish_act, key="inv-s23-laki/1", ref_label="1 §", kind="section")
+        build.provision_version(
+            finnish, texts={"fi": "Suomenkielinen sanamuoto.", "sv": "Den svenska lydelsen.", "en": "The English wording."}, official=("sv",)
+        )
+        empty = build.provision(finnish_act, key="inv-s23-laki/2", ref_label="2 §", kind="section", sort_order=2)
+        with transaction.atomic(), tenancy.platform_zone(), tenancy.library_write(build.REASON):
+            ProvisionVersion.objects.create(provision=empty, version_number=1)
+        english, swedish_reader = factories.member_user(self.tenant), factories.member_user(self.tenant)
+        User.objects.filter(pk=english.pk).update(locale=factories.language("en"))
+        User.objects.filter(pk=swedish_reader.pk).update(locale=factories.language("sv"))
+
+        def versions(instrument: Instrument, person: User, ref_label: str) -> list[dict[str, Any]]:
+            response = self.client.get(f"{V1}/instruments/{instrument.id}/provisions", {"asOf": "2026-10-31"}, **sign_in(person, tenant=self.tenant))
+            self.assertEqual(response.status_code, 200, response.content)
+            return list(next(node for node in response.json() if node["refLabel"] == ref_label)["versions"])
+
+        def words(text: str, language: str, *, original: bool = False, machine: bool = False) -> dict[str, Any]:
+            return {"text": text, "language": language, "isOriginal": original, "isMachine": machine}
+
+        # Then every version carries its own words, the original first and then by language,
+        # whichever version is in force, and the reader's pick is still English.
+        rows = versions(swedish_act, english, "1 §")
+        for row, number in zip(rows, (1, 2), strict=True):
+            with self.subTest(version=number):
+                machine = words(f"Wording {number}.", "en", machine=True)
+                self.assertEqual(row["texts"], [words(f"Lydelse {number}.", "sv", original=True), machine])
+                self.assertEqual(row["text"], machine, "an English-speaking reader is picked the English")
+        # The Finnish original, the machine English, and the authority's own Swedish, neither.
+        finnish_texts = [
+            words("Suomenkielinen sanamuoto.", "fi", original=True),
+            words("The English wording.", "en", machine=True),
+            words("Den svenska lydelsen.", "sv"),
+        ]
+        (row,) = versions(finnish_act, english, "1 §")
+        self.assertEqual((row["texts"], row["text"]), (finnish_texts, finnish_texts[1]))
+        (row,) = versions(finnish_act, swedish_reader, "1 §")
+        self.assertEqual((row["texts"], row["text"]), (finnish_texts, finnish_texts[2]), "a Swedish-speaking reader is picked the Swedish")
+        # And a version holding no text carries an empty list and no text.
+        (row,) = versions(finnish_act, english, "2 §")
+        self.assertEqual((row["texts"], row["text"]), ([], None))
 
     def _found_and_approved(self, filing: dict[str, Any], approver: User) -> Any:
         """`filing` found by the bank's own agent in the worker, then approved in the bank's

@@ -28,6 +28,11 @@ provision it cites in `provisions[].texts` (INV-S20). A cited provision is read 
 provision tree reads it: one whose instrument the caller may not read (one outside a bank's
 own agent's entry, or a bank's own instrument to a support session) is left out of
 `provisions` altogether, reference included, as related obligations already are.
+The provision tree gives every version of every provision the same list,
+`versions[].texts` (INV-S23, D-142): every language the version holds, the original
+first, then by language key; a text the authority itself published in a second
+language (Finland's Swedish beside its Finnish) carries neither flag. Its `text` stays
+the one of them picked for the reader's language order.
 
 Labelling covers who confirmed a fact, not only who wrote it. Since PRD 0.4
 (D-62, ADR 0054) the proposal that applies a record may have been confirmed by
@@ -181,6 +186,7 @@ Then it is refused with duplicate_key, and an agent cannot approve one: a person
 Given an instrument with chapters, sections and paragraphs, whose level kind is not standard
 When a provision's text is replaced by an amendment in force on 2026-11-01
 Then a new text version row exists with that effective date and a transitional note
+And each version in the tree carries its own text in every language it holds, the original first, beside the one picked for the reader (INV-S23)
 And the tree screen shows the current text with "Show what changed" opening the diff
 ```
 
@@ -388,5 +394,16 @@ When the reader chooses the "Swedish, original" chip
 Then the section's sv text shows under "Swedish, original"
 And a text the authority published in a second official language reads "<Language>, official text", a provision whose wording the library does not hold yet says so in one line beside the source link, and an obligation citing no provision shows no such block
 And the regulation's short name in the page's head links to the regulation's own page
+```
+
+### INV-S23 — The provision tree gives every language of a provision's text `@integration` (INV-02, INV-05)
+```gherkin
+Given a Swedish act whose section was published in Swedish, with an English machine translation, in two versions
+And a Finnish act whose section was published in Finnish and by the authority itself in Swedish, with an English machine translation
+When an English-speaking reader opens either act's provision tree
+Then every version of each section carries its own words in every language it holds, the original first and then by language key
+And the Swedish and the Finnish texts are marked original, the English ones machine, and the authority's own Swedish text neither
+And each version's text is still the one picked for the reader, English here, and a Swedish-speaking reader is picked the Swedish
+And a version holding no text carries an empty list and no text
 ```
 

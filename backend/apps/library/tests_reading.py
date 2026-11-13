@@ -32,9 +32,9 @@ from apps.agents import testing as agents_testing
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
-from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision
+from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision, ProvisionVersion
 from apps.library.reading import instrument_scope_term_ids, instrument_scopes, obligation_scopes, scope_term_ids
-from apps.library.schemas import ObligationDetail, ObligationRow
+from apps.library.schemas import SAMPLE_PROVISION_TREE, ObligationDetail, ObligationRow, ProvisionNode
 from apps.library.seeds.library import seed_authorities
 from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
@@ -1562,7 +1562,8 @@ class PrivateInstrumentIsolation(TransactionTestCase):
 # cannot grow the count: the savepoint pair (2); the session with the caller's tenant and
 # locale (2); the instrument (1), its provisions (1) and their kind labels (1); the
 # provision versions (1) and their texts (1); the citing links with their obligations (1)
-# and the cited obligations' titles (1).
+# and the cited obligations' titles (1). Since BE-7 (2026-11-13, D-142) every version also
+# carries every language it holds, read from the same texts query: 11 before and after.
 PROVISION_TREE_QUERIES = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1
 
 
@@ -1679,6 +1680,102 @@ class ProvisionTreeTests(TestCase):
         headers = sign_in(self.reader, tenant=self.tenant)
         with self.assertNumQueries(PROVISION_TREE_QUERIES):
             self.assertEqual(self.get(headers=headers).status_code, 200)
+
+    def test_the_query_count_does_not_grow_with_versions_or_languages(self) -> None:
+        # D-142: every language of every version rides on the one texts query the tree
+        # already made, so a wider tree with more versions and languages costs the same.
+        wide = build.instrument(key="fffs-wide", short_name="FFFS Wide", regime="regime:securities")
+        cited = []
+        for number in range(1, 9):
+            unit = build.provision(wide, key=f"fffs-wide/{number}", ref_label=f"{number} §", kind="section", sort_order=number)
+            for version in (1, 2, 3):
+                build.provision_version(
+                    unit,
+                    version_no=version,
+                    effective_from=D(2018 + version, 1, 1),
+                    texts={"sv": f"Paragraf {number}:{version}.", "en": f"Section {number}:{version}.", "da": f"Paragraf {number}:{version} på dansk."},
+                )
+            cited.append(unit)
+        build.obligation(wide, key="obl-wide-cites", cites=cited)
+        headers = sign_in(self.reader, tenant=self.tenant)
+        with self.assertNumQueries(PROVISION_TREE_QUERIES):
+            response = self.client.get(f"/api/v1/instruments/{wide.id}/provisions", **headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(sum(len(row["texts"]) for node in response.json() for row in node["versions"]), 8 * 3 * 3)
+
+    def test_each_version_carries_its_own_texts_the_original_first(self) -> None:
+        # INV-02, INV-05, D-142: every language of each version, not the in-force version's,
+        # the original first and then by language key, whatever the read's date.
+        expected = [
+            [
+                {"text": "Analysbetalning enligt de äldre reglerna.", "language": "sv", "isOriginal": True, "isMachine": False},
+                {"text": "Research payment under the earlier rules.", "language": "en", "isOriginal": False, "isMachine": True},
+            ],
+            [
+                {"text": "Analysbetalning enligt de nya reglerna.", "language": "sv", "isOriginal": True, "isMachine": False},
+                {"text": "Research payment under the new rules.", "language": "en", "isOriginal": False, "isMachine": True},
+            ],
+        ]
+        for as_of in ("2026-10-31", "2026-11-01"):
+            with self.subTest(as_of=as_of):
+                section = self._section(self.tree({"asOf": as_of}))
+                self.assertEqual([row["texts"] for row in section["versions"]], expected)
+
+    def test_text_is_still_the_reader_s_pick_among_texts(self) -> None:
+        # `text` is unchanged: the first language of the reader's order the version holds,
+        # else the original. No locale reads the tenant's English; Danish is not held.
+        for locale, picked in ((None, "en"), ("en", "en"), ("sv", "sv"), ("da", "en")):
+            with self.subTest(locale=locale):
+                person = factories.member_user(self.tenant)
+                User.objects.filter(pk=person.pk).update(locale=factories.language(locale) if locale else None)
+                section = self._section(self.get(headers=sign_in(User.objects.get(pk=person.pk), tenant=self.tenant)).json())
+                for row in section["versions"]:
+                    self.assertEqual(row["text"]["language"], picked)
+                    self.assertIn(row["text"], row["texts"])
+
+    def test_a_finnish_original_with_the_authority_s_swedish_and_a_machine_english(self) -> None:
+        # D-142: Finland enacts in Finnish and Swedish. The Swedish text is the authority's
+        # own, so neither original nor machine; the English is a machine's.
+        act = build.instrument(key="fi-tree", short_name="Laki 2012:747", regime="regime:securities", jurisdiction="fi")
+        unit = build.provision(act, key="fi-tree/1", ref_label="1 §", kind="section")
+        build.provision_version(unit, texts={"fi": "Laki sanoo näin.", "en": "The law says so.", "sv": "Lagen säger så."}, official=("sv",))
+        response = self.client.get(f"/api/v1/instruments/{act.id}/provisions", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        (row,) = response.json()[0]["versions"]
+        self.assertEqual(
+            row["texts"],
+            [
+                {"text": "Laki sanoo näin.", "language": "fi", "isOriginal": True, "isMachine": False},
+                {"text": "The law says so.", "language": "en", "isOriginal": False, "isMachine": True},
+                {"text": "Lagen säger så.", "language": "sv", "isOriginal": False, "isMachine": False},
+            ],
+        )
+        self.assertEqual(row["text"], row["texts"][1], "an English reader is still picked the English")
+
+    def test_a_version_with_one_language_and_one_with_none(self) -> None:
+        build.provision_version(self.paragraph, texts={"sv": "Första stycket."})
+        leaf = Provision.objects.get(stable_key="fffs-tree/10")
+        with transaction.atomic(), tenancy.platform_zone(), library_write(build.REASON):
+            ProvisionVersion.objects.create(provision=leaf, version_number=1)
+        tree = self.tree()
+        only = {"text": "Första stycket.", "language": "sv", "isOriginal": True, "isMachine": False}
+        (paragraph_row,) = self._section(tree)["children"][0]["versions"]
+        self.assertEqual((paragraph_row["texts"], paragraph_row["text"]), ([only], only), "the original serves a reader whose language it lacks")
+        (empty_row,) = next(node for node in tree if node["stableKey"] == "fffs-tree/10")["versions"]
+        self.assertEqual((empty_row["texts"], empty_row["text"]), ([], None))
+
+    def test_the_published_example_has_the_shape_of_a_live_read(self) -> None:
+        # The contract's example is what a client builds against: every node validates and
+        # every object in a version carries exactly the fields a live read returns.
+        example = SAMPLE_PROVISION_TREE[0]["children"][0]
+        ProvisionNode.model_validate(example)
+        live = self._section(self.tree())
+        self.assertEqual(set(example), set(live))
+        self.assertEqual(set(example["versions"][0]), set(live["versions"][0]))
+        self.assertEqual(set(example["versions"][0]["texts"][0]), set(live["versions"][0]["texts"][0]))
+        for row in example["versions"]:
+            self.assertEqual([(text["language"], text["isOriginal"], text["isMachine"]) for text in row["texts"]], [("sv", True, False), ("en", False, True)])
+            self.assertIn(row["text"], row["texts"], "the example's pick is one of its texts")
 
     def test_a_person_needs_library_read_and_a_key_needs_library_read_scope(self) -> None:
         no_scope = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))

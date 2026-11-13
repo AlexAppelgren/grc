@@ -146,6 +146,14 @@ def text_of(row: Translation) -> LocalizedText:
     return LocalizedText(text=row.text, language=row.language_id, is_original=row.is_original, is_machine=row.is_machine)
 
 
+def law_texts(rows: Iterable[ProvisionText]) -> list[LocalizedText]:
+    """Every language of one provision version's text, the law's own words (INV-02, INV-05,
+    D-142): the original first, then by language key, each flag as stored, so the authority's
+    own second language (neither original nor machine) reads as what it is. Nothing is
+    picked for the reader. The one ordering the obligation read and the tree both give."""
+    return [text_of(row) for row in sorted(rows, key=lambda row: (not row.is_original, row.language_id))]
+
+
 def partial_date(value: datetime.date | None, precision: str) -> PartialDate | None:
     return None if value is None else PartialDate(date=value, precision=precision)
 
@@ -1120,13 +1128,12 @@ def _cited(provision: Provision, on: datetime.date) -> ObligationProvisionRef:
     language its version in force on `on` holds, on the tree's rule (`in_force`), the
     original first and then by language. Reads only what the caller prefetched."""
     current = in_force(provision.versions.all(), on)
-    texts = sorted(current.texts.all(), key=lambda text: (not text.is_original, text.language_id)) if current else []
     return ObligationProvisionRef(
         id=provision.id,
         ref_label=provision.ref_label,
         path=provision.path,
         heading=provision.heading or None,
-        texts=[text_of(text) for text in texts],
+        texts=law_texts(current.texts.all()) if current else [],
     )
 
 
@@ -1492,10 +1499,12 @@ def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID
 # --- GET /instruments/{id}/provisions and GET /provisions/{id}/diff (INV-02, INV-04, INV-05) ---
 def _provision_version_rows(versions: list[ProvisionVersion], texts: Mapping[uuid.UUID, list[ProvisionText]], order: list[str]) -> list[ProvisionVersionRow]:
     """A provision's own version list (INV-02, INV-04): the same `effectiveTo` derivation
-    as `version_rows()`, plus each version's transitional note and text. Kept apart from
-    `version_rows()` because an obligation's version carries neither."""
+    as `version_rows()`, plus each version's transitional note, its text in the reader's
+    best language and every language it holds (D-142). Kept apart from `version_rows()`
+    because an obligation's version carries none of them."""
     rows: list[ProvisionVersionRow] = []
     for index, version in enumerate(versions):
+        held = texts.get(version.id, [])
         following = versions[index + 1] if index + 1 < len(versions) else None
         ends = None
         if (
@@ -1510,7 +1519,8 @@ def _provision_version_rows(versions: list[ProvisionVersion], texts: Mapping[uui
                 effective_from=partial_date(version.effective_from, version.effective_from_precision),
                 effective_to=ends,
                 transitional_note=version.transitional_note,
-                text=localized(texts.get(version.id, []), order),
+                text=localized(held, order),
+                texts=law_texts(held),
             )
         )
     return rows

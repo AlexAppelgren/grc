@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 
 from django.db import transaction
@@ -159,15 +159,19 @@ def provision_version(
     effective_from: datetime.date | None = None,
     transitional_note: str = "",
     texts: Mapping[str, str] | None = None,
+    official: Collection[str] = (),
 ) -> ProvisionVersion:
     """A verbatim text version of `on` (INV-02): write-once, like an obligation's version.
-    The first language given is the original; every other one is a machine translation."""
+    The first language given is the original; every other one is a machine translation,
+    except a language in `official`, which the authority itself published (D-142)."""
     with _in_zone(on.instrument.owner_tenant_id):
         version = ProvisionVersion.objects.create(
             provision=on, version_number=version_no, effective_from=effective_from, transitional_note=transitional_note
         )
         for index, (language, text) in enumerate((texts or {"en": "The provision as it reads."}).items()):
-            ProvisionText.objects.create(version=version, language_id=language, text=text, is_original=index == 0, is_machine=index > 0)
+            ProvisionText.objects.create(
+                version=version, language_id=language, text=text, is_original=index == 0, is_machine=index > 0 and language not in official
+            )
     return version
 
 
