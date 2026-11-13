@@ -11,8 +11,9 @@ Prefixes hosted: ACC, REG.
 
 import uuid
 from typing import Any
-from unittest import skip
+from unittest import mock, skip
 
+from django.core.cache import cache
 from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
@@ -29,6 +30,8 @@ from apps.proposals.models import Proposal
 from apps.proposals.tests_apply_private import filing
 from apps.proposals.tests_kinds import instrument_body, obligation_body
 from apps.proposals.tests_private_controls import control_body
+from apps.register import decide_all
+from apps.register import tasks as register_tasks
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, ComplianceAssessment, Gap, TenantObligation, TenantObligationScope
@@ -926,3 +929,72 @@ class RegisterScenarioTests(TestCase):
         self.assertEqual(sum(row["count"] for row in rolled["statuses"]), rolled["applies"])
         self.assertEqual([row["orgUnit"]["name"] for row in rolled["companies"]], ["Example Bank AB", "Example Fonder AB"])
         self.assertEqual(stored(), before, "a read stores nothing and writes no audit event")
+
+    def test_reg_s20(self) -> None:
+        """REG-S20
+
+        A whole company's unanswered obligations are decided in one confirmed run (REG-01, AC-REG1).
+        Operations: `decideAllApplicability`, `readDecideAllApplicability`.
+
+        The dialog is the screen's. Here the confirmed call lists what nobody has answered and
+        answers at once; the worker, eager in tests and held back until a colleague has
+        answered one row, then sets the rest through the door of a single answer.
+        """
+        seed_library()
+        cache.clear()
+        a = Bank("reg-s20")
+        colleague = factories.member(a.tenant, roles=("compliance_officer",), user_row=factories.user(name="Erik Holm")).user
+        law = library_build.instrument(key="s20-lvm", short_name="LVM", regime="regime:securities")
+        earlier, first, second, third = (library_build.obligation(law, key=f"s20-lvm-{number}", ref_label=f"{number} §") for number in range(1, 5))
+        bank, reason = str(a.bank_ab.id), "Covered by the bank's securities licence"
+        officer = sign_in(a.officer, tenant=a.tenant)
+
+        def answer(headers: dict[str, Any], duty: Obligation, body: dict[str, Any]) -> dict[str, Any]:
+            stored = self.client.put(f"/api/v1/obligations/{duty.id}/applicability", data={"orgUnitId": bank, **body}, content_type="application/json", **headers)
+            self.assertEqual(stored.status_code, 200, stored.content)
+            row: dict[str, Any] = stored.json()
+            return row
+
+        def on_the_page(duty: Obligation) -> tuple[Any, ...]:
+            """What the obligation page shows for Example Bank AB."""
+            [row] = self.client.get(f"/api/v1/obligations/{duty.id}/register", **officer).json()["entities"]
+            return row["orgUnitId"], row["applicability"], row["applicabilityReason"], row["applicabilityDecidedBy"]["name"], row["version"]
+
+        before = answer(officer, earlier, {"applicability": "not_applicable", "reason": "No such business"})
+        read = self.client.get("/api/v1/applicability/companies", **officer).json()[0]
+        self.assertEqual((read["orgUnit"]["name"], read["offered"], read["toDecide"]), ("Example Bank AB", 4, 3))
+
+        # The confirmed call: the company, the answer and one reason. It lists the three
+        # nobody has answered and answers before anything is set.
+        with mock.patch.object(register_tasks.decide_listed, "delay") as queued, self.captureOnCommitCallbacks(execute=True):
+            started = self.client.post(
+                "/api/v1/applicability/decide-all", data={"orgUnitId": bank, "applicability": "applies", "reason": reason}, content_type="application/json", **officer
+            )
+        self.assertEqual(started.status_code, 202, started.content)
+        self.assertEqual((started.json()["status"], started.json()["total"], started.json()["set"]), ("running", 3, 0))
+
+        # A colleague answers one of them after the start and before the worker reaches it.
+        theirs = answer(sign_in(colleague, tenant=a.tenant), second, {"applicability": "not_applicable", "reason": "Handled by the group"})
+        with self.captureOnCommitCallbacks(execute=True):
+            register_tasks.decide_listed(*queued.call_args.args)
+        run = self.client.get("/api/v1/applicability/decide-all", **officer).json()
+        self.assertEqual((run["status"], run["total"], run["set"], run["skipped"], run["refused"], run["stopped"]), ("finished", 3, 2, 1, 0, None))
+
+        # Each row the run set has its own audit event naming the officer and the reason,
+        # beside the one row for the decision, which names the count and never the reason.
+        tenancy.activate(a.tenant.id)
+        events = list(AuditEvent.objects.filter(action=APPLICABILITY_SET, after__reason=reason))
+        self.assertEqual(sorted(event.after["obligationId"] for event in events), sorted(str(duty.id) for duty in (first, third)))
+        self.assertEqual({(event.actor_id, event.actor_label, event.before["applicability"]) for event in events}, {(a.officer.id, "Sara Lind", "under_assessment")})
+        [decision] = AuditEvent.objects.filter(action=decide_all.STARTED)
+        self.assertEqual((decision.actor_id, decision.after["count"], decision.after["applicability"]), (a.officer.id, 3, "applies"))
+        self.assertNotIn(reason, str([decision.after, decision.summary]))
+
+        # What was answered before the run, and the colleague's answer, are as they were.
+        self.assertEqual(on_the_page(earlier), (bank, "not_applicable", "No such business", "Sara Lind", before["version"]))
+        self.assertEqual(on_the_page(second), (bank, "not_applicable", "Handled by the group", "Erik Holm", theirs["version"]))
+        # And the obligation page shows the run's answer on the others.
+        for duty in (first, third):
+            self.assertEqual(on_the_page(duty)[:4], (bank, "applies", reason, "Sara Lind"))
+        after = self.client.get("/api/v1/applicability/companies", **officer).json()[0]
+        self.assertEqual((after["applies"], after["notApplicable"], after["toDecide"]), (2, 2, 0))

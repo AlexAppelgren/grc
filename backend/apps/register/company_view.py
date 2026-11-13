@@ -2,8 +2,8 @@
 the "What applies" page and the regulation page's roll-up. Nothing here writes, and nothing
 suggests an answer: whether an obligation applies stays a person's decision (D-28, D-89).
 
-Three definitions, each the obligation page's own, so what a list says here is what the page
-says there:
+Four definitions, the first three the obligation page's own, so what a list says here is what
+the page says there:
 
 - OFFERED. An obligation is offered for an active legal entity when it is in the bank's
   working inventory (`library.reading.in_view`, the rows `GET /obligations` lists) and spans
@@ -12,6 +12,10 @@ says there:
   bank's legal entities, the obligation as a whole where it spans fewer, which is how the
   obligation page asks and `applicability._store` stores.
 - ANSWER. The applicability of the row the target names, not assessed when there is none.
+- TO DECIDE. An offered obligation nobody has answered for the entity: the row the target
+  names does not exist, or names no person who set it (`answered()`). A row a colleague left
+  under assessment with a reason is answered. It is what a Decide all run sets
+  (`decide_all.py`), so the `toDecide` a list prints is the total of the run its button starts.
 
 The regulation's roll-up counts the bank-level answer instead (`overlay._entries()`), so each
 count equals the total of `GET /obligations` under the same filter.
@@ -31,13 +35,13 @@ from typing import Any, NamedTuple
 
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, Func, OuterRef, QuerySet, Subquery, UUIDField, Value
+from django.db.models import BooleanField, Func, OuterRef, Q, QuerySet, Subquery, UUIDField, Value
 from django.db.models.functions import Coalesce
 
 from apps.library import reading
 from apps.library.models import Instrument, JurisdictionLabel, Obligation, ObligationTerm
 from apps.register import overlay
-from apps.register.applicability import KIND_OF, WORD_OF
+from apps.register.applicability import WORD_OF
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
 from apps.register.schemas import (
     RegisterApplicabilityAnswer,
@@ -63,6 +67,8 @@ from apps.tenants.models import OrgUnit, OrgUnitKind, RegisterEntry
 from apps.tenants.schemas import RegisterFacts
 
 NOT_ASSESSED = Applicability.NOT_ASSESSED.value
+# Counted beside the three kinds: the offered obligations nobody has answered.
+TO_DECIDE = "to_decide"
 _UUIDS = ArrayField(UUIDField())
 # One boolean per entity over a row's scope terms. The terms sit behind OFFSET 0, which
 # keeps the planner from copying their two sub-selects into every check: they are read once
@@ -134,10 +140,24 @@ class _Offer(NamedTuple):
         return entity_id if len(self.spanned) >= 2 else None
 
 
-# The bank's answers as stored kinds: obligation, then target (a legal entity, or None for
-# the obligation as a whole). What is missing is not assessed.
-_Answers = dict[uuid.UUID, dict[uuid.UUID | None, str]]
-_NO_ANSWER: dict[uuid.UUID | None, str] = {}
+class _Given(NamedTuple):
+    """The answer on the row a target names: its stored kind, and whether a person gave it."""
+
+    kind: str
+    decided: bool
+
+
+# The bank's answers: obligation, then target (a legal entity, or None for the obligation as
+# a whole). What is missing is not assessed, and nobody's.
+_Answers = dict[uuid.UUID, dict[uuid.UUID | None, _Given]]
+_NO_ANSWER: dict[uuid.UUID | None, _Given] = {}
+_NOBODY = _Given(NOT_ASSESSED, False)
+
+
+def answered(row: TenantObligation | TenantObligationScope | None) -> bool:
+    """Whether a person has answered on the row a target names, whatever the answer: the rule
+    `_stored()` reads in SQL, for a caller that holds the row itself."""
+    return row is not None and row.applicability_decided_by_id is not None
 
 
 def _entities() -> list[OrgUnit]:
@@ -174,38 +194,57 @@ def _offers(tenant: Tenant, entities: list[OrgUnit], obligations: QuerySet[Oblig
 
 def _stored(tenant: Tenant, *, obligation_ids: Collection[uuid.UUID] | None = None, company: OrgUnit | None = None) -> _Answers:
     """The answers the bank has given: on these obligations or on all of them, for every legal
-    entity or for one. Two queries; a row still not assessed reads as no row."""
-    entries = TenantObligation.objects.filter(tenant_id=tenant.id).exclude(applicability=NOT_ASSESSED)
-    rows = TenantObligationScope.objects.filter(tenant_id=tenant.id, product__isnull=True).exclude(applicability=NOT_ASSESSED)
+    entity or for one. Two queries; a row nobody has answered reads as no row."""
+    nobodys = Q(applicability=NOT_ASSESSED, applicability_decided_by__isnull=True)
+    entries = TenantObligation.objects.filter(tenant_id=tenant.id).exclude(nobodys)
+    rows = TenantObligationScope.objects.filter(tenant_id=tenant.id, product__isnull=True).exclude(nobodys)
     if obligation_ids is not None:
         entries = entries.filter(obligation_id__in=obligation_ids)
         rows = rows.filter(tenant_obligation__obligation_id__in=obligation_ids)
     if company is not None:
         rows = rows.filter(org_unit=company)
     answers: _Answers = defaultdict(dict)
-    for obligation_id, kind in entries.order_by().values_list("obligation_id", "applicability"):
-        answers[obligation_id][None] = kind
-    for obligation_id, org_unit_id, kind in rows.order_by().values_list("tenant_obligation__obligation_id", "org_unit_id", "applicability"):
-        answers[obligation_id][org_unit_id] = kind
+    for obligation_id, kind, person in entries.order_by().values_list("obligation_id", "applicability", "applicability_decided_by_id"):
+        answers[obligation_id][None] = _Given(kind, person is not None)
+    for obligation_id, org_unit_id, kind, person in rows.order_by().values_list(
+        "tenant_obligation__obligation_id", "org_unit_id", "applicability", "applicability_decided_by_id"
+    ):
+        answers[obligation_id][org_unit_id] = _Given(kind, person is not None)
     return answers
 
 
+def _given(answers: _Answers, obligation_id: uuid.UUID, target: uuid.UUID | None) -> _Given:
+    """The answer so far on the row `target` names under one obligation."""
+    return answers.get(obligation_id, _NO_ANSWER).get(target, _NOBODY)
+
+
+def _count(counted: Counter[str], given: _Given) -> None:
+    counted[given.kind] += 1
+    counted[TO_DECIDE] += not given.decided
+
+
 def _counts(counted: Counter[str]) -> dict[str, int]:
-    """Answers counted by stored kind, as the four counts a company or a regulation carries."""
-    return {
-        "offered": counted.total(),
+    """Answers counted by stored kind and by whether anybody gave one, as the five counts a
+    company or a regulation carries."""
+    kinds = {
         "applies": counted[Applicability.APPLIES.value],
         "not_applicable": counted[Applicability.DOES_NOT_APPLY.value],
         "under_assessment": counted[NOT_ASSESSED],
     }
+    return {"offered": sum(kinds.values()), **kinds, "to_decide": counted[TO_DECIDE]}
+
+
+def _holds(counted: Counter[str], state: str | None) -> bool:
+    """Whether an offered obligation counted here is in `state`: to decide, or decided."""
+    counts = _counts(counted)
+    return state is None or bool(counts["to_decide"] if state == TO_DECIDE else counts["offered"] - counts["to_decide"])
 
 
 def _companies(entities: list[OrgUnit], offers: Iterable[_Offer], answers: _Answers) -> list[RegisterApplicabilityCompany]:
     counted: dict[uuid.UUID, Counter[str]] = {entity.id: Counter() for entity in entities}
     for offer in offers:
-        given = answers.get(offer.obligation_id, _NO_ANSWER)
         for entity_id in offer.spanned:
-            counted[entity_id][given.get(offer.target(entity_id), NOT_ASSESSED)] += 1
+            _count(counted[entity_id], _given(answers, offer.obligation_id, offer.target(entity_id)))
     return [
         RegisterApplicabilityCompany(org_unit=RegisterPersonRef(id=entity.id, name=entity.name), **_counts(counted[entity.id]))
         for entity in entities
@@ -244,16 +283,15 @@ def list_regulations(
     The working inventory is read once, as `list_companies()` reads it, and the regulations
     are paged after. Paging them first saves nothing: to count the regulations PostgreSQL
     plans the per-regulation EXISTS as a hash semi join and runs both rules on every
-    obligation anyway (measured), and `answer` needs every company's span on each."""
+    obligation anyway (measured), and `state` needs every company's span on each."""
     entities = _entities()
     company = _company(entities, query.org_unit_id)
     answers = _stored(tenant, company=company)
     counted: dict[uuid.UUID, Counter[str]] = defaultdict(Counter)
     for offer in _offers(tenant, entities, Obligation.objects.all()):
         if company.id in offer.spanned:
-            given = answers.get(offer.obligation_id, _NO_ANSWER)
-            counted[offer.instrument_id][given.get(offer.target(company.id), NOT_ASSESSED)] += 1
-    kept = {instrument_id for instrument_id, answered in counted.items() if query.answer is None or answered[KIND_OF[query.answer]]}
+            _count(counted[offer.instrument_id], _given(answers, offer.obligation_id, offer.target(company.id)))
+    kept = {instrument_id for instrument_id, tally in counted.items() if _holds(tally, query.state)}
     # The regulations in key order, then the page's rows by id: a list of several hundred ids
     # costs more to send than both of these queries.
     in_order = Instrument.objects.order_by("stable_key")
@@ -312,12 +350,12 @@ def list_rows(*, tenant: Tenant, order: list[str], query: RegisterApplicabilityA
             tenant_id=tenant.id, tenant_obligation__obligation_id__in=ids, org_unit=company, product__isnull=True
         ).select_related("tenant_obligation", "applicability_decided_by")
     }
-    answered: list[tuple[_Offer, Any]] = []
+    listed: list[tuple[_Offer, Any]] = []
     for offer in offers:
         row = own_rows.get(offer.obligation_id) if offer.target(company.id) else entries.get(offer.obligation_id)
-        if query.answer is None or query.answer == WORD_OF[row.applicability if row is not None else NOT_ASSESSED]:
-            answered.append((offer, row))
-    page = answered[offset : offset + limit]
+        if query.state is None or answered(row) != (query.state == TO_DECIDE):
+            listed.append((offer, row))
+    page = listed[offset : offset + limit]
     page_ids = [offer.obligation_id for offer, _ in page]
     headings = reading.obligation_headings(page_ids, order)
     # The obligations' own terms the company carries: its type, or what its register facts derive.
@@ -345,8 +383,31 @@ def list_rows(*, tenant: Tenant, order: list[str], query: RegisterApplicabilityA
             )
             for offer, row in page
         ],
-        total=len(answered),
+        total=len(listed),
     )
+
+
+# --- What a Decide all run sets (decide_all.py) ---
+def targets_for(*, tenant: Tenant, org_unit_id: uuid.UUID, obligations: QuerySet[Obligation]) -> tuple[OrgUnit, dict[uuid.UUID, uuid.UUID | None]]:
+    """The company and, for each of `obligations` the register offers for it, in the
+    inventory's order, the target an answer must name: the company, or None for the obligation
+    as a whole. One that is not offered is absent. Four queries however many there are."""
+    entities = _entities()
+    company = _company(entities, org_unit_id)
+    return company, {
+        offer.obligation_id: offer.target(company.id) for offer in _offers(tenant, entities, obligations) if company.id in offer.spanned
+    }
+
+
+def offered_for(*, tenant: Tenant, org_unit_id: uuid.UUID, instrument: str | None) -> tuple[OrgUnit, dict[uuid.UUID, bool]]:
+    """The company, and every obligation offered for it, of one regulation or of them all, in
+    the inventory's order, each with whether it is still to decide. The offers and the answers
+    are the lists' own, so a run's total is the `toDecide` the page printed. Six queries
+    whatever the inventory holds."""
+    obligations = Obligation.objects.all() if instrument is None else Obligation.objects.filter(instrument__stable_key=instrument)
+    company, targets = targets_for(tenant=tenant, org_unit_id=org_unit_id, obligations=obligations)
+    answers = _stored(tenant, company=company)
+    return company, {obligation_id: not _given(answers, obligation_id, target).decided for obligation_id, target in targets.items()}
 
 
 # --- GET /instruments/{instrumentId}/applicability ---

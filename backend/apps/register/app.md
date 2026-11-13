@@ -68,7 +68,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | built |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many answers are set either in one confirmed call of at most `REGISTER_BULK_MAX` rows or by a Decide all run without a limit (D-128), each row with its own audit event | M | R2 | built |
 | REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | built |
 | REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | built |
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | built |
@@ -97,7 +97,12 @@ the PRD rows and the playbook rules read as tests:
   for one entity in one call, after confirming all of them in one dialog.
   Nothing is stored before they confirm, no step-up is asked, and 93 audit
   events name the officer, each unit's value before and after, and its reason.
-  `REGISTER_BULK_MAX` caps a call, and a call above it stores nothing.
+  `REGISTER_BULK_MAX` caps a call, and a call above it stores nothing. Many
+  answers are set either in such a call or by a Decide all run without a limit:
+  one confirmed act with one answer and one reason over everything the register
+  offers for one company that nobody has answered, a regulation of it or the
+  ticked rows, carried out by the worker a chunk of `REGISTER_BULK_MAX` at a
+  time, each row through the same logic and with its own audit event (D-128).
 - **AC-REG2** Nothing a tenant writes under a standard (units, notes, gaps,
   assessments, interpretations, links) appears in a search chunk, an embedding
   input or an AI-generation input, and tenant B receives 404 for it.
@@ -393,3 +398,51 @@ obligation spans two or more legal entities and the obligation as a whole where 
 as the obligation page asks; a row nobody answered reads as under assessment at version 0.
 `tests_company_view.py` holds the agreement with the obligation page row by row, the span as
 SQL against `_spans`, the filters, the refusals and the pinned query counts.
+
+### REG-S20 — A whole company's unanswered obligations are decided in one confirmed run `@integration` (REG-01, AC-REG1)
+```gherkin
+Given Example Bank AB, for which the register offers four obligations: one an officer answered "Does not apply", three nobody has answered
+And "What applies" reads three to decide for the company
+When an officer holding applicability.approve chooses "Decide all", answers "Applies" with one reason and confirms
+Then the call answers at once with a run of three, before anything is set, and one audit event records the decision without the reason
+When a colleague answers one of the three "Does not apply" before the worker reaches it
+And the worker carries out the run
+Then the two others read "Applies" with the reason, each with its own audit event naming the officer and the reason
+And the colleague's answer survives, counted by the run as skipped, and the obligation answered before the run is as it was
+And the obligation page shows the run's answer, and "What applies" reads none left to decide
+```
+`@integration` proves `decideAllApplicability` and `readDecideAllApplicability`
+(`apps/register/decide_all.py`, `tasks.decide_listed`), each a person's session holding
+`applicability.approve`, with no step-up and no second approver (D-75). The run is D-128's shape
+for applicability, after the owner's "Dont limit at 100 approvals.... same issue as with
+approving library etc, make an approve all kinda solution" (Alex, 2026-11-12): the call reads the
+targets of that moment, writes one audit row and answers 202; the worker puts each target through
+`applicability._store`, the door of a single answer, a chunk of `REGISTER_BULK_MAX` in a
+transaction of its own, and the screen reads the progress from the cache
+(`REGISTER_DECIDE_ALL_KEEP_S`).
+
+- **Targets.** The obligations offered for the company (REG-S19's definition) that nobody has
+  answered: the row an answer lands on does not exist, or names no person who set it. A row a
+  person answered is never a target, whatever the answer, one a colleague deliberately left
+  under assessment with a reason included; one answered between the call and the worker's turn
+  is skipped. A selection may name at most `REGISTER_DECIDE_ALL_SELECTED_MAX` rows, which bounds
+  a request body and not the run; a selected row the register does not offer for the company is
+  404 and nothing starts.
+- **The reads say the same.** Every counts object of REG-S19's reads carries `toDecide`, the
+  number a run under the same company and regulation would decide, and the two paged lists
+  filter by `state` (`to_decide` or `decided`) instead of by answer; `decidedBy` is null exactly
+  on a row to decide.
+- **Who.** Every row's audit event names the person who started the run; nothing is written as
+  the system. Before each chunk the worker reads afresh that the person is an active member
+  holding `applicability.approve`, and otherwise stops with `register.decide_all_stopped`.
+- **The reason.** Stored on every row and in that row's audit event, as a single answer stores
+  it. It rides in no task argument and no log line: the worker reads it from the cache beside
+  the run's state, where it is dropped when the run ends.
+- **One run at a time.** A second start by the same person in the same bank is 409
+  `decision_running` unless the running one has said nothing for `REGISTER_DECIDE_ALL_STALE_S`. A
+  task acts only on its own run and its own place in it, so a replaced run and a chunk
+  delivered twice decide nothing.
+
+`tests_decide_all.py` holds the rule branches: the filters, the refusals, a grant taken away
+part way, a row the door refuses, the chunks, the reason kept out of arguments and logs, and
+the query counts of the start and of one chunk.

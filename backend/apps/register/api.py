@@ -22,7 +22,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.register import agent_read, applicability, company_view, duties, gaps, history, links, panels, soa, status_logic, units
+from apps.register import agent_read, applicability, company_view, decide_all, duties, gaps, history, links, panels, soa, status_logic, units
 from apps.register.schemas import (
     RegisterInternalItemPage,
     RegisterInternalItemQuery,
@@ -36,6 +36,8 @@ from apps.register.schemas import (
     RegisterApplicabilityRegulationPage,
     RegisterApplicabilityRegulationQuery,
     RegisterAssessmentPage,
+    RegisterDecideAll,
+    RegisterDecideAllBody,
     RegisterDecision,
     RegisterDecisionPage,
     RegisterDutyCompleteBody,
@@ -299,8 +301,9 @@ def set_applicability_many(request: HttpRequest, body: RegisterApplicabilityMany
 
     A person's session holding `applicability.approve`. No step-up and no `If-Match`: the
     confirmation covers the rows as the dialog showed them. At most `REGISTER_BULK_MAX` rows,
-    100 by default. Records one audit event per row naming the person, the value before and
-    after, and the reason.
+    100 by default; to decide everything a legal entity is offered, however many, with one
+    answer and one reason, use `POST /applicability/decide-all`. Records one audit event per
+    row naming the person, the value before and after, and the reason.
 
     Errors: `not_found` (404) when any row names an obligation, entity or unit the bank
     cannot see, or a legal entity its obligation does not span; `validation_error` (422) for
@@ -383,8 +386,10 @@ def list_spanned_entities(request: HttpRequest, obligation_id: uuid.UUID = Path(
 def list_applicability_companies(request: HttpRequest) -> Any:
     """Every active legal entity of the bank, by name, with how many obligations the register
     offers for it and how its answers to "Does it apply to us?" stand: how many apply, how many
-    do not, and how many nobody has answered. Call it to open the "What applies" page, then
-    read one company's regulations and obligations with its id.
+    do not, how many are under assessment and, of those, how many nobody has answered at all
+    (`toDecide`, what `POST /applicability/decide-all` would decide for the entity). Call it to
+    open the "What applies" page, then read one company's regulations and obligations with its
+    id.
 
     An obligation is offered for a legal entity when it is in the bank's working inventory,
     the rows `GET /obligations` lists by default, and it spans the entity: it is scoped to
@@ -416,9 +421,11 @@ def list_applicability_companies(request: HttpRequest) -> Any:
 def list_applicability_regulations(request: HttpRequest, page: Query[PageQuery], filters: Query[RegisterApplicabilityRegulationQuery]) -> Any:
     """The regulations with at least one obligation the register offers for one legal entity,
     by the regulation's stable key, each with how the entity's answers stand over its offered
-    obligations. `answer` keeps the regulations with an obligation answered that way, and `q`
-    those whose name, short name or official reference holds a phrase, as the instruments
-    list matches it; a regulation kept carries its whole counts either way.
+    obligations. `state` keeps the regulations with an obligation nobody has answered, or with
+    one a person has, and `q` those whose name, short name or official reference holds a
+    phrase, as the instruments list matches it; a regulation kept carries its whole counts
+    either way. Its `toDecide` is how many obligations a Decide all run narrowed to it would
+    decide.
 
     `through` says what brings the regulation into the entity's scope: the regulation's regime,
     and the lines of the entity's own public register entry that give it that regime, such as
@@ -431,7 +438,7 @@ def list_applicability_regulations(request: HttpRequest, page: Query[PageQuery],
 
     Errors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal
     entities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or
-    one that is not a UUID, an `answer` outside the three values, a `q` longer than 200
+    one that is not a UUID, a `state` outside its two values, a `q` longer than 200
     characters or holding a NUL character, or a page out of range.
     """
     tenant = caller_tenant(request)
@@ -462,6 +469,8 @@ def list_applicability_rows(request: HttpRequest, page: Query[PageQuery], filter
     or to `POST /applicability` for many rows at once. `matchedTerms` lists which of the
     obligation's own scope terms the entity carries, by its type or its register entry. No
     row ever carries a suggested answer: whether an obligation applies is a person's decision.
+    `state` keeps the rows nobody has answered, whose `decidedBy` is null and which
+    `POST /applicability/decide-all` would decide, or those a person has answered.
 
     A person's session holding `register.read`. A read: it writes nothing and no audit event.
     Pages with `limit` and `offset`, 20 by default and 100 at most. A regulation that offers
@@ -471,8 +480,8 @@ def list_applicability_rows(request: HttpRequest, page: Query[PageQuery], filter
     Errors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal
     entities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or
     `instrument`, an `orgUnitId` that is not a UUID, an `instrument` that is not a stable key
-    (letters, digits, hyphens and underscores, at most 120 characters), an `answer` outside
-    the three values or a page out of range.
+    (letters, digits, hyphens and underscores, at most 120 characters), a `state` outside
+    its two values or a page out of range.
     """
     tenant = caller_tenant(request)
     return company_view.list_rows(
@@ -512,6 +521,84 @@ def get_instrument_applicability(request: HttpRequest, instrument_id: uuid.UUID 
     """
     tenant = caller_tenant(request)
     return company_view.instrument_applicability(tenant=tenant, order=language_order(request, tenant=tenant), instrument_id=instrument_id)
+
+
+# ---------------------------------------------------------------------------------------
+# Decide all (REG-01, D-75, D-128; decide_all.py)
+# ---------------------------------------------------------------------------------------
+@router.post(
+    "/applicability/decide-all",
+    response={202: RegisterDecideAll},
+    auth=SESSION,
+    operation_id="decideAllApplicability",
+    by_alias=True,
+    summary="Decide everything still unanswered for one company at once, in the background",
+)
+@requires_permission(perms.APPLICABILITY_APPROVE)
+@answers_problems
+def decide_all_applicability(request: HttpRequest, body: RegisterDecideAllBody) -> Any:
+    """Decide all: call it once a person has confirmed, in one dialog, that the obligations
+    the register offers for one legal entity and that nobody has answered apply, or do not:
+    all of them, those of one regulation (`instrument`), or the rows they ticked
+    (`obligationIds`). One answer and one reason for all, and no limit on how many. The count
+    to print on the button is `toDecide` in `GET /applicability/companies` and
+    `GET /applicability/regulations`.
+
+    It reads the targets at that moment and answers 202 at once with the run's state. The
+    worker then sets each one through the same logic as
+    `PUT /obligations/{obligationId}/applicability`, a chunk at a time, each row with its own
+    audit event naming the person, the value before and after and the reason, and with its
+    recurring duties scheduled when the answer is `applies`. An obligation a person has
+    answered is never a target, whatever the answer, one a colleague left under assessment
+    with a reason included; one answered between the call and the worker's turn is left alone
+    and counted as skipped. An obligation offered after the call waits for the next decision.
+    Compliance statuses and gaps are untouched.
+
+    It writes one audit row for the decision itself, on the legal entity: how many obligations
+    it lists, the regulation if any, the answer and whether rows were selected, never the
+    reason. Read the progress with `GET /applicability/decide-all`. Before each chunk the
+    worker checks that the person is still an active member holding `applicability.approve`,
+    and otherwise stops and records why.
+
+    A person's session holding `applicability.approve`. No step-up and no second approver
+    (D-75): the confirmation covers the run as the dialog showed it. An API key never reaches
+    this route.
+
+    Errors to branch on: `decision_running` (409) while the caller's earlier run in this bank
+    is still running; `not_found` (404) for an `orgUnitId` that is not one of the bank's active
+    legal entities, another bank's included, or an `obligationIds` entry the register does not
+    offer for it, in which case nothing starts; `validation_error` (422) for an answer other
+    than the two, an empty reason or one over 2000 characters, an empty selection, an
+    obligation named twice, or more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by
+    default.
+    """
+    state = decide_all.start(tenant=caller_tenant(request), user=caller_user(request), body=body)
+    return 202, RegisterDecideAll.model_validate(state)
+
+
+@router.get(
+    "/applicability/decide-all",
+    response=RegisterDecideAll,
+    auth=SESSION,
+    operation_id="readDecideAllApplicability",
+    by_alias=True,
+    summary="Read how far your Decide all run has come",
+)
+@requires_permission(perms.APPLICABILITY_APPROVE)
+@answers_problems
+def read_decide_all_applicability(request: HttpRequest) -> Any:
+    """The caller's latest Decide all run in this bank as the worker last wrote it: how many
+    obligations it lists, how many it has set, left alone and could not set, the first 20
+    refusals with their reasons, and why it stopped if it stopped early. Call it every few
+    seconds while `status` is `running`, and on opening the "What applies" page to pick up a
+    run started earlier; read the lists again once it has finished. With no run in the last
+    day it answers 200 with `status` `idle` and zero counts, never a 404.
+
+    A read: it changes nothing and writes no audit row. Each person reads only their own run,
+    in the bank they are signed in to, and the reason is never returned. A person's session
+    holding `applicability.approve`.
+    """
+    return RegisterDecideAll.model_validate(decide_all.state_of(caller_tenant(request).id, caller_user(request).id))
 
 
 # ---------------------------------------------------------------------------------------

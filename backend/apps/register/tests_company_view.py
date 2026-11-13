@@ -6,6 +6,8 @@ sees. An obligation is offered for a company when `GET /obligations` lists it an
 `GET /obligations/{id}/register/entities` names the company; its target, answer, reason and
 version are those of `GET /obligations/{id}/register`; a company's totals are the sum of its
 rows; a regulation's roll-up is the inventory's own totals under each applicability filter.
+A row is to decide exactly while its `decidedBy` is null, and a `toDecide` count is the
+number of such rows, which is what a Decide all run sets (tests_decide_all.py).
 The SQL span is pinned against `applicability._spans` over a matrix of duties and companies.
 
 Proven to fail 2026-11-13, each by one change to `company_view.py` put back afterwards: with
@@ -82,13 +84,14 @@ def register_facts(tenant: Tenant, entity: OrgUnit, number: str) -> None:
 
 
 def tally(rows: list[dict[str, Any]]) -> dict[str, int]:
-    """Rows of the answers list as the four counts a company or a regulation carries."""
+    """Rows of the answers list as the five counts a company or a regulation carries: by the
+    answer each reads, and to decide where no person set it."""
     counted = Counter(row["applicability"] for row in rows)
-    return {"offered": len(rows), **{COUNT_OF[answer]: counted[answer] for answer in ANSWERS}}
+    return {"offered": len(rows), **{COUNT_OF[answer]: counted[answer] for answer in ANSWERS}, "toDecide": sum(row["decidedBy"] is None for row in rows)}
 
 
 def counts(row: dict[str, Any]) -> dict[str, int]:
-    return {name: row[name] for name in ("offered", "applies", "notApplicable", "underAssessment")}
+    return {name: row[name] for name in ("offered", "applies", "notApplicable", "underAssessment", "toDecide")}
 
 
 # ---------------------------------------------------------------------------------------
@@ -412,13 +415,56 @@ class AgreementWithTheObligationPage(WhatAppliesCase):
                     every_row += rows
                 self.assertEqual(counts(row), tally(every_row))
                 self.assertEqual(row["offered"], row["applies"] + row["notApplicable"] + row["underAssessment"])
+                self.assertLessEqual(row["toDecide"], row["underAssessment"])
         self.assertEqual(
             [counts(row) for row in listed],
             [
-                {"offered": 5, "applies": 1, "notApplicable": 1, "underAssessment": 3},
-                {"offered": 3, "applies": 0, "notApplicable": 0, "underAssessment": 3},
-                {"offered": 3, "applies": 0, "notApplicable": 0, "underAssessment": 3},
+                {"offered": 5, "applies": 1, "notApplicable": 1, "underAssessment": 3, "toDecide": 3},
+                {"offered": 3, "applies": 0, "notApplicable": 0, "underAssessment": 3, "toDecide": 3},
+                {"offered": 3, "applies": 0, "notApplicable": 0, "underAssessment": 3, "toDecide": 3},
             ],
+        )
+
+    def test_a_row_is_to_decide_exactly_while_no_person_has_answered_it_whatever_its_answer_reads(self) -> None:
+        """A colleague's deliberate "under assessment" with a reason is an answer: the row
+        still counts as under assessment, and no longer as to decide. A row that exists
+        because somebody recorded a detail on it, with no answer, is still to decide."""
+        officer = sign_in(self.a.officer, tenant=self.a.tenant)
+        parked = self.client.put(
+            f"{V1}/obligations/{self.nobody.id}/applicability",
+            data={"orgUnitId": str(self.a.bank_ab.id), "applicability": "under_assessment", "reason": "Waiting for the legal opinion"},
+            content_type="application/json",
+            **officer,
+        )
+        self.assertEqual(parked.status_code, 200, parked.content)
+        noted = self.client.patch(
+            f"{V1}/obligations/{self.custody.id}/register/entities/{self.a.bank_ab.id}",
+            data={"process": "Custody desk"},
+            content_type="application/json",
+            HTTP_IF_MATCH='"0"',
+            **officer,
+        )
+        self.assertEqual(noted.status_code, 200, noted.content)
+        everything = self.rows(self.a.bank_ab, "cv-lvm")["items"]
+        to_decide = self.rows(self.a.bank_ab, "cv-lvm", state="to_decide")["items"]
+        decided = self.rows(self.a.bank_ab, "cv-lvm", state="decided")["items"]
+        # `decidedBy` is null exactly on the rows to decide.
+        self.assertEqual(to_decide, [row for row in everything if row["decidedBy"] is None])
+        self.assertEqual(decided, [row for row in everything if row["decidedBy"] is not None])
+        self.assertEqual([(row["obligationId"], row["version"]) for row in to_decide], [(str(self.custody.id), noted.json()["version"])])
+        [left_open] = [row for row in decided if row["obligationId"] == str(self.nobody.id)]
+        self.assertEqual(
+            (left_open["applicability"], left_open["reason"], left_open["decidedBy"]),
+            ("under_assessment", "Waiting for the legal opinion", {"id": str(self.a.officer.id), "name": "Sara Lind"}),
+        )
+        of_the_bank = self.companies()[0]
+        self.assertEqual(counts(of_the_bank), {"offered": 5, "applies": 1, "notApplicable": 1, "underAssessment": 3, "toDecide": 2})
+        [securities] = [row for row in self.regulations(self.a.bank_ab)["items"] if row["instrument"]["key"] == "cv-lvm"]
+        self.assertEqual(counts(securities), {"offered": 4, "applies": 1, "notApplicable": 1, "underAssessment": 2, "toDecide": 1})
+        # The regulation's roll-up carries each company's own count: the bank's row is the bank's.
+        self.assertEqual(
+            {company["orgUnit"]["name"]: company["toDecide"] for company in self.roll_up("cv-lvm")["companies"]},
+            {"Example Bank AB": 1, "Example Fonder AB": 3, "Example Liv Försäkring AB": 2},
         )
 
     def test_a_regulations_roll_up_is_the_inventorys_own_totals(self) -> None:
@@ -489,20 +535,31 @@ class RegulationsOfACompany(WhatAppliesCase):
             self.assertEqual(row["through"]["lines"], [])
             self.assertEqual(row["through"]["term"]["dimension"], "regime")
 
-    def test_answer_keeps_the_regulations_with_a_row_answered_that_way(self) -> None:
-        self.assertEqual(self.regulation_keys(self.a.bank_ab, answer="applies"), ["cv-lvm"])
-        self.assertEqual(self.regulation_keys(self.a.bank_ab, answer="not_applicable"), ["cv-lvm"])
-        self.assertEqual(self.regulation_keys(self.a.bank_ab, answer="under_assessment"), ["cv-lob", "cv-lvm"])
-        self.assertEqual(self.regulations(self.a.fonder, answer="applies"), {"items": [], "total": 0})
+    def test_state_keeps_the_regulations_with_a_row_to_decide_or_with_one_a_person_answered(self) -> None:
+        self.assertEqual(self.regulation_keys(self.a.bank_ab, state="to_decide"), ["cv-lob", "cv-lvm"])
+        self.assertEqual(self.regulation_keys(self.a.bank_ab, state="decided"), ["cv-lvm"])
+        self.assertEqual(self.regulations(self.a.fonder, state="decided"), {"items": [], "total": 0})
         # The counts stay the regulation's own, whatever the filter kept it for.
-        [lvm] = self.regulations(self.a.bank_ab, answer="applies")["items"]
-        self.assertEqual(counts(lvm), {"offered": 4, "applies": 1, "notApplicable": 1, "underAssessment": 2})
-        # Kept exactly where the regulation's own count of that answer is above zero.
+        [lvm] = self.regulations(self.a.bank_ab, state="decided")["items"]
+        self.assertEqual(counts(lvm), {"offered": 4, "applies": 1, "notApplicable": 1, "underAssessment": 2, "toDecide": 2})
+        # Kept exactly where the regulation's own count of that state is above zero.
         for company in (self.a.bank_ab, self.a.fonder, self.a.liv):
             everything = self.regulations(company)["items"]
-            for answer in ANSWERS:
-                with self.subTest(company=company.name, answer=answer):
-                    self.assertEqual(self.regulation_keys(company, answer=answer), [row["instrument"]["key"] for row in everything if row[COUNT_OF[answer]]])
+            with self.subTest(company=company.name):
+                self.assertEqual(self.regulation_keys(company, state="to_decide"), [row["instrument"]["key"] for row in everything if row["toDecide"]])
+                self.assertEqual(
+                    self.regulation_keys(company, state="decided"), [row["instrument"]["key"] for row in everything if row["offered"] > row["toDecide"]]
+                )
+        # A regulation leaves the to-decide list with its last unanswered row, and joins the other.
+        answered = self.client.put(
+            f"{V1}/obligations/{self.payments.id}/applicability",
+            data={"orgUnitId": str(self.a.bank_ab.id), "applicability": "not_applicable", "reason": "No payment accounts"},
+            content_type="application/json",
+            **sign_in(self.a.officer, tenant=self.a.tenant),
+        )
+        self.assertEqual(answered.status_code, 200, answered.content)
+        self.assertEqual(self.regulation_keys(self.a.bank_ab, state="to_decide"), ["cv-lvm"])
+        self.assertEqual(self.regulation_keys(self.a.bank_ab, state="decided"), ["cv-lob", "cv-lvm"])
 
     def test_q_matches_as_the_instruments_list_does(self) -> None:
         for phrase, found in (("LOB", ["cv-lob"]), ("sfs 2007", ["cv-lvm"]), ("sfs", ["cv-lob", "cv-lvm"]), ("nothing-like-it", [])):
@@ -511,8 +568,8 @@ class RegulationsOfACompany(WhatAppliesCase):
                 page = self.regulations(self.a.bank_ab, q=phrase)
                 self.assertEqual([row["instrument"]["key"] for row in page["items"]], sorted(listed & {"cv-lob", "cv-lvm"}))
                 self.assertEqual(([row["instrument"]["key"] for row in page["items"]], page["total"]), (found, len(found)))
-        # The phrase and the answer narrow together.
-        self.assertEqual(self.regulation_keys(self.a.bank_ab, q="sfs", answer="applies"), ["cv-lvm"])
+        # The phrase and the state narrow together.
+        self.assertEqual(self.regulation_keys(self.a.bank_ab, q="sfs", state="decided"), ["cv-lvm"])
 
     def test_the_page_is_cut_after_the_filters_and_the_total_is_not(self) -> None:
         first = self.regulations(self.a.bank_ab, limit=1)
@@ -541,12 +598,12 @@ class RowsOfARegulation(WhatAppliesCase):
         # The regime a duty inherits from its regulation is never a match, though the bank's facts derive it.
         self.assertEqual(self.rows(self.a.bank_ab, "cv-lob")["items"][0]["matchedTerms"], [])
 
-    def test_answer_filters_the_rows_and_the_total(self) -> None:
-        self.assertEqual(self.row_ids(self.a.bank_ab, "cv-lvm", answer="applies"), [str(self.shared.id)])
-        self.assertEqual(self.row_ids(self.a.bank_ab, "cv-lvm", answer="not_applicable"), [str(self.single.id)])
-        self.assertEqual(self.row_ids(self.a.bank_ab, "cv-lvm", answer="under_assessment"), [str(self.nobody.id), str(self.custody.id)])
-        self.assertEqual(self.rows(self.a.bank_ab, "cv-lvm", answer="applies")["total"], 1)
-        self.assertEqual(self.rows(self.a.liv, "cv-lvm", answer="applies"), {"items": [], "total": 0})
+    def test_state_filters_the_rows_and_the_total(self) -> None:
+        self.assertEqual(self.row_ids(self.a.bank_ab, "cv-lvm", state="decided"), [str(self.shared.id), str(self.single.id)])
+        self.assertEqual(self.row_ids(self.a.bank_ab, "cv-lvm", state="to_decide"), [str(self.nobody.id), str(self.custody.id)])
+        self.assertEqual(self.rows(self.a.bank_ab, "cv-lvm", state="decided")["total"], 2)
+        self.assertEqual(self.rows(self.a.bank_ab, "cv-lvm", state="to_decide", limit=1)["total"], 2)
+        self.assertEqual(self.rows(self.a.liv, "cv-lvm", state="decided"), {"items": [], "total": 0})
 
     def test_the_page_is_cut_in_the_inventorys_order(self) -> None:
         everything = self.rows(self.a.bank_ab, "cv-lvm")
@@ -601,7 +658,7 @@ class WhoMayRead(WhatAppliesCase):
         self.assertEqual([row["orgUnit"]["id"] for row in listed], [str(entity.id) for entity in (self.b.bank_ab, self.b.fonder, self.b.liv)])
         self.assertEqual({row["applies"] + row["notApplicable"] for row in listed}, {0}, "tenant A's answers are tenant A's")
         # No footprint and no exclusion in tenant B: the advice duty and the payments duty are offered there.
-        self.assertEqual([row["offered"] for row in listed], [6, 5, 4])
+        self.assertEqual([(row["offered"], row["toDecide"]) for row in listed], [(6, 6), (5, 5), (4, 4)])
         rolled = self.ok(f"/instruments/{self.shared.instrument_id}/applicability", who=self.b.owner, tenant=self.b.tenant)
         self.assertEqual((rolled["inScope"], rolled["underAssessment"], rolled["statuses"]), (5, 5, []))
 
@@ -626,13 +683,15 @@ class WhoMayRead(WhatAppliesCase):
         cases = [
             "/applicability/regulations",
             "/applicability/regulations?orgUnitId=not-a-uuid",
-            f"/applicability/regulations?orgUnitId={entity}&answer=maybe",
+            f"/applicability/regulations?orgUnitId={entity}&state=maybe",
+            f"/applicability/regulations?orgUnitId={entity}&state=under_assessment",
             f"/applicability/regulations?orgUnitId={entity}&limit=101",
             f"/applicability/regulations?orgUnitId={entity}&q={'x' * 201}",
             f"/applicability/regulations?orgUnitId={entity}&q=sfs%00",  # PostgreSQL would refuse it with a 500
             f"/applicability/rows?orgUnitId={entity}",
             "/applicability/rows?instrument=cv-lvm",
-            f"/applicability/rows?orgUnitId={entity}&instrument=cv-lvm&answer=does_not_apply",
+            f"/applicability/rows?orgUnitId={entity}&instrument=cv-lvm&state=answered",
+            f"/applicability/rows?orgUnitId={entity}&instrument=cv-lvm&state=applies",
             f"/applicability/rows?orgUnitId={entity}&instrument={'x' * 121}",
             f"/applicability/rows?orgUnitId={entity}&instrument=cv-lvm%00",
             f"/applicability/rows?orgUnitId={entity}&instrument=cv%20lvm",
@@ -679,7 +738,7 @@ class ABankWithOneCompany(TestCase):
             [(str(answered.id), None, "applies", "We are a bank", stored.json()["version"]), (str(waiting.id), None, "under_assessment", None, 0)],
         )
         [company] = self.client.get(f"{V1}/applicability/companies", **headers).json()
-        self.assertEqual(counts(company), {"offered": 2, "applies": 1, "notApplicable": 0, "underAssessment": 1})
+        self.assertEqual(counts(company), {"offered": 2, "applies": 1, "notApplicable": 0, "underAssessment": 1, "toDecide": 1})
 
     def test_a_bank_with_no_legal_entity_reads_an_empty_list(self) -> None:
         seed_library()

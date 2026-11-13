@@ -229,6 +229,11 @@
     "p95Ms": 23.6,
     "queries": 18
   },
+  "decideAllApplicability": {
+    "medianMs": 87.8,
+    "p95Ms": 118.3,
+    "queries": 13
+  },
   "decideProposalBatch": {
     "medianMs": 124.7,
     "p95Ms": 158.9,
@@ -928,6 +933,11 @@
     "medianMs": 8.4,
     "p95Ms": 11.2,
     "queries": 8
+  },
+  "readDecideAllApplicability": {
+    "medianMs": 18.0,
+    "p95Ms": 19.2,
+    "queries": 4
   },
   "readRegisterEntry": {
     "medianMs": 34.9,

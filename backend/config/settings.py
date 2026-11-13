@@ -436,6 +436,13 @@ if LIBRARY_TRANSLATION_MINUTES:
 PROPOSALS_APPROVE_ALL_KEEP_S = env_int("PROPOSALS_APPROVE_ALL_KEEP_S", 86_400, min=60, max=30 * 86_400)
 PROPOSALS_APPROVE_ALL_STALE_S = env_int("PROPOSALS_APPROVE_ALL_STALE_S", 300, min=30, max=86_400)
 
+# --- Decide all (REG-01, D-128): how long a run's progress and its reason stay in the cache
+# after it last moved, when a silent run counts as stopped, and how many ticked rows one
+# request body may name. The run itself has no limit; its chunks are REGISTER_BULK_MAX. ---
+REGISTER_DECIDE_ALL_KEEP_S = env_int("REGISTER_DECIDE_ALL_KEEP_S", 86_400, min=60, max=30 * 86_400)
+REGISTER_DECIDE_ALL_STALE_S = env_int("REGISTER_DECIDE_ALL_STALE_S", 300, min=30, max=86_400)
+REGISTER_DECIDE_ALL_SELECTED_MAX = env_int("REGISTER_DECIDE_ALL_SELECTED_MAX", 1000, min=1, max=10_000)
+
 # --- Home, briefing, reminders and the workflow policy (HOM-01, HOM-02, COL-02) ---
 HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5, min=1, max=50)
 BRIEFING_SEND_WEEKDAY = env_int("BRIEFING_SEND_WEEKDAY", 0, min=0, max=6)  # Monday is 0

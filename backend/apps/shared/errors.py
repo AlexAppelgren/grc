@@ -61,6 +61,8 @@ STATUS_BY_CODE: dict[str, int] = {
     "request_pending": 409,
     "invalid_transition": 409,
     "approval_running": 409,
+    # The caller's earlier Decide all run in this bank is still running (REG-01, D-128).
+    "decision_running": 409,
     "idempotency_conflict": 409,
     "already_watching": 409,
     "forbidden": 403,

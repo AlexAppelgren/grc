@@ -1384,6 +1384,17 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listApplicabilityRegulations", reader, lambda: Call(query={"orgUnitId": str(_entity().id)})),
     PerfRoute("listApplicabilityRows", reader, lambda: Call(query={"orgUnitId": str(_entity().id), "instrument": "fffs-2017-2"})),
     PerfRoute("getInstrumentApplicability", reader, _instrument_call),
+    # Decide all (REG-01, D-128), as the officer who confirms it. The start reads the
+    # company's whole working inventory once, as `listApplicabilityCompanies` does, and writes
+    # one audit row; nothing it starts is committed here, so no state is kept and no worker
+    # queued, and the worker's chunks are no request's. The read is one cache lookup.
+    PerfRoute(
+        "decideAllApplicability",
+        officer,
+        lambda: Call(body={"orgUnitId": str(_entity().id), "applicability": "applies", "reason": "Covered by the bank's securities licence"}),
+        status=202,
+    ),
+    PerfRoute("readDecideAllApplicability", officer),
     # gaps and risk acceptance
     PerfRoute("listRegisterGaps", officer),
     PerfRoute("listObligationGaps", officer, _on_obligation(GAP_OBLIGATION)),

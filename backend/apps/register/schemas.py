@@ -63,6 +63,9 @@ PasteProblem = Literal[
     "duplicate_reference", "reference_exists", "reference_too_long", "title_too_long", "empty_line", "reason_missing"
 ]
 PastedAnswer = Literal["applies", "not_applicable"]
+DecisionState = Literal["to_decide", "decided"]
+DecideAllStatus = Literal["idle", "running", "finished"]
+DecideAllStopped = Literal["permission_revoked", "membership_ended", "reason_expired", "failed"]
 
 _APPLICABILITY = (
     "Whether the obligation applies to the bank here: `applies` when it binds this bank, "
@@ -1663,12 +1666,19 @@ _ANSWER_READ = (
     "bank's legal entities, and the obligation's own answer where it spans fewer, which is how "
     "the obligation page asks and stores it."
 )
+_TO_DECIDE_RULE = (
+    "An offered obligation is to decide while nobody has answered it for the legal entity: the "
+    "row an answer lands on does not exist yet, or no person has set it. Once a person has "
+    "answered, whatever the answer, it is decided: an obligation a colleague deliberately left "
+    "`under_assessment` with a reason is decided too."
+)
 _COMPANY_EXAMPLE: dict[str, Any] = {
     "orgUnit": {"id": "55555555-5555-4555-8555-555555555555", "name": "Example Bank AB"},
     "offered": 14,
     "applies": 9,
     "notApplicable": 2,
     "underAssessment": 3,
+    "toDecide": 2,
 }
 _REGULATION_EXAMPLE: dict[str, Any] = {
     "instrument": {
@@ -1681,6 +1691,7 @@ _REGULATION_EXAMPLE: dict[str, Any] = {
     "applies": 2,
     "notApplicable": 1,
     "underAssessment": 1,
+    "toDecide": 1,
     "through": {
         "term": {"key": "securities", "kind": None, "label": "Securities", "dimension": "regime"},
         "lines": ["Värdepappersbolag"],
@@ -1703,12 +1714,12 @@ _ANSWER_EXAMPLE: dict[str, Any] = {
 class RegisterAnswerCounts(LibraryResponse):
     """How the answers to "Does it apply to us?" stand for one legal entity over the
     obligations the register offers for it. Counted by the server on every read; none of the
-    four is stored, and none says whether the bank complies."""
+    five is stored, and none says whether the bank complies."""
 
     offered: int = Field(
         description=(
             f"How many obligations the register offers for the legal entity here. {_OFFERED_RULE} "
-            "Always the sum of the three counts beside it."
+            "Always the sum of `applies`, `notApplicable` and `underAssessment`."
         )
     )
     applies: int = Field(
@@ -1724,6 +1735,14 @@ class RegisterAnswerCounts(LibraryResponse):
         description=(
             "How many of the offered obligations nobody has answered for the legal entity yet, or a "
             "person took back to undecided. An obligation with no answer stored at all counts here."
+        )
+    )
+    to_decide: int = Field(
+        description=(
+            f"How many of the offered obligations nobody has answered for the legal entity. {_TO_DECIDE_RULE} "
+            "So it is never above `underAssessment`, and it is exactly how many obligations "
+            "`POST /applicability/decide-all` would decide for the entity under the same regulation: "
+            "print it on the button that starts one."
         )
     )
 
@@ -1824,13 +1843,13 @@ class RegisterApplicabilityRegulationQuery(CamelSchema):
     """The company and the filters of `GET /applicability/regulations`."""
 
     org_unit_id: uuid.UUID = Field(description=_COMPANY_ID)
-    answer: Applicability | None = Field(
+    state: DecisionState | None = Field(
         default=None,
         description=(
-            "Only the regulations with at least one offered obligation whose answer for the entity "
-            "is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody "
-            "answered is too. A regulation kept still carries its whole counts. Absent keeps every "
-            "regulation; any other value is refused with 422 `validation_error`."
+            "Only the regulations with at least one offered obligation in this state for the entity: "
+            "`to_decide` for one nobody has answered, `decided` for one a person has answered, "
+            "whatever the answer. A regulation kept still carries its whole counts. Absent keeps "
+            "every regulation; any other value is refused with 422 `validation_error`."
         ),
     )
     q: str | None = Field(
@@ -1855,8 +1874,8 @@ class RegisterApplicabilityRegulationQuery(CamelSchema):
 class RegisterApplicabilityAnswer(LibraryResponse):
     """One obligation the register offers for one legal entity, with the answer so far and what
     to send to answer it. It never carries a suggested answer: whether the obligation applies
-    is a person's decision, stored through `PUT /obligations/{obligationId}/applicability` or
-    `POST /applicability`."""
+    is a person's decision, stored through `PUT /obligations/{obligationId}/applicability`,
+    `POST /applicability` or a `POST /applicability/decide-all` run."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_ANSWER_EXAMPLE]})
 
@@ -1874,7 +1893,9 @@ class RegisterApplicabilityAnswer(LibraryResponse):
     applicability: Applicability = Field(description=f"{_APPLICABILITY} Read from the row `orgUnitId` names; an obligation nobody answered there reads `under_assessment`.")
     reason: str | None = Field(description=_APPLICABILITY_REASON)
     decided_at: datetime.datetime | None = Field(description=_DECIDED_AT)
-    decided_by: NamedRef | None = Field(description=_DECIDED_BY)
+    decided_by: NamedRef | None = Field(
+        description=f"{_DECIDED_BY} Null exactly when the row is still to decide, the rows `state=to_decide` lists and a Decide all run would set."
+    )
     version: int = Field(
         description=(
             "The version of the row the answer lands on, 0 when nobody has written it yet: what "
@@ -1918,12 +1939,13 @@ class RegisterApplicabilityAnswerQuery(CamelSchema):
             "with an empty page, as `GET /obligations?instrument=` does."
         ),
     )
-    answer: Applicability | None = Field(
+    state: DecisionState | None = Field(
         default=None,
         description=(
-            "Only the offered obligations whose answer for the entity is this: `applies`, "
-            "`not_applicable`, or `under_assessment`, which an obligation nobody answered is too. "
-            "Absent keeps every one; any other value is refused with 422 `validation_error`."
+            "Only the offered obligations in this state for the entity: `to_decide` for those nobody "
+            "has answered, whose `decidedBy` is null, and `decided` for those a person has answered, "
+            "whatever the answer, one left `under_assessment` with a reason included. Absent keeps "
+            "every one; any other value is refused with 422 `validation_error`."
         ),
     )
 
@@ -1994,5 +2016,188 @@ class RegisterInstrumentApplicability(LibraryResponse):
         description=(
             "The rows of `GET /applicability/companies` narrowed to this regulation, in the "
             "organisation's order, leaving out a legal entity the regulation offers nothing for."
+        )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Decide all (REG-01, D-75, D-128; decide_all.py)
+# ---------------------------------------------------------------------------------------
+# How many refusals a run keeps with their reasons; the count covers them all.
+REFUSALS_KEPT = 20
+_DECIDE_ALL_EXAMPLE: dict[str, Any] = {
+    "status": "running",
+    "total": 41,
+    "set": 20,
+    "skipped": 1,
+    "refused": 0,
+    "refusals": [],
+    "stopped": None,
+    "orgUnitId": "55555555-5555-4555-8555-555555555555",
+    "instrument": None,
+    "applicability": "applies",
+    "startedAt": "2026-11-13T09:12:00Z",
+    "updatedAt": "2026-11-13T09:12:03Z",
+}
+
+
+class RegisterDecideAllBody(WriteBody):
+    """`POST /applicability/decide-all`: one confirmed decision over everything the register
+    offers for one legal entity that nobody has answered, over one regulation of it, or over
+    the rows the person ticked. One answer and one reason for all of them, and no limit on how
+    many."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"orgUnitId": "55555555-5555-4555-8555-555555555555", "applicability": "applies", "reason": "Covered by the bank's securities licence"},
+                {
+                    "orgUnitId": "55555555-5555-4555-8555-555555555555",
+                    "instrument": "fffs-2017-2",
+                    "obligationIds": ["44444444-4444-4444-8444-444444444444"],
+                    "applicability": "not_applicable",
+                    "reason": "No client money held",
+                },
+            ]
+        }
+    )
+
+    org_unit_id: uuid.UUID = Field(
+        description=(
+            "The legal entity to decide for, by its UUID from `GET /applicability/companies`: one of "
+            "the bank's active legal entities. Required. An id that is not one, another bank's "
+            "included, answers 404 `not_found`."
+        )
+    )
+    instrument: str | None = Field(
+        default=None,
+        max_length=STABLE_KEY_MAX,
+        pattern=STABLE_KEY,
+        description=(
+            "Decide only the obligations of one regulation, named by its stable key, such as "
+            f"`fffs-2017-2`: letters, digits, hyphens and underscores, at most {STABLE_KEY_MAX} characters; "
+            "anything else is refused with 422 `validation_error`. Left out, the obligations of every "
+            "regulation are decided. A key no regulation the bank can see has decides nothing: the run "
+            "finishes at once with a total of 0."
+        ),
+    )
+    obligation_ids: list[uuid.UUID] | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Decide only these obligations, the rows the person ticked, each by the UUID "
+            "`GET /applicability/rows` gives as `obligationId`. At least 1, each once, and at most the "
+            "configured `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default, which bounds one request "
+            "body and not what a run may decide: leave the field out to decide every obligation that "
+            "matches, however many. Every id must be an obligation the register offers for the legal "
+            "entity, and of `instrument` when that is sent too, or the whole call answers 404 "
+            "`not_found` and nothing starts. One already answered is simply not decided again."
+        ),
+    )
+    applicability: PastedAnswer = Field(
+        description=(
+            "The answer every target gets: `applies` when the obligations bind the legal entity, "
+            "`not_applicable` when they do not. Parking many obligations as under assessment is not "
+            "offered, since that is what an unanswered obligation already is. It leaves every "
+            'compliance status and gap untouched: "applies" and "we comply" are separate facts.'
+        )
+    )
+    reason: str = Field(
+        min_length=1,
+        max_length=REASON_MAX,
+        description=(
+            f"Why, in the bank's own words, 1 to {REASON_MAX} characters, such as `Covered by the bank's "
+            "securities licence`. Stored on every row the run sets as that row's own reason, and in "
+            "that row's audit event. Tenant content that never leaves the bank: it is written to no "
+            "log line and rides in no message to the worker."
+        ),
+    )
+
+    @field_validator("obligation_ids")
+    @classmethod
+    def _each_once(cls, ids: list[uuid.UUID] | None) -> list[uuid.UUID] | None:
+        if ids is not None and len(set(ids)) < len(ids):
+            raise ValueError("Name each obligation once.")
+        return ids
+
+
+class RegisterDecideAllRefusal(CamelSchema):
+    """One obligation a Decide all run could not set, with the server's own reason. It keeps
+    whatever answer it had."""
+
+    obligation_id: uuid.UUID = Field(description="The obligation that was not set, as a UUID: the `obligationId` of its row in `GET /applicability/rows`.")
+    title: str = Field(
+        description="The obligation's title in the reader's language, from the library; empty when the library holds none or the obligation can no longer be read."
+    )
+    code: str = Field(
+        description=(
+            "The refusal's problem code, as the single answer route would give it: `not_found` when "
+            "the obligation is no longer offered for the legal entity, because the bank's regulatory "
+            "scope or the entity's own scope changed after the run started, or can no longer be seen."
+        )
+    )
+    detail: str = Field(description="The refusal as a sentence a person can read. Written by the server: it never holds the bank's own words.")
+
+
+class RegisterDecideAll(CamelSchema):
+    """The caller's latest Decide all run in this bank, as the worker last wrote it. Progress
+    is kept for a day after it last moved; the answers and their audit events are the record."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_DECIDE_ALL_EXAMPLE]})
+
+    status: DecideAllStatus = Field(
+        description=(
+            "Where the run stands: `idle` when the caller has started none in this bank in the last "
+            "day, `running` while the worker is setting answers, and `finished` once every target was "
+            "tried or the run stopped early, which `stopped` then says."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many obligations the run set out to decide: those offered for the legal entity that "
+            "nobody had answered when the call was made, read once at that moment. Always `set`, "
+            "`skipped` and `refused` together once the run has tried them all."
+        )
+    )
+    set: int = Field(
+        description="How many of them the run has set so far, each through the same logic as one confirmed answer and each with its own audit event."
+    )
+    skipped: int = Field(
+        description=(
+            "How many it left alone because a person answered them between the call and the worker's "
+            "turn. A colleague's answer is never overwritten, whatever it says."
+        )
+    )
+    refused: int = Field(description="How many it could not set, each left as it was; `refusals` gives the first of them with their reasons.")
+    refusals: list[RegisterDecideAllRefusal] = Field(
+        description=f"The first {REFUSALS_KEPT} refusals with their reasons, in the order the run met them; `refused` counts them all."
+    )
+    stopped: DecideAllStopped | None = Field(
+        description=(
+            "Why the run ended before trying every target, null when it did not. `permission_revoked`: "
+            "the person who started it no longer holds `applicability.approve`. `membership_ended`: "
+            "they are no longer an active member of the bank. `reason_expired`: the reason was no "
+            "longer kept when the worker ran, so nothing more was set. `failed`: the worker met an "
+            "error. What was set before the stop stays set; start again to decide the rest."
+        )
+    )
+    org_unit_id: uuid.UUID | None = Field(description="The legal entity the run decides for, as its UUID; null when idle.")
+    instrument: str | None = Field(
+        description="The stable key of the regulation the run was narrowed to; null when it covers every regulation, and when idle."
+    )
+    applicability: PastedAnswer | None = Field(
+        description=(
+            "The answer the run sets on every target, `applies` or `not_applicable`; null when idle. "
+            "The reason is never returned here: read it on a row the run set."
+        )
+    )
+    started_at: datetime.datetime | None = Field(
+        description="When the run started, as a UTC timestamp; null when idle, and when the run's own record was lost before the worker ran."
+    )
+    updated_at: datetime.datetime | None = Field(
+        description=(
+            "When the worker last wrote its progress, as a UTC timestamp; null when idle. A run still "
+            "`running` that has said nothing for the configured `REGISTER_DECIDE_ALL_STALE_S`, 300 "
+            "seconds by default, counts as stopped, and a new one may be started."
         )
     )
