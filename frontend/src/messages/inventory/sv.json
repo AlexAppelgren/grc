@@ -126,7 +126,7 @@
   "inventory.instrument.whereItApplies": "Där den gäller",
   "inventory.instrument.statusCount": "{count} {status}",
   "inventory.instrument.byCompany": "Per bolag",
-  "inventory.instrument.companyCounts": "{applies} gäller · {notApplicable} gäller inte · {underAssessment} att bedöma",
+  "inventory.instrument.companyCounts": "{applies} gäller · {notApplicable} gäller inte · {toDecide} att bedöma",
   "inventory.instrument.decide": "Bedöm {count}",
   "inventory.instrument.find": "Hitta en skyldighet",
   "inventory.instrument.obligationsEmpty": "Den här rättsakten har ännu ingen skyldighet.",

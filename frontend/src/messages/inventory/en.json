@@ -126,7 +126,7 @@
   "inventory.instrument.whereItApplies": "Where it applies",
   "inventory.instrument.statusCount": "{count} {status}",
   "inventory.instrument.byCompany": "By company",
-  "inventory.instrument.companyCounts": "{applies, plural, one {# applies} other {# apply}} · {notApplicable, plural, one {# does not} other {# do not}} · {underAssessment} to decide",
+  "inventory.instrument.companyCounts": "{applies, plural, one {# applies} other {# apply}} · {notApplicable, plural, one {# does not} other {# do not}} · {toDecide} to decide",
   "inventory.instrument.decide": "Decide {count}",
   "inventory.instrument.find": "Find an obligation",
   "inventory.instrument.obligationsEmpty": "This regulation has no obligation yet.",

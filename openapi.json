@@ -11986,10 +11986,10 @@
                 "type": "null"
               }
             ],
-            "description": "What the instrument is and what it means for a bank, in two to four plain sentences, in the caller's first content language the summary is written in, or null when the library holds no summary for it yet. Written once from the instrument's own source and entered through an approved proposal (INV-09)."
+            "description": "bleqq's plain-words summary of what the instrument is and what it means for a bank, in two to four sentences, in the caller's first content language the summary is written in, or null when the library holds no summary for it yet. Written once from the instrument's own source and entered through an approved proposal (INV-09). It is never the law's wording: its `isOriginal` names the language bleqq wrote it in, not the language the instrument was published in, and the law's own words are the provision tree's (`GET /instruments/{instrumentId}/provisions`)."
           },
           "summaryTranslations": {
-            "description": "Every language the library holds the summary in, the original marked `isOriginal` and each machine translation marked `isMachine` until a person confirms it (INV-05), so a screen can offer the original and label what a machine translated. `summary` is the one picked for this reader. Empty when the library holds no summary yet.",
+            "description": "Every language the library holds bleqq's summary in, the language bleqq wrote it in marked `isOriginal` and each machine translation marked `isMachine` until a person confirms it (INV-05), so a screen can offer each language and label what a machine translated. Like `summary`, never the law's wording. `summary` is the one picked for this reader. Empty when the library holds no summary yet.",
             "items": {
               "$ref": "#/components/schemas/LocalizedText"
             },
@@ -13330,7 +13330,7 @@
         "description": "One text in one language (INV-05, D-12): which language it is in, whether it is the\noriginal and whether a machine translated it, so the screen can label it.",
         "properties": {
           "isMachine": {
-            "description": "True while a machine made this translation and no person has confirmed it, so a screen has to label it as such (INV-05). It says nothing about whether the translation is faithful, only that nobody has checked it; the original is the text that governs either way.",
+            "description": "True while a machine made this translation and no person has confirmed it, so a screen has to label it as such (INV-05). It says nothing about whether the translation is faithful, only that nobody has checked it. It is never true of an original. On a provision's text the original is the wording that governs; on a title or a summary bleqq wrote, the original is bleqq's own wording and governs nothing, because neither the summary nor its translation is the law.",
             "examples": [
               true
             ],
@@ -13338,7 +13338,7 @@
             "type": "boolean"
           },
           "isOriginal": {
-            "description": "True when this is the language the source itself published in, which is the wording that governs wherever two languages read differently. False on every translation, whoever or whatever made it.",
+            "description": "True when this is the text the others were translated from; false on every translation, whoever or whatever made it. What that means depends on whose words the text is. On a provision's text, the law's own words, it is the language the authority published the rule in, and that wording governs wherever two languages read differently; on an instrument's official name it is the language the authority named it in. On a title or a summary bleqq wrote, an obligation's title and summary or an instrument's summary, it is only the language bleqq wrote it in: it says nothing about the language of the law itself, so a summary whose original is English may describe a Swedish rule published in Swedish.",
             "examples": [
               false
             ],
@@ -15127,9 +15127,24 @@
             },
             "provisions": [
               {
+                "heading": "Betalning f\u00f6r analys",
                 "id": "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10",
                 "path": "FFFS 2017:2 > 9 kap. > 6 \u00a7",
-                "refLabel": "9 kap. 6 \u00a7"
+                "refLabel": "9 kap. 6 \u00a7",
+                "texts": [
+                  {
+                    "isMachine": false,
+                    "isOriginal": true,
+                    "language": "sv",
+                    "text": "Ett v\u00e4rdepappersinstitut f\u00e5r ta emot investeringsanalys fr\u00e5n tredje part endast om analysen betalas med institutets egna medel eller fr\u00e5n ett analyskonto."
+                  },
+                  {
+                    "isMachine": true,
+                    "isOriginal": false,
+                    "language": "en",
+                    "text": "A securities firm may receive investment research from a third party only if the research is paid for from the firm's own resources or from a research payment account."
+                  }
+                ]
               }
             ],
             "refLabel": "Third-party payments",
@@ -15305,8 +15320,8 @@
             ],
             "stableKey": "obl-research-payments",
             "summary": {
-              "isMachine": true,
-              "isOriginal": false,
+              "isMachine": false,
+              "isOriginal": true,
               "language": "en",
               "text": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules."
             },
@@ -15344,14 +15359,14 @@
               {
                 "isMachine": false,
                 "isOriginal": true,
-                "language": "sv",
-                "text": "Investeringsanalys fr\u00e5n tredje part f\u00e5r tas emot endast om den betalas med institutets egna medel, fr\u00e5n ett analyskonto, eller gemensamt med orderutf\u00f6rande enligt de villkor som anges i reglerna."
+                "language": "en",
+                "text": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules."
               },
               {
                 "isMachine": true,
                 "isOriginal": false,
-                "language": "en",
-                "text": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules."
+                "language": "sv",
+                "text": "Investeringsanalys fr\u00e5n tredje part f\u00e5r tas emot endast om den betalas med institutets egna medel, fr\u00e5n ett analyskonto, eller gemensamt med orderutf\u00f6rande enligt de villkor som anges i reglerna."
               }
             ],
             "triggerFrequency": "Annual assessment from 1 October 2026",
@@ -15514,7 +15529,7 @@
             "description": "Where this record came from and when a person last held it against its source: the sourcing a bank's own reviewer, and a vendor review, asks for."
           },
           "provisions": {
-            "description": "The provisions of the instrument this duty was drawn from, as citations. An empty list means no provision was cited, not that the duty is unsourced: `provenance` still names the page it came from. The verbatim legal text is not here; it lives in the provision tree.",
+            "description": "The provisions this duty was drawn from, in the tree's own order, each with its heading and the law's own words in force on the read's date, in every language the library holds them in (`texts`). This is where the rule's wording is, as opposed to bleqq's `summary` of it. A provision appears here exactly when this caller may read its instrument's provision tree; one it may not is left out silently. An empty list means no provision is cited, not that the duty is unsourced: `provenance` still names the page it came from.",
             "items": {
               "$ref": "#/components/schemas/ObligationProvisionRef"
             },
@@ -15582,7 +15597,7 @@
                 "type": "null"
               }
             ],
-            "description": "The duty in plain language as the version in force on the read's date words it, in the best language this reader can be served. Null when that version carries no summary in any language, or when no version is in force on the date asked for."
+            "description": "bleqq's plain-words summary of the duty, as the version in force on the read's date words it, in the best language this reader can be served. It is never the law's wording and never quotes it as such: the law's own words are `provisions[].texts`. Its `isOriginal` names the language bleqq wrote the summary in, which says nothing about the language the rule was published in. Null when that version carries no summary in any language, or when no version is in force on the date asked for."
           },
           "tags": {
             "description": "The library's own keywords for this duty, as key, kind and label \u2014 `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.",
@@ -15612,7 +15627,7 @@
             "description": "The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all."
           },
           "translations": {
-            "description": "Every language the version in force holds its summary in, so a screen can offer \"Show original\" and label what a machine translated. `summary` is the one of these picked for this reader; the list is the same for everyone.",
+            "description": "Every language the version in force holds bleqq's summary in, the language bleqq wrote it in marked `isOriginal` and each machine translation nobody has confirmed marked `isMachine`, so a screen can offer each language and label what a machine translated. Like `summary`, these are bleqq's plain words about the duty and never the law's wording, which is `provisions[].texts`. `summary` is the one of these picked for this reader; the list is the same for everyone.",
             "items": {
               "$ref": "#/components/schemas/LocalizedText"
             },
@@ -16179,8 +16194,23 @@
         "type": "object"
       },
       "ObligationProvisionRef": {
-        "description": "A provision the obligation cites (INV-02, INV-03), by reference and path. The\nverbatim text is the provision tree's, never this read's.",
+        "description": "A provision the obligation cites (INV-02, INV-03, INV-05), by reference and path,\nwith its heading and the law's own words: every language the provision's version in\nforce on the read's date holds, the original first. The same words the provision\ntree gives the same caller, read on the same rule.",
         "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The provision's own heading as the source prints it above the text, such as `Betalning f\u00f6r analys`, or null when the source gives it none. One text in the source's language, never translated.",
+            "examples": [
+              "Betalning f\u00f6r analys"
+            ],
+            "title": "Heading"
+          },
           "id": {
             "description": "The provision's identifier in the shared library, as a UUID: what the provision tree is read by. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
             "examples": [
@@ -16191,7 +16221,7 @@
             "type": "string"
           },
           "path": {
-            "description": "Where the provision sits in its instrument's structure, read from the top, so a reader can place the citation without opening the tree. It is a breadcrumb a person reads and may be relabelled; cite the provision by `id`. The verbatim legal text is not here: it belongs to the provision tree, version by version.",
+            "description": "Where the provision sits in its instrument's structure, read from the top, so a reader can place the citation without opening the tree. It is a breadcrumb a person reads and may be relabelled; cite the provision by `id`.",
             "examples": [
               "FFFS 2017:2 > 9 kap. > 6 \u00a7"
             ],
@@ -16205,12 +16235,22 @@
             ],
             "title": "Reflabel",
             "type": "string"
+          },
+          "texts": {
+            "description": "The law's own words: the verbatim text of this provision's version in force on the read's date (`asOf`, or today in the bank's time zone), on the rule the provision tree uses, in every language the library holds it in. The original, the language the authority published the rule in and whose wording governs, comes first, then every translation by language key, each one a machine made and no person has confirmed marked `isMachine`. Nothing is picked for the reader: a screen chooses the language, as it does among `translations`. An empty list when no version of the provision is in force on that date, such as a date before its first version, or when the library holds no text for it yet. It is never bleqq's summary of the duty, which is `summary`.",
+            "items": {
+              "$ref": "#/components/schemas/LocalizedText"
+            },
+            "title": "Texts",
+            "type": "array"
           }
         },
         "required": [
           "id",
           "refLabel",
-          "path"
+          "path",
+          "heading",
+          "texts"
         ],
         "title": "ObligationProvisionRef",
         "type": "object"
@@ -19699,7 +19739,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Per field the payload sets, where its value came from, keyed as the queue names the field (`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`). Each source is at most 2000 characters and is an https link, or for an obligation or provision version also the stable key of a provision the library holds. A new instrument, obligation or provision takes https links only, since it has no provision of its own yet, and so does every obligation of a standard: anything else there answers 422 `licensed_text`. A field without a source answers 422 `source_missing`; a source that is neither, or one given for a field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need none, since a person writes their wording.",
+            "description": "Per field the payload sets, where its value came from, keyed as the queue names the field (`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`, `obligations`). Each source is at most 2000 characters and is an https link, or for an obligation or provision version also the stable key of a provision the library holds. A new instrument, obligation or provision takes https links only, since it has no provision of its own yet, and so does every obligation of a standard: anything else there answers 422 `licensed_text`. A field without a source answers 422 `source_missing`; a source that is neither, or one given for a field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need none, since a person writes their wording.",
             "examples": [
               {
                 "summaries.sv": "https://www.fi.se/en/published/news/2026/research-payments/"
@@ -19728,7 +19768,7 @@
           },
           "payload": {
             "additionalProperties": true,
-            "description": "What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.",
+            "description": "What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, at most 200 characters), `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), `originalLanguage` (the language the authority published the text in, which must be the language its instrument's jurisdiction writes law in, Swedish for Swedish law and English for a Union act, else 422 `validation_error`: a translation is never the original of the law, though a title or a summary, being bleqq's own wording, keeps the language it was written in), `officialLanguages` (the other languages of `texts` the authority itself published, such as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; naming the original, or a language with no text, answers 422 `validation_error`), `isMachine` (true when every remaining text is a machine translation, which then stays labelled so whoever approves), `obligations` (the stable keys of the obligations that cite the provision, each once and at most 50, every one a shared obligation in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to the provision), `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and `obligations`, each read as on a new provision against the provision's own instrument (an obligation the provision is already tied to stays as it is), `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.",
             "title": "Payload",
             "type": "object"
           },
@@ -21651,7 +21691,7 @@
         "type": "object"
       },
       "RegisterApplicabilityAnswer": {
-        "description": "One obligation the register offers for one legal entity, with the answer so far and what\nto send to answer it. It never carries a suggested answer: whether the obligation applies\nis a person's decision, stored through `PUT /obligations/{obligationId}/applicability` or\n`POST /applicability`.",
+        "description": "One obligation the register offers for one legal entity, with the answer so far and what\nto send to answer it. It never carries a suggested answer: whether the obligation applies\nis a person's decision, stored through `PUT /obligations/{obligationId}/applicability`,\n`POST /applicability` or a `POST /applicability/decide-all` run.",
         "examples": [
           {
             "applicability": "applies",
@@ -21709,7 +21749,7 @@
                 "type": "null"
               }
             ],
-            "description": "The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered."
+            "description": "The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered. Null exactly when the row is still to decide, the rows `state=to_decide` lists and a Decide all run would set."
           },
           "matchedTerms": {
             "description": "Which of the obligation's own scope terms the legal entity carries: its entity type, or a term the entity's public register entry gives it. Terms of the shared library's taxonomy vocabulary, each with its dimension, which an administrator may extend through an approved proposal; read `GET /taxonomy/terms` for the live set. The regime and the jurisdictions the obligation inherits from its regulation are never listed here. Empty means the row is offered through its regulation's regime alone. A match is a fact about scope and never an answer: it does not say the obligation applies.",
@@ -21907,6 +21947,7 @@
               "id": "55555555-5555-4555-8555-555555555555",
               "name": "Example Bank AB"
             },
+            "toDecide": 2,
             "underAssessment": 3
           }
         ],
@@ -21922,13 +21963,18 @@
             "type": "integer"
           },
           "offered": {
-            "description": "How many obligations the register offers for the legal entity here. An obligation is offered for a legal entity when it is in the bank's working inventory, the rows `GET /obligations` lists by default, and it spans the entity: the obligation is scoped to the entity's type or to no type at all, and in every dimension it carries terms in, at least one is still inside the entity's own scope, which an approved regulatory scope request may have narrowed. Being offered decides nothing: a person answers each one. Always the sum of the three counts beside it.",
+            "description": "How many obligations the register offers for the legal entity here. An obligation is offered for a legal entity when it is in the bank's working inventory, the rows `GET /obligations` lists by default, and it spans the entity: the obligation is scoped to the entity's type or to no type at all, and in every dimension it carries terms in, at least one is still inside the entity's own scope, which an approved regulatory scope request may have narrowed. Being offered decides nothing: a person answers each one. Always the sum of `applies`, `notApplicable` and `underAssessment`.",
             "title": "Offered",
             "type": "integer"
           },
           "orgUnit": {
             "$ref": "#/components/schemas/NamedRef",
             "description": "The legal entity, by the id and the name of its unit in the bank's organisation. Send the id as `orgUnitId` to list the regulations and the obligations offered for it."
+          },
+          "toDecide": {
+            "description": "How many of the offered obligations nobody has answered for the legal entity. An offered obligation is to decide while nobody has answered it for the legal entity: the row an answer lands on does not exist yet, or no person has set it. Once a person has answered, whatever the answer, it is decided: an obligation a colleague deliberately left `under_assessment` with a reason is decided too. So it is never above `underAssessment`, and it is exactly how many obligations `POST /applicability/decide-all` would decide for the entity under the same regulation: print it on the button that starts one.",
+            "title": "Todecide",
+            "type": "integer"
           },
           "underAssessment": {
             "description": "How many of the offered obligations nobody has answered for the legal entity yet, or a person took back to undecided. An obligation with no answer stored at all counts here.",
@@ -21941,6 +21987,7 @@
           "applies",
           "notApplicable",
           "underAssessment",
+          "toDecide",
           "orgUnit"
         ],
         "title": "RegisterApplicabilityCompany",
@@ -22076,6 +22123,7 @@
                 "label": "Securities"
               }
             },
+            "toDecide": 1,
             "underAssessment": 1
           }
         ],
@@ -22095,13 +22143,18 @@
             "type": "integer"
           },
           "offered": {
-            "description": "How many obligations the register offers for the legal entity here. An obligation is offered for a legal entity when it is in the bank's working inventory, the rows `GET /obligations` lists by default, and it spans the entity: the obligation is scoped to the entity's type or to no type at all, and in every dimension it carries terms in, at least one is still inside the entity's own scope, which an approved regulatory scope request may have narrowed. Being offered decides nothing: a person answers each one. Always the sum of the three counts beside it.",
+            "description": "How many obligations the register offers for the legal entity here. An obligation is offered for a legal entity when it is in the bank's working inventory, the rows `GET /obligations` lists by default, and it spans the entity: the obligation is scoped to the entity's type or to no type at all, and in every dimension it carries terms in, at least one is still inside the entity's own scope, which an approved regulatory scope request may have narrowed. Being offered decides nothing: a person answers each one. Always the sum of `applies`, `notApplicable` and `underAssessment`.",
             "title": "Offered",
             "type": "integer"
           },
           "through": {
             "$ref": "#/components/schemas/RegisterApplicabilityThrough",
             "description": "The regulation's regime and the lines of the entity's register entry that give the entity that regime, empty when none does."
+          },
+          "toDecide": {
+            "description": "How many of the offered obligations nobody has answered for the legal entity. An offered obligation is to decide while nobody has answered it for the legal entity: the row an answer lands on does not exist yet, or no person has set it. Once a person has answered, whatever the answer, it is decided: an obligation a colleague deliberately left `under_assessment` with a reason is decided too. So it is never above `underAssessment`, and it is exactly how many obligations `POST /applicability/decide-all` would decide for the entity under the same regulation: print it on the button that starts one.",
+            "title": "Todecide",
+            "type": "integer"
           },
           "underAssessment": {
             "description": "How many of the offered obligations nobody has answered for the legal entity yet, or a person took back to undecided. An obligation with no answer stored at all counts here.",
@@ -22114,6 +22167,7 @@
           "applies",
           "notApplicable",
           "underAssessment",
+          "toDecide",
           "instrument",
           "through"
         ],
@@ -22150,6 +22204,7 @@
                     "label": "Securities"
                   }
                 },
+                "toDecide": 1,
                 "underAssessment": 1
               }
             ],
@@ -22553,6 +22608,282 @@
           "total"
         ],
         "title": "RegisterAssessmentPage",
+        "type": "object"
+      },
+      "RegisterDecideAll": {
+        "description": "The caller's latest Decide all run in this bank, as the worker last wrote it. Progress\nis kept for a day after it last moved; the answers and their audit events are the record.",
+        "examples": [
+          {
+            "applicability": "applies",
+            "instrument": null,
+            "orgUnitId": "55555555-5555-4555-8555-555555555555",
+            "refusals": [],
+            "refused": 0,
+            "set": 20,
+            "skipped": 1,
+            "startedAt": "2026-11-13T09:12:00Z",
+            "status": "running",
+            "stopped": null,
+            "total": 41,
+            "updatedAt": "2026-11-13T09:12:03Z"
+          }
+        ],
+        "properties": {
+          "applicability": {
+            "anyOf": [
+              {
+                "enum": [
+                  "applies",
+                  "not_applicable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The answer the run sets on every target, `applies` or `not_applicable`; null when idle. The reason is never returned here: read it on a row the run set.",
+            "title": "Applicability"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stable key of the regulation the run was narrowed to; null when it covers every regulation, and when idle.",
+            "title": "Instrument"
+          },
+          "orgUnitId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The legal entity the run decides for, as its UUID; null when idle.",
+            "title": "Orgunitid"
+          },
+          "refusals": {
+            "description": "The first 20 refusals with their reasons, in the order the run met them; `refused` counts them all.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterDecideAllRefusal"
+            },
+            "title": "Refusals",
+            "type": "array"
+          },
+          "refused": {
+            "description": "How many it could not set, each left as it was; `refusals` gives the first of them with their reasons.",
+            "title": "Refused",
+            "type": "integer"
+          },
+          "set": {
+            "description": "How many of them the run has set so far, each through the same logic as one confirmed answer and each with its own audit event.",
+            "title": "Set",
+            "type": "integer"
+          },
+          "skipped": {
+            "description": "How many it left alone because a person answered them between the call and the worker's turn. A colleague's answer is never overwritten, whatever it says.",
+            "title": "Skipped",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the run started, as a UTC timestamp; null when idle, and when the run's own record was lost before the worker ran.",
+            "title": "Startedat"
+          },
+          "status": {
+            "description": "Where the run stands: `idle` when the caller has started none in this bank in the last day, `running` while the worker is setting answers, and `finished` once every target was tried or the run stopped early, which `stopped` then says.",
+            "enum": [
+              "idle",
+              "running",
+              "finished"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stopped": {
+            "anyOf": [
+              {
+                "enum": [
+                  "permission_revoked",
+                  "membership_ended",
+                  "reason_expired",
+                  "failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the run ended before trying every target, null when it did not. `permission_revoked`: the person who started it no longer holds `applicability.approve`. `membership_ended`: they are no longer an active member of the bank. `reason_expired`: the reason was no longer kept when the worker ran, so nothing more was set. `failed`: the worker met an error. What was set before the stop stays set; start again to decide the rest.",
+            "title": "Stopped"
+          },
+          "total": {
+            "description": "How many obligations the run set out to decide: those offered for the legal entity that nobody had answered when the call was made, read once at that moment. Always `set`, `skipped` and `refused` together once the run has tried them all.",
+            "title": "Total",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the worker last wrote its progress, as a UTC timestamp; null when idle. A run still `running` that has said nothing for the configured `REGISTER_DECIDE_ALL_STALE_S`, 300 seconds by default, counts as stopped, and a new one may be started.",
+            "title": "Updatedat"
+          }
+        },
+        "required": [
+          "status",
+          "total",
+          "set",
+          "skipped",
+          "refused",
+          "refusals",
+          "stopped",
+          "orgUnitId",
+          "instrument",
+          "applicability",
+          "startedAt",
+          "updatedAt"
+        ],
+        "title": "RegisterDecideAll",
+        "type": "object"
+      },
+      "RegisterDecideAllBody": {
+        "additionalProperties": false,
+        "description": "`POST /applicability/decide-all`: one confirmed decision over everything the register\noffers for one legal entity that nobody has answered, over one regulation of it, or over\nthe rows the person ticked. One answer and one reason for all of them, and no limit on how\nmany.",
+        "examples": [
+          {
+            "applicability": "applies",
+            "orgUnitId": "55555555-5555-4555-8555-555555555555",
+            "reason": "Covered by the bank's securities licence"
+          },
+          {
+            "applicability": "not_applicable",
+            "instrument": "fffs-2017-2",
+            "obligationIds": [
+              "44444444-4444-4444-8444-444444444444"
+            ],
+            "orgUnitId": "55555555-5555-4555-8555-555555555555",
+            "reason": "No client money held"
+          }
+        ],
+        "properties": {
+          "applicability": {
+            "description": "The answer every target gets: `applies` when the obligations bind the legal entity, `not_applicable` when they do not. Parking many obligations as under assessment is not offered, since that is what an unanswered obligation already is. It leaves every compliance status and gap untouched: \"applies\" and \"we comply\" are separate facts.",
+            "enum": [
+              "applies",
+              "not_applicable"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Decide only the obligations of one regulation, named by its stable key, such as `fffs-2017-2`: letters, digits, hyphens and underscores, at most 120 characters; anything else is refused with 422 `validation_error`. Left out, the obligations of every regulation are decided. A key no regulation the bank can see has decides nothing: the run finishes at once with a total of 0.",
+            "title": "Instrument"
+          },
+          "obligationIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Decide only these obligations, the rows the person ticked, each by the UUID `GET /applicability/rows` gives as `obligationId`. At least 1, each once, and at most the configured `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default, which bounds one request body and not what a run may decide: leave the field out to decide every obligation that matches, however many. Every id must be an obligation the register offers for the legal entity, and of `instrument` when that is sent too, or the whole call answers 404 `not_found` and nothing starts. One already answered is simply not decided again.",
+            "title": "Obligationids"
+          },
+          "orgUnitId": {
+            "description": "The legal entity to decide for, by its UUID from `GET /applicability/companies`: one of the bank's active legal entities. Required. An id that is not one, another bank's included, answers 404 `not_found`.",
+            "format": "uuid",
+            "title": "Orgunitid",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why, in the bank's own words, 1 to 2000 characters, such as `Covered by the bank's securities licence`. Stored on every row the run sets as that row's own reason, and in that row's audit event. Tenant content that never leaves the bank: it is written to no log line and rides in no message to the worker.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orgUnitId",
+          "applicability",
+          "reason"
+        ],
+        "title": "RegisterDecideAllBody",
+        "type": "object"
+      },
+      "RegisterDecideAllRefusal": {
+        "description": "One obligation a Decide all run could not set, with the server's own reason. It keeps\nwhatever answer it had.",
+        "properties": {
+          "code": {
+            "description": "The refusal's problem code, as the single answer route would give it: `not_found` when the obligation is no longer offered for the legal entity, because the bank's regulatory scope or the entity's own scope changed after the run started, or can no longer be seen.",
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "description": "The refusal as a sentence a person can read. Written by the server: it never holds the bank's own words.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "obligationId": {
+            "description": "The obligation that was not set, as a UUID: the `obligationId` of its row in `GET /applicability/rows`.",
+            "format": "uuid",
+            "title": "Obligationid",
+            "type": "string"
+          },
+          "title": {
+            "description": "The obligation's title in the reader's language, from the library; empty when the library holds none or the obligation can no longer be read.",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "obligationId",
+          "title",
+          "code",
+          "detail"
+        ],
+        "title": "RegisterDecideAllRefusal",
         "type": "object"
       },
       "RegisterDecision": {
@@ -25147,6 +25478,7 @@
                   "id": "55555555-5555-4555-8555-555555555555",
                   "name": "Example Bank AB"
                 },
+                "toDecide": 2,
                 "underAssessment": 3
               }
             ],
@@ -33555,7 +33887,7 @@
             },
             "fromEffective": null,
             "fromVersion": 1,
-            "isMachine": true,
+            "isMachine": false,
             "language": "en",
             "segments": [
               {
@@ -33621,7 +33953,7 @@
             "type": "integer"
           },
           "isMachine": {
-            "description": "True when either side of the comparison is a machine translation nobody has confirmed, so a screen must label the whole diff as machine-made (INV-05). It does not say the difference is wrong; it says the words compared are not the ones that govern, which are the original's.",
+            "description": "True when either side of the comparison is a machine translation nobody has confirmed, so a screen must label the whole diff as machine-made (INV-05). It does not say the difference is wrong; it says the words compared are a machine's and not the original's. On a provision's diff the original is the wording that governs; on an obligation's diff both sides are bleqq's summary, never the law's wording.",
             "examples": [
               true
             ],
@@ -42505,7 +42837,7 @@
     },
     "/api/v1/applicability": {
       "post": {
-        "description": "Stores many confirmed answers in one call, such as the decisions of a pasted Statement\nof Applicability: each row names an obligation and, optionally, a legal entity or a unit,\nwith its answer and reason (AC-REG1). Call it after the person confirmed every row in one\ndialog. All rows are stored in one transaction or none is.\n\nA person's session holding `applicability.approve`. No step-up and no `If-Match`: the\nconfirmation covers the rows as the dialog showed them. At most `REGISTER_BULK_MAX` rows,\n100 by default. Records one audit event per row naming the person, the value before and\nafter, and the reason.\n\nErrors: `not_found` (404) when any row names an obligation, entity or unit the bank\ncannot see, or a legal entity its obligation does not span; `validation_error` (422) for\nan empty list, a list over the cap, the same target twice or a row the schema refuses;\n`scope_not_applicable` (422) for a unit whose legal entity no longer follows the\nstandard.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
+        "description": "Stores many confirmed answers in one call, such as the decisions of a pasted Statement\nof Applicability: each row names an obligation and, optionally, a legal entity or a unit,\nwith its answer and reason (AC-REG1). Call it after the person confirmed every row in one\ndialog. All rows are stored in one transaction or none is.\n\nA person's session holding `applicability.approve`. No step-up and no `If-Match`: the\nconfirmation covers the rows as the dialog showed them. At most `REGISTER_BULK_MAX` rows,\n100 by default; to decide everything a legal entity is offered, however many, with one\nanswer and one reason, use `POST /applicability/decide-all`. Records one audit event per\nrow naming the person, the value before and after, and the reason.\n\nErrors: `not_found` (404) when any row names an obligation, entity or unit the bank\ncannot see, or a legal entity its obligation does not span; `validation_error` (422) for\nan empty list, a list over the cap, the same target twice or a row the schema refuses;\n`scope_not_applicable` (422) for a unit whose legal entity no longer follows the\nstandard.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
         "operationId": "setApplicabilityMany",
         "parameters": [],
         "requestBody": {
@@ -42543,7 +42875,7 @@
     },
     "/api/v1/applicability/companies": {
       "get": {
-        "description": "Every active legal entity of the bank, by name, with how many obligations the register\noffers for it and how its answers to \"Does it apply to us?\" stand: how many apply, how many\ndo not, and how many nobody has answered. Call it to open the \"What applies\" page, then\nread one company's regulations and obligations with its id.\n\nAn obligation is offered for a legal entity when it is in the bank's working inventory,\nthe rows `GET /obligations` lists by default, and it spans the entity: it is scoped to\nthe entity's type or to no type, and an approved regulatory scope request has not taken\nevery term it carries in some dimension out of the entity's own scope. These are the\nentities `GET /obligations/{obligationId}/register/entities` names. Being offered\ndecides nothing, and nothing here suggests an answer: a person answers each obligation.\nThe answer counted for an entity is its own where the obligation spans two or more of\nthe bank's legal entities, and the obligation's own where it spans fewer, as the\nobligation page asks it.\n\nA person's session holding `register.read`, which every role of a bank carries. A read: it\nwrites nothing and no audit event. The list is the bank's legal entities, a handful, so it\nis not paged. A bank with no active legal entity gets an empty list with 200.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.",
+        "description": "Every active legal entity of the bank, by name, with how many obligations the register\noffers for it and how its answers to \"Does it apply to us?\" stand: how many apply, how many\ndo not, how many are under assessment and, of those, how many nobody has answered at all\n(`toDecide`, what `POST /applicability/decide-all` would decide for the entity). Call it to\nopen the \"What applies\" page, then read one company's regulations and obligations with its\nid.\n\nAn obligation is offered for a legal entity when it is in the bank's working inventory,\nthe rows `GET /obligations` lists by default, and it spans the entity: it is scoped to\nthe entity's type or to no type, and an approved regulatory scope request has not taken\nevery term it carries in some dimension out of the entity's own scope. These are the\nentities `GET /obligations/{obligationId}/register/entities` names. Being offered\ndecides nothing, and nothing here suggests an answer: a person answers each obligation.\nThe answer counted for an entity is its own where the obligation spans two or more of\nthe bank's legal entities, and the obligation's own where it spans fewer, as the\nobligation page asks it.\n\nA person's session holding `register.read`, which every role of a bank carries. A read: it\nwrites nothing and no audit event. The list is the bank's legal entities, a handful, so it\nis not paged. A bank with no active legal entity gets an empty list with 200.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.",
         "operationId": "listApplicabilityCompanies",
         "parameters": [],
         "responses": {
@@ -42585,9 +42917,73 @@
         ]
       }
     },
+    "/api/v1/applicability/decide-all": {
+      "get": {
+        "description": "The caller's latest Decide all run in this bank as the worker last wrote it: how many\nobligations it lists, how many it has set, left alone and could not set, the first 20\nrefusals with their reasons, and why it stopped if it stopped early. Call it every few\nseconds while `status` is `running`, and on opening the \"What applies\" page to pick up a\nrun started earlier; read the lists again once it has finished. With no run in the last\nday it answers 200 with `status` `idle` and zero counts, never a 404.\n\nA read: it changes nothing and writes no audit row. Each person reads only their own run,\nin the bank they are signed in to, and the reason is never returned. A person's session\nholding `applicability.approve`.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
+        "operationId": "readDecideAllApplicability",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterDecideAll"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Read how far your Decide all run has come",
+        "tags": [
+          "Register"
+        ]
+      },
+      "post": {
+        "description": "Decide all: call it once a person has confirmed, in one dialog, that the obligations\nthe register offers for one legal entity and that nobody has answered apply, or do not:\nall of them, those of one regulation (`instrument`), or the rows they ticked\n(`obligationIds`). One answer and one reason for all, and no limit on how many. The count\nto print on the button is `toDecide` in `GET /applicability/companies` and\n`GET /applicability/regulations`.\n\nIt reads the targets at that moment and answers 202 at once with the run's state. The\nworker then sets each one through the same logic as\n`PUT /obligations/{obligationId}/applicability`, a chunk at a time, each row with its own\naudit event naming the person, the value before and after and the reason, and with its\nrecurring duties scheduled when the answer is `applies`. An obligation a person has\nanswered is never a target, whatever the answer, one a colleague left under assessment\nwith a reason included; one answered between the call and the worker's turn is left alone\nand counted as skipped. An obligation offered after the call waits for the next decision.\nCompliance statuses and gaps are untouched.\n\nIt writes one audit row for the decision itself, on the legal entity: how many obligations\nit lists, the regulation if any, the answer and whether rows were selected, never the\nreason. Read the progress with `GET /applicability/decide-all`. Before each chunk the\nworker checks that the person is still an active member holding `applicability.approve`,\nand otherwise stops and records why.\n\nA person's session holding `applicability.approve`. No step-up and no second approver\n(D-75): the confirmation covers the run as the dialog showed it. An API key never reaches\nthis route.\n\nErrors to branch on: `decision_running` (409) while the caller's earlier run in this bank\nis still running; `not_found` (404) for an `orgUnitId` that is not one of the bank's active\nlegal entities, another bank's included, or an `obligationIds` entry the register does not\noffer for it, in which case nothing starts; `validation_error` (422) for an answer other\nthan the two, an empty reason or one over 2000 characters, an empty selection, an\nobligation named twice, or more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by\ndefault.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.",
+        "operationId": "decideAllApplicability",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDecideAllBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterDecideAll"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Decide everything still unanswered for one company at once, in the background",
+        "tags": [
+          "Register"
+        ]
+      }
+    },
     "/api/v1/applicability/regulations": {
       "get": {
-        "description": "The regulations with at least one obligation the register offers for one legal entity,\nby the regulation's stable key, each with how the entity's answers stand over its offered\nobligations. `answer` keeps the regulations with an obligation answered that way, and `q`\nthose whose name, short name or official reference holds a phrase, as the instruments\nlist matches it; a regulation kept carries its whole counts either way.\n\n`through` says what brings the regulation into the entity's scope: the regulation's regime,\nand the lines of the entity's own public register entry that give it that regime, such as\nits business or a licence. No line means no register fact gives it, not that it does not\nreach the entity. It is a fact about scope and never an answer.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nPages with `limit` and `offset`, 20 by default and 100 at most; an entity the register\noffers nothing for, or filters matching nothing, is a 200 with an empty page.\n\nErrors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal\nentities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or\none that is not a UUID, an `answer` outside the three values, a `q` longer than 200\ncharacters or holding a NUL character, or a page out of range.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.",
+        "description": "The regulations with at least one obligation the register offers for one legal entity,\nby the regulation's stable key, each with how the entity's answers stand over its offered\nobligations. `state` keeps the regulations with an obligation nobody has answered, or with\none a person has, and `q` those whose name, short name or official reference holds a\nphrase, as the instruments list matches it; a regulation kept carries its whole counts\neither way. Its `toDecide` is how many obligations a Decide all run narrowed to it would\ndecide.\n\n`through` says what brings the regulation into the entity's scope: the regulation's regime,\nand the lines of the entity's own public register entry that give it that regime, such as\nits business or a licence. No line means no register fact gives it, not that it does not\nreach the entity. It is a fact about scope and never an answer.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nPages with `limit` and `offset`, 20 by default and 100 at most; an entity the register\noffers nothing for, or filters matching nothing, is a 200 with an empty page.\n\nErrors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal\nentities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or\none that is not a UUID, a `state` outside its two values, a `q` longer than 200\ncharacters or holding a NUL character, or a page out of range.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.",
         "operationId": "listApplicabilityRegulations",
         "parameters": [
           {
@@ -42643,17 +43039,16 @@
             }
           },
           {
-            "description": "Only the regulations with at least one offered obligation whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. A regulation kept still carries its whole counts. Absent keeps every regulation; any other value is refused with 422 `validation_error`.",
+            "description": "Only the regulations with at least one offered obligation in this state for the entity: `to_decide` for one nobody has answered, `decided` for one a person has answered, whatever the answer. A regulation kept still carries its whole counts. Absent keeps every regulation; any other value is refused with 422 `validation_error`.",
             "in": "query",
-            "name": "answer",
+            "name": "state",
             "required": false,
             "schema": {
               "anyOf": [
                 {
                   "enum": [
-                    "applies",
-                    "not_applicable",
-                    "under_assessment"
+                    "to_decide",
+                    "decided"
                   ],
                   "type": "string"
                 },
@@ -42661,8 +43056,8 @@
                   "type": "null"
                 }
               ],
-              "description": "Only the regulations with at least one offered obligation whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. A regulation kept still carries its whole counts. Absent keeps every regulation; any other value is refused with 422 `validation_error`.",
-              "title": "Answer"
+              "description": "Only the regulations with at least one offered obligation in this state for the entity: `to_decide` for one nobody has answered, `decided` for one a person has answered, whatever the answer. A regulation kept still carries its whole counts. Absent keeps every regulation; any other value is refused with 422 `validation_error`.",
+              "title": "State"
             }
           },
           {
@@ -42710,7 +43105,7 @@
     },
     "/api/v1/applicability/rows": {
       "get": {
-        "description": "The obligations of one regulation the register offers for one legal entity, in the\ninventory's order, each with the answer so far, its reason, who set it and when. Call it\nto list what a person can decide for the company under that regulation.\n\nEach row says what an answer for it must name: `orgUnitId` is the entity where the\nobligation spans two or more of the bank's legal entities, and null, for the obligation as\na whole, where it spans fewer. Send it back with `obligationId` to\n`PUT /obligations/{obligationId}/applicability`, with the row's `version` as `If-Match`,\nor to `POST /applicability` for many rows at once. `matchedTerms` lists which of the\nobligation's own scope terms the entity carries, by its type or its register entry. No\nrow ever carries a suggested answer: whether an obligation applies is a person's decision.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nPages with `limit` and `offset`, 20 by default and 100 at most. A regulation that offers\nthe entity nothing, and a key no regulation the bank can see has, is a 200 with an empty\npage. The reason is tenant content that never leaves the bank.\n\nErrors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal\nentities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or\n`instrument`, an `orgUnitId` that is not a UUID, an `instrument` that is not a stable key\n(letters, digits, hyphens and underscores, at most 120 characters), an `answer` outside\nthe three values or a page out of range.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.",
+        "description": "The obligations of one regulation the register offers for one legal entity, in the\ninventory's order, each with the answer so far, its reason, who set it and when. Call it\nto list what a person can decide for the company under that regulation.\n\nEach row says what an answer for it must name: `orgUnitId` is the entity where the\nobligation spans two or more of the bank's legal entities, and null, for the obligation as\na whole, where it spans fewer. Send it back with `obligationId` to\n`PUT /obligations/{obligationId}/applicability`, with the row's `version` as `If-Match`,\nor to `POST /applicability` for many rows at once. `matchedTerms` lists which of the\nobligation's own scope terms the entity carries, by its type or its register entry. No\nrow ever carries a suggested answer: whether an obligation applies is a person's decision.\n`state` keeps the rows nobody has answered, whose `decidedBy` is null and which\n`POST /applicability/decide-all` would decide, or those a person has answered.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nPages with `limit` and `offset`, 20 by default and 100 at most. A regulation that offers\nthe entity nothing, and a key no regulation the bank can see has, is a 200 with an empty\npage. The reason is tenant content that never leaves the bank.\n\nErrors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal\nentities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or\n`instrument`, an `orgUnitId` that is not a UUID, an `instrument` that is not a stable key\n(letters, digits, hyphens and underscores, at most 120 characters), a `state` outside\nits two values or a page out of range.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.",
         "operationId": "listApplicabilityRows",
         "parameters": [
           {
@@ -42779,17 +43174,16 @@
             }
           },
           {
-            "description": "Only the offered obligations whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. Absent keeps every one; any other value is refused with 422 `validation_error`.",
+            "description": "Only the offered obligations in this state for the entity: `to_decide` for those nobody has answered, whose `decidedBy` is null, and `decided` for those a person has answered, whatever the answer, one left `under_assessment` with a reason included. Absent keeps every one; any other value is refused with 422 `validation_error`.",
             "in": "query",
-            "name": "answer",
+            "name": "state",
             "required": false,
             "schema": {
               "anyOf": [
                 {
                   "enum": [
-                    "applies",
-                    "not_applicable",
-                    "under_assessment"
+                    "to_decide",
+                    "decided"
                   ],
                   "type": "string"
                 },
@@ -42797,8 +43191,8 @@
                   "type": "null"
                 }
               ],
-              "description": "Only the offered obligations whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. Absent keeps every one; any other value is refused with 422 `validation_error`.",
-              "title": "Answer"
+              "description": "Only the offered obligations in this state for the entity: `to_decide` for those nobody has answered, whose `decidedBy` is null, and `decided` for those a person has answered, whatever the answer, one left `under_assessment` with a reason included. Absent keeps every one; any other value is refused with 422 `validation_error`.",
+              "title": "State"
             }
           }
         ],
@@ -52096,7 +52490,7 @@
         ]
       },
       "post": {
-        "description": "Put one change to the shared library into the review queue, where a second and\nindependent reviewer approves, corrects or rejects it; nothing in the library changes\nuntil then. Call it when a run has read new wording for a duty at the authority's own\npage, and when a person asks for a value on a shared list. `kind` says what is asked\nfor: \"new_obligation_version\" (a new summary of one duty in force from a date, with its\nscope terms); \"new_instrument\" (a law, regulation, guideline or standard edition the\nlibrary does not hold yet, with its regime); \"new_obligation\" (a duty the library does\nnot hold yet, under an instrument it does, with its first summary and scope);\n\"new_provision\" (a node of a law's text, with its first verbatim text);\n\"new_provision_version\" (a provision's text in force from a date); \"new_recurring_duty\"\n(a schedule an obligation in force falls due on, as an RFC 5545 rule); \"vocabulary_create\", \"vocabulary_relabel\", \"vocabulary_retire\", \"vocabulary_restore\" or\n\"vocabulary_merge\" (a row of a shared list); or \"term_create\" or \"term_update\" (a\ntaxonomy term).\n\nWho may call it: a bank's member with `proposals.create`, a platform editor with\n`library_vocab.manage`, or an API key with the scope `proposals:write`. A key bound to\nan agent must name, in `agentRunId`, a run that same key has open, so every proposal an\nagent filed can be traced to the model and the night that produced it: naming none, or\na run that is closed, answers `run_not_open` (422). A run named by anybody is checked\nthe same way, so another key's run, and any run a person names, answers `not_found`\n(404) exactly as a run that never existed does. A bank's own key, bound to no agent,\nnames no run.\n\nA new obligation version carries a source for every value it changes, in\n`fieldSources`: a link to the authority's page or a provision of the library, and none\nfor a value it leaves alone. A new instrument or obligation names no `targetType` or\n`targetId`, carries a source for every fact it sets, each an https link since the record\nhas no provision of its own yet, and gives `sourceUrl`, the link the new record keeps\nas its own source. An instrument's `regime` is a term of the regime dimension, written\n`regime:<key>`. A new provision is sourced like a new record, and a provision version\nlike an obligation version. A recurring duty names its obligation as `targetType`\n`obligation` and `targetId`, is sourced like an obligation version, field by field, and\ncarries one RRULE line at a day or coarser without DTSTART, which must fall due at least\nonce and at most `RECURRENCE_MAX_OCCURRENCES` times (120 unless the platform sets another\nnumber) in the next ten years; a key bound to no agent cannot propose one. A standard's text is licensed, so nothing of it enters: no\nprovision under a standard, and only https links as sources on a standard's one\nconformance obligation, which carries exactly one standard term. The proposal is\nlinked to the bank it was filed in, and\nthe platform's reviewers see only that it came from a bank, never who asked. The\nproposal and its audit row are written in one transaction.\n\nSend an `Idempotency-Key`, because an agent retries: the same key with the same body\nanswers **200** with the proposal it already made, and records that the retry\nhappened. An agent retries before it closes the run: once the run is closed, the retry\nanswers `run_not_open` (422) like any other filing against that run. A new proposal\nanswers **201**.\n\nEvery text the proposal arrives with \u2014 its title, the texts of its payload, its field\nsources, its source and its model \u2014 is read by the injection screen and stored exactly as it\narrived. What the screen finds is returned in `riskFlags` and shown in the queue, and\nwhile a flag stands no agent may approve the proposal: a person decides it. A run files\nat most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another\nnumber); a retry of one it filed is not a new proposal and still answers.\n\nErrors to branch on: `run_not_open` (422) when a key bound to an agent names no run or a\nclosed one; `run_budget_exhausted` (422) when the run has already filed as many\nproposals as one run may, so close it and open another; `not_found` (404) when the run\nnamed is not one this key opened; `source_missing` (422) when a changed value carries no\nsource, or a new record no `sourceUrl`; `unknown_key` (422) for a kind, a list, a\nlanguage, a term, a target obligation or provision, an instrument, a parent provision, a\nprovision kind, a level, a jurisdiction, an authority or a duty type the library does\nnot hold; `not_a_regime` (422) when a new instrument's regime is not a term of the\nregime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes an\nobligation with a term of a dimension that mirrors the jurisdiction list;\n`duplicate_key` (409) when a new record's key is already a record's;\n`invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a\nday, never falls due, or falls due more often than the cap in ten years;\n`validation_error` (422) for a body the schema or the kind's payload refuses, a\n`sourceUrl` that is not an https link on any kind, or a summary or text longer than\n`PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);\n`standard_term_only_on_standards` (422) when the scope puts a standard's term on an\nobligation whose instrument is not a standard; `licensed_text` (422) for a provision or\nprovision version under a standard, a source on a standard's obligation that is not an\nhttps link, a standard's new obligation whose `refLabel` is not the standard's official\nreference, or a `sourceLabel` under a standard that is anything but that reference;\n`one_conformance_obligation` (422) for a new obligation under a standard that already\nholds one; `standard_term_required` (422) when a standard's obligation would carry no\nstandard term, or more than one; `idempotency_conflict` (409) when the same proposer's\n`Idempotency-Key` arrives with a different body or from another bank (a key is its\nsender's own: another caller's value files a proposal of its own); `validation_error`\n(422) also for an `Idempotency-Key` longer than 200 characters; `permission_denied`\n(403) without the permission or the scope.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.",
+        "description": "Put one change to the shared library into the review queue, where a second and\nindependent reviewer approves, corrects or rejects it; nothing in the library changes\nuntil then. Call it when a run has read new wording for a duty at the authority's own\npage, and when a person asks for a value on a shared list. `kind` says what is asked\nfor: \"new_obligation_version\" (a new summary of one duty in force from a date, with its\nscope terms); \"new_instrument\" (a law, regulation, guideline or standard edition the\nlibrary does not hold yet, with its regime); \"new_obligation\" (a duty the library does\nnot hold yet, under an instrument it does, with its first summary and scope);\n\"new_provision\" (a node of a law's text, with its first verbatim text);\n\"new_provision_version\" (a provision's text in force from a date); \"new_recurring_duty\"\n(a schedule an obligation in force falls due on, as an RFC 5545 rule); \"vocabulary_create\", \"vocabulary_relabel\", \"vocabulary_retire\", \"vocabulary_restore\" or\n\"vocabulary_merge\" (a row of a shared list); or \"term_create\" or \"term_update\" (a\ntaxonomy term).\n\nWho may call it: a bank's member with `proposals.create`, a platform editor with\n`library_vocab.manage`, or an API key with the scope `proposals:write`. A key bound to\nan agent must name, in `agentRunId`, a run that same key has open, so every proposal an\nagent filed can be traced to the model and the night that produced it: naming none, or\na run that is closed, answers `run_not_open` (422). A run named by anybody is checked\nthe same way, so another key's run, and any run a person names, answers `not_found`\n(404) exactly as a run that never existed does. A bank's own key, bound to no agent,\nnames no run.\n\nA new obligation version carries a source for every value it changes, in\n`fieldSources`: a link to the authority's page or a provision of the library, and none\nfor a value it leaves alone. A new instrument or obligation names no `targetType` or\n`targetId`, carries a source for every fact it sets, each an https link since the record\nhas no provision of its own yet, and gives `sourceUrl`, the link the new record keeps\nas its own source. An instrument's `regime` is a term of the regime dimension, written\n`regime:<key>`. A new provision is sourced like a new record, and a provision version\nlike an obligation version. A provision's text is the law's own words: its\n`originalLanguage` is the language its instrument's jurisdiction writes law in, and the\nobligations it names in `obligations` are tied to it when it is approved. A recurring duty names its obligation as `targetType`\n`obligation` and `targetId`, is sourced like an obligation version, field by field, and\ncarries one RRULE line at a day or coarser without DTSTART, which must fall due at least\nonce and at most `RECURRENCE_MAX_OCCURRENCES` times (120 unless the platform sets another\nnumber) in the next ten years; a key bound to no agent cannot propose one. A standard's text is licensed, so nothing of it enters: no\nprovision under a standard, and only https links as sources on a standard's one\nconformance obligation, which carries exactly one standard term. The proposal is\nlinked to the bank it was filed in, and\nthe platform's reviewers see only that it came from a bank, never who asked. The\nproposal and its audit row are written in one transaction.\n\nSend an `Idempotency-Key`, because an agent retries: the same key with the same body\nanswers **200** with the proposal it already made, and records that the retry\nhappened. An agent retries before it closes the run: once the run is closed, the retry\nanswers `run_not_open` (422) like any other filing against that run. A new proposal\nanswers **201**.\n\nEvery text the proposal arrives with \u2014 its title, the texts of its payload, its field\nsources, its source and its model \u2014 is read by the injection screen and stored exactly as it\narrived. What the screen finds is returned in `riskFlags` and shown in the queue, and\nwhile a flag stands no agent may approve the proposal: a person decides it. A run files\nat most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another\nnumber); a retry of one it filed is not a new proposal and still answers.\n\nErrors to branch on: `run_not_open` (422) when a key bound to an agent names no run or a\nclosed one; `run_budget_exhausted` (422) when the run has already filed as many\nproposals as one run may, so close it and open another; `not_found` (404) when the run\nnamed is not one this key opened; `source_missing` (422) when a changed value carries no\nsource, or a new record no `sourceUrl`; `unknown_key` (422) for a kind, a list, a\nlanguage, a term, a target obligation or provision, an instrument, a parent provision, a\nprovision kind, a level, a jurisdiction, an authority or a duty type the library does\nnot hold, and for an obligation a provision names that is not a shared obligation in\nforce under the same instrument; `not_a_regime` (422) when a new instrument's regime is not a term of the\nregime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes an\nobligation with a term of a dimension that mirrors the jurisdiction list;\n`duplicate_key` (409) when a new record's key is already a record's;\n`invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a\nday, never falls due, or falls due more often than the cap in ten years;\n`validation_error` (422) for a body the schema or the kind's payload refuses, a\n`sourceUrl` that is not an https link on any kind, a summary or text longer than\n`PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number), or a\nprovision whose `originalLanguage` is not the language its jurisdiction writes law in,\nor whose `officialLanguages` name the original or a language it has no text in;\n`standard_term_only_on_standards` (422) when the scope puts a standard's term on an\nobligation whose instrument is not a standard; `licensed_text` (422) for a provision or\nprovision version under a standard, a source on a standard's obligation that is not an\nhttps link, a standard's new obligation whose `refLabel` is not the standard's official\nreference, or a `sourceLabel` under a standard that is anything but that reference;\n`one_conformance_obligation` (422) for a new obligation under a standard that already\nholds one; `standard_term_required` (422) when a standard's obligation would carry no\nstandard term, or more than one; `idempotency_conflict` (409) when the same proposer's\n`Idempotency-Key` arrives with a different body or from another bank (a key is its\nsender's own: another caller's value files a proposal of its own); `validation_error`\n(422) also for an `Idempotency-Key` longer than 200 characters; `permission_denied`\n(403) without the permission or the scope.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.",
         "operationId": "createProposal",
         "parameters": [],
         "requestBody": {
@@ -52280,7 +52674,7 @@
     },
     "/api/v1/proposals/{proposal_id}/approve": {
       "post": {
-        "description": "The only door into the shared library. Call it once a reviewer has read the\nproposal, opened its sources and satisfied themselves that the facts are right; what\nit applies is what every bank on the platform will read as the library's own text.\n\nIn one transaction it applies the payload, writes the new library version, writes the\naudit rows for the library record and for the proposal, and re-indexes the record for\nsearch: all of it commits or none of it does. The reviewer may correct the payload on\nthe way through with `payloadOverrides`, and what they approved is stored beside what\nwas proposed, so the queue and the audit trail keep both. The answer is the proposal\nrow as it now stands, with `status` `approved` and `appliedAt` set.\n\nNeeds the platform permission `proposals.review` from a person, stepped up fresh: the\nassertion id is written on the audit rows the approval leaves. Or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a\nkey holds no passkey assertion, so it is never asked for one, and the audit rows the\napproval leaves carry no assertion id for its decision. Either way the reviewer is\nnever the proposer, the same key, or a key of the same agent definition: the widened\nproposal_four_eyes constraint refuses that row on its own, whichever principal wrote\nit. An agent approves every kind whose record can name the agent that confirmed it: an\nobligation version, a new instrument, a new obligation, a library list row and a\ntaxonomy term (D-79). What it confirmed never reads as a person's check: the record\nnames the confirming agent, a translation it approves stays labelled machine-made,\nand every list or term label it writes is stored machine-made. An agent approves a\nproposal only as it was filed, and only one a platform agent or a platform person filed:\na correction, and a proposal filed from an organisation, wait for a person.\n\nAn agent's approval is a model call, and every model call is logged: a key sends the\ncall behind its approval in `decision` and the open run of its own key it was made in\nin `agentRunId`, and in the same transaction the approval writes one entry of the AI\noutput log under the purpose \"agent_review\", as the agent's own report, while its audit\nrow names the run (D-80). A person sends neither.\n\nErrors to branch on: `permission_denied` without `proposals.review` or\n`proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent\ndefinition; `step_up_required` when a person calls without a fresh passkey assertion;\n`run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;\n`not_found` (404) when that run is one another key opened, or when there is no such\nproposal; `four_eyes_violation` when the reviewer is the person, key or agent who made\nthe proposal, or when a key was created by the person who made the proposal or created\nthe proposing key; `person_review_required` (409) when an agent approves a kind whose\nrecord cannot name its confirming agent (a new provision or a provision's new text), a\nproposal filed from an organisation, or sends `payloadOverrides` or `fieldSources`,\neach of which waits for a person; `risk_flagged` (409) when an agent approves a proposal\nwhose `riskFlags` is not empty, which waits for a person who reads the flag; `invalid_transition` when the proposal was\nalready approved or rejected, which is also what a repeated or simultaneous second call\nanswers, since nothing is ever applied twice, and for a batch, which is decided row by\nrow through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction\nintroduces a field the proposal never sourced, or changes a value without its fresh\nsource in `fieldSources`; `validation_error` when a key sends no\n`decision` or a person sends one or names a run, and when a correction is offered on a\nkind that cannot be corrected or does not fit its payload; `unknown_key` when the\npayload names a row the library does not hold; `not_a_regime` when a new instrument's\nregime is not a term of the regime dimension; `duplicate_key` when a new record's key\nwas taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload\nadds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an\nobligation with one, which a proposal filed before that rule may still ask for;\n`standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,\nputs a standard's term on an obligation whose instrument is not a standard;\n`invalid_recurrence` (422) when a recurring duty's rule, as proposed or as corrected, no\nlonger falls due between once and the cap in the ten years from today.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.",
+        "description": "The only door into the shared library. Call it once a reviewer has read the\nproposal, opened its sources and satisfied themselves that the facts are right; what\nit applies is what every bank on the platform will read as the library's own text.\n\nIn one transaction it applies the payload, writes the new library version, writes the\naudit rows for the library record and for the proposal, and re-indexes the record for\nsearch: all of it commits or none of it does. The reviewer may correct the payload on\nthe way through with `payloadOverrides`, and what they approved is stored beside what\nwas proposed, so the queue and the audit trail keep both. The answer is the proposal\nrow as it now stands, with `status` `approved` and `appliedAt` set.\n\nNeeds the platform permission `proposals.review` from a person, stepped up fresh: the\nassertion id is written on the audit rows the approval leaves. Or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a\nkey holds no passkey assertion, so it is never asked for one, and the audit rows the\napproval leaves carry no assertion id for its decision. Either way the reviewer is\nnever the proposer, the same key, or a key of the same agent definition: the widened\nproposal_four_eyes constraint refuses that row on its own, whichever principal wrote\nit. An agent approves every kind whose record can name the agent that confirmed it: an\nobligation version, a new instrument, a new obligation, a library list row and a\ntaxonomy term (D-79). What it confirmed never reads as a person's check: the record\nnames the confirming agent, a translation it approves stays labelled machine-made,\nand every list or term label it writes is stored machine-made. An agent approves a\nproposal only as it was filed, and only one a platform agent or a platform person filed:\na correction, and a proposal filed from an organisation, wait for a person.\n\nAn agent's approval is a model call, and every model call is logged: a key sends the\ncall behind its approval in `decision` and the open run of its own key it was made in\nin `agentRunId`, and in the same transaction the approval writes one entry of the AI\noutput log under the purpose \"agent_review\", as the agent's own report, while its audit\nrow names the run (D-80). A person sends neither.\n\nErrors to branch on: `permission_denied` without `proposals.review` or\n`proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent\ndefinition; `step_up_required` when a person calls without a fresh passkey assertion;\n`run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;\n`not_found` (404) when that run is one another key opened, or when there is no such\nproposal; `four_eyes_violation` when the reviewer is the person, key or agent who made\nthe proposal, or when a key was created by the person who made the proposal or created\nthe proposing key; `person_review_required` (409) when an agent approves a kind whose\nrecord cannot name its confirming agent (a new provision or a provision's new text), a\nproposal filed from an organisation, or sends `payloadOverrides` or `fieldSources`,\neach of which waits for a person; `risk_flagged` (409) when an agent approves a proposal\nwhose `riskFlags` is not empty, which waits for a person who reads the flag; `invalid_transition` when the proposal was\nalready approved or rejected, which is also what a repeated or simultaneous second call\nanswers, since nothing is ever applied twice, and for a batch, which is decided row by\nrow through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction\nintroduces a field the proposal never sourced, or changes a value without its fresh\nsource in `fieldSources`; `validation_error` when a key sends no\n`decision` or a person sends one or names a run, when a correction is offered on a\nkind that cannot be corrected or does not fit its payload, and when a provision's\n`originalLanguage`, as corrected or as filed before that rule, is not the language its\njurisdiction writes law in; `unknown_key` when the\npayload names a row the library does not hold, an obligation a provision names that is\nno longer a shared obligation in force under its instrument included; `not_a_regime` when a new instrument's\nregime is not a term of the regime dimension; `duplicate_key` when a new record's key\nwas taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload\nadds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an\nobligation with one, which a proposal filed before that rule may still ask for;\n`standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,\nputs a standard's term on an obligation whose instrument is not a standard;\n`invalid_recurrence` (422) when a recurring duty's rule, as proposed or as corrected, no\nlonger falls due between once and the cap in the ten years from today.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.",
         "operationId": "approveProposal",
         "parameters": [
           {

@@ -103,8 +103,8 @@ const rollup: RegisterInstrumentApplicability = {
     { status: { key: 'gap', kind: 'gap', label: 'Gap' }, count: 1 },
   ],
   companies: [
-    { orgUnit: { id: 'ou-1', name: 'Example Bank AB' }, offered: 12, applies: 8, notApplicable: 1, underAssessment: 3 },
-    { orgUnit: { id: 'ou-2', name: 'Example Fonder AB' }, offered: 12, applies: 0, notApplicable: 0, underAssessment: 12 },
+    { orgUnit: { id: 'ou-1', name: 'Example Bank AB' }, offered: 12, applies: 8, notApplicable: 1, underAssessment: 3, toDecide: 2 },
+    { orgUnit: { id: 'ou-2', name: 'Example Fonder AB' }, offered: 12, applies: 0, notApplicable: 0, underAssessment: 12, toDecide: 12 },
   ],
 };
 
@@ -573,8 +573,8 @@ describe('InstrumentScreen', () => {
       const byCompany = panel().querySelector('[data-by-company]') as HTMLElement;
       fireEvent.click(within(byCompany).getByRole('button', { name: 'By company' }));
       const bank = byCompany.querySelector('[data-company="ou-1"]') as HTMLElement;
-      expect(bank).toHaveTextContent('Example Bank AB8 apply · 1 does not · 3 to decide');
-      expect(within(bank).getByRole('link', { name: 'Decide 3' })).toHaveAttribute('href', '/applies?company=ou-1&instrument=fffs-2017-2');
+      expect(bank).toHaveTextContent('Example Bank AB8 apply · 1 does not · 2 to decide');
+      expect(within(bank).getByRole('link', { name: 'Decide 2' })).toHaveAttribute('href', '/applies?company=ou-1&instrument=fffs-2017-2');
       const funds = byCompany.querySelector('[data-company="ou-2"]') as HTMLElement;
       expect(within(funds).getByRole('link', { name: 'Decide 12' })).toHaveAttribute('href', '/applies?company=ou-2&instrument=fffs-2017-2');
     });

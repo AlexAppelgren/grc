@@ -202,12 +202,12 @@ function Rollup({ rollup, answer, onAnswer, stableKey }: { rollup: RegisterInstr
                 <span className="flex flex-wrap gap-x-2">
                   <span className="font-medium text-fg">{company.orgUnit.name}</span>
                   <span className="text-muted">
-                    {t('inventory.instrument.companyCounts', { applies: company.applies, notApplicable: company.notApplicable, underAssessment: company.underAssessment })}
+                    {t('inventory.instrument.companyCounts', { applies: company.applies, notApplicable: company.notApplicable, toDecide: company.toDecide })}
                   </span>
                 </span>
-                {company.underAssessment === 0 ? null : (
+                {company.toDecide === 0 ? null : (
                   <Link href={`/applies?${new URLSearchParams({ company: company.orgUnit.id, instrument: stableKey }).toString()}`} prefetch={false} className="ml-auto underline">
-                    {t('inventory.instrument.decide', { count: company.underAssessment })}
+                    {t('inventory.instrument.decide', { count: company.toDecide })}
                   </Link>
                 )}
               </div>
