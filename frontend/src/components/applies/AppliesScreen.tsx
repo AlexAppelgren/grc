@@ -561,7 +561,7 @@ function RowLine({ row, regulation, canApprove, ticked, onTick }: { row: Applica
         <span aria-hidden="true" className="size-5 shrink-0" />
       )}
       <div className="grid min-w-0 flex-1 gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="grid min-w-0 gap-x-2.5 sm:grid-cols-[7rem_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-x-2.5 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <span className="font-mono text-meta text-muted">{row.refLabel}</span>
           <Link id={titleId} href={`/inventory/obligations/${row.obligationId}`} prefetch={false} className="underline">
             {row.title === '' ? row.refLabel : row.title}

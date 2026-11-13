@@ -22,6 +22,8 @@ const ICONS: Record<string, readonly string[]> = {
   roadmap: ['M4 6h16v14H4z', 'M4 10h16', 'M8 3v4M16 3v4'],
   // c8-ui-gaps-risk: where the bank falls short, a warning triangle.
   gaps: ['M12 4l9 16H3z', 'M12 10v4', 'M12 17h.01'],
+  // What applies: a rule's page with a tick, what a company's licences bring in and the answer to each.
+  applies: ['M7 3.5h7l4 4v13H7z', 'M14 3.5v4h4', 'M9.5 14l2 2 3.5-4'],
   'my-work': ['M9 6h11M9 12h11M9 18h11', 'M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2'],
   admin: ['M4 7h9M17 7h3M4 17h3M11 17h9', 'M15 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M9 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
   'console-queue': ['M4 13l2-8h12l2 8v6H4z', 'M4 13h5l1 2h4l1-2h5'],

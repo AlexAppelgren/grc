@@ -766,6 +766,8 @@ describe('the console surface and the helpers', () => {
     };
     const dot = paths('no-such-destination');
     expect(paths('console-tenants')).not.toEqual(dot);
+    // What applies sits in the main menu, so it has a drawing of its own like its neighbours.
+    expect(paths('applies')).not.toEqual(dot);
     // A bank's problem report stays inside the bank (D-50): the console has no surface for one.
     expect(paths('console-problem-reports')).toEqual(dot);
   });
