@@ -269,8 +269,9 @@ class ProposalProvisionPayload(WriteBody):
     itself published, such as the Swedish text of a Finnish act: each is stored neither as
     the original nor as machine-made, and only a language the authority publishes in beside
     the original may be named (Swedish beside Finnish), else 422 `validation_error`; at most
-    four language keys of at most 8 characters each. `isMachine` says every remaining text is
-    a machine translation (INV-05); a text stored machine-made stays so whoever approves.
+    four language keys of at most 8 characters each. Every remaining text is stored as a
+    machine translation (INV-05, D-142), whatever `isMachine` says and whoever approves: a
+    translation of law is never stored unmarked, where it would read as the authority's own.
 
     `key`, when it holds a slash, starts with the instrument's own key, else 422
     `validation_error`.
@@ -868,7 +869,8 @@ class ProposalDetail(ProposalQueueRow):
         description=(
             "For a `new_obligation`, the short name of the shared instrument the duty would sit under, the one "
             "`payload.instrument` names by its stable key, as the library holds it now, for example \"MAR\". "
-            "For a `new_instrument_summary`, the instrument the summary describes, and for `new_translations` the "
+            "For a `new_instrument_summary`, the instrument the summary describes, for a `new_provision` the "
+            "instrument whose text the provision is part of, and for `new_translations` the "
             "instrument translated, or the one the translated obligation sits under. "
             "Empty for every other kind, and empty when the shared library holds no instrument under that key, "
             "in which case approving the proposal answers 422 `unknown_key` and writes nothing."
@@ -1445,8 +1447,9 @@ class ProposalCreateBody(WriteBody):
             "original, a language with no text, or a language the authority does not publish in beside "
             "the original (today only Swedish beside a Finnish original may be named) answers 422 "
             "`validation_error`), `isMachine` "
-            "(true when every remaining text is a machine translation, which then stays labelled so whoever "
-            "approves), `obligations` (the stable keys of the obligations that cite the provision, each at "
+            "(true when the provision holds a translation; every text that is neither the original nor one "
+            "of `officialLanguages` is stored and labelled as a machine translation whatever this says and "
+            "whoever approves), `obligations` (the stable keys of the obligations that cite the provision, each at "
             f"most 120 characters, at most {settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS} counted as the list "
             "is sent, a key sent twice being kept once, every one a shared obligation "
             "in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to "

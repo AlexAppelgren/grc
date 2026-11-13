@@ -942,6 +942,20 @@ class TheLawsOwnWords(KindsTestCase):
         self.assertEqual(Proposal.objects.count(), 1)
         self.assertFalse(Provision.objects.exists(), "nothing is written over a correction that names one")
 
+    def test_a_translation_of_law_is_stored_machine_made_whatever_the_payload_says(self) -> None:
+        """Review 2026-11-13: a person approving a provision whose payload did not say
+        `isMachine` stored its English unmarked, and the regulation page then called it the
+        authority's official text (D-142)."""
+        proposal = self._filed(provision_body(isMachine=False))
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        self.assertEqual(self._flags(PROVISION_KEY), {"sv": (True, False), "en": (False, True)})
+        # A new text of the same provision is held to it too.
+        provision = Provision.objects.get(stable_key=PROVISION_KEY)
+        version = self._filed(self._version_body(provision, texts={"sv": SWEDISH, "en": ENGLISH}, isMachine=False, effectiveFrom="2028-01-01"))
+        self.assertEqual(self._approve(version["id"]).status_code, 200)
+        latest = ProvisionVersion.objects.get(provision=provision, version_number=2)
+        self.assertEqual({row.language_id: (row.is_original, row.is_machine) for row in ProvisionText.objects.filter(version=latest)}, {"sv": (True, False), "en": (False, True)})
+
     def test_the_lists_are_bounded_at_the_door(self) -> None:
         cases: tuple[tuple[str, dict[str, Any]], ...] = (
             ("an obligation key longer than a key", {"obligations": ["o" * 121]}),

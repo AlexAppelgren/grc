@@ -44,6 +44,7 @@
   "console.queue.filter.kindObligationVersion": "New version",
   "console.queue.filter.kindNewInstrument": "New regulation",
   "console.queue.filter.kindNewObligation": "New obligation",
+  "console.queue.filter.kindNewProvision": "New provision",
   "console.queue.filter.kindNewTranslations": "New translations",
   "console.queue.filter.kindVocabulary": "Vocabulary",
   "console.queue.filter.origin": "Proposed by",

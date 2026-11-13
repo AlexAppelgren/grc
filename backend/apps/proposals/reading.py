@@ -36,6 +36,7 @@ from apps.proposals.schemas import (
     ProposalInstrumentSummaryPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
+    ProposalProvisionPayload,
     ProposalQueueRow,
     ProposalSource,
     ProposalTarget,
@@ -50,6 +51,8 @@ from apps.taxonomy.registry import REGISTRY
 # The audit action the approval of an obligation version writes, whose `before.terms` is
 # the scope that approval found (apps/proposals/apply.py `_obligation_version`).
 VERSION_APPLIED = "obligation.version_applied"
+# The new records that sit under a shared instrument, which the detail names by its short name.
+NAMES_ITS_INSTRUMENT = (ProposalObligationPayload, ProposalInstrumentSummaryPayload, ProposalProvisionPayload)
 
 
 def _is_mine(proposal: Proposal, reviewer: Reviewer) -> bool:
@@ -186,12 +189,13 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
         return _translations_detail(proposal, payload, row, order)
     if not isinstance(payload, ProposalObligationVersionPayload) or proposal.target_id is None:
         # No wording to compare: a list row is a person's wording and a new record replaces
-        # nothing. Its sources are still checked, and a new duty names its instrument.
+        # nothing. Its sources are still checked, and a new duty, summary or provision names
+        # the instrument it would sit under.
         return ProposalDetail(
             **dict(row),
             sources=_sources(proposal),
             rejection_reason=_rejection_reason(proposal, order),
-            instrument_short_name=shared_instrument_short_name(payload.instrument) if isinstance(payload, ProposalObligationPayload | ProposalInstrumentSummaryPayload) else "",
+            instrument_short_name=shared_instrument_short_name(payload.instrument) if isinstance(payload, NAMES_ITS_INSTRUMENT) else "",
         )
     language = payload.original_language
     applied = _applied(proposal)

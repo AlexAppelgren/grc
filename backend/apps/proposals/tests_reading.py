@@ -518,6 +518,25 @@ class QueueReads(ScenarioTestCase):
         body = self.client.get(f"{V1}/proposals/{proposal.id}", **sign_in(self.editor)).json()
         self.assertEqual(body["instrumentShortName"], "FFFS 2017:2")
         self.assertEqual(body["payload"]["instrument"], "fffs-2017-2")
+        # The words of the law name the regulation they are part of the same way.
+        text = {
+            "key": "fffs-2017-2/009-006",
+            "instrument": self.instrument.stable_key,
+            "provisionKind": "section",
+            "refLabel": "9 kap. 6 §",
+            "texts": {"sv": "Ett värdepappersinstitut ska inhämta uppgifter om kunden."},
+            "originalLanguage": "sv",
+        }
+        provision, _ = logic.create(
+            kind="new_provision",
+            title="Add the text of 9 kap. 6 §, FFFS 2017:2",
+            payload=text,
+            proposer=self._editor_proposer(self.second_editor),
+            field_sources={field: SOURCE for field in ("instrument", "provisionKind", "refLabel", "texts.sv")},
+            source_label="Finansinspektionen, FFFS 2017:2, 9 kap. 6 §",
+            source_url=SOURCE,
+        )
+        self.assertEqual(self.client.get(f"{V1}/proposals/{provision.id}", **sign_in(self.editor)).json()["instrumentShortName"], "FFFS 2017:2")
         # Neither a key the shared library does not hold nor a bank's own record answers.
         tenancy.activate(self.tenant.id)
         library_build.instrument(key="bank-own-act", regime="regime:securities", owner_tenant=self.tenant)

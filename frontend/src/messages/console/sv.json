@@ -44,6 +44,7 @@
   "console.queue.filter.kindObligationVersion": "Ny version",
   "console.queue.filter.kindNewInstrument": "Ny rättsakt",
   "console.queue.filter.kindNewObligation": "Ny skyldighet",
+  "console.queue.filter.kindNewProvision": "Ny bestämmelse",
   "console.queue.filter.kindNewTranslations": "Nya översättningar",
   "console.queue.filter.kindVocabulary": "Vokabulär",
   "console.queue.filter.origin": "Föreslaget av",

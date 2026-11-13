@@ -701,16 +701,16 @@ def _obligation_scope(
 
 
 # --- Provisions (INV-02, INV-08, PRO-02) ---
-def _provision_texts(
-    version: ProvisionVersion, payload: ProposalProvisionPayload | ProposalProvisionVersionPayload, reviewer: Reviewer
-) -> None:
-    """One row per language (INV-05): the original, the other languages the authority itself
-    published, which are neither the original nor machine-made, and every remaining text as
-    `_texts` marks it."""
+def _provision_texts(version: ProvisionVersion, payload: ProposalProvisionPayload | ProposalProvisionVersionPayload) -> None:
+    """One row per language (INV-05, D-142): the original, the other languages the authority
+    itself published, which are neither the original nor machine-made, and every remaining
+    text a machine translation, whatever the payload says and whoever approves it. A
+    translation of law is never stored unmarked, or it would read as the authority's own."""
     official = set(payload.official_languages or [])
-    for language, text, is_original, is_machine in _texts(payload.texts, payload.original_language, payload.is_machine, reviewer):
+    for language, text in payload.texts.items():
+        is_original = language == payload.original_language
         ProvisionText.objects.create(
-            version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine and language not in official
+            version=version, language_id=language, text=text, is_original=is_original, is_machine=not is_original and language not in official
         )
 
 
@@ -757,7 +757,7 @@ def _new_provision(
         effective_from_precision=payload.effective_from_precision,
         applied_by_proposal=proposal,
     )
-    _provision_texts(version, payload, reviewer)
+    _provision_texts(version, payload)
     cited = _cite(provision, obligations)
     reindex_provision(provision.id)
     record(
@@ -806,7 +806,7 @@ def _provision_version(
         effective_from_precision=payload.effective_from_precision,
         applied_by_proposal=proposal,
     )
-    _provision_texts(version, payload, reviewer)
+    _provision_texts(version, payload)
     cited = _cite(provision, obligations)
     reindex_provision(provision.id)
     record(

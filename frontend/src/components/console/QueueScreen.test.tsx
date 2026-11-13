@@ -205,6 +205,10 @@ describe('the console queue', () => {
     expect(nav.replace).toHaveBeenLastCalledWith('/console/queue?kind=new_obligation');
     fireEvent.change(kind, { target: { value: 'obligation' } });
     expect(nav.replace).toHaveBeenLastCalledWith('/console/queue?kind=obligation');
+    // The law's own words arrive by the thousand too, and are approved as a kind of their own.
+    expect(within(kind).getByRole('option', { name: 'New provision' })).toHaveValue('new_provision');
+    fireEvent.change(kind, { target: { value: 'new_provision' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/console/queue?kind=new_provision');
 
     nav.search = 'kind=new_obligation';
     const duties = serve([]);
