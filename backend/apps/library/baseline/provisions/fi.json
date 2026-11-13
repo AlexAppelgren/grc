@@ -6525,7 +6525,8 @@
         "sv"
       ],
       "obligations": [
-        "obl-fi-rpl-suspicious-transaction-report"
+        "obl-fi-rpl-suspicious-transaction-report",
+        "obl-fi-rpl-suspend-transaction"
       ],
       "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_4__sec_1",
       "sourceLabel": "Finlex, 444/2017, 4 luku 1 §, consolidated text fin@20260818 of 2026-09-04, Swedish swe@20260818. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
