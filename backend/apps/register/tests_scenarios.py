@@ -846,3 +846,83 @@ class RegisterScenarioTests(TestCase):
         b = Bank("reg-s18-b")
         tenancy.activate(b.tenant.id)
         self.assertEqual({entity.name for entity in entities_spanned([payments_only.id])[payments_only.id]}, everyone)
+
+    def test_reg_s19(self) -> None:
+        """REG-S19
+
+        What applies lists, per company, the obligations its licences leave in span, with the
+        answer so far (REG-01, FP-05).
+        Operations: `listApplicabilityCompanies`, `listApplicabilityRegulations`,
+        `listApplicabilityRows`, `getInstrumentApplicability`.
+        """
+        seed_library()
+        a = Bank("reg-s19")
+        approver = factories.member(a.tenant, roles=("approver",)).user
+        securities_law = library_build.instrument(key="s19-lvm", short_name="LVM", regime="regime:securities")
+        payments_law = library_build.instrument(key="s19-lob", short_name="LOB", regime="regime:payments")
+        shared = library_build.obligation(securities_law, key="s19-lvm-1", ref_label="1 §", terms=("legal_entity:bank", "legal_entity:fund_company"))
+        banks_alone = library_build.obligation(securities_law, key="s19-lvm-2", ref_label="2 §", terms=("legal_entity:bank",))
+        library_build.obligation(payments_law, key="s19-lob-1", ref_label="1 §")
+        officer = sign_in(a.officer, tenant=a.tenant)
+        created = self.client.post(
+            "/api/v1/tenant/footprint/requests",
+            data={"entityExclusions": [{"orgUnitId": str(a.fonder.id), "dimension": "regime", "key": "payments"}]},
+            content_type="application/json",
+            **officer,
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self.client.post(
+            f"/api/v1/tenant/footprint/requests/{created.json()['id']}/approve",
+            data={},
+            content_type="application/json",
+            **sign_in(approver, tenant=a.tenant, step_up=True),
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        bank, fonder = str(a.bank_ab.id), str(a.fonder.id)
+        for duty, body in (
+            (shared, {"orgUnitId": bank, "applicability": "applies", "reason": "Holds client assets"}),
+            (banks_alone, {"applicability": "not_applicable", "reason": "No large exposures"}),
+        ):
+            answered = self.client.put(f"/api/v1/obligations/{duty.id}/applicability", data=body, content_type="application/json", **officer)
+            self.assertEqual(answered.status_code, 200, answered.content)
+
+        def stored() -> tuple[int, int, int]:
+            tenancy.activate(a.tenant.id)
+            return TenantObligation.objects.count(), TenantObligationScope.objects.count(), AuditEvent.objects.filter(action__startswith="register.").count()
+
+        before = stored()
+        member = sign_in(a.owner, tenant=a.tenant)
+
+        def read(path: str, **params: str) -> Any:
+            response = self.client.get(f"/api/v1{path}", params, **member)
+            self.assertEqual(response.status_code, 200, response.content)
+            return response.json()
+
+        # Each company with what the register offers for it and how its answers stand.
+        self.assertEqual(
+            [(row["orgUnit"]["name"], row["offered"], row["applies"], row["notApplicable"], row["underAssessment"]) for row in read("/applicability/companies")],
+            [("Example Bank AB", 3, 1, 1, 1), ("Example Fonder AB", 1, 0, 0, 1), ("Example Liv Försäkring AB", 1, 0, 0, 1)],
+        )
+        # Payments is outside the fund company's own scope, so its regulation is not listed for it.
+        regulations = {entity: [row["instrument"]["key"] for row in read("/applicability/regulations", orgUnitId=entity)["items"]] for entity in (bank, fonder)}
+        self.assertEqual(regulations, {bank: ["s19-lob", "s19-lvm"], fonder: ["s19-lvm"]})
+        rows = {entity: read("/applicability/rows", orgUnitId=entity, instrument="s19-lvm")["items"] for entity in (bank, fonder)}
+        self.assertEqual(
+            [(row["obligationId"], row["orgUnitId"], row["applicability"], row["reason"], row["version"]) for row in rows[bank]],
+            [(str(shared.id), bank, "applies", "Holds client assets", 1), (str(banks_alone.id), None, "not_applicable", "No large exposures", 2)],
+        )
+        self.assertEqual(
+            [(row["obligationId"], row["orgUnitId"], row["applicability"], row["reason"], row["version"]) for row in rows[fonder]],
+            [(str(shared.id), fonder, "under_assessment", None, 0)],
+        )
+        # Never a suggested answer: a row is the answer so far and what an answer must name.
+        self.assertEqual(
+            set(rows[bank][0]), {"obligationId", "refLabel", "title", "orgUnitId", "applicability", "reason", "decidedAt", "decidedBy", "version", "matchedTerms"}
+        )
+        rolled = read(f"/instruments/{securities_law.id}/applicability")
+        self.assertEqual((rolled["inScope"], rolled["applies"], rolled["notApplicable"], rolled["underAssessment"]), (2, 1, 1, 0))
+        for answer, count in (("applies", "applies"), ("not_applicable", "notApplicable"), ("under_assessment", "underAssessment")):
+            self.assertEqual(rolled[count], read("/obligations", instrument="s19-lvm", applicability=answer)["total"], answer)
+        self.assertEqual(sum(row["count"] for row in rolled["statuses"]), rolled["applies"])
+        self.assertEqual([row["orgUnit"]["name"] for row in rolled["companies"]], ["Example Bank AB", "Example Fonder AB"])
+        self.assertEqual(stored(), before, "a read stores nothing and writes no audit event")

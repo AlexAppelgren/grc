@@ -372,3 +372,24 @@ Then an obligation tagged only payments spans Example Bank AB and not Example Fo
 And an obligation tagged payments and securities spans both
 And an AML obligation spans every entity, and an entity with no exclusions is spanned as before
 ```
+
+### REG-S19 — What applies lists, per company, the obligations its licences leave in span, with the answer so far `@integration` (REG-01, FP-05)
+```gherkin
+Given Example Bank AB, Example Fonder AB and Example Liv Försäkring AB, and payments is outside Example Fonder AB's own scope after an approved request
+And an officer answered "Applies" for Example Bank AB on a duty that spans the bank and the fund company, and "Does not apply" for a duty on banks alone
+When a member reads "What applies"
+Then each company is listed with how many obligations the register offers for it, and how many apply, do not apply and are under assessment
+And the payments regulation is listed for Example Bank AB and not for Example Fonder AB
+And the answered duty reads "Applies" with its reason for Example Bank AB and "Under assessment" for Example Fonder AB, each row naming its company as the target of an answer
+And the duty on banks alone reads "Does not apply" with the obligation as a whole as its target, and is not offered for Example Fonder AB
+And the regulation's roll-up counts what the inventory lists under each answer, and its statuses add up to what applies
+And no row carries a suggested answer, and reading stores nothing and writes no audit event
+```
+`@integration` proves the four reads of `apps/register/company_view.py`: `listApplicabilityCompanies`,
+`listApplicabilityRegulations`, `listApplicabilityRows` and `getInstrumentApplicability`, each a
+person's session holding `register.read`. An obligation is offered for a company when the
+inventory lists it and it spans the company; the target of an answer is the company where the
+obligation spans two or more legal entities and the obligation as a whole where it spans fewer,
+as the obligation page asks; a row nobody answered reads as under assessment at version 0.
+`tests_company_view.py` holds the agreement with the obligation page row by row, the span as
+SQL against `_spans`, the filters, the refusals and the pinned query counts.

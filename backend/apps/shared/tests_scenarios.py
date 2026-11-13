@@ -160,6 +160,8 @@ BOUNDED_BY_DESIGN = {
     "listPeople": "One bank's active members as ids and names, read whole by every people picker (INPUT_DELTAS section 1).",
     # c8-ui-applicability-status (REG-01, D-42).
     "listSpannedEntities": "One bank's active legal entities that an obligation spans: a banking group's handful, read whole by the applicability panel.",
+    # What applies, company by company (REG-01, FP-05, REG-S19).
+    "listApplicabilityCompanies": "One row per active legal entity of the bank with its answer counts: a banking group's handful, read whole by the What applies page.",
 }
 # The walk proves it finds what it is meant to find on a contract with one unpaged list.
 PLANTED_LISTS: dict[str, Any] = {

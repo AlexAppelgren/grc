@@ -86,6 +86,11 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
     # c8-ui-applicability-status: the legal entities an obligation spans (tests_applicability.py).
     ("listSpannedEntities", "get", f"/api/v1/obligations/{OBLIGATION}/register/entities", None, perms.REGISTER_READ, False),
+    # What applies, company by company (tests_company_view.py).
+    ("listApplicabilityCompanies", "get", "/api/v1/applicability/companies", None, perms.REGISTER_READ, False),
+    ("listApplicabilityRegulations", "get", f"/api/v1/applicability/regulations?orgUnitId={ENTITY}", None, perms.REGISTER_READ, False),
+    ("listApplicabilityRows", "get", f"/api/v1/applicability/rows?orgUnitId={ENTITY}&instrument=fffs-2017-2", None, perms.REGISTER_READ, False),
+    ("getInstrumentApplicability", "get", f"/api/v1/instruments/{RECORD}/applicability", None, perms.REGISTER_READ, False),
 ]
 
 
@@ -214,6 +219,11 @@ BUILT = {
     "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
     "listSpannedEntities",  # c8-ui-applicability-status, tests_applicability.py
     "listInternalItems",  # c8-ui-links-history-participants, tests_links.py
+    # What applies, company by company: tests_company_view.py
+    "listApplicabilityCompanies",
+    "listApplicabilityRegulations",
+    "listApplicabilityRows",
+    "getInstrumentApplicability",
 }
 
 

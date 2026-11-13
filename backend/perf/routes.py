@@ -1375,6 +1375,15 @@ ROUTES: list[PerfRoute] = [
         ),
     ),
     PerfRoute("setApplicabilityMany", officer, _answers_at_cap),  # at REGISTER_BULK_MAX
+    # what applies, company by company (REG-01, FP-05), as the reader who opens the page:
+    # the companies, one company's regulations, one regulation's rows and its roll-up. The
+    # first two read the whole working inventory once a request, so their time follows the
+    # library's size as `listObligations` does: on the 1,894 obligations of the library
+    # baseline with six legal entities they took about three quarters of that list's time.
+    PerfRoute("listApplicabilityCompanies", reader),
+    PerfRoute("listApplicabilityRegulations", reader, lambda: Call(query={"orgUnitId": str(_entity().id)})),
+    PerfRoute("listApplicabilityRows", reader, lambda: Call(query={"orgUnitId": str(_entity().id), "instrument": "fffs-2017-2"})),
+    PerfRoute("getInstrumentApplicability", reader, _instrument_call),
     # gaps and risk acceptance
     PerfRoute("listRegisterGaps", officer),
     PerfRoute("listObligationGaps", officer, _on_obligation(GAP_OBLIGATION)),

@@ -1255,8 +1255,7 @@ def instrument_page(
     if query.regime:
         queryset = queryset.filter(regime__key=query.regime)
     if query.q:
-        titled = InstrumentTitle.objects.filter(instrument=OuterRef("pk"), text__icontains=query.q)
-        queryset = queryset.filter(Q(official_ref__icontains=query.q) | Q(short_name__icontains=query.q) | Exists(titled))
+        queryset = instruments_matching(queryset, query.q)
     queryset = confined(in_view(queryset, tenant, query.footprint), reader, instrument_scope_term_ids())
     total = queryset.count()
     page = list(queryset.order_by("stable_key").select_related("level", "authority", "jurisdiction").prefetch_related("titles")[offset : offset + limit])
@@ -1665,3 +1664,11 @@ def recurring_duties(obligation_ids: Collection[uuid.UUID]) -> list[DutyRule]:
     """The active recurring duties of these obligations, in one query, in the library's order."""
     rows = RecurringDuty.objects.filter(obligation_id__in=obligation_ids, status=RecordStatus.ACTIVE.value)
     return [DutyRule(row.id, row.obligation_id, row.title, row.recurrence_rule, row.due_rule_note) for row in rows]
+
+
+def instruments_matching(instruments: _Listed, phrase: str) -> _Listed:
+    """Those of `instruments` whose official reference, short name or a title in any language
+    contains `phrase`, ignoring case: the one `q` of `GET /instruments`, and of every other
+    list that narrows regulations by a phrase (the register's "What applies")."""
+    titled = InstrumentTitle.objects.filter(instrument=OuterRef("pk"), text__icontains=phrase)
+    return instruments.filter(Q(official_ref__icontains=phrase) | Q(short_name__icontains=phrase) | Exists(titled))

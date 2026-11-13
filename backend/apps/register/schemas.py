@@ -23,12 +23,13 @@ import uuid
 from typing import TYPE_CHECKING, Any, Literal
 
 from ninja import Field
-from pydantic import ConfigDict, model_validator
+from pydantic import ConfigDict, field_validator, model_validator
 
 from apps.collab.schemas import CollabCommentPage, CollabParticipantPage
 from apps.governance.schemas import ProblemReportPage
-from apps.shared.schemas import CamelSchema, WriteBody
+from apps.shared.schemas import CamelSchema, LibraryResponse, WriteBody
 from apps.shared.schemas import NamedRef, VocabRef
+from apps.taxonomy.schemas import FootprintTermRef
 
 if TYPE_CHECKING:
     # The watch schemas import the library's, which import these: `RegisterPanels` names the
@@ -1637,3 +1638,361 @@ class RegisterEntryWithPanels(RegisterEntry):
     )
 
     panels: RegisterPanels = Field(description="What the obligation page's panels show on load, each part gated by the permission its own route takes.")
+
+
+# ---------------------------------------------------------------------------------------
+# What applies, company by company (REG-01, FP-05, D-75; company_view.py)
+# ---------------------------------------------------------------------------------------
+# The longest phrase `q` takes, as `GET /instruments?q` does (the library's
+# `MAX_QUERY_LENGTH`, which this module cannot import: the library's schemas import these).
+QUERY_MAX = 200
+# A stable key as the library reads one in an address (its `OBLIGATION_ADDRESS`), and the
+# longest an instrument can carry.
+STABLE_KEY = r"^[A-Za-z0-9_-]+$"
+STABLE_KEY_MAX = 120
+
+_OFFERED_RULE = (
+    "An obligation is offered for a legal entity when it is in the bank's working inventory, "
+    "the rows `GET /obligations` lists by default, and it spans the entity: the obligation is "
+    "scoped to the entity's type or to no type at all, and in every dimension it carries terms "
+    "in, at least one is still inside the entity's own scope, which an approved regulatory scope "
+    "request may have narrowed. Being offered decides nothing: a person answers each one."
+)
+_ANSWER_READ = (
+    "The answer read for the entity is its own row where the obligation spans two or more of the "
+    "bank's legal entities, and the obligation's own answer where it spans fewer, which is how "
+    "the obligation page asks and stores it."
+)
+_COMPANY_EXAMPLE: dict[str, Any] = {
+    "orgUnit": {"id": "55555555-5555-4555-8555-555555555555", "name": "Example Bank AB"},
+    "offered": 14,
+    "applies": 9,
+    "notApplicable": 2,
+    "underAssessment": 3,
+}
+_REGULATION_EXAMPLE: dict[str, Any] = {
+    "instrument": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "key": "fffs-2017-2",
+        "shortName": "FFFS 2017:2",
+        "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+    },
+    "offered": 4,
+    "applies": 2,
+    "notApplicable": 1,
+    "underAssessment": 1,
+    "through": {
+        "term": {"key": "securities", "kind": None, "label": "Securities", "dimension": "regime"},
+        "lines": ["Värdepappersbolag"],
+    },
+}
+_ANSWER_EXAMPLE: dict[str, Any] = {
+    "obligationId": "44444444-4444-4444-8444-444444444444",
+    "refLabel": "9 kap. 6 §",
+    "title": "Keep client assets apart from the firm's own",
+    "orgUnitId": "55555555-5555-4555-8555-555555555555",
+    "applicability": "applies",
+    "reason": "Holds client assets under the securities licence",
+    "decidedAt": "2026-09-14T08:30:00Z",
+    "decidedBy": _PERSON_EXAMPLE,
+    "version": 2,
+    "matchedTerms": [{"key": "custody", "kind": None, "label": "Custody", "dimension": "service_type"}],
+}
+
+
+class RegisterAnswerCounts(LibraryResponse):
+    """How the answers to "Does it apply to us?" stand for one legal entity over the
+    obligations the register offers for it. Counted by the server on every read; none of the
+    four is stored, and none says whether the bank complies."""
+
+    offered: int = Field(
+        description=(
+            f"How many obligations the register offers for the legal entity here. {_OFFERED_RULE} "
+            "Always the sum of the three counts beside it."
+        )
+    )
+    applies: int = Field(
+        description=(
+            f"How many of the offered obligations a person answered `applies` for the legal entity. {_ANSWER_READ} "
+            "It says nothing about whether the bank complies, which is the separate compliance status."
+        )
+    )
+    not_applicable: int = Field(
+        description=f"How many of the offered obligations a person answered `not_applicable` for the legal entity, each with its reason. {_ANSWER_READ}"
+    )
+    under_assessment: int = Field(
+        description=(
+            "How many of the offered obligations nobody has answered for the legal entity yet, or a "
+            "person took back to undecided. An obligation with no answer stored at all counts here."
+        )
+    )
+
+
+class RegisterApplicabilityCompany(RegisterAnswerCounts):
+    """One of the bank's active legal entities, with how its answers stand over the
+    obligations the register offers for it (REG-01, FP-05)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_COMPANY_EXAMPLE]})
+
+    org_unit: NamedRef = Field(
+        description=(
+            "The legal entity, by the id and the name of its unit in the bank's organisation. Send "
+            "the id as `orgUnitId` to list the regulations and the obligations offered for it."
+        )
+    )
+
+
+class RegisterApplicabilityInstrument(LibraryResponse):
+    """A regulation as the "What applies" lists name it: enough to print it and to open it."""
+
+    id: uuid.UUID = Field(
+        description="The regulation's id in the library, a UUID: the value `GET /instruments/{instrumentId}` and its `/applicability` roll-up take."
+    )
+    key: str = Field(
+        description="The regulation's stable key, issued once and never changed, such as `fffs-2017-2`. Send it as `instrument` to list its obligations."
+    )
+    short_name: str = Field(
+        description=(
+            "The regulation's short name, to print, as the instruments list gives it: at most three "
+            "words, the compact official reference where the library's own short name is longer."
+        )
+    )
+    jurisdiction: VocabRef = Field(
+        description=(
+            "Where the regulation applies, as a row of the shared library's jurisdiction vocabulary "
+            "(`se`, `dk`, `no`, `fi`, `eu` and `intl` on day one), which a platform admin may extend, "
+            "relabel or retire; read `GET /reference/jurisdictions` for the live set and match on the "
+            "key. A library fact, the same for every bank."
+        )
+    )
+
+
+class RegisterApplicabilityThrough(LibraryResponse):
+    """What brings a regulation into a legal entity's scope: the regulation's regime, and the
+    lines of the entity's own public register entry that give the entity that regime. A fact
+    about scope, never an answer: whether an obligation applies stays a person's decision."""
+
+    term: FootprintTermRef = Field(
+        description=(
+            "The regulation's regime, as a term of the shared library's taxonomy vocabulary with its "
+            "dimension (`regime`), key and label. An administrator may extend the terms through an "
+            "approved proposal, so read `GET /taxonomy/terms` for the live set. Every regulation "
+            "has exactly one regime."
+        )
+    )
+    lines: list[str] = Field(
+        description=(
+            "The lines of this legal entity's public register entry that give it that regime, in the "
+            "register's own words and order: a business name such as `Bankaktiebolag`, or a licence "
+            "with its legal basis. Public register data, read from the supervisor and never typed by "
+            "the bank. Empty when the entity has no register facts or its facts do not give it the "
+            "regime: the regulation is then offered because nothing has taken the regime out of the "
+            "entity's own scope, not because a licence names it."
+        )
+    )
+
+
+class RegisterApplicabilityRegulation(RegisterAnswerCounts):
+    """A regulation with at least one obligation the register offers for one legal entity,
+    with how the entity's answers stand over those obligations."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_REGULATION_EXAMPLE]})
+
+    instrument: RegisterApplicabilityInstrument = Field(description="The regulation, a shared library fact: its id, stable key, short name and jurisdiction.")
+    through: RegisterApplicabilityThrough = Field(
+        description="The regulation's regime and the lines of the entity's register entry that give the entity that regime, empty when none does."
+    )
+
+
+class RegisterApplicabilityRegulationPage(LibraryResponse):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_REGULATION_EXAMPLE], "total": 1}]})
+
+    items: list[RegisterApplicabilityRegulation] = Field(description="The regulations on this page, by the regulation's stable key.")
+    total: int = Field(description="How many regulations match in total, not how many are on this page; use it to size a pager.")
+
+
+_COMPANY_ID = (
+    "The legal entity to read for, by its UUID from `GET /applicability/companies`. Required. An "
+    "id that is not one of the bank's active legal entities, another bank's included, answers "
+    "404 `not_found`."
+)
+
+
+class RegisterApplicabilityRegulationQuery(CamelSchema):
+    """The company and the filters of `GET /applicability/regulations`."""
+
+    org_unit_id: uuid.UUID = Field(description=_COMPANY_ID)
+    answer: Applicability | None = Field(
+        default=None,
+        description=(
+            "Only the regulations with at least one offered obligation whose answer for the entity "
+            "is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody "
+            "answered is too. A regulation kept still carries its whole counts. Absent keeps every "
+            "regulation; any other value is refused with 422 `validation_error`."
+        ),
+    )
+    q: str | None = Field(
+        default=None,
+        max_length=QUERY_MAX,
+        description=(
+            "Only the regulations whose name, short name or official reference contains these words, "
+            f"ignoring case, exactly as `GET /instruments?q` matches. At most {QUERY_MAX} characters; "
+            "a longer one, or one holding a NUL character, is refused with 422 `validation_error`."
+        ),
+    )
+
+    @field_validator("q")
+    @classmethod
+    def _no_nul(cls, phrase: str | None) -> str | None:
+        # PostgreSQL refuses a NUL in a text parameter, which would answer 500 (as H39 found for bodies).
+        if phrase is not None and "\x00" in phrase:
+            raise ValueError("q cannot contain a NUL character.")
+        return phrase
+
+
+class RegisterApplicabilityAnswer(LibraryResponse):
+    """One obligation the register offers for one legal entity, with the answer so far and what
+    to send to answer it. It never carries a suggested answer: whether the obligation applies
+    is a person's decision, stored through `PUT /obligations/{obligationId}/applicability` or
+    `POST /applicability`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_ANSWER_EXAMPLE]})
+
+    obligation_id: uuid.UUID = Field(description=f"{_OBLIGATION_ID} Send it as `obligationId` when answering.")
+    ref_label: str = Field(description="Where in its regulation the obligation sits, as the regulation numbers it, such as `9 kap. 6 §`. A library fact.")
+    title: str = Field(description="The obligation's title in the reader's language, from the shared library; empty when the library holds none.")
+    org_unit_id: uuid.UUID | None = Field(
+        description=(
+            "What an answer for this row must name as `orgUnitId`: the legal entity's UUID where the "
+            "obligation spans two or more of the bank's legal entities, and null, for the obligation "
+            "as a whole, where it spans fewer. The write refuses a legal entity the obligation does "
+            "not span, so send this value back as it is."
+        )
+    )
+    applicability: Applicability = Field(description=f"{_APPLICABILITY} Read from the row `orgUnitId` names; an obligation nobody answered there reads `under_assessment`.")
+    reason: str | None = Field(description=_APPLICABILITY_REASON)
+    decided_at: datetime.datetime | None = Field(description=_DECIDED_AT)
+    decided_by: NamedRef | None = Field(description=_DECIDED_BY)
+    version: int = Field(
+        description=(
+            "The version of the row the answer lands on, 0 when nobody has written it yet: what "
+            "`If-Match` takes on `PUT /obligations/{obligationId}/applicability`, so that an answer a "
+            "colleague stored in between is refused instead of overwritten."
+        )
+    )
+    matched_terms: list[FootprintTermRef] = Field(
+        description=(
+            "Which of the obligation's own scope terms the legal entity carries: its entity type, or "
+            "a term the entity's public register entry gives it. Terms of the shared library's "
+            "taxonomy vocabulary, each with its dimension, which an administrator may extend through "
+            "an approved proposal; read `GET /taxonomy/terms` for the live set. The regime and the "
+            "jurisdictions the obligation inherits from its regulation are never listed here. Empty "
+            "means the row is offered through its regulation's regime alone. A match is a fact about "
+            "scope and never an answer: it does not say the obligation applies."
+        )
+    )
+
+
+class RegisterApplicabilityAnswerPage(LibraryResponse):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_ANSWER_EXAMPLE], "total": 1}]})
+
+    items: list[RegisterApplicabilityAnswer] = Field(description="The offered obligations on this page, by stable key, the inventory's own order.")
+    total: int = Field(description="How many offered obligations match in total, not how many are on this page; use it to size a pager.")
+
+
+class RegisterApplicabilityAnswerQuery(CamelSchema):
+    """The company, the regulation and the filter of `GET /applicability/rows`."""
+
+    org_unit_id: uuid.UUID = Field(description=_COMPANY_ID)
+    instrument: str = Field(
+        max_length=STABLE_KEY_MAX,
+        pattern=STABLE_KEY,
+        description=(
+            f"The regulation to read, by its stable key, such as `fffs-2017-2`: letters, digits, hyphens and "
+            f"underscores, at most {STABLE_KEY_MAX} characters. Required; anything else is refused with 422 "
+            "`validation_error`. A key no regulation the bank can see has is not an error: it answers 200 "
+            "with an empty page, as `GET /obligations?instrument=` does."
+        ),
+    )
+    answer: Applicability | None = Field(
+        default=None,
+        description=(
+            "Only the offered obligations whose answer for the entity is this: `applies`, "
+            "`not_applicable`, or `under_assessment`, which an obligation nobody answered is too. "
+            "Absent keeps every one; any other value is refused with 422 `validation_error`."
+        ),
+    )
+
+
+class RegisterApplicabilityStatusCount(LibraryResponse):
+    """How many of a regulation's obligations that apply to the bank show one compliance status."""
+
+    status: VocabRef = Field(
+        description=(
+            "The compliance status, as a row of the bank's own `compliance_status` vocabulary, which "
+            "its admin may extend under the fixed categories; read `GET /vocab/compliance_status` for "
+            "the live set, branch on `kind` and show the label."
+        )
+    )
+    count: int = Field(
+        description=(
+            "How many of the regulation's obligations that apply show this status in the inventory: "
+            "the worst status of the legal entities it applies to, else the obligation's own. Always "
+            "above 0; a status no obligation shows is left out."
+        )
+    )
+
+
+class RegisterInstrumentApplicability(LibraryResponse):
+    """A regulation rolled up for the bank: how many of its obligations are in the working
+    inventory, how the bank answered them, how it complies where they apply, and how the
+    answers stand per legal entity. "Applies" and "we comply" stay separate facts."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "inScope": 4,
+                    "applies": 2,
+                    "notApplicable": 1,
+                    "underAssessment": 1,
+                    "statuses": [{"status": _STATUS_EXAMPLE, "count": 1}, {"status": {"key": "gap", "kind": "gap", "label": "Gap"}, "count": 1}],
+                    "companies": [_COMPANY_EXAMPLE],
+                }
+            ]
+        }
+    )
+
+    in_scope: int = Field(
+        description=(
+            "How many of the regulation's obligations are in the bank's working inventory, exactly as "
+            "`GET /obligations?instrument=<key>` counts them. Always the sum of the three counts beside it."
+        )
+    )
+    applies: int = Field(
+        description=(
+            "How many of them apply to the bank: the bank answered `applies` for the obligation or for "
+            "any legal entity, as `GET /obligations?applicability=applies` counts them. It says "
+            "nothing about whether the bank complies."
+        )
+    )
+    not_applicable: int = Field(
+        description="How many of them the bank answered `not_applicable` for the obligation as a whole while it applies to no legal entity."
+    )
+    under_assessment: int = Field(description="How many of them nobody has answered, an obligation with no register entry included.")
+    statuses: list[RegisterApplicabilityStatusCount] = Field(
+        description=(
+            "The obligations that apply, counted by the compliance status the inventory shows for "
+            "each, in the order of the bank's scale; the counts add up to `applies`. Empty when none applies."
+        )
+    )
+    companies: list[RegisterApplicabilityCompany] = Field(
+        description=(
+            "The rows of `GET /applicability/companies` narrowed to this regulation, in the "
+            "organisation's order, leaving out a legal entity the regulation offers nothing for."
+        )
+    )

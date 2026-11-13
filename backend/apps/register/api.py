@@ -22,14 +22,19 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.register import agent_read, applicability, duties, gaps, history, links, panels, soa, status_logic, units
+from apps.register import agent_read, applicability, company_view, duties, gaps, history, links, panels, soa, status_logic, units
 from apps.register.schemas import (
     RegisterInternalItemPage,
     RegisterInternalItemQuery,
     RegisterApplicability,
+    RegisterApplicabilityAnswerPage,
+    RegisterApplicabilityAnswerQuery,
     RegisterApplicabilityBody,
+    RegisterApplicabilityCompany,
     RegisterApplicabilityMany,
     RegisterApplicabilityManyBody,
+    RegisterApplicabilityRegulationPage,
+    RegisterApplicabilityRegulationQuery,
     RegisterAssessmentPage,
     RegisterDecision,
     RegisterDecisionPage,
@@ -45,6 +50,7 @@ from apps.register.schemas import (
     RegisterGapPage,
     RegisterGapPatch,
     RegisterGapQuery,
+    RegisterInstrumentApplicability,
     RegisterInternalLink,
     RegisterInternalLinkBody,
     RegisterInternalLinkPage,
@@ -85,6 +91,10 @@ _GAP_ID = "The gap, as a UUID. Another bank's gap answers 404, never 403."
 _LINK_ID = "The internal link, as a UUID. Another bank's link answers 404, never 403."
 _UNIT_ID = "The Statement of Applicability unit, as a UUID. Another bank's unit answers 404, never 403."
 _OCCURRENCE_ID = "The dated duty occurrence, as a UUID. Another bank's occurrence answers 404, never 403."
+_INSTRUMENT_ID = (
+    "The regulation to roll up, as its UUID in the library, the `id` the instruments list gives. "
+    "A regulation the bank cannot see answers 404, never 403."
+)
 
 
 # ---------------------------------------------------------------------------------------
@@ -336,6 +346,172 @@ def list_spanned_entities(request: HttpRequest, obligation_id: uuid.UUID = Path(
     """
     caller_tenant(request)
     return applicability.list_spanned(obligation_id=obligation_id)
+
+
+# ---------------------------------------------------------------------------------------
+# What applies, company by company (REG-01, FP-05; company_view.py)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/applicability/companies",
+    response=list[RegisterApplicabilityCompany],
+    auth=SESSION,
+    operation_id="listApplicabilityCompanies",
+    by_alias=True,
+    summary="See, company by company, how many obligations still await an answer",
+    openapi_extra={
+        "responses": {
+            200: {
+                "content": {
+                    "application/json": {
+                        "example": [
+                            {
+                                "orgUnit": {"id": "55555555-5555-4555-8555-555555555555", "name": "Example Bank AB"},
+                                "offered": 14,
+                                "applies": 9,
+                                "notApplicable": 2,
+                                "underAssessment": 3,
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def list_applicability_companies(request: HttpRequest) -> Any:
+    """Every active legal entity of the bank, by name, with how many obligations the register
+    offers for it and how its answers to "Does it apply to us?" stand: how many apply, how many
+    do not, and how many nobody has answered. Call it to open the "What applies" page, then
+    read one company's regulations and obligations with its id.
+
+    An obligation is offered for a legal entity when it is in the bank's working inventory,
+    the rows `GET /obligations` lists by default, and it spans the entity: it is scoped to
+    the entity's type or to no type, and an approved regulatory scope request has not taken
+    every term it carries in some dimension out of the entity's own scope. These are the
+    entities `GET /obligations/{obligationId}/register/entities` names. Being offered
+    decides nothing, and nothing here suggests an answer: a person answers each obligation.
+    The answer counted for an entity is its own where the obligation spans two or more of
+    the bank's legal entities, and the obligation's own where it spans fewer, as the
+    obligation page asks it.
+
+    A person's session holding `register.read`, which every role of a bank carries. A read: it
+    writes nothing and no audit event. The list is the bank's legal entities, a handful, so it
+    is not paged. A bank with no active legal entity gets an empty list with 200.
+    """
+    return company_view.list_companies(tenant=caller_tenant(request))
+
+
+@router.get(
+    "/applicability/regulations",
+    response=RegisterApplicabilityRegulationPage,
+    auth=SESSION,
+    operation_id="listApplicabilityRegulations",
+    by_alias=True,
+    summary="See the regulations that reach one of your companies",
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def list_applicability_regulations(request: HttpRequest, page: Query[PageQuery], filters: Query[RegisterApplicabilityRegulationQuery]) -> Any:
+    """The regulations with at least one obligation the register offers for one legal entity,
+    by the regulation's stable key, each with how the entity's answers stand over its offered
+    obligations. `answer` keeps the regulations with an obligation answered that way, and `q`
+    those whose name, short name or official reference holds a phrase, as the instruments
+    list matches it; a regulation kept carries its whole counts either way.
+
+    `through` says what brings the regulation into the entity's scope: the regulation's regime,
+    and the lines of the entity's own public register entry that give it that regime, such as
+    its business or a licence. No line means no register fact gives it, not that it does not
+    reach the entity. It is a fact about scope and never an answer.
+
+    A person's session holding `register.read`. A read: it writes nothing and no audit event.
+    Pages with `limit` and `offset`, 20 by default and 100 at most; an entity the register
+    offers nothing for, or filters matching nothing, is a 200 with an empty page.
+
+    Errors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal
+    entities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or
+    one that is not a UUID, an `answer` outside the three values, a `q` longer than 200
+    characters or holding a NUL character, or a page out of range.
+    """
+    tenant = caller_tenant(request)
+    return company_view.list_regulations(
+        tenant=tenant, order=language_order(request, tenant=tenant), query=filters, limit=page.limit, offset=page.offset
+    )
+
+
+@router.get(
+    "/applicability/rows",
+    response=RegisterApplicabilityAnswerPage,
+    auth=SESSION,
+    operation_id="listApplicabilityRows",
+    by_alias=True,
+    summary="See one regulation's obligations for one company, with the answer so far",
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def list_applicability_rows(request: HttpRequest, page: Query[PageQuery], filters: Query[RegisterApplicabilityAnswerQuery]) -> Any:
+    """The obligations of one regulation the register offers for one legal entity, in the
+    inventory's order, each with the answer so far, its reason, who set it and when. Call it
+    to list what a person can decide for the company under that regulation.
+
+    Each row says what an answer for it must name: `orgUnitId` is the entity where the
+    obligation spans two or more of the bank's legal entities, and null, for the obligation as
+    a whole, where it spans fewer. Send it back with `obligationId` to
+    `PUT /obligations/{obligationId}/applicability`, with the row's `version` as `If-Match`,
+    or to `POST /applicability` for many rows at once. `matchedTerms` lists which of the
+    obligation's own scope terms the entity carries, by its type or its register entry. No
+    row ever carries a suggested answer: whether an obligation applies is a person's decision.
+
+    A person's session holding `register.read`. A read: it writes nothing and no audit event.
+    Pages with `limit` and `offset`, 20 by default and 100 at most. A regulation that offers
+    the entity nothing, and a key no regulation the bank can see has, is a 200 with an empty
+    page. The reason is tenant content that never leaves the bank.
+
+    Errors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal
+    entities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or
+    `instrument`, an `orgUnitId` that is not a UUID, an `instrument` that is not a stable key
+    (letters, digits, hyphens and underscores, at most 120 characters), an `answer` outside
+    the three values or a page out of range.
+    """
+    tenant = caller_tenant(request)
+    return company_view.list_rows(
+        tenant=tenant, order=language_order(request, tenant=tenant), query=filters, limit=page.limit, offset=page.offset
+    )
+
+
+@router.get(
+    "/instruments/{instrument_id}/applicability",
+    response=RegisterInstrumentApplicability,
+    auth=SESSION,
+    operation_id="getInstrumentApplicability",
+    by_alias=True,
+    summary="See how a regulation stands for your bank and for each company",
+)
+@requires_permission(perms.REGISTER_READ)
+@answers_problems
+def get_instrument_applicability(request: HttpRequest, instrument_id: uuid.UUID = Path(..., description=_INSTRUMENT_ID)) -> Any:
+    """One regulation rolled up for the bank, for the regulation's own page: how many of its
+    obligations are in the bank's working inventory, how many of those apply, do not apply
+    and are still under assessment, and, for those that apply, how the bank complies, counted
+    by compliance status in the order of the bank's scale.
+
+    The counts are the bank-level answers the inventory shows, so each equals the total of
+    `GET /obligations` for the same regulation under the same applicability or compliance
+    status filter: an obligation applies when the bank answered so for the obligation or for
+    any legal entity, and its status is the worst of the entities it applies to. "Applies"
+    and "we comply" stay separate facts. `companies` carries the rows of
+    `GET /applicability/companies` narrowed to this regulation, leaving out a legal entity it
+    offers nothing for.
+
+    A person's session holding `register.read`. A read: it writes nothing and no audit event.
+    A regulation with no obligation in the working inventory reads as zeros and empty lists.
+
+    Errors: `not_found` (404) for a regulation the bank cannot see, another bank's own
+    included; `validation_error` (422) for an id that is not a UUID.
+    """
+    tenant = caller_tenant(request)
+    return company_view.instrument_applicability(tenant=tenant, order=language_order(request, tenant=tenant), instrument_id=instrument_id)
 
 
 # ---------------------------------------------------------------------------------------
