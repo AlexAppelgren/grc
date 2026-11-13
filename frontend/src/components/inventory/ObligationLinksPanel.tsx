@@ -5,7 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
-import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
+import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { LoadingState, ProblemAlert, QueryState } from '@/components/ui/States';
 import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { useAddInternalLink, useInternalItems, useInternalLinks, useRemoveInternalLink } from '@/features/register/hooks';
@@ -16,7 +16,7 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
 import { externalHref } from '@/shared/utils/external-href';
 
-// "Linked internal items" (REG-05; design/screens/tenant-obligation.html): the
+// The linked internal items of "How we handle it" (REG-05; design/screens/tenant-obligation.html): the
 // bank's own policies, procedures and controls that carry the duty, each with
 // its kind and the reference its GRC system knows it by. A member holding
 // register.edit links one, picked from the bank's items or created in the same
@@ -199,15 +199,19 @@ export function ObligationLinksPanel({ obligationId }: { obligationId: string })
   const items = links.data?.items ?? [];
   const total = links.data?.total ?? 0;
 
+  const add = canEdit ? (
+    <Button variant="ghost" size="small" onClick={() => setAdding(true)}>
+      {t('obligationLinks.add')}
+    </Button>
+  ) : null;
+
+  // No heading of its own: it sits inside "How we handle it", which draws the
+  // line for nothing mapped and nothing linked. Nothing linked is "Link an item" alone.
   return (
-    <Panel title={t('obligationLinks.heading')} data-links-panel="">
+    <div data-links-panel="">
       <QueryState query={links} rows={1} errorTitle={t('obligationLinks.errorTitle')}>
         {() =>
-          items.length === 0 ? (
-            <p className="text-meta text-muted" data-links-empty="">
-              {t('obligationLinks.empty')}
-            </p>
-          ) : (
+          items.length > 0 ? (
             <>
               <Rows>
                 {items.map((link) => (
@@ -215,19 +219,15 @@ export function ObligationLinksPanel({ obligationId }: { obligationId: string })
                 ))}
               </Rows>
               {total > items.length ? <Meta className="mt-3">{t('obligationLinks.more', { shown: items.length, total })}</Meta> : null}
+              {add === null ? null : <div className="mt-2">{add}</div>}
             </>
+          ) : add === null ? null : (
+            <span data-links-empty="">{add}</span>
           )
         }
       </QueryState>
-      {canEdit ? (
-        <ButtonBar>
-          <Button size="small" onClick={() => setAdding(true)}>
-            {t('obligationLinks.add')}
-          </Button>
-        </ButtonBar>
-      ) : null}
       {adding ? <LinkDialog obligationId={obligationId} onOpenChange={setAdding} /> : null}
       {removing === null ? null : <RemoveDialog link={removing} onOpenChange={(open) => (open ? undefined : setRemoving(null))} />}
-    </Panel>
+    </div>
   );
 }

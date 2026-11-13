@@ -214,7 +214,7 @@ or the outbox; the audit row names the obligation and the version number.
 ```gherkin
 Given an obligation
 When the owner links the policy "Client asset policy" with the reference "POL-014" and the control "Daily reconciliation" with a link kind from the tenant vocabulary
-Then "Linked internal items" lists both with their kind label and external reference
+Then "How we handle it" lists both as linked internal items with their kind label and external reference
 And the API exposes them so an external GRC system can read the links
 ```
 

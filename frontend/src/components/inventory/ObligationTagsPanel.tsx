@@ -1,7 +1,7 @@
 'use client';
 
+import { OneLine, Part } from '@/components/inventory/ObligationPanels';
 import { Button } from '@/components/ui/Button';
-import { Panel } from '@/components/ui/Panel';
 import { Pill } from '@/components/ui/Pill';
 import { ProblemAlert } from '@/components/ui/States';
 import { VocabularyPicker } from '@/components/vocabularies/VocabularyPicker';
@@ -48,45 +48,51 @@ export function ObligationTagsPanel({ obligationId }: { obligationId: string }) 
   const tried = change.variables?.tagKey;
   const triedLabel = values.data?.find((row) => row.key === tried)?.label ?? tags.find((tag) => tag.key === tried)?.label ?? tried ?? '';
 
-  return (
-    <Panel title={t('obligationTags.heading')} className="bg-subtle" data-obligation-tags="">
-      {tags.length === 0 ? (
-        <p className="mb-2 text-meta text-muted">{t('obligationTags.none')}</p>
-      ) : (
-        <ul className="m-0 mb-2 flex list-none flex-wrap items-center gap-1.5 p-0">
-          {tags.map((tag) => {
-            const pill = presentVocabularyValue(LIST, { key: tag.key, kind: tag.kind, label: tag.label, extra: {} });
-            return (
-              <li key={tag.key} className="inline-flex items-center gap-0.5" data-obligation-tag={tag.key}>
-                <Pill tone={pill.tone} outlined={pill.outlined}>
-                  {pill.label}
-                </Pill>
-                {manages ? (
-                  <button
-                    type="button"
-                    className="rounded-full px-1 text-muted hover:text-fg"
-                    aria-label={t('obligationTags.remove', { label: tag.label })}
-                    disabled={change.isPending}
-                    onClick={() => onChange(keys.filter((key) => key !== tag.key))}
-                  >
-                    {REMOVE_GLYPH}
-                  </button>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+  const picker = (
+    <VocabularyPicker
+      list={LIST}
+      tier="tenant"
+      label={manages ? t('obligationTags.add') : t('obligationTags.suggest')}
+      value={keys}
+      onChange={onChange}
+      showSelected={false}
+      canPick={manages}
+    />
+  );
 
-      <VocabularyPicker
-        list={LIST}
-        tier="tenant"
-        label={manages ? t('obligationTags.add') : t('obligationTags.suggest')}
-        value={keys}
-        onChange={onChange}
-        showSelected={false}
-        canPick={manages}
-      />
+  // No tags is one line with the picker beside it; tags carry the heading, the picker under them.
+  return (
+    <Part title={tags.length === 0 ? undefined : t('obligationTags.heading')} data-obligation-tags="">
+      {tags.length === 0 ? (
+        <OneLine text={t('obligationTags.none')} action={picker} data-obligation-tags-empty="" />
+      ) : (
+        <>
+          <ul className="m-0 mb-2 flex list-none flex-wrap items-center gap-1.5 p-0">
+            {tags.map((tag) => {
+              const pill = presentVocabularyValue(LIST, { key: tag.key, kind: tag.kind, label: tag.label, extra: {} });
+              return (
+                <li key={tag.key} className="inline-flex items-center gap-0.5" data-obligation-tag={tag.key}>
+                  <Pill tone={pill.tone} outlined={pill.outlined}>
+                    {pill.label}
+                  </Pill>
+                  {manages ? (
+                    <button
+                      type="button"
+                      className="rounded-full px-1 text-muted hover:text-fg"
+                      aria-label={t('obligationTags.remove', { label: tag.label })}
+                      disabled={change.isPending}
+                      onClick={() => onChange(keys.filter((key) => key !== tag.key))}
+                    >
+                      {REMOVE_GLYPH}
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          {picker}
+        </>
+      )}
 
       {change.isError ? (
         KNOWN_REFUSALS.has(problemFrom(change.error)?.code ?? '') ? (
@@ -108,7 +114,7 @@ export function ObligationTagsPanel({ obligationId }: { obligationId: string }) 
           </div>
         )
       ) : null}
-    </Panel>
+    </Part>
   );
 }
 

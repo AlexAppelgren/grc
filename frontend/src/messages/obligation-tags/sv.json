@@ -1,6 +1,6 @@
 {
   "obligationTags.heading": "Våra taggar",
-  "obligationTags.none": "Inga ännu",
+  "obligationTags.none": "Inga egna taggar ännu.",
   "obligationTags.add": "Lägg till en tagg",
   "obligationTags.suggest": "Föreslå en tagg",
   "obligationTags.remove": "Ta bort {label}",

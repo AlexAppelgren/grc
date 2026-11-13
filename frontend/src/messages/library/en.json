@@ -23,7 +23,6 @@
   "library.relatedChanges.title": "Related changes",
   "library.relatedChanges.openCount": "{count, plural, one {# open change} other {# open changes}}",
   "library.relatedChanges.emptyTitle": "No change affects this obligation",
-  "library.relatedChanges.emptyBody": "A change appears here once an agent links it to this duty.",
   "library.relatedChanges.errorTitle": "Could not load the related changes",
   "library.updates.title": "Library updates",
   "library.updates.lede": "{count, plural, one {# update} other {# updates}} in our scope since {date}",

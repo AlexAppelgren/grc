@@ -2,16 +2,13 @@
 
 import { useState } from 'react';
 
-import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
+import { ObligationLinksPanel } from '@/components/inventory/ObligationLinksPanel';
+import { Facts, OneLine, Part, type Fact } from '@/components/inventory/ObligationPanels';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
-import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
-import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { FormDialog } from '@/components/ui/Dialogs';
-import { useFormatContext } from '@/features/identity/hooks';
-import { isStaleWrite, useRegisterEntry, useReloadRegister, useUpdateRegister, useUpdateRegisterEntity } from '@/features/register/hooks';
-import { presentCompliance, presentComplianceHeader } from '@/features/register/register-presentation';
+import { isStaleWrite, useInternalLinks, useRegisterEntry, useReloadRegister, useUpdateRegister, useUpdateRegisterEntity } from '@/features/register/hooks';
 import type { RegisterEntityPatch, RegisterEntityStatus, RegisterEntry, RegisterPatch, RegisterVocabRef } from '@/features/register/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import type { Translate } from '@/shared/i18n';
@@ -21,21 +18,22 @@ import { formatDate, type FormatContext } from '@/shared/utils/format';
 import { usePeople } from '@/features/shared/reference';
 
 // "Where we stand" and "How we handle it" (REG-02, D-42). Per legal entity where
-// the obligation applies to several, each row with its own pill, note, risk,
-// owner (a person or a team, never both), process, system, evidence location and
-// next review; else the obligation's own. The header's pill is the server's
-// worst of the entities it applies to, with the entity named beside it. No status
-// is asked where it does not apply; the last one stays in the history. Edits
-// need register.edit and send only what changed, with the version last read: a
-// row someone else saved in between is refused and nothing is merged.
+// the obligation applies to several, each with its own pill, note, risk, owner
+// (a person or a team, never both), process, system, evidence location and next
+// review; else the obligation's own. The standing is drawn per company in "Our
+// position" (ObligationPositionPanel); this file holds its facts, the edit
+// dialog and "How we handle it". No status is asked where it does not apply;
+// the last one stays in the history. Edits need register.edit and send only
+// what changed, with the version last read: a row someone else saved in
+// between is refused and nothing is merged.
 
-const EDIT_PERMISSION = 'register.edit';
+export const EDIT_PERMISSION = 'register.edit';
 // The server's limits (apps/register/schemas.py NOTE_MAX, NAME_MAX).
 const NOTE_MAX = 4000;
 const NAME_MAX = 500;
 
 /** Which row a dialog edits: one legal entity, the obligation's own standing, or how it is handled. */
-type Editing = { kind: 'entity'; entity: RegisterEntityStatus } | { kind: 'whole' } | { kind: 'handle' };
+export type Editing = { kind: 'entity'; entity: RegisterEntityStatus } | { kind: 'whole' } | { kind: 'handle' };
 
 /** A form's values as the controls hold them; an owner picker's value is `person:<id>` or `team:<key>`. */
 interface Values {
@@ -114,7 +112,8 @@ function ownerText(person: { name: string } | null, team: RegisterVocabRef | nul
   return team === null ? null : t('obligationStatus.team', { team: team.label });
 }
 
-function standing(row: RegisterEntityStatus | RegisterEntry, t: Translate, ctx: FormatContext): Fact[] {
+/** A company's standing, or the obligation's own, as facts; a fact with nothing recorded is left out. */
+export function standing(row: RegisterEntityStatus | RegisterEntry, t: Translate, ctx: FormatContext): Fact[] {
   const entity = 'orgUnitId' in row;
   const facts: [string, string, string | null][] = [
     ['note', t('obligationStatus.statusNote'), row.statusNote],
@@ -137,41 +136,42 @@ function standing(row: RegisterEntityStatus | RegisterEntry, t: Translate, ctx: 
   return facts.flatMap(([key, label, value]) => (value === null || value === '' ? [] : [{ key, label, value }]));
 }
 
-export function ObligationStatusPanel({ obligationId }: { obligationId: string }) {
+/**
+ * "How we handle it" in "How we comply": the process, system and evidence that
+ * carry the duty for the whole obligation, then the bank's linked internal
+ * items. Nothing mapped and nothing linked is one line with "Map it" and
+ * "Link an item". The per-company standing is drawn in "Our position".
+ */
+export function ObligationHandlePanel({ obligationId }: { obligationId: string }) {
   const t = useT();
-  const ctx = useFormatContext();
   const canEdit = (usePermissions() ?? []).includes(EDIT_PERMISSION);
   const entry = useRegisterEntry(obligationId);
-  const [editing, setEditing] = useState<Editing | null>(null);
+  const links = useInternalLinks(obligationId);
+  const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
 
   if (entry.isError) {
     return (
-      <Panel title={t('obligationStatus.heading')} data-status-panel="">
+      <Part title={t('obligationStatus.handleHeading')} data-handle-panel="">
         <ErrorState title={t('obligationStatus.errorTitle')} onRetry={() => void entry.refetch()} />
-      </Panel>
+      </Part>
     );
   }
-  if (entry.data === undefined) return <LoadingState rows={2} />;
+  if (entry.data === undefined) return <LoadingState rows={1} />;
 
   const data = entry.data;
-  const header = presentComplianceHeader(data, t);
-  const applying = data.entities.filter((entity) => entity.applicability === 'applies');
-  const answers = data.entities.length > 0 ? data.entities : [data];
-  const edit = (next: Editing) => (canEdit ? (
-    <ButtonBar className="mt-2 justify-start">
-      <Button
-        variant="ghost"
-        size="small"
-        onClick={() => {
-          setSaved(false);
-          setEditing(next);
-        }}
-      >
-        {t('common.edit')}
-      </Button>
-    </ButtonBar>
-  ) : null);
+  const open = () => {
+    setSaved(false);
+    setEditing(true);
+  };
+  const mapped = data.process !== null || data.system !== null || data.evidenceLocation !== null;
+  const untouched = !mapped && links.data?.items.length === 0;
+  const mapIt = canEdit ? (
+    <Button variant="ghost" size="small" onClick={open}>
+      {t('obligationStatus.mapIt')}
+    </Button>
+  ) : null;
+  const linked = <ObligationLinksPanel obligationId={obligationId} />;
   const handled: Fact[] = (
     [
       ['process', t('obligationStatus.process'), data.process],
@@ -181,57 +181,47 @@ export function ObligationStatusPanel({ obligationId }: { obligationId: string }
   ).map(([key, label, value]) => ({ key, label, value: value ?? t('obligationStatus.notMapped') }));
 
   return (
-    <>
-      <Panel title={t('obligationStatus.heading')} data-status-panel="">
-        {header === null ? (
-          <p className="text-meta text-muted" data-status-not-asked="">
-            {answers.some((answer) => answer.applicability === 'not_applicable') ? t('obligationStatus.notAsked') : t('obligationStatus.notYet')}
-          </p>
-        ) : (
-          <div className="mb-2.5" data-status-header="">
-            <Meta>
-              <PillRow pills={[header.pill]} />
-              {header.weakest === null ? null : <span>{header.weakest}</span>}
-            </Meta>
-          </div>
-        )}
-        {applying.length > 0 ? (
-          <Rows>
-            {applying.map((entity) => (
-              <Row key={entity.orgUnitId} data-status-row={entity.orgUnitId}>
-                <Meta>
-                  <PillRow pills={[presentCompliance(entity.complianceStatus)]} />
-                </Meta>
-                <h3 className="my-1.5">{entity.orgUnitName}</h3>
-                <Facts facts={standing(entity, t, ctx)} />
-                {edit({ kind: 'entity', entity })}
-              </Row>
-            ))}
-          </Rows>
-        ) : header === null ? null : (
-          <div data-status-row="whole">
-            <Facts facts={standing(data, t, ctx)} />
-            {edit({ kind: 'whole' })}
-          </div>
-        )}
-        {saved ? <StatusLine tone="positive">{t('common.saved')}</StatusLine> : null}
-      </Panel>
-      <Panel title={t('obligationStatus.handleHeading')} data-handle-panel="">
-        <Facts facts={handled} />
-        {edit({ kind: 'handle' })}
-      </Panel>
-      {editing === null ? null : (
+    <Part
+      title={untouched ? undefined : t('obligationStatus.handleHeading')}
+      action={
+        mapped && canEdit ? (
+          <Button variant="ghost" size="small" onClick={open}>
+            {t('common.edit')}
+          </Button>
+        ) : null
+      }
+      data-handle-panel=""
+    >
+      {untouched ? (
+        <OneLine
+          text={t('obligationStatus.handleEmpty')}
+          data-handle-empty=""
+          action={
+            <div className="flex flex-wrap gap-2">
+              {mapIt}
+              {linked}
+            </div>
+          }
+        />
+      ) : (
+        <>
+          {mapped ? <Facts facts={handled} /> : <OneLine text={t('obligationStatus.handleEmpty')} data-handle-empty="" action={mapIt} />}
+          <div className="mt-3">{linked}</div>
+        </>
+      )}
+      {saved ? <StatusLine tone="positive">{t('common.saved')}</StatusLine> : null}
+      {editing ? (
         <EditDialog
           obligationId={obligationId}
           entry={data}
-          editing={editing}
+          editing={{ kind: 'handle' }}
           onClose={(stored) => {
-            setEditing(null);
+            setEditing(false);
             setSaved(stored);
           }}
         />
-      )}
-    </>
+      ) : null}
+    </Part>
   );
 }
 
@@ -241,7 +231,7 @@ function withCurrent<T extends { key: string } | { id: string }>(rows: readonly 
   return current === null || rows.some((row) => idOf(row) === idOf(current)) ? rows : [current, ...rows];
 }
 
-function EditDialog({ obligationId, entry, editing, onClose }: { obligationId: string; entry: RegisterEntry; editing: Editing; onClose: (stored: boolean) => void }) {
+export function EditDialog({ obligationId, entry, editing, onClose }: { obligationId: string; entry: RegisterEntry; editing: Editing; onClose: (stored: boolean) => void }) {
   const t = useT();
   const standingForm = editing.kind !== 'handle';
   const statuses = useVocabularyValues('compliance_status', false, standingForm);

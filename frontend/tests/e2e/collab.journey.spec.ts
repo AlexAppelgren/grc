@@ -198,7 +198,7 @@ test.describe('participants, comments and mentions', () => {
       await expect(hisPanel.locator(`[data-participant-id="${added[1]}"]`).getByRole('button')).toHaveCount(0);
       await expect(hisPanel.getByRole('button', { name: 'Add a participant' })).toHaveCount(0);
       await expect(erikPage.locator('[data-history-panel] [data-reading]')).toBeVisible();
-      await expect(erikPage.locator('[data-history-panel]').getByRole('button', { name: 'Write how we read it' })).toHaveCount(0);
+      await expect(erikPage.locator('[data-history-panel]').getByRole('button', { name: /^Write (our reading|a new version)$/ })).toHaveCount(0);
       await erikPage.context().close();
     } finally {
       for (const id of added) {

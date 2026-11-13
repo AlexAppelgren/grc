@@ -474,14 +474,57 @@ test.describe('library journeys', () => {
     await signInAs(page, LOGINS.complianceOfficer);
     await openObligation(page, RESEARCH);
 
-    const text = page.locator('[data-legal-text]');
-    await expect(text.locator('[data-machine-translation]')).toHaveText('Machine translation from Swedish. The original is authoritative.');
+    // The summary is bleqq's wording, so its Swedish is the language bleqq wrote in and is
+    // never called the original; the rule's own original is the cited provision's (INV-S22).
+    const text = page.locator('[data-summary] [data-legal-text]');
+    await expect(text.locator('[data-machine-translation]')).toHaveText('Machine-translated from Swedish');
     await expect(text.locator('[lang="en"]')).toBeVisible();
 
-    // "Show original": the Swedish text, with no label of its own.
-    await page.locator('[data-language-chips]').getByRole('button', { name: 'Swedish, original' }).click();
+    // The Swedish summary, with no label of its own.
+    await page.locator('[data-language-chips]').getByRole('button', { name: 'Swedish' }).click();
     await expect(text.locator('[lang="sv"]')).toBeVisible();
     await expect(text.locator('[data-machine-translation]')).toHaveCount(0);
+    await expect(page.locator('[data-summary]')).not.toContainText('original');
+  });
+
+  test("INV-S22: A reader sees the rule's own words beside the summary, each labelled for what it is", async ({ page, apiGuard }) => {
+    // INV-02, INV-05: the research payment duty cites FFFS 2017:2, 9 kap. 6 §, which FI
+    // published in Swedish and the library holds with an English machine translation. Both
+    // versions of the section read the same way here, so the run passes either side of the
+    // day the rules change.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openObligation(page, RESEARCH);
+
+    // bleqq's summary says what it is, and names its languages only.
+    const summary = page.locator('[data-summary]');
+    await expect(summary.getByRole('heading', { name: 'In plain words' })).toBeVisible();
+    await expect(summary.locator('[data-language-chips]')).not.toContainText('original');
+
+    // Straight under it, the rule's own words: the section by its reference, linked back to
+    // the regulation, with its heading, opened in English for this English reader and
+    // labelled as the machine translation it is.
+    const words = page.locator('[data-summary] + [data-rule-words]');
+    await expect(words.getByRole('heading', { name: "The rule's own words" })).toBeVisible();
+    const section = words.locator('[data-provision-words]').first();
+    // The library holds the section as "6 §" under "9 kap.": the citation names both.
+    await expect(section.locator('[data-provision-ref]')).toHaveText('FFFS 2017:2 9 kap. 6 §');
+    await expect(section.locator('h3')).toHaveText('Betalning för analys');
+    await expect(section.locator('h3')).toHaveAttribute('lang', 'sv');
+    await expect(section.locator('[data-provision-label]')).toHaveText('Machine translation from Swedish. The original is authoritative.');
+    await expect(section.locator('[data-provision-text]')).toHaveAttribute('lang', 'en');
+    await expect(section.locator('[data-provision-text]')).toContainText('Investment research from a third party');
+
+    // The Swedish original, one chip away, says it is the original.
+    await section.getByRole('button', { name: 'Swedish, original' }).click();
+    await expect(section.locator('[data-provision-label]')).toHaveText('Swedish, original');
+    await expect(section.locator('[data-provision-text]')).toHaveAttribute('lang', 'sv');
+    await expect(section.locator('[data-provision-text]')).toContainText('Investeringsanalys från tredje part');
+
+    // The reference goes back to the regulation's own page, and so does the head.
+    await expect(section.locator('[data-provision-ref] a')).toHaveAttribute('href', /^\/inventory\/instruments\/[^/]+$/);
+    await page.locator('[data-header-pills] [data-instrument-link]').click();
+    await expect(page.locator('[data-instrument="fffs-2017-2"] [data-header-pills]')).toBeVisible();
   });
 
   test("INV-S7: Every record has a source link, a last-verified date and a way to report it", async ({ page, apiGuard }) => {

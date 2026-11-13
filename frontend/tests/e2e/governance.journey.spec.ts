@@ -66,6 +66,14 @@ async function consoleDestinationsOf(page: Page, login: string): Promise<string[
   return mine.map((destination) => destination.id);
 }
 
+/** "Reported problems" sits folded with its count under "Source and changes"; this opens it. */
+async function openReportedProblems(page: Page): Promise<void> {
+  const fold = page.getByRole('button', { name: /^Reported problems/ });
+  await expect(fold).toHaveAttribute('aria-expanded', 'false');
+  await fold.click();
+  await expect(page.locator('[data-problem-reports]')).toBeVisible();
+}
+
 /** The research payment obligation's card, reached from the inventory filtered to its instrument. */
 async function openResearchObligation(page: Page): Promise<void> {
   await page.goto('/inventory?instrument=fffs-2017-2');
@@ -227,6 +235,7 @@ test.describe('governance journeys', () => {
 
     // The reader's own report joins the record's section at once, open, and the section
     // says a close never changes the library: the watch corrects it.
+    await openReportedProblems(page);
     const section = page.locator('[data-problem-reports]');
     const mine = section.locator(`[data-report-id="${reportId}"]`);
     await expect(mine).toHaveAttribute('data-report-status', 'open');
@@ -238,6 +247,7 @@ test.describe('governance journeys', () => {
     // record, with who filed it and what they had on screen, and the close.
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto(obligationUrl);
+    await openReportedProblems(page);
     const theirs = page.locator(`[data-problem-reports] [data-report-id="${reportId}"]`);
     await expect(theirs).toContainText(words);
     await expect(theirs).toContainText('Reported by Oskar Lund');
@@ -258,6 +268,7 @@ test.describe('governance journeys', () => {
     // The reader sees their report closed, with the note and who closed it.
     await signInAs(page, LOGINS.reader);
     await page.goto(obligationUrl);
+    await openReportedProblems(page);
     const closed = page.locator(`[data-problem-reports] [data-report-id="${reportId}"]`);
     await expect(closed).toHaveAttribute('data-report-status', 'answered');
     await expect(closed.getByText('Answered', { exact: true })).toBeVisible();
@@ -269,6 +280,7 @@ test.describe('governance journeys', () => {
     // own bank filed on the same library record: tenant A's is not among them.
     await signInAs(page, LOGINS.secondBankAdmin);
     await page.goto(obligationUrl);
+    await openReportedProblems(page);
     const other = page.locator('[data-problem-reports]');
     await expect(other.locator('[data-reports-empty]').or(other.locator('[data-report-id]')).first()).toBeVisible();
     await expect(other.locator(`[data-report-id="${reportId}"]`)).toHaveCount(0);

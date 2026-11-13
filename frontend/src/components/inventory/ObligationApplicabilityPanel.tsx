@@ -4,32 +4,29 @@ import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea } from '@/components/ui/Field';
-import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
-import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert } from '@/components/ui/States';
 import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
-import { useFormatContext } from '@/features/identity/hooks';
-import { isStaleWrite, useRegisterEntry, useReloadRegister, useSetApplicability, useSpannedEntities } from '@/features/register/hooks';
+import { isStaleWrite, useReloadRegister, useSetApplicability } from '@/features/register/hooks';
 import { presentApplicability } from '@/features/register/register-presentation';
 import type { Applicability, RegisterEntry } from '@/features/register/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { usePermissions } from '@/shared/navigation/require-permission';
-import { formatDate } from '@/shared/utils/format';
 
-// "Does it apply to us?": the answer per legal entity where the obligation spans
+// "Does it apply?": the answer per legal entity where the obligation spans
 // several, else for the obligation as a whole, each with its reason and who set
-// it when (REG-01, D-42). One person holding applicability.approve answers, then
+// it when (REG-01, D-42). The answers are drawn per company in "Our position"
+// (ObligationPositionPanel); this file holds which answers there are and the
+// dialog that sets one. One person holding applicability.approve answers, then
 // confirms in a second step; the answer is stored at once with no second person
 // and no passkey (D-75). Cancelling either step stores nothing. The compliance
 // status is never read or written here: "applies" and "we comply" are separate.
 
-const APPROVE_PERMISSION = 'applicability.approve';
+export const APPROVE_PERMISSION = 'applicability.approve';
 const ANSWERS: readonly Applicability[] = ['applies', 'not_applicable', 'under_assessment'];
 // The server's limit on a reason (apps/register/schemas.py REASON_MAX).
 const REASON_MAX = 2000;
 
-/** One answer the panel shows: the whole obligation (`orgUnitId` null) or one legal entity. */
-interface Answer {
+/** One answer the page shows: the whole obligation (`orgUnitId` null) or one legal entity. */
+export interface Answer {
   orgUnitId: string | null;
   name: string | null;
   applicability: Applicability;
@@ -73,92 +70,8 @@ export function answersOf(entry: RegisterEntry, spanned: readonly { orgUnitId: s
   return entry.applicability === 'under_assessment' ? entities : [whole, ...entities];
 }
 
-export function ObligationApplicabilityPanel({ obligationId }: { obligationId: string }) {
-  const t = useT();
-  const ctx = useFormatContext();
-  const canDecide = (usePermissions() ?? []).includes(APPROVE_PERMISSION);
-  const entry = useRegisterEntry(obligationId);
-  const span = useSpannedEntities(obligationId);
-  const [open, setOpen] = useState<Answer | null>(null);
-  const [saved, setSaved] = useState<Applicability | null>(null);
-
-  if (entry.isError || span.isError) {
-    return (
-      <Panel title={t('obligationApplicability.heading')} data-applicability-panel="">
-        <ErrorState
-          title={t('obligationApplicability.errorTitle')}
-          onRetry={() => {
-            void entry.refetch();
-            void span.refetch();
-          }}
-        />
-      </Panel>
-    );
-  }
-  if (entry.data === undefined || span.data === undefined) return <LoadingState rows={1} />;
-
-  const answers = answersOf(entry.data, span.data);
-  const perEntity = answers.some((answer) => answer.orgUnitId !== null);
-  const rows = answers.map((answer) => {
-    const body = (
-      <>
-        {answer.orgUnitId === null && !perEntity ? null : <h3>{answer.name ?? t('obligationApplicability.whole')}</h3>}
-        <Meta>
-          <PillRow pills={[presentApplicability(answer.applicability, t)]} />
-          {answer.decidedBy !== null && answer.decidedAt !== null ? (
-            <span>{t('obligationApplicability.decidedBy', { name: answer.decidedBy, date: formatDate(answer.decidedAt, ctx) })}</span>
-          ) : null}
-        </Meta>
-        <p className="mt-1.5">{answer.reason ?? t('obligationApplicability.notDecided')}</p>
-        {canDecide ? (
-          <ButtonBar className="mt-2 justify-start">
-            <Button
-              variant={answer.applicability === 'under_assessment' ? 'primary' : 'ghost'}
-              size="small"
-              onClick={() => {
-                setSaved(null);
-                setOpen(answer);
-              }}
-            >
-              {answer.applicability === 'under_assessment' ? t('obligationApplicability.decide') : t('obligationApplicability.change')}
-            </Button>
-          </ButtonBar>
-        ) : null}
-      </>
-    );
-    const key = answer.orgUnitId ?? 'whole';
-    return perEntity ? (
-      <Row key={key} data-applicability-row={key}>
-        {body}
-      </Row>
-    ) : (
-      <div key={key} data-applicability-row={key}>
-        {body}
-      </div>
-    );
-  });
-
-  return (
-    <Panel title={t('obligationApplicability.heading')} data-applicability-panel="">
-      {perEntity ? <Rows>{rows}</Rows> : rows}
-      {saved === null ? null : <StatusLine tone="positive">{t('obligationApplicability.saved', { value: presentApplicability(saved, t).label })}</StatusLine>}
-      <p className="mt-2.5 text-meta text-muted">{t('obligationApplicability.separateFacts')}</p>
-      {open === null ? null : (
-        <DecideDialog
-          obligationId={obligationId}
-          answer={open}
-          onClose={(stored) => {
-            setOpen(null);
-            if (stored !== null) setSaved(stored);
-          }}
-        />
-      )}
-    </Panel>
-  );
-}
-
 /** Answer, then confirm: nothing is sent before the second step's button. */
-function DecideDialog({ obligationId, answer, onClose }: { obligationId: string; answer: Answer; onClose: (stored: Applicability | null) => void }) {
+export function DecideDialog({ obligationId, answer, onClose }: { obligationId: string; answer: Answer; onClose: (stored: Applicability | null) => void }) {
   const t = useT();
   const set = useSetApplicability(obligationId);
   const reload = useReloadRegister();

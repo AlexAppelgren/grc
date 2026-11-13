@@ -1,6 +1,4 @@
 {
-  "obligationLinks.heading": "Linked internal items",
-  "obligationLinks.empty": "Nothing linked yet. Link the policy, procedure, control, process or system that carries this obligation.",
   "obligationLinks.errorTitle": "Linked internal items could not be loaded",
   "obligationLinks.more": "Showing {shown} of {total}.",
   "obligationLinks.add": "Link an item",

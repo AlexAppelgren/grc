@@ -7,31 +7,31 @@ import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { withPanels } from '@/features/register/testing';
+import type { RegisterEntityStatus, RegisterEntry } from '@/features/register/types';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
-import { ObligationScreen, diffSentence, effectiveIn, languageChoices, originalLanguage, textIn } from './ObligationScreen';
+import { ObligationScreen, diffSentence, effectiveIn, languageChoices, originalLanguage, summaryChoices, textIn } from './ObligationScreen';
 import type { LocalizedText, ObligationDetail, ObligationVersionRow, VersionDiff } from '@/features/library/types';
 import { defaultFormatContext } from '@/shared/utils/format';
 
-// The obligation card (design/screens/tenant-obligation.html): the header
-// slots in order, the summary in one language with the machine label, the
-// scope and duty panels, provenance with "Last verified", and every state the
-// card names. Nothing here writes, and nothing claims the duty applies here.
+// The obligation page (design/screens/tenant-obligation.html): the head with
+// its link back to the regulation, "In plain words" (bleqq's summary, never
+// called the original), "The rule's own words", then five cards in their
+// order. Nothing here writes the library, and nothing claims the duty applies.
 
-// The register's panels, participants, tags and comments are mounted by the
-// page and filled by their own packages. Here each one stands in as a marker,
-// so the page's mount points and their order are what the tests read.
-const PANELS = ['Applicability', 'Status', 'Gaps', 'Links', 'Participants', 'Units', 'History', 'Tags', 'Comments'] as const;
+// The register's parts, participants, tags and comments are filled by their own
+// packages and tested in their own files. Here each stands in as a marker, so
+// the page's mount points, their cards and their order are what the tests read.
+// "Our position" is drawn for real: its blocks are the page's own.
+const PANELS = ['Handle', 'Gaps', 'Participants', 'Units', 'History', 'Tags', 'Comments'] as const;
 function marker(name: string) {
   return {
     [`Obligation${name}Panel`]: ({ obligationId }: { obligationId: string }) => <span data-panel-mount={name} data-for={obligationId} />,
   };
 }
-vi.mock('./ObligationApplicabilityPanel', () => marker('Applicability'));
-vi.mock('./ObligationStatusPanel', () => marker('Status'));
+vi.mock('./ObligationStatusPanel', async (actual) => ({ ...(await actual<Record<string, unknown>>()), ...marker('Handle') }));
 vi.mock('./ObligationGapsPanel', () => marker('Gaps'));
-vi.mock('./ObligationLinksPanel', () => marker('Links'));
 vi.mock('./ObligationParticipantsPanel', () => marker('Participants'));
 vi.mock('./ObligationUnitsPanel', () => marker('Units'));
 vi.mock('./ObligationHistoryPanel', () => marker('History'));
@@ -40,11 +40,12 @@ vi.mock('./ObligationCommentsPanel', () => marker('Comments'));
 
 const t = createT('en');
 
+// The summary bleqq wrote in Swedish, and its English machine translation.
 const sv: LocalizedText = { text: 'Investeringsanalys från tredje part får tas emot endast…', language: 'sv', isOriginal: true, isMachine: false };
 const en: LocalizedText = { text: 'Research from third parties may be received only if…', language: 'en', isOriginal: false, isMachine: true };
 
 // Version 1 was seeded, so nobody approved it; version 2 a person approved.
-// Every instant is fixed: nothing on this card reads today's date.
+// Every instant is fixed: nothing on this page reads today's date.
 const nobody = { verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null };
 const seeded: ObligationVersionRow = {
   versionNumber: 1,
@@ -70,6 +71,19 @@ const byAgents: ObligationVersionRow = {
   proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' },
 };
 const MACHINE_CONFIRMED = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
+
+// The section the duty cites: the authority published it in Swedish, and the library
+// holds an English machine translation beside it.
+const section = {
+  id: 'pv-6',
+  refLabel: '9 kap. 6 §',
+  path: 'FFFS 2017:2 > 9 kap. > 6 §',
+  heading: 'Betalning för analys',
+  texts: [
+    { text: 'Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel.', language: 'sv', isOriginal: true, isMachine: false },
+    { text: "Investment research from a third party may be received only if it is paid from the institution's own resources.", language: 'en', isOriginal: false, isMachine: true },
+  ],
+};
 
 const research: ObligationDetail = {
   id: 'ob-1',
@@ -128,7 +142,69 @@ const research: ObligationDetail = {
   complianceStatus: null,
   firstLineOwner: null,
   ownerTeam: null,
-  provisions: [],
+  provisions: [section],
+};
+
+const NOT_ASSESSED = { key: 'not_assessed', kind: 'not_assessed', label: 'Not assessed' };
+const PARTLY = { key: 'partly_compliant', kind: 'partly', label: 'Partly compliant' };
+const COMPLIANT = { key: 'compliant', kind: 'compliant', label: 'Compliant' };
+const SARA = { id: 'p-sara', name: 'Sara Lindqvist' };
+
+function entity(id: string, name: string, patch: Partial<RegisterEntityStatus>): RegisterEntityStatus {
+  return {
+    orgUnitId: id,
+    orgUnitName: name,
+    applicability: 'applies',
+    applicabilityReason: 'We give advice.',
+    applicabilityDecidedAt: '2026-09-18T08:30:00Z',
+    applicabilityDecidedBy: SARA,
+    complianceStatus: COMPLIANT,
+    statusNote: null,
+    riskRating: null,
+    owner: null,
+    ownerTeam: null,
+    process: null,
+    system: null,
+    evidenceLocation: null,
+    nextReviewDate: null,
+    version: 1,
+    ...patch,
+  };
+}
+
+/** Nobody at the bank has worked on the duty yet. */
+const untouched: RegisterEntry = {
+  obligationId: 'ob-1',
+  interpretation: { obligationId: 'ob-1', current: null, earlier: [] },
+  applicability: 'under_assessment',
+  applicabilityReason: null,
+  applicabilityDecidedAt: null,
+  applicabilityDecidedBy: null,
+  complianceStatus: NOT_ASSESSED,
+  statusNote: null,
+  riskRating: null,
+  firstLineOwner: null,
+  complianceContact: null,
+  ownerTeam: null,
+  process: null,
+  system: null,
+  evidenceLocation: null,
+  nextReviewDate: null,
+  entities: [],
+  version: 0,
+  updatedAt: null,
+};
+const SPAN = [
+  { orgUnitId: 'e-bank', orgUnitName: 'Example Bank AB' },
+  { orgUnitId: 'e-fonder', orgUnitName: 'Example Fonder AB' },
+];
+/** The bank applies and complies; the fund company is partly compliant, the weakest. */
+const worked: RegisterEntry = {
+  ...untouched,
+  applicability: 'applies',
+  complianceStatus: PARTLY,
+  entities: [entity('e-bank', 'Example Bank AB', {}), entity('e-fonder', 'Example Fonder AB', { complianceStatus: PARTLY })],
+  version: 3,
 };
 
 const ME = {
@@ -167,14 +243,14 @@ const versionDiff: VersionDiff = {
   ],
 };
 
-/** The server: /me for the format context and the permissions, then the card, the register read, the diff and the report. */
-function serve(answer: ObligationDetail | number, register: number = 200) {
+/** The server: /me for the format context and the permissions, then the record, the register read, the diff and the report. */
+function serve(answer: ObligationDetail | number, register: RegisterEntry | number = untouched, span: { orgUnitId: string; orgUnitName: string }[] = []) {
   return installAdapter((sent) => {
-    // The bank has answered nothing on this duty; the panels are markers here.
     if (sent.path === '/api/v1/obligations/ob-1/register') {
-      const nothingYet = { problemReports: { items: [], total: 0 }, changes: { items: [], total: 0, openCount: 0 } };
-      return register === 200 ? { status: 200, data: withPanels({ version: 0 }, nothingYet) } : { status: register, data: { detail: 'no', code: 'server_error' } };
+      const nothingYet = { spannedEntities: span, problemReports: { items: [], total: 0 }, changes: { items: [], total: 0, openCount: 0 } };
+      return typeof register === 'number' ? { status: register, data: { detail: 'no', code: 'server_error' } } : { status: 200, data: withPanels(register, nothingYet) };
     }
+    if (sent.path === '/api/v1/obligations/ob-1/register/entities') return { status: 200, data: span };
     if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
     // The record's "Reported problems" (AUD-03): the bank has filed none on it.
     if (sent.method === 'get' && sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
@@ -190,26 +266,37 @@ function serve(answer: ObligationDetail | number, register: number = 200) {
   }, { me: ME });
 }
 
-describe('the language chips', () => {
-  it('labels the original as the original and offers the reader a language the version does not hold', () => {
-    expect(languageChoices([sv, en], 'en', 'en', t)).toEqual([
-      { language: 'sv', label: 'Swedish, original', selected: false, hasText: true },
+const TITLE = 'Pay for third-party research only under the permitted models';
+const CARDS = ['Our position', 'How we comply', 'The rule', 'Source and changes', 'People and discussion'];
+const cardTitles = () => [...document.querySelectorAll<HTMLElement>('section > h2')].map((heading) => heading.textContent).filter((text) => text !== null && CARDS.includes(text));
+const card = (title: string) => screen.getByRole('heading', { level: 2, name: title }).closest('section') as HTMLElement;
+const mounts = (root: ParentNode = document) => [...root.querySelectorAll<HTMLElement>('[data-panel-mount]')].map((mount) => mount.dataset.panelMount);
+
+describe('the summary\'s language chips', () => {
+  it('names each language and nothing else, and offers the reader a language the version does not hold', () => {
+    expect(summaryChoices([sv, en], 'en', 'en')).toEqual([
+      { language: 'sv', label: 'Swedish', selected: false, hasText: true },
       { language: 'en', label: 'English', selected: true, hasText: true },
     ]);
     // A Swedish reader of a record with no Swedish text still gets a chip, and
     // it holds none. The names are in the reader's own language, not the text's.
-    expect(languageChoices([en], 'en', 'sv', createT('sv'))).toEqual([
+    expect(summaryChoices([en], 'en', 'sv')).toEqual([
       { language: 'en', label: 'engelska', selected: true, hasText: true },
       { language: 'sv', label: 'svenska', selected: false, hasText: false },
     ]);
-    expect(languageChoices([], 'en', 'en', t)).toEqual([{ language: 'en', label: 'English', selected: true, hasText: false }]);
+    expect(summaryChoices([], 'en', 'en')).toEqual([{ language: 'en', label: 'English', selected: true, hasText: false }]);
   });
 
-  it('finds the text of a language, and the original to go back to', () => {
+  it('keeps the regulation page\'s chips, whose original is still marked', () => {
+    expect(languageChoices([sv, en], 'en', 'en', t).map((choice) => choice.label)).toEqual(['Swedish, original', 'English']);
+    expect(languageChoices([sv, en], 'sv', 'sv', createT('sv')).map((choice) => choice.label)).toEqual(['svenska, original', 'engelska']);
+  });
+
+  it('finds the text of a language, and the language bleqq wrote in', () => {
     expect(textIn([sv, en], 'sv')).toEqual(sv);
     expect(textIn([sv, en], 'fi')).toBeNull();
     expect(originalLanguage([en, sv])).toBe('sv');
-    // No row says it is the original: the first one stands in for it.
+    // No row is flagged: the first one stands in for it.
     expect(originalLanguage([en])).toBe('en');
     expect(originalLanguage([])).toBeNull();
   });
@@ -218,13 +305,13 @@ describe('the language chips', () => {
 describe('ObligationScreen', () => {
   beforeEach(() => {
     resetApiForTests();
-    tokenStore.set('tok');
+    tokenStore.set('session-token');
   });
 
-  it('shows the header slots in order, the duty, its scope and where it comes from', async () => {
+  it('heads the page with its pills, the regulation one click away, and the title', async () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
 
     // Instrument, regime, binding level: brand, information, information (INV-S3).
     const header = document.querySelectorAll('[data-header-pills] [data-pill]');
@@ -233,6 +320,90 @@ describe('ObligationScreen', () => {
       ['Securities', 'information'],
       ['Binding', 'information'],
     ]);
+    // The regulation's short name goes back to the regulation's own page.
+    const back = document.querySelector('[data-header-pills] [data-instrument-link]') as HTMLElement;
+    expect(back).toHaveAttribute('href', '/inventory/instruments/in-1');
+    expect(back).toHaveTextContent('FFFS 2017:2');
+    // Nobody stands anywhere yet, so the head names no weakest company.
+    expect(document.querySelector('[data-status-header]')).toBeNull();
+  });
+
+  it('names the weakest company beside the head once the bank stands somewhere', async () => {
+    serve(research, worked, SPAN);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    const standing = (await screen.findByText('at Example Fonder AB, the weakest legal entity')).closest('[data-status-header]') as HTMLElement;
+    expect(within(standing).getByText('Partly compliant')).toHaveAttribute('data-pill', 'warning');
+    // The head's own pills stay three.
+    expect(document.querySelectorAll('[data-header-pills] [data-pill]')).toHaveLength(3);
+  });
+
+  it('lays out the five cards in their order, for a worked and an untouched duty alike', async () => {
+    for (const [register, span] of [
+      [untouched, []],
+      [worked, SPAN],
+    ] as const) {
+      resetApiForTests();
+      tokenStore.set('session-token');
+      serve(research, register, [...span]);
+      const shown = renderIn(<ObligationScreen obligationId="ob-1" />);
+      await screen.findByRole('heading', { level: 1, name: TITLE });
+      await waitFor(() => expect(document.querySelector('[data-position-entity]')).not.toBeNull());
+      expect(cardTitles()).toEqual(CARDS);
+      // What each card holds, in its order.
+      expect(mounts(card('How we comply'))).toEqual(['History', 'Handle', 'Gaps']);
+      expect(card('The rule').querySelector('[data-scope-panel] + [data-duty-panel]')).not.toBeNull();
+      expect(mounts(card('The rule'))).toEqual(['Tags']);
+      const source = card('Source and changes');
+      const parts = ['provenancePanel', 'relatedChanges', 'versionsPanel', 'relatedPanel'];
+      expect(
+        [...source.querySelectorAll<HTMLElement>('[data-provenance-panel], [data-related-changes], [data-versions-panel], [data-related-panel]')].map((part) => parts.find((name) => name in part.dataset)),
+      ).toEqual(parts);
+      expect(within(source).getByRole('button', { name: /^Reported problems/ })).toBeInTheDocument();
+      expect(mounts(card('People and discussion'))).toEqual(['Participants', 'Comments']);
+      expect(mounts().every((name) => document.querySelector(`[data-panel-mount="${name}"]`)?.getAttribute('data-for') === 'ob-1')).toBe(true);
+      shown.unmount();
+    }
+  });
+
+  it('draws "Our position" per company once the bank has worked on it, and one block for the whole duty before', async () => {
+    serve(research, worked, SPAN);
+    const shown = renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 3, name: 'Example Fonder AB' });
+    const position = card('Our position');
+    expect([...position.querySelectorAll('[data-position-entity] > h3')].map((heading) => heading.textContent)).toEqual([
+      'The obligation as a whole',
+      'Example Bank AB',
+      'Example Fonder AB',
+    ]);
+    expect(position.querySelectorAll('[data-status-row]')).toHaveLength(2);
+    shown.unmount();
+
+    resetApiForTests();
+    tokenStore.set('session-token');
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    expect(await screen.findByText('Nobody has decided yet.')).toBeInTheDocument();
+    expect(card('Our position').querySelectorAll('[data-position-entity]')).toHaveLength(1);
+    expect(card('Our position').querySelector('[data-status-row]')).toBeNull();
+  });
+
+  it('holds a standard\'s units in "Our position", and only a standard\'s', async () => {
+    serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard' } });
+    const shown = renderIn(<ObligationScreen obligationId="ob-1" />);
+    await waitFor(() => expect(card('Our position').querySelector('[data-panel-mount="Units"]')).not.toBeNull());
+    shown.unmount();
+    resetApiForTests();
+    tokenStore.set('session-token');
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByText('Nobody has decided yet.');
+    expect(document.querySelector('[data-panel-mount="Units"]')).toBeNull();
+  });
+
+  it('shows the rule, the duty, its scope and where it comes from, linked back to the regulation', async () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: TITLE });
 
     // Scope: a brand pill per term, and plain words where the record restricts nothing.
     const scope = document.querySelector('[data-scope-panel]') as HTMLElement;
@@ -245,67 +416,73 @@ describe('ObligationScreen', () => {
     expect(within(duty).getByText('Governance')).toBeInTheDocument();
     expect(within(duty).getByText('5 years')).toBeInTheDocument();
 
-    // Provenance: the source link, the verified date with no name, the draft's origin.
-    const source = screen.getByRole('link', { name: 'FFFS 2017:2, 9 kap. 6 §' });
+    // Provenance: the regulation linked to its page, the source link, the verified date with no name, the draft's origin.
+    const provenance = document.querySelector('[data-provenance-panel]') as HTMLElement;
+    expect(within(provenance).getByRole('link', { name: 'FFFS 2017:2 om värdepappersrörelse' })).toHaveAttribute('href', '/inventory/instruments/in-1');
+    const source = within(provenance).getByRole('link', { name: 'FFFS 2017:2, 9 kap. 6 §' });
     expect(source).toHaveAttribute('href', 'https://www.fi.se/');
     expect(source).toHaveAttribute('rel', 'noopener noreferrer');
     expect(document.querySelector('[data-last-verified]')?.textContent).toBe('30 Jun 2026');
     expect(screen.getByText(/agent pipeline 0\.3, through proposal review/)).toBeInTheDocument();
 
-    // Versions and the duties filed beside it.
+    // Versions stay open; the duties filed beside it are folded with their count.
     expect(document.querySelectorAll('[data-version-row]')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Related obligations (1)' }));
     expect(screen.getByRole('link', { name: 'Disclose all costs and charges' })).toHaveAttribute('href', '/inventory/obligations/ob-2');
 
-    // The reforms filed against this duty, read for this bank (WAT-04); none here.
-    expect(within(document.querySelector('[data-related-changes]') as HTMLElement).getByRole('heading', { level: 2, name: 'Related changes' })).toBeInTheDocument();
-
-    // Nothing on the card claims the duty applies here, or that the bank complies:
-    // those are the register panels' own facts.
-    expect(screen.queryByText('Applies')).toBeNull();
-    expect(screen.queryByText('Compliant')).toBeNull();
+    // No reform is filed against this duty: one line, no heading.
+    expect(await screen.findByText('No change affects this obligation')).toBeInTheDocument();
   });
 
-  it('mounts every panel once, in the card order, for this obligation, and units only on a standard', async () => {
+  it('calls the summary "In plain words", names its languages only, and labels a machine translation without calling anything the original', async () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
-    const mounts = () => [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')];
-    expect(mounts().map((mount) => mount.dataset.panelMount)).toEqual(['Tags', 'Links', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
-    expect(mounts().every((mount) => mount.dataset.for === 'ob-1')).toBe(true);
+    await screen.findByRole('heading', { level: 1, name: TITLE });
+
+    const summary = document.querySelector('[data-summary]') as HTMLElement;
+    expect(within(summary).getByRole('heading', { level: 2, name: 'In plain words' })).toBeInTheDocument();
+    expect(within(summary).getByText('Machine-translated from Swedish')).toBeInTheDocument();
+    expect([...summary.querySelectorAll('[data-language-chips] button')].map((chip) => chip.textContent)).toEqual(['Swedish', 'English']);
+    expect(summary.querySelector('[data-legal-text] [lang="en"]')?.textContent).toBe(en.text);
+    expect(summary).not.toHaveTextContent(/original/i);
+
+    fireEvent.click(within(summary).getByRole('button', { name: 'Swedish' }));
+    await waitFor(() => expect(summary.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
+    // The language bleqq wrote in carries no label at all.
+    expect(summary.querySelector('[data-machine-translation]')).toBeNull();
+    expect(summary).not.toHaveTextContent(/original/i);
   });
 
-  it('mounts the units panel on a standard\'s conformance obligation', async () => {
-    serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard' } });
-    renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
-    const names = [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')].map((mount) => mount.dataset.panelMount);
-    expect(names).toEqual(['Tags', 'Links', 'Units', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
-  });
-
-  it('labels the machine translation and puts the original back behind a chip', async () => {
-    serve(research);
-    renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
-
-    expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();
-    expect(document.querySelectorAll('[data-language-chips] button')).toHaveLength(2);
-    expect(document.querySelector('[data-legal-text] [lang="en"]')?.textContent).toBe(en.text);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Swedish, original' }));
-    await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
-    // The original carries no label of its own.
-    expect(screen.queryByText(/Machine translation from/)).not.toBeInTheDocument();
-  });
-
-  it('says so when the version holds no text in the reader\'s language, and offers the original', async () => {
+  it('says so when the version holds no summary in the reader\'s language, and offers the one it was written in', async () => {
     serve({ ...research, summary: sv, translations: [sv] });
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
 
-    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+    fireEvent.click(within(document.querySelector('[data-language-chips]') as HTMLElement).getByRole('button', { name: 'English' }));
     expect(await screen.findByText('No English text yet')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('link', { name: 'Show the original' }));
-    await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
+    fireEvent.click(screen.getByRole('link', { name: 'Read it in Swedish' }));
+    await waitFor(() => expect(document.querySelector('[data-summary] [data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
+  });
+
+  it('puts the rule\'s own words under the summary, labelled for what they are, and none for a duty that cites no provision', async () => {
+    serve(research);
+    const shown = renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: TITLE });
+    const words = document.querySelector('[data-summary] + [data-rule-words]') as HTMLElement;
+    expect(within(words).getByRole('heading', { level: 2, name: "The rule's own words" })).toBeInTheDocument();
+    expect(within(words).getByRole('heading', { level: 3, name: 'Betalning för analys' })).toBeInTheDocument();
+    expect(words.querySelector('[data-provision-label]')?.textContent).toBe('Machine translation from Swedish. The original is authoritative.');
+    expect(within(words).getByRole('link', { name: 'FFFS 2017:2' })).toHaveAttribute('href', '/inventory/instruments/in-1');
+    fireEvent.click(within(words).getByRole('button', { name: 'Swedish, original' }));
+    expect(words.querySelector('[data-provision-label]')?.textContent).toBe('Swedish, original');
+    shown.unmount();
+
+    resetApiForTests();
+    tokenStore.set('session-token');
+    serve({ ...research, provisions: [] });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: TITLE });
+    expect(document.querySelector('[data-rule-words]')).toBeNull();
   });
 
   it('leads the head of the bank\'s own record with "Private to us", its instrument outlined (OWN-04)', async () => {
@@ -350,6 +527,7 @@ describe('ObligationScreen', () => {
     renderIn(<ObligationScreen obligationId="ob-1" />);
     await screen.findByRole('heading', { level: 1, name: 'Third-party payments' });
     expect(screen.getByText('Not verified yet')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Related obligations (0)' }));
     expect(screen.getByText('The library files no other duty beside this one.')).toBeInTheDocument();
     expect(screen.getByText(/^12 Mar 2026.*through proposal review$/)).toBeInTheDocument();
   });
@@ -361,7 +539,7 @@ describe('ObligationScreen', () => {
     async function open(record: ObligationDetail) {
       serve(record);
       renderIn(<ObligationScreen obligationId="ob-1" />);
-      await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+      await screen.findByRole('heading', { level: 1, name: TITLE });
     }
 
     it('reads machine-confirmed where a person\'s verification would, when a person last verified the record before it', async () => {
@@ -453,45 +631,50 @@ describe('ObligationScreen', () => {
     gone.unmount();
 
     resetApiForTests();
-    tokenStore.set('tok');
+    tokenStore.set('session-token');
     serve(500);
     renderIn(<ObligationScreen obligationId="ob-1" />);
     expect(await screen.findByText('Could not load this obligation')).toBeInTheDocument();
   });
 
-  it('shows the loading state while the card is on its way', () => {
+  it('shows the loading state while the record is on its way', () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
     expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
   });
 
-  it('asks for the card and the register read together from the address, and mounts the register\'s panels once that read answers', async () => {
+  it('asks for the record and the register read together from the address, and mounts the register\'s parts once that read answers', async () => {
     const sent = serve(research);
     // Data stays fresh for 30 seconds, as in the app's own client (app/providers.tsx).
     const client = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
     renderIn(<ObligationScreen obligationId="ob-1" />, undefined, client);
-    // Before either answers, only the tags (read off the card) are mounted: no register
-    // panel is there yet to ask for what the register read is already bringing.
+    // Before either answers, only the tags are mounted, asking for their list beside the
+    // record: no register part is there yet to ask for what the register read is already
+    // bringing, and every card is already in its place.
     expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
-    expect([...document.querySelectorAll<HTMLElement>('[data-panel-mount]')].map((mount) => mount.dataset.panelMount)).toEqual(['Tags']);
-    await waitFor(() => expect(document.querySelectorAll('[data-panel-mount]')).toHaveLength(8));
+    expect(mounts()).toEqual(['Tags']);
+    expect(cardTitles()).toEqual(CARDS);
+    await waitFor(() => expect(mounts()).toEqual(['History', 'Handle', 'Gaps', 'Tags', 'Participants', 'Comments']));
     // The reports and related changes on the page came with the register read and asked nothing.
-    await screen.findByRole('heading', { level: 2, name: 'Related changes' });
+    await screen.findByText('No change affects this obligation');
     expect(new Set(sent.map((call) => call.path))).toEqual(new Set(['/api/v1/me', '/api/v1/obligations/ob-1', '/api/v1/obligations/ob-1/register']));
   });
 
-  it('mounts the panels anyway when the register read fails, and each asks its own route', async () => {
-    serve(research, 500);
+  it('mounts the parts anyway when the register read fails, and each asks its own route', async () => {
+    const sent = serve(research, 500);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await waitFor(() => expect(document.querySelectorAll('[data-panel-mount]')).toHaveLength(8));
-    const mounts = [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')];
-    expect(mounts.map((mount) => mount.dataset.panelMount)).toEqual(['Tags', 'Links', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
+    await waitFor(() => expect(mounts()).toEqual(['History', 'Handle', 'Gaps', 'Tags', 'Participants', 'Comments']));
+    expect(await screen.findByText('Does it apply to us could not be loaded')).toBeInTheDocument();
+    // A part asking again does not take the others down with it: the read is asked a bounded number of times.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(sent.filter((call) => call.path === '/api/v1/obligations/ob-1/register').length).toBeLessThanOrEqual(3);
+    expect(mounts()).toHaveLength(6);
   });
 
   it('reads the record as of a typed date and offers the way back to today', async () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
     expect(document.querySelector('[data-as-of]')).toBeNull();
 
     fireEvent.change(screen.getByLabelText('As of'), { target: { value: '2026-10-01' } });
@@ -506,7 +689,7 @@ describe('ObligationScreen', () => {
   it('says so when no version of the record was in force on the date asked for', async () => {
     serve({ ...research, version: null, summary: null });
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
     fireEvent.change(screen.getByLabelText('As of'), { target: { value: '2017-01-01' } });
     expect(await screen.findByText('No version of this obligation was in force on 1 Jan 2017.')).toBeInTheDocument();
   });
@@ -514,7 +697,7 @@ describe('ObligationScreen', () => {
   it('marks the sentences a version added and names both effective dates', async () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
 
     fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
     await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeInTheDocument());
@@ -524,24 +707,26 @@ describe('ObligationScreen', () => {
     expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')).toBeNull();
     expect(document.querySelector('[data-legal-text] ins')?.textContent).toContain('The institution sets criteria for an annual assessment.');
     // Either side machine translated labels the whole comparison (INV-05).
-    expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();
+    expect(document.querySelector('[data-summary] [data-machine-translation]')?.textContent).toBe('Machine-translated from Swedish');
 
     fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
     await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeNull());
   });
 
-  it('offers "This looks wrong" only to a reader who may report, and acknowledges the report', async () => {
+  it('offers "This looks wrong" and the reported problems only to a reader who may report, and acknowledges the report', async () => {
     serve(research);
     const withoutReport = renderIn(<ObligationScreen obligationId="ob-1" />, ['library.read']);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
+    await screen.findByText('No change affects this obligation');
     expect(screen.queryByRole('button', { name: 'This looks wrong' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Reported problems/ })).not.toBeInTheDocument();
     withoutReport.unmount();
 
     resetApiForTests();
-    tokenStore.set('tok');
+    tokenStore.set('session-token');
     const sent = serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    await screen.findByRole('heading', { level: 1, name: TITLE });
     fireEvent.click(screen.getByRole('button', { name: 'This looks wrong' }));
     fireEvent.change(await screen.findByLabelText('What you see'), { target: { value: 'The English says annually.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
@@ -552,20 +737,22 @@ describe('ObligationScreen', () => {
     ]);
   });
 
-  it('shows the record\'s reported problems, and reads them again once a report is filed', async () => {
+  it('folds the record\'s reported problems with their count, and reads them again once a report is filed', async () => {
     const sent = serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
-    const section = await screen.findByRole('heading', { name: 'Reported problems' });
-    expect(section.closest('[data-problem-reports]')).not.toBeNull();
-    expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
+    const fold = await screen.findByRole('button', { name: 'Reported problems (0)' });
+    expect(fold).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(fold);
+    expect((await screen.findByText('No problems reported on this record.')).closest('[data-problem-reports]')).not.toBeNull();
     const reads = () => sent.filter((call) => call.method === 'get' && call.path === '/api/v1/problem-reports');
-    expect(reads().map((call) => call.params)).toEqual([{ subjectType: 'obligation', subjectId: 'ob-1', limit: 20, offset: 0 }]);
+    expect(new Set(reads().map((call) => JSON.stringify(call.params)))).toEqual(new Set([JSON.stringify({ subjectType: 'obligation', subjectId: 'ob-1', limit: 20, offset: 0 })]));
+    const before = reads().length;
 
     fireEvent.click(screen.getByRole('button', { name: 'This looks wrong' }));
     fireEvent.change(await screen.findByLabelText('What you see'), { target: { value: 'The English says annually.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Done' }));
-    await waitFor(() => expect(reads()).toHaveLength(2));
+    await waitFor(() => expect(reads().length).toBeGreaterThan(before));
   });
 });
 
@@ -581,27 +768,13 @@ describe('the diff sentence', () => {
   });
 });
 
-// The panels their packages have filled, one line each; each is tested in its own file.
-const FILLED: ReadonlySet<string> = new Set([
-  'Tags', // c10-fe-obligation-tags
-  'Applicability', // c8-ui-applicability-status
-  'Status', // c8-ui-applicability-status
-  'Links', // c8-ui-links-history-participants
-  'History', // c8-ui-links-history-participants
-  'Participants', // c8-ui-links-history-participants
-  'Gaps', // c8-ui-gaps-risk
-  'Units', // c8-ui-units
-  'Comments', // c10-fe-comments-panel, tested in features/collab/CommentsPanel.test.tsx
-]);
-
-describe('the panel stubs', () => {
-  it('render nothing until their packages fill them', async () => {
-    for (const name of PANELS.filter((panel) => !FILLED.has(panel))) {
-      const actual = await vi.importActual<Record<string, (props: { obligationId: string }) => ReactNode>>(`./Obligation${name}Panel`);
-      const Panel = actual[`Obligation${name}Panel`] as (props: { obligationId: string }) => ReactNode;
-      const { container, unmount } = render(<Panel obligationId="ob-1" />);
-      expect(container).toBeEmptyDOMElement();
-      unmount();
+// Every stand-in above is a part its package filled and tests in its own file.
+describe('the stand-ins', () => {
+  it('cover parts that exist', async () => {
+    for (const name of PANELS) {
+      const file = name === 'Handle' ? './ObligationStatusPanel' : `./Obligation${name}Panel`;
+      const actual = await vi.importActual<Record<string, unknown>>(file);
+      expect(typeof actual[`Obligation${name}Panel`]).toBe('function');
     }
   });
 });

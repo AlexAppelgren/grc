@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 
+import { OneLine, Part } from '@/components/inventory/ObligationPanels';
 import { GapForm } from '@/components/register/GapForm';
 import { GapRecord, GapSummary } from '@/components/register/GapsScreen';
-import { Button, ButtonBar } from '@/components/ui/Button';
-import { Panel, Row, Rows } from '@/components/ui/Panel';
+import { Button } from '@/components/ui/Button';
+import { Row, Rows } from '@/components/ui/Panel';
 import { QueryState } from '@/components/ui/States';
 import { GAPS_EDIT, REGISTER_READ } from '@/features/register/gaps/gap-view';
 import { useObligation } from '@/features/library/hooks';
@@ -30,15 +31,19 @@ function GapsPanelBody({ obligationId }: { obligationId: string }) {
   const items = gaps.data?.items ?? [];
   const title = obligation.data === undefined ? '' : (obligation.data.title?.text ?? obligation.data.instrument.shortName);
 
+  const record = edits ? (
+    <Button variant="ghost" size="small" onClick={() => setRecording(true)}>
+      {t('obligationGaps.record')}
+    </Button>
+  ) : null;
+  // No gap is one line with "Record a gap"; recorded gaps carry the heading and their count.
+  const any = items.length > 0;
+
   return (
-    <Panel title={t('obligationGaps.heading')} data-gaps-panel="">
+    <Part title={any ? `${t('obligationGaps.heading')} (${items.length})` : undefined} action={record} data-gaps-panel="">
       <QueryState query={gaps} rows={1} errorTitle={t('obligationGaps.errorTitle')}>
         {() =>
-          items.length === 0 ? (
-            <p className="text-meta text-muted" data-gaps-empty="">
-              {t('obligationGaps.none')}
-            </p>
-          ) : (
+          any ? (
             <Rows>
               {items.map((gap) => (
                 <Row key={gap.id} data-gap={gap.id} data-gap-status={gap.status.kind ?? undefined}>
@@ -47,16 +52,11 @@ function GapsPanelBody({ obligationId }: { obligationId: string }) {
                 </Row>
               ))}
             </Rows>
+          ) : (
+            <OneLine text={t('obligationGaps.none')} action={record} data-gaps-empty="" />
           )
         }
       </QueryState>
-      {edits ? (
-        <ButtonBar>
-          <Button variant="ghost" size="small" onClick={() => setRecording(true)}>
-            {t('obligationGaps.record')}
-          </Button>
-        </ButtonBar>
-      ) : null}
       {recording ? (
         <GapForm
           obligationId={obligationId}
@@ -69,7 +69,7 @@ function GapsPanelBody({ obligationId }: { obligationId: string }) {
           }}
         />
       ) : null}
-    </Panel>
+    </Part>
   );
 }
 

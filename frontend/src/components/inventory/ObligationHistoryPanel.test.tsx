@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { AxiosAdapter } from 'axios';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -76,7 +76,11 @@ describe('ObligationHistoryPanel', () => {
     expect(await screen.findByText('Every instrument outside the list is complex for us.')).toBeTruthy();
     expect(screen.getByText(/Version 2, written by Sara Lindqvist/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Write a new version' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Earlier version of how we read this rule, 1' }));
+    // Folded with their count, like the assessment history beneath it.
+    const earlier = screen.getByRole('button', { name: 'Earlier versions (1)' });
+    expect(earlier.closest('[data-slot="fold"]')).not.toBeNull();
+    expect(earlier).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(earlier);
     expect(screen.getByText('We read warrants as outside the list.')).toBeTruthy();
     expect(screen.getByText(/Version 1, written by Johan Berg/)).toBeTruthy();
     expect(await screen.findByText('Rationale 0')).toBeTruthy();
@@ -84,12 +88,15 @@ describe('ObligationHistoryPanel', () => {
     expect(screen.getByText('Example Bank AB')).toBeTruthy();
   });
 
-  it('writes the first reading with If-Match 0 and says when nothing is recorded yet', async () => {
+  it('is one line with "Write our reading" while nothing is recorded, and writes the first reading with If-Match 0', async () => {
     const { sent, ifMatch } = serve({ obligationId: 'ob-1', current: null, earlier: [] }, 0);
     renderPanel(EDITOR);
-    expect(await screen.findByText(/No reading recorded/)).toBeTruthy();
-    expect(await screen.findByText(/No assessment yet/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Write how we read it' }));
+    const line = (await screen.findByText('No reading written yet.')).closest('[data-reading-empty]') as HTMLElement;
+    expect(screen.queryByRole('heading', { name: 'How we read this rule' })).toBeNull();
+    // No assessment yet: the history is not drawn at all.
+    await waitFor(() => expect(document.querySelector('[data-loading-state]')).toBeNull());
+    expect(screen.queryByRole('button', { name: /^Assessment history/ })).toBeNull();
+    fireEvent.click(within(line).getByRole('button', { name: 'Write our reading' }));
     expect(screen.getByText('Saved as version 1 in your name. Earlier versions stay readable.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Our reading'), { target: { value: ' Custody included. ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
@@ -113,6 +120,8 @@ describe('ObligationHistoryPanel', () => {
   it('pages the history newest first, older and back', async () => {
     const { sent } = serve(reading, HISTORY_PAGE + 3);
     renderPanel(READER);
+    // The history is folded with its count; opened, it pages.
+    fireEvent.click(await screen.findByRole('button', { name: `Assessment history (${HISTORY_PAGE + 3})` }));
     expect(await screen.findByText(`1 to ${HISTORY_PAGE} of ${HISTORY_PAGE + 3}`)).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Newer' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Older' }));

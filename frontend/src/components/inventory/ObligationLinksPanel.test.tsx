@@ -62,10 +62,18 @@ describe('ObligationLinksPanel', () => {
     expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
   });
 
-  it('says so when nothing is linked', async () => {
+  it('is "Link an item" alone while nothing is linked, and nothing for a reader: "How we handle it" says what is missing', async () => {
     serve([]);
-    renderPanel(EDITOR);
-    expect(await screen.findByText(/Nothing linked yet/)).toBeTruthy();
+    const { unmount } = renderPanel(EDITOR);
+    const button = await screen.findByRole('button', { name: 'Link an item' });
+    expect(button.closest('[data-links-empty]')).not.toBeNull();
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    unmount();
+    serve([]);
+    const { container } = renderPanel(READER);
+    await waitFor(() => expect(container.querySelector('[data-loading-state]')).toBeNull());
+    expect(container.querySelector('[data-links-panel]')).toBeEmptyDOMElement();
   });
 
   it('picks one of the bank’s items and links it in one call', async () => {

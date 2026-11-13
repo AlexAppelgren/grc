@@ -1,22 +1,60 @@
 'use client';
 
 import Link from 'next/link';
+import type { HTMLAttributes, ReactNode } from 'react';
 
-import { Meta, Panel } from '@/components/ui/Panel';
+import { Fold } from '@/components/ui/fold';
+import { Meta } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { useFormatContext } from '@/features/identity/hooks';
 import { machineConfirmedLabel, presentScope } from '@/features/library/obligation-presentation';
 import type { ObligationDetail, ObligationVersionRow, RelatedObligation } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { cn } from '@/shared/utils/cn';
 import { externalHref } from '@/shared/utils/external-href';
 import { formatDate, formatDateTime } from '@/shared/utils/format';
 
-// The panels of the obligation card (design/screens/tenant-obligation.html;
-// INV-03, INV-05, INV-06). Everything here reads: the library changes only
-// through an approved proposal, so no panel writes and none of them says
-// whether the duty applies to this bank or whether the bank complies, which
-// are the register's facts from chunk 8.
+// The parts of the obligation page (design/screens/tenant-obligation.html;
+// INV-03, INV-05, INV-06). The page is five cards and each card holds parts:
+// a part is a titled section under a hairline. Everything in this file reads:
+// the library changes only through an approved proposal, so no part here
+// writes and none says whether the duty applies to this bank or whether the
+// bank complies, which are the register's facts.
+
+/**
+ * One part of a card: its heading with the part's action on the right, then
+ * the content. With no title it is a bare section, as an empty part is: one
+ * line with its action (`OneLine`), never a card of placeholders.
+ */
+export function Part({ title, action, children, className, ...rest }: { title?: ReactNode; action?: ReactNode; children: ReactNode } & Omit<HTMLAttributes<HTMLElement>, 'title'>) {
+  return (
+    <section className={cn('mt-4 border-t border-line pt-4 first-of-type:mt-0 first-of-type:border-t-0 first-of-type:pt-0', className)} {...rest}>
+      {title === undefined ? null : (
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3>{title}</h3>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+/** An empty part: what is missing, and on the right the action that fills it. */
+export function OneLine({ text, action, ...rest }: { text: string; action?: ReactNode } & HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2" {...rest}>
+      <span className="text-meta text-muted">{text}</span>
+      {action}
+    </div>
+  );
+}
+
+/** The regulation's own page, one click back from any of its duties. */
+export function instrumentHref(instrumentId: string): string {
+  return `/inventory/instruments/${instrumentId}`;
+}
 
 /** Prototype `.kv`: the muted term, the fact beside it. A row with nothing recorded is left out rather than shown empty. */
 export interface Fact {
@@ -67,9 +105,9 @@ export function ScopePanel({ obligation }: { obligation: ObligationDetail }) {
     });
   }
   return (
-    <Panel title={t('inventory.obligation.scopeTitle')} className="bg-subtle" data-scope-panel="">
+    <Part title={t('inventory.obligation.scopeTitle')} data-scope-panel="">
       <Facts facts={facts} />
-    </Panel>
+    </Part>
   );
 }
 
@@ -84,9 +122,9 @@ export function DutyPanel({ obligation }: { obligation: ObligationDetail }) {
   ];
   for (const [key, label, value] of free) if (value !== '') facts.push({ key, label, value });
   return (
-    <Panel title={t('inventory.obligation.dutyTitle')} data-duty-panel="">
+    <Part title={t('inventory.obligation.dutyTitle')} data-duty-panel="">
       <Facts facts={facts} />
-    </Panel>
+    </Part>
   );
 }
 
@@ -100,7 +138,7 @@ export function VersionsPanel({ versions }: { versions: readonly ObligationVersi
   const t = useT();
   const ctx = useFormatContext();
   return (
-    <Panel title={t('inventory.obligation.versionsTitle')} data-versions-panel="">
+    <Part title={t('inventory.obligation.versionsTitle')} data-versions-panel="">
       <div className="text-meta">
         {versions.map((version) => {
           const machine = machineConfirmedLabel(version, null, t, ctx);
@@ -116,15 +154,15 @@ export function VersionsPanel({ versions }: { versions: readonly ObligationVersi
           );
         })}
       </div>
-    </Panel>
+    </Part>
   );
 }
 
-/** The duties the library files beside this one. A relation is a cross-reference, never a statement that both reach this bank. */
+/** The duties the library files beside this one, folded with their count. A relation is a cross-reference, never a statement that both reach this bank. */
 export function RelatedPanel({ related }: { related: readonly RelatedObligation[] }) {
   const t = useT();
   return (
-    <Panel title={t('inventory.obligation.relatedTitle')} data-related-panel="">
+    <Fold title={t('inventory.obligation.relatedTitle')} count={related.length} className="mt-4" data-related-panel="">
       {related.length === 0 ? (
         <p className="text-meta text-muted">{t('inventory.obligation.relatedEmpty')}</p>
       ) : (
@@ -142,19 +180,19 @@ export function RelatedPanel({ related }: { related: readonly RelatedObligation[
           ))}
         </ul>
       )}
-    </Panel>
+    </Fold>
   );
 }
 
 /**
- * "Where it comes from" (INV-06): the instrument, the public page the record
- * was taken from, when a person last held it against that page, and who
- * drafted it. "by <name>" appears only when somebody has verified it; a
- * seeded record carries a date and no name. When an independent agent
- * confirmed the version on screen and no named person has re-verified the
- * record since, the same slot says so and names the agents instead (INV-05):
- * an older stamp, or one nobody signed, never vouches for wording no person
- * has seen.
+ * "Where it comes from" (INV-06): the regulation, linked to its own page, the
+ * public page the record was taken from, when a person last held it against
+ * that page, and who drafted it. "by <name>" appears only when somebody has
+ * verified it; a seeded record carries a date and no name. When an
+ * independent agent confirmed the version on screen and no named person has
+ * re-verified the record since, the same slot says so and names the agents
+ * instead (INV-05): an older stamp, or one nobody signed, never vouches for
+ * wording no person has seen.
  */
 export function ProvenancePanel({ obligation, actions }: { obligation: ObligationDetail; actions?: React.ReactNode }) {
   const t = useT();
@@ -162,7 +200,15 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
   const { provenance, instrument } = obligation;
   const sourceHref = externalHref(provenance.sourceUrl);
   const facts: Fact[] = [
-    { key: 'instrument', label: t('inventory.obligation.instrumentLabel'), value: instrument.name === null ? instrument.shortName : instrument.name.text },
+    {
+      key: 'instrument',
+      label: t('inventory.obligation.instrumentLabel'),
+      value: (
+        <Link href={instrumentHref(instrument.id)} prefetch={false} className="underline">
+          {instrument.name === null ? instrument.shortName : instrument.name.text}
+        </Link>
+      ),
+    },
     { key: 'ref', label: t('inventory.obligation.officialRefLabel'), value: <span className="font-mono">{instrument.officialRef}</span> },
     { key: 'level', label: t('inventory.obligation.levelLabel'), value: obligation.bindingLevel.label },
   ];
@@ -207,10 +253,9 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
         : t('inventory.obligation.createdByPerson', { date: formatDateTime(provenance.createdAt, ctx) }),
   });
   return (
-    <Panel title={t('inventory.obligation.provenanceTitle')} data-provenance-panel="">
+    <Part title={t('inventory.obligation.provenanceTitle')} data-provenance-panel="">
       <Facts facts={facts} />
       {actions}
-    </Panel>
+    </Part>
   );
 }
-

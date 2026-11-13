@@ -1,8 +1,6 @@
 {
   "obligationStatus.heading": "Where we stand",
   "obligationStatus.weakestEntity": "at {entity}, the weakest legal entity",
-  "obligationStatus.notAsked": "No status is asked while it does not apply. The last one stays in the history and its gaps stay on record.",
-  "obligationStatus.notYet": "No status is asked until it applies.",
   "obligationStatus.statusNote": "Status note",
   "obligationStatus.risk": "Risk if we fail",
   "obligationStatus.firstLineOwner": "First-line owner",
@@ -25,5 +23,11 @@
   "obligationStatus.system": "System",
   "obligationStatus.evidence": "Evidence kept",
   "obligationStatus.notMapped": "Not mapped",
-  "obligationStatus.ownerTeam": "Owner team"
+  "obligationStatus.ownerTeam": "Owner team",
+  "obligationStatus.ownerLine": "Owner {name}",
+  "obligationStatus.reviewLine": "Next review {date}",
+  "obligationStatus.openGaps": "{count, plural, one {# open gap} other {# open gaps}}",
+  "obligationStatus.more": "More",
+  "obligationStatus.handleEmpty": "Not mapped to a process, system or evidence yet.",
+  "obligationStatus.mapIt": "Map it"
 }

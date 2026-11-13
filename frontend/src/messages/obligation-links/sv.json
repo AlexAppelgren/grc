@@ -1,6 +1,4 @@
 {
-  "obligationLinks.heading": "Länkade interna underlag",
-  "obligationLinks.empty": "Inget är länkat ännu. Länka den policy, rutin, kontroll, process eller det system som bär den här skyldigheten.",
   "obligationLinks.errorTitle": "Länkade interna underlag kunde inte hämtas",
   "obligationLinks.more": "Visar {shown} av {total}.",
   "obligationLinks.add": "Länka ett underlag",

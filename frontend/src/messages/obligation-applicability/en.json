@@ -8,7 +8,6 @@
   "obligationApplicability.whole": "The obligation as a whole",
   "obligationApplicability.decide": "Decide",
   "obligationApplicability.change": "Change",
-  "obligationApplicability.separateFacts": "Whether a rule applies and whether we comply are two separate facts, recorded separately.",
   "obligationApplicability.formTitle": "Does it apply to {entity}?",
   "obligationApplicability.decision": "Decision",
   "obligationApplicability.reason": "Reason",
@@ -20,5 +19,6 @@
   "obligationApplicability.confirm": "Set applicability",
   "obligationApplicability.saved": "Saved: {value}.",
   "obligationApplicability.stale": "Someone changed this answer while you were deciding. Reload to see theirs, then decide again.",
-  "obligationApplicability.errorTitle": "Does it apply to us could not be loaded"
+  "obligationApplicability.errorTitle": "Does it apply to us could not be loaded",
+  "obligationApplicability.label": "Does it apply"
 }

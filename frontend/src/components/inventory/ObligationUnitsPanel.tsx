@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 
+import { Part } from '@/components/inventory/ObligationPanels';
 import { PasteUnitsDialog } from '@/components/inventory/PasteUnitsDialog';
 import { SoaView } from '@/components/inventory/SoaView';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
-import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
+import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { TabPanel, Tabs } from '@/components/ui/Tabs';
@@ -48,16 +49,16 @@ export function ObligationUnitsPanel({ obligationId }: { obligationId: string })
 
   if (entry.isPending) {
     return (
-      <Panel title={t('obligationUnits.heading')}>
+      <Part title={t('obligationUnits.heading')}>
         <LoadingState />
-      </Panel>
+      </Part>
     );
   }
   if (entry.isError) {
     return (
-      <Panel title={t('obligationUnits.heading')}>
+      <Part title={t('obligationUnits.heading')}>
         <ErrorState title={t('obligationUnits.loadError')} onRetry={() => void entry.refetch()} />
-      </Panel>
+      </Part>
     );
   }
   const applying = entry.data.entities.filter((row) => row.applicability === 'applies');
@@ -65,7 +66,7 @@ export function ObligationUnitsPanel({ obligationId }: { obligationId: string })
   const current = applying.find((row) => row.orgUnitId === chosen) ?? applying[0];
 
   return (
-    <Panel title={t('obligationUnits.heading')} data-units-panel="">
+    <Part title={t('obligationUnits.heading')} data-units-panel="">
       <p className="mb-3 text-muted">{t('obligationUnits.lede')}</p>
       {current === undefined ? (
         <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-units-no-entity="">
@@ -90,7 +91,7 @@ export function ObligationUnitsPanel({ obligationId }: { obligationId: string })
           <EntityUnits key={current.orgUnitId} obligationId={obligationId} entity={{ id: current.orgUnitId, name: current.orgUnitName }} />
         </>
       )}
-    </Panel>
+    </Part>
   );
 }
 

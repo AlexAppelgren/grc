@@ -204,5 +204,19 @@
   "inventory.filter.ownerTeam": "Owning team",
   "inventory.pager.range": "{from}–{to} of {total}",
   "inventory.pager.perPage": "Per page",
-  "inventory.pager.all": "All"
+  "inventory.pager.all": "All",
+  "inventory.obligation.plainWordsTitle": "In plain words",
+  "inventory.obligation.summaryMachine": "Machine-translated from {language}",
+  "inventory.obligation.summaryReadIn": "Read it in {language}",
+  "inventory.obligation.ruleWordsTitle": "The rule's own words",
+  "inventory.obligation.ruleWordsMore": "Show {count} more",
+  "inventory.obligation.ruleWordsNotHeld": "The library does not hold this rule's wording yet.",
+  "inventory.obligation.officialText": "{language}, official text",
+  "inventory.obligation.showAll": "Show all",
+  "inventory.obligation.showLess": "Show less",
+  "inventory.obligation.card.position": "Our position",
+  "inventory.obligation.card.comply": "How we comply",
+  "inventory.obligation.card.rule": "The rule",
+  "inventory.obligation.card.source": "Source and changes",
+  "inventory.obligation.card.people": "People and discussion"
 }

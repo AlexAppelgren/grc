@@ -1,8 +1,6 @@
 {
   "obligationStatus.heading": "Var vi står",
   "obligationStatus.weakestEntity": "vid {entity}, den svagaste juridiska personen",
-  "obligationStatus.notAsked": "Ingen status efterfrågas medan den inte gäller. Den senaste finns kvar i historiken och dess brister ligger kvar.",
-  "obligationStatus.notYet": "Ingen status efterfrågas förrän den gäller.",
   "obligationStatus.statusNote": "Statuskommentar",
   "obligationStatus.risk": "Risk om vi brister",
   "obligationStatus.firstLineOwner": "Ägare i första linjen",
@@ -25,5 +23,11 @@
   "obligationStatus.system": "System",
   "obligationStatus.evidence": "Underlag sparas",
   "obligationStatus.notMapped": "Inte kartlagt",
-  "obligationStatus.ownerTeam": "Ägarteam"
+  "obligationStatus.ownerTeam": "Ägarteam",
+  "obligationStatus.ownerLine": "Ägare {name}",
+  "obligationStatus.reviewLine": "Nästa översyn {date}",
+  "obligationStatus.openGaps": "{count, plural, one {# öppen brist} other {# öppna brister}}",
+  "obligationStatus.more": "Mer",
+  "obligationStatus.handleEmpty": "Inte kopplad till någon process, något system eller underlag ännu.",
+  "obligationStatus.mapIt": "Kartlägg"
 }

@@ -8,7 +8,6 @@
   "obligationApplicability.whole": "Skyldigheten som helhet",
   "obligationApplicability.decide": "Bestäm",
   "obligationApplicability.change": "Ändra",
-  "obligationApplicability.separateFacts": "Om en regel gäller och om vi följer den är två skilda fakta som registreras var för sig.",
   "obligationApplicability.formTitle": "Gäller den {entity}?",
   "obligationApplicability.decision": "Beslut",
   "obligationApplicability.reason": "Skäl",
@@ -20,5 +19,6 @@
   "obligationApplicability.confirm": "Sätt tillämplighet",
   "obligationApplicability.saved": "Sparat: {value}.",
   "obligationApplicability.stale": "Någon ändrade svaret medan du bestämde. Ladda om för att se deras svar och bestäm sedan igen.",
-  "obligationApplicability.errorTitle": "Gäller den oss? kunde inte laddas"
+  "obligationApplicability.errorTitle": "Gäller den oss? kunde inte laddas",
+  "obligationApplicability.label": "Gäller den"
 }

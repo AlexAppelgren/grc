@@ -89,7 +89,7 @@ describe('the related changes panel', () => {
     const sent = serve({ status: 200, data: { items: [confirmedLink, suggestedLink], total: 2, openCount: 2 } });
     renderPanel();
 
-    await screen.findByRole('heading', { level: 2, name: 'Related changes' });
+    await screen.findByRole('heading', { level: 3, name: 'Related changes' });
     const rows = await screen.findAllByRole('link');
     expect(rows.map((row) => row.getAttribute('href'))).toEqual(['/watch/c-1', '/watch/c-2']);
     // The count is the route's, over every linked change, never the page's.
@@ -124,7 +124,9 @@ describe('the related changes panel', () => {
   it('an obligation no change touches says so, and carries no count', async () => {
     serve({ status: 200, data: { items: [], total: 0, openCount: 0 } });
     renderPanel();
+    // One line, with no heading of its own: an empty part never draws a card of placeholders.
     expect(await screen.findByText('No change affects this obligation')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Related changes' })).toBeNull();
     expect(screen.queryByText(/open change/)).not.toBeInTheDocument();
   });
 

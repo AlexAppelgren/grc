@@ -4,8 +4,10 @@ import { useState, type FormEvent } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextArea } from '@/components/ui/Field';
+import { OneLine, Part } from '@/components/inventory/ObligationPanels';
+import { Fold } from '@/components/ui/fold';
 import { Modal } from '@/components/ui/Modal';
-import { Meta, Panel } from '@/components/ui/Panel';
+import { Meta } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
 import { Pager } from '@/components/ui/Pager';
@@ -91,46 +93,42 @@ function Reading({ obligationId, canEdit }: { obligationId: string; canEdit: boo
   const t = useT();
   const reading = useInterpretation(obligationId);
   const [editing, setEditing] = useState(false);
-  const [showEarlier, setShowEarlier] = useState(false);
 
   if (reading.isPending) return <LoadingState rows={1} />;
   if (reading.isError) return <ErrorState title={t('obligationHistory.readingError')} onRetry={() => void reading.refetch()} />;
   const { current, earlier } = reading.data;
+  const write = canEdit ? (
+    <Button variant="ghost" size="small" onClick={() => setEditing(true)}>
+      {t(current === null ? 'obligationHistory.writeFirst' : 'obligationHistory.writeNew')}
+    </Button>
+  ) : null;
   return (
     <div data-reading="">
       {current === null ? (
-        <p className="text-meta text-muted" data-reading-empty="">
-          {t('obligationHistory.readingEmpty')}
-        </p>
+        <OneLine text={t('obligationHistory.readingEmpty')} action={write} data-reading-empty="" />
       ) : (
-        <div data-reading-current={current.versionNo}>
-          <p className="whitespace-pre-line">{current.text}</p>
-          <ReadingLine reading={current} />
-        </div>
+        <>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3>{t('obligationHistory.heading')}</h3>
+            {write}
+          </div>
+          <div data-reading-current={current.versionNo}>
+            <p className="whitespace-pre-line">{current.text}</p>
+            <ReadingLine reading={current} />
+          </div>
+        </>
       )}
-      {canEdit ? (
-        <ButtonBar className="justify-start">
-          <Button variant="outline" size="small" onClick={() => setEditing(true)}>
-            {t(current === null ? 'obligationHistory.writeFirst' : 'obligationHistory.writeNew')}
-          </Button>
-        </ButtonBar>
-      ) : null}
       {earlier.length === 0 ? null : (
-        <div className="mt-2">
-          <Button variant="ghost" size="small" aria-expanded={showEarlier} onClick={() => setShowEarlier(!showEarlier)}>
-            {t('obligationHistory.earlier', { count: earlier.length })}
-          </Button>
-          {showEarlier ? (
-            <div className="mt-2 grid gap-2.5" data-reading-earlier="">
-              {earlier.map((row) => (
-                <div key={row.versionNo} className="border-l-2 border-line pl-3" data-reading-version={row.versionNo}>
-                  <p className="whitespace-pre-line text-muted">{row.text}</p>
-                  <ReadingLine reading={row} />
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <Fold title={t('obligationHistory.earlierTitle')} count={earlier.length} className="mt-3">
+          <div className="grid gap-2.5" data-reading-earlier="">
+            {earlier.map((row) => (
+              <div key={row.versionNo} className="border-l-2 border-line pl-3" data-reading-version={row.versionNo}>
+                <p className="whitespace-pre-line text-muted">{row.text}</p>
+                <ReadingLine reading={row} />
+              </div>
+            ))}
+          </div>
+        </Fold>
       )}
       {editing ? <ReadingEditor obligationId={obligationId} current={current} onOpenChange={setEditing} /> : null}
     </div>
@@ -159,36 +157,40 @@ function History({ obligationId }: { obligationId: string }) {
   const [offset, setOffset] = useState(0);
   const history = useAssessments(obligationId, { limit: HISTORY_PAGE, offset });
 
-  if (history.isPending) return <LoadingState rows={1} />;
+  // Held here, so turning a page, which reads again, leaves the fold open.
+  const [open, setOpen] = useState(false);
+
   if (history.isError) return <ErrorState title={t('obligationHistory.historyError')} onRetry={() => void history.refetch()} />;
-  const { items, total } = history.data;
-  if (items.length === 0) {
-    return (
-      <p className="text-meta text-muted" data-history-empty="">
-        {t('obligationHistory.historyEmpty')}
-      </p>
-    );
-  }
+  if (history.isPending && offset === 0) return <LoadingState rows={1} />;
+  // No assessment yet: the first status starts the history, and until then nothing is drawn.
+  if (history.data?.items.length === 0 && offset === 0) return null;
   return (
-    <>
-      <div data-history="">
-        {items.map((assessment) => (
-          <AssessmentRow key={assessment.id} assessment={assessment} />
-        ))}
-      </div>
-      {total > HISTORY_PAGE ? <Pager inTime offset={offset} limit={HISTORY_PAGE} shown={items.length} total={total} onOffset={setOffset} /> : null}
-    </>
+    <Fold title={t('obligationHistory.historyTitle')} count={history.data?.total} open={open} onOpenChange={setOpen} keepMounted className="mt-3">
+      {history.data === undefined ? (
+        <LoadingState rows={1} />
+      ) : (
+        <>
+          <div data-history="">
+            {history.data.items.map((assessment) => (
+              <AssessmentRow key={assessment.id} assessment={assessment} />
+            ))}
+          </div>
+          {history.data.total > HISTORY_PAGE ? (
+            <Pager inTime offset={offset} limit={HISTORY_PAGE} shown={history.data.items.length} total={history.data.total} onOffset={setOffset} />
+          ) : null}
+        </>
+      )}
+    </Fold>
   );
 }
 
+/** "How we read this rule" with its versions, then the assessment history folded with its count; no reading yet is one line. */
 export function ObligationHistoryPanel({ obligationId }: { obligationId: string }) {
-  const t = useT();
   const canEdit = (usePermissions() ?? []).includes(EDIT_PERMISSION);
   return (
-    <Panel title={t('obligationHistory.heading')} data-history-panel="">
+    <Part data-history-panel="">
       <Reading obligationId={obligationId} canEdit={canEdit} />
-      <h3 className="mt-4 mb-2">{t('obligationHistory.historyTitle')}</h3>
       <History obligationId={obligationId} />
-    </Panel>
+    </Part>
   );
 }

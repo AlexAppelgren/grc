@@ -204,5 +204,19 @@
   "inventory.filter.ownerTeam": "Ägande team",
   "inventory.pager.range": "{from}–{to} av {total}",
   "inventory.pager.perPage": "Per sida",
-  "inventory.pager.all": "Alla"
+  "inventory.pager.all": "Alla",
+  "inventory.obligation.plainWordsTitle": "I klartext",
+  "inventory.obligation.summaryMachine": "Maskinöversatt från {language}",
+  "inventory.obligation.summaryReadIn": "Läs den på {language}",
+  "inventory.obligation.ruleWordsTitle": "Regelns lydelse",
+  "inventory.obligation.ruleWordsMore": "Visa {count} till",
+  "inventory.obligation.ruleWordsNotHeld": "Biblioteket har inte regelns lydelse ännu.",
+  "inventory.obligation.officialText": "{language}, officiell språkversion",
+  "inventory.obligation.showAll": "Visa allt",
+  "inventory.obligation.showLess": "Visa mindre",
+  "inventory.obligation.card.position": "Vårt ställningstagande",
+  "inventory.obligation.card.comply": "Så följer vi regeln",
+  "inventory.obligation.card.rule": "Regeln",
+  "inventory.obligation.card.source": "Källa och ändringar",
+  "inventory.obligation.card.people": "Deltagare och diskussion"
 }

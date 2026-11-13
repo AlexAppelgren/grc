@@ -41,12 +41,17 @@ async function openObligation(page: Page, stableKey: string, outside = false): P
   await expect(page.locator('[data-applicability-panel]')).toBeVisible();
 }
 
+/** One company's block in "Our position", by the heading that names it. */
+function entityBlock(page: Page, entity: string): Locator {
+  return page.locator('[data-applicability-panel] [data-position-entity]').filter({ has: page.getByRole('heading', { name: entity, exact: true }) });
+}
+
 function applicabilityRow(page: Page, entity: string): Locator {
-  return page.locator('[data-applicability-panel] [data-applicability-row]').filter({ has: page.getByRole('heading', { name: entity, exact: true }) });
+  return entityBlock(page, entity).locator('[data-applicability-row]');
 }
 
 function statusRow(page: Page, entity: string): Locator {
-  return page.locator('[data-status-panel] [data-status-row]').filter({ has: page.getByRole('heading', { name: entity, exact: true }) });
+  return entityBlock(page, entity).locator('[data-status-row]');
 }
 
 /** Answers for one entity: the form, then the confirmation, then Set applicability. */
@@ -505,7 +510,7 @@ test.describe('register journeys', () => {
     await expect(older.locator('p')).not.toBeEmpty();
 
     // The earlier reading stays readable.
-    await panel.getByRole('button', { name: /^Earlier versions? of how we read this rule, 1$/ }).click();
+    await panel.getByRole('button', { name: 'Earlier versions (1)' }).click();
     await expect(panel.locator('[data-reading-version="1"]')).toContainText('Johan Berg');
 
     // A new version is written under If-Match and the one before stays readable.
@@ -526,7 +531,7 @@ test.describe('register journeys', () => {
       await expect(current).toHaveAttribute('data-reading-current', '3');
       await expect(current.locator('[data-reading-by]')).toContainText('Sara Lindqvist');
       // The earlier versions stay open, now two of them, the one just replaced among them.
-      await expect(panel.getByRole('button', { name: /^Earlier versions? of how we read this rule, 2$/ })).toHaveAttribute('aria-expanded', 'true');
+      await expect(panel.getByRole('button', { name: 'Earlier versions (2)' })).toHaveAttribute('aria-expanded', 'true');
       await expect(panel.locator('[data-reading-version="2"]')).toContainText(seeded);
     } finally {
       // Nothing is overwritten, so the seeded reading comes back as the next version.
@@ -727,7 +732,7 @@ test.describe('standards per legal entity', () => {
     await openObligation(page, STANDARD, true);
     const mark = runMark(testInfo);
     try {
-      await expect(page.locator('[data-applicability-panel] [data-applicability-row] h3')).toHaveText([BANK, FONDER, LIV]);
+      await expect(page.locator('[data-applicability-panel] [data-position-entity] > h3')).toHaveText([BANK, FONDER, LIV]);
       await answer(page, BANK, 'Applies', 'Certified');
       await answer(page, LIV, 'Does not apply', `The insurer is outside the certificate's scope (${mark}).`);
 

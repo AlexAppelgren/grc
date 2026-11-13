@@ -54,7 +54,7 @@ describe('ObligationTagsPanel', () => {
     );
     expect(screen.getByText('Custody')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Remove Custody' }));
-    await screen.findByText('None yet');
+    await screen.findByText('No tags of ours yet.');
     const write = sent.find((s) => s.method === 'post');
     expect(write?.path).toBe('/api/v1/taggings/remove');
     expect(write?.body).toEqual({ tagKey: 'custody', subjectType: 'obligation', subjectId: ID });
@@ -64,13 +64,17 @@ describe('ObligationTagsPanel', () => {
     const sent = renderPanel(['vocab.manage'], [], (s) =>
       s.method === 'post' ? { status: 200, data: { subjectType: 'obligation', subjectId: ID, tags: [{ key: 'onboarding', kind: null, label: 'Onboarding' }] } } : undefined,
     );
-    expect(screen.getByText('None yet')).toBeTruthy();
+    // Nothing tagged is one line, the picker beside it, and no heading over nothing.
+    const line = screen.getByText('No tags of ours yet.').closest('[data-obligation-tags-empty]') as HTMLElement;
+    expect(line.querySelector('[role="combobox"]')).not.toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Our tags' })).toBeNull();
     const input = await typeInPicker('onb');
     const options = screen.getAllByRole('option');
     expect(options[0]?.getAttribute('data-picker-option')).toBe('onboarding');
     expect(options.at(-1)?.getAttribute('data-picker-last')).toBe('create');
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() => expect(document.querySelector('[data-obligation-tag="onboarding"]')).not.toBeNull());
+    expect(screen.getByRole('heading', { name: 'Our tags' })).toBeInTheDocument();
     const write = sent.find((s) => s.method === 'post');
     expect(write?.path).toBe('/api/v1/taggings');
     expect(write?.body).toEqual({ tagKey: 'onboarding', subjectType: 'obligation', subjectId: ID });
@@ -106,7 +110,7 @@ describe('ObligationTagsPanel', () => {
     const input = await typeInPicker('onb');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect((await screen.findByRole('alert')).textContent).toBe('"Onboarding" was retired while you were choosing. Pick another tag.');
-    expect(screen.getByText('None yet')).toBeTruthy();
+    expect(screen.getByText('No tags of ours yet.')).toBeTruthy();
   });
 
   it('says the roles no longer include managing vocabularies on a 403', async () => {
@@ -128,7 +132,7 @@ describe('ObligationTagsPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove Custody' }));
     expect((await screen.findByRole('alert')).textContent).toContain('Could not change the tags.');
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    await screen.findByText('None yet');
+    await screen.findByText('No tags of ours yet.');
     expect(sent.filter((s) => s.method === 'post').map((s) => s.path)).toEqual(['/api/v1/taggings/remove', '/api/v1/taggings/remove']);
   });
 });

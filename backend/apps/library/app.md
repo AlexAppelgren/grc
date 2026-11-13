@@ -188,7 +188,8 @@ And the tree screen shows the current text with "Show what changed" opening the 
 ```gherkin
 Given a seeded obligation
 Then it holds a plain-language duty, a duty type key, scope facet terms, a trigger, retention, sanction exposure, provenance to its provision and related obligations
-And the obligation header shows instrument, regime, binding level and compliance status in that order, and reads "Standard" in the binding slot when the level kind is standard
+And the obligation header shows instrument, regime and binding level in that order, then the bank's weakest compliance status beside them, and reads "Standard" in the binding slot when the level kind is standard
+And the instrument in the header links to the regulation's own page
 And the scope block shows one brand pill per term, "All services" when every service is selected and "Not client-specific" when the client list is empty
 ```
 
@@ -214,8 +215,8 @@ And the screen names the two effective dates being compared
 ```gherkin
 Given an obligation whose summary bleqq wrote in sv, so its sv summary row is the one marked original
 When a user whose language order is en, sv reads it
-Then the en translation of the summary is shown with the label "Machine translation" until a person confirms it
-And "Show original" reveals the sv summary, which is bleqq's wording and never the rule's own
+Then the en translation of the summary is shown under "Machine-translated from Swedish" until a person confirms it
+And the sv summary is one language chip away, named by its language alone, since it is bleqq's wording and never the rule's own, so nothing on the summary reads "original"
 And the rule's own words, in the language the authority published them in, are the cited provisions' text (INV-S20)
 ```
 
@@ -375,5 +376,17 @@ Then each cited section carries its words in every language its version in force
 And the Swedish text is marked original and the English text is marked machine
 And the summary is still returned as before, English marked as the language bleqq wrote it in
 And an obligation citing no provision returns an empty list of provisions
+```
+
+### INV-S22 — A reader sees the rule's own words beside the summary, each labelled for what it is `@e2e` (INV-02, INV-05)
+```gherkin
+Given an obligation whose plain-words summary bleqq wrote in sv, citing a section the authority published in sv with an en machine translation
+When a reader whose interface language is en opens the obligation
+Then "In plain words" shows bleqq's summary, its language chips naming each language and none of them "original"
+And "The rule's own words" follows it: the section's reference, the regulation's short name and the section's place in it with its chapter, linking to its regulation's page, its heading, and its en text under "Machine translation from Swedish. The original is authoritative."
+When the reader chooses the "Swedish, original" chip
+Then the section's sv text shows under "Swedish, original"
+And a text the authority published in a second official language reads "<Language>, official text", a provision whose wording the library does not hold yet says so in one line beside the source link, and an obligation citing no provision shows no such block
+And the regulation's short name in the page's head links to the regulation's own page
 ```
 

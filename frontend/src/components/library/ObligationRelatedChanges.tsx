@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Panel, Row, Rows } from '@/components/ui/Panel';
+import { OneLine, Part } from '@/components/inventory/ObligationPanels';
+import { Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
@@ -62,12 +62,16 @@ export function ObligationRelatedChanges({ obligationId }: { obligationId: strin
   // about how many days are left.
   const today = new Date();
 
+  // No linked change is one line; linked changes carry the heading and the open count.
+  const empty = query.data?.items.length === 0;
   return (
-    <Panel data-related-changes="">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2>{t('library.relatedChanges.title')}</h2>
-        <PillRow pills={presentOpenChanges(query.data?.openCount ?? 0, t)} />
-      </div>
+    <Part data-related-changes="">
+      {empty ? null : (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <h3>{t('library.relatedChanges.title')}</h3>
+          <PillRow pills={presentOpenChanges(query.data?.openCount ?? 0, t)} />
+        </div>
+      )}
       {query.isPending ? (
         <LoadingState rows={2} />
       ) : forbidden !== null ? (
@@ -75,7 +79,7 @@ export function ObligationRelatedChanges({ obligationId }: { obligationId: strin
       ) : query.isError ? (
         <ErrorState title={t('library.relatedChanges.errorTitle')} onRetry={() => void query.refetch()} />
       ) : query.data.items.length === 0 ? (
-        <EmptyState title={t('library.relatedChanges.emptyTitle')} body={t('library.relatedChanges.emptyBody')} />
+        <OneLine text={t('library.relatedChanges.emptyTitle')} data-related-changes-empty="" />
       ) : (
         <>
           <Rows>
@@ -88,6 +92,6 @@ export function ObligationRelatedChanges({ obligationId }: { obligationId: strin
           ) : null}
         </>
       )}
-    </Panel>
+    </Part>
   );
 }
