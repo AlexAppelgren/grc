@@ -12,6 +12,11 @@ An independent agent approves a new instrument and a new obligation through the 
 route, and the record says an agent confirmed it (D-79). A provision has no column to say so,
 so an agent's approval of one waits for a person.
 
+A provision's text is the law's own words (`TheLawsOwnWords`; Alex, 2026-11-13): its
+original is the language its jurisdiction writes law in, a second language the authority
+itself published is neither the original nor machine-made, and the obligations it names are
+tied to it when it is approved, through the proposal door as the app role.
+
 The standards check (INV-08, D-35, D-36) answers at the same three doors: `licensed_text`
 for a provision under a standard or a non-link source on a standard's obligation,
 `one_conformance_obligation` for a second obligation under one, `standard_term_required`
@@ -27,9 +32,11 @@ import uuid
 from typing import Any
 from unittest import mock
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import migrations
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.db import DEFAULT_DB_ALIAS, connection, migrations, transaction
+from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 
 from apps.agents import testing as agents_testing
 from apps.governance.models import AiGeneration
@@ -39,6 +46,7 @@ from apps.library.models import (
     InstrumentSummary,
     InstrumentTitle,
     Obligation,
+    ObligationProvision,
     ObligationSummary,
     ObligationTerm,
     ObligationTitle,
@@ -211,7 +219,7 @@ def provision_version_body(provision: Provision) -> dict[str, Any]:
 def _facts(fields: dict[str, Any]) -> list[str]:
     """The fields a source is owed for, spelled out here rather than read from the code
     under test, so the test states the rule instead of echoing it."""
-    unsourced = {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
+    unsourced = {"key", "originalLanguage", "isMachine", "officialLanguages", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
     # Which record a translation is for, its version and the languages it was made from.
     unsourced |= {"target", "version", "titlesFrom", "summariesFrom"}
     facts: list[str] = []
@@ -798,6 +806,302 @@ class NewProvision(KindsTestCase):
         self.assertFalse(AiGeneration.objects.filter(subject_id=proposal["id"]).exists(), "a refused decision logs no model call")
         self.assertEqual(self._approve(proposal["id"]).status_code, 200)
         self.assertEqual(ProvisionVersion.objects.filter(provision=provision).count(), 2)
+
+
+# A provision keyed as the seeded library and the baseline key one: its instrument's key, a
+# slash and its place in the instrument.
+SLASH_KEY = f"{PARENT_KEY}/009-006"
+SWEDISH = "Ett värdepappersinstitut ska inhämta uppgifter om kunden."
+ENGLISH = "A securities institution shall obtain information about the client."
+
+
+class TheLawsOwnWords(KindsTestCase):
+    """The law's own words and the duties that cite them (INV-02, INV-05; Alex, 2026-11-13:
+    "it says that the original text is in english while its actually swedish").
+
+    A provision's original is the language its jurisdiction writes law in, at every door:
+    where it is proposed, over a correction and at apply. A second language the authority
+    itself published is neither the original nor machine-made. A provision names the
+    obligations that cite it, shared ones in force under its own instrument, and approval
+    ties each to it. A payload that sends none of this is stored and applied as before."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.duty = library_build.obligation(self.parent, key="obl-kinds-know-the-client", ref_label="9 kap. 6 §")
+        self.second_duty = library_build.obligation(self.parent, key="obl-kinds-keep-the-record", ref_label="9 kap. 6 §")
+
+    def _flags(self, key: str) -> dict[str, tuple[bool, bool]]:
+        """Each text of the provision's one version: is it the original, is it machine-made."""
+        version = ProvisionVersion.objects.get(provision__stable_key=key)
+        return {row.language_id: (row.is_original, row.is_machine) for row in ProvisionText.objects.filter(version=version)}
+
+    def _version_body(self, provision: Provision, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
+        """A new text of `provision`, every field it sets sourced."""
+        fields = {"texts": {"sv": "Institutet ska inhämta uppgifter om kundens mål."}, "originalLanguage": "sv", "effectiveFrom": "2028-01-01", **payload}
+        return {**provision_version_body(provision), "payload": fields, "fieldSources": {field: SOURCE for field in _facts(fields)}}
+
+    # --- the original is the authority's language ---
+    def test_english_is_never_the_original_of_swedish_law(self) -> None:
+        refused = self._file(provision_body(originalLanguage="en"))
+        self._refused(refused, 422, "validation_error")
+        self.assertIn(f"{PARENT_KEY!r} is written in 'sv'", refused.json()["detail"])
+        self.assertFalse(Proposal.objects.exists(), "nothing is queued")
+
+    def test_the_rule_reads_the_instruments_own_jurisdiction(self) -> None:
+        union = library_build.instrument(key="celex-32014r0596", short_name="MAR", jurisdiction="eu", level="eu_regulation", regime="regime:securities")
+        article = {"key": "celex-32014r0596/017", "provisionKind": "article", "refLabel": "Art. 17"}
+        # Swedish is a translation of a Union act filed here, and English its original.
+        self._refused(self._file(provision_body(union.stable_key, **article)), 422, "validation_error")
+        english = {"texts": {"en": "An issuer shall inform the public as soon as possible of inside information."}, "originalLanguage": "en", "isMachine": False}
+        proposal = self._filed(provision_body(union.stable_key, **article, **english))
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        self.assertEqual(self._flags("celex-32014r0596/017"), {"en": (True, False)})
+
+    def test_a_correction_and_a_proposal_stored_before_the_rule_are_refused_the_same(self) -> None:
+        proposal = self._filed(provision_body())
+        corrected = self._approve(proposal["id"], {"payloadOverrides": {"originalLanguage": "en"}})
+        self._refused(corrected, 422, "validation_error")
+        row = Proposal.objects.get(pk=proposal["id"])
+        self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
+        stored = self._stored(provision_body(key="fffs-2017-2-kinds-filed-before", originalLanguage="en"))
+        self._refused(self._approve(str(stored.id)), 422, "validation_error")
+        self.assertFalse(Provision.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action__in=("proposal.approved", "provision.created")).exists())
+
+    def test_a_new_text_of_a_provision_obeys_the_same_rule_at_every_door(self) -> None:
+        provision = library_build.provision(self.parent, key=PROVISION_KEY, ref_label="9 kap. 6 §", kind="section")
+        library_build.provision_version(provision, texts={"sv": "Den tidigare lydelsen."})
+        english_first = self._version_body(provision, texts={"sv": SWEDISH, "en": ENGLISH}, originalLanguage="en")
+        refused = self._file(english_first)
+        self._refused(refused, 422, "validation_error")
+        self.assertIn("written in 'sv'", refused.json()["detail"])
+        self.assertFalse(Proposal.objects.exists())
+        # Over a correction, and at apply for a proposal stored before the rule.
+        proposal = self._filed(self._version_body(provision, texts={"sv": SWEDISH, "en": ENGLISH}, isMachine=True))
+        self._refused(self._approve(proposal["id"], {"payloadOverrides": {"originalLanguage": "en"}}), 422, "validation_error")
+        stored = Proposal.objects.create(
+            kind="new_provision_version",
+            title="Filed before the rule",
+            target_type="provision",
+            target_id=provision.id,
+            payload=english_first["payload"],
+            field_sources=english_first["fieldSources"],
+            origin="agent",
+            proposed_by_api_key_id=self.proposer.id,
+            proposed_by_agent=self.proposer.agent,
+            agent_run_id=self.agent_run.id,
+        )
+        self._refused(self._approve(str(stored.id)), 422, "validation_error")
+        self.assertEqual(ProvisionVersion.objects.filter(provision=provision).count(), 1)
+        # As filed, with Swedish the original, it applies.
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        latest = ProvisionVersion.objects.get(provision=provision, version_number=2)
+        self.assertEqual({row.language_id: (row.is_original, row.is_machine) for row in ProvisionText.objects.filter(version=latest)}, {"sv": (True, False), "en": (False, True)})
+
+    # --- a second language the authority itself published ---
+    def test_an_official_second_language_is_neither_the_original_nor_machine_made(self) -> None:
+        act = library_build.instrument(key="fi-sd-2014-610", short_name="Luottolaitoslaki", jurisdiction="fi", regime="regime:banking")
+        texts = {"fi": "Tätä lakia sovelletaan luottolaitostoimintaan.", "sv": "Denna lag tillämpas på kreditinstitutsverksamhet.", "en": "This Act applies to credit institution activity."}
+        body = provision_body(act.stable_key, key="fi-sd-2014-610/001-001", refLabel="1 luku 1 §", texts=texts, originalLanguage="fi", officialLanguages=["sv", "sv"], isMachine=True)
+        proposal = self._filed(body)
+        self.assertEqual(proposal["payload"]["officialLanguages"], ["sv"], "each once")
+        self.assertNotIn("officialLanguages", proposal["fieldSources"], "it says how the text is written, and needs no source")
+
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+
+        self.assertEqual(self._flags("fi-sd-2014-610/001-001"), {"fi": (True, False), "sv": (False, False), "en": (False, True)})
+
+    def test_the_original_is_never_marked_as_anything_else(self) -> None:
+        for case, official in (("the original itself", ["sv"]), ("a language with no text", ["da"])):
+            with self.subTest(case=case):
+                refused = self._file(provision_body(officialLanguages=official))
+                self._refused(refused, 422, "validation_error")
+                self.assertIn(official[0], refused.json()["detail"])
+        self.assertFalse(Proposal.objects.exists())
+        # And `isMachine` speaks for the translations alone: the original stays unlabelled.
+        proposal = self._filed(provision_body(isMachine=True, officialLanguages=[]))
+        self.assertNotIn("officialLanguages", proposal["payload"], "an empty list says what leaving it out says")
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        self.assertEqual(self._flags(PROVISION_KEY), {"sv": (True, False), "en": (False, True)})
+
+    # --- the obligations that cite it ---
+    def test_the_obligations_named_are_shared_ones_in_force_under_the_same_instrument(self) -> None:
+        elsewhere = library_build.obligation(library_build.instrument(key="fffs-2014-1", regime="regime:securities"), key="obl-kinds-elsewhere")
+        retired = library_build.obligation(self.parent, key="obl-kinds-retired")
+        with library_write("test"):
+            Obligation.objects.filter(pk=retired.pk).update(status="retired")
+        for case, named in (
+            ("an obligation of another instrument", [self.duty.stable_key, elsewhere.stable_key]),
+            ("a key no obligation carries", ["obl-kinds-nobody"]),
+            ("a retired obligation", [retired.stable_key]),
+        ):
+            with self.subTest(case=case):
+                refused = self._file(provision_body(obligations=named))
+                self._refused(refused, 422, "unknown_key")
+                self.assertIn(named[-1], refused.json()["detail"])
+                self.assertNotIn(f": {self.duty.stable_key}", refused.json()["detail"], "only the ones that are wrong are named")
+        too_many = [f"obl-kinds-{n}" for n in range(settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS + 1)]
+        self._refused(self._file(provision_body(obligations=too_many)), 422, "validation_error")
+        unsourced = provision_body(obligations=[self.duty.stable_key])
+        del unsourced["fieldSources"]["obligations"]
+        self._refused(self._file(unsourced), 422, "source_missing")
+        self.assertFalse(Proposal.objects.exists())
+
+    def test_approval_adds_the_node_its_first_text_and_the_ties_in_one_write(self) -> None:
+        named = [self.duty.stable_key, self.second_duty.stable_key, self.duty.stable_key]
+        proposal = self._filed(provision_body(key=SLASH_KEY, obligations=named))
+        self.assertEqual(proposal["payload"]["obligations"], [self.duty.stable_key, self.second_duty.stable_key], "each once, in the order given")
+        self.assertFalse(ObligationProvision.objects.exists(), "nothing changes until approval")
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        provision = Provision.objects.get(stable_key=SLASH_KEY)
+        version = ProvisionVersion.objects.get(provision=provision)
+        self.assertEqual((provision.instrument_id, version.version_number, str(version.applied_by_proposal_id)), (self.parent.id, 1, proposal["id"]))
+        self.assertEqual(self._flags(SLASH_KEY), {"sv": (True, False), "en": (False, True)})
+        self.assertEqual(
+            set(ObligationProvision.objects.filter(provision=provision).values_list("obligation__stable_key", flat=True)),
+            {self.duty.stable_key, self.second_duty.stable_key},
+        )
+        self.assertEqual([cited.stable_key for cited in self.duty.provisions.all()], [SLASH_KEY], "the duty cites the section")
+        event = AuditEvent.objects.get(action="provision.created", subject_id=provision.id)
+        self.assertEqual(event.after["obligations"], [self.duty.stable_key, self.second_duty.stable_key])
+        self.assertIsNotNone(event.step_up_assertion_id)
+
+    def test_a_failed_reindex_leaves_no_tie_behind(self) -> None:
+        proposal = self._filed(provision_body(obligations=[self.duty.stable_key]))
+        with mock.patch.object(apply, "reindex_provision", side_effect=RuntimeError("index unavailable")):
+            self.assertEqual(self._approve(proposal["id"]).status_code, 500)
+        self.assertFalse(ObligationProvision.objects.exists())
+        self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+
+    def test_a_new_text_ties_what_is_missing_and_leaves_an_existing_tie_alone(self) -> None:
+        provision = library_build.provision(self.parent, key=PROVISION_KEY, ref_label="9 kap. 6 §", kind="section")
+        library_build.provision_version(provision, texts={"sv": "Den tidigare lydelsen."})
+        with library_write("test"):
+            held = ObligationProvision.objects.create(obligation=self.duty, provision=provision)
+        body = self._version_body(provision, obligations=[self.duty.stable_key, self.second_duty.stable_key])
+        unsourced = {**body, "fieldSources": {field: source for field, source in body["fieldSources"].items() if field != "obligations"}}
+        self._refused(self._file(unsourced), 422, "source_missing")
+        elsewhere = library_build.obligation(library_build.instrument(key="fffs-2014-1", regime="regime:securities"), key="obl-kinds-elsewhere")
+        self._refused(self._file(self._version_body(provision, obligations=[elsewhere.stable_key])), 422, "unknown_key")
+        proposal = self._filed(body)
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        ties = ObligationProvision.objects.filter(provision=provision)
+        self.assertEqual({tie.obligation_id for tie in ties}, {self.duty.id, self.second_duty.id})
+        self.assertTrue(ties.filter(pk=held.pk).exists(), "the tie the library held is the same row")
+        event = AuditEvent.objects.get(action="provision.version_applied", subject_id=provision.id)
+        self.assertEqual(event.after["obligations"], [self.second_duty.stable_key], "only what this approval tied")
+
+    def test_the_cost_of_the_ties_does_not_grow_with_their_number(self) -> None:
+        """Playbook 10: the duties a provision names are resolved in one query where it is
+        proposed and tied in one insert where it is approved, whether it names one or many."""
+        many = [library_build.obligation(self.parent, key=f"obl-kinds-duty-{n}").stable_key for n in range(8)]
+        costs: list[tuple[int, int]] = []
+        # The first request also pays for what the process caches; the last two are compared.
+        for path, named in (("001", [self.duty.stable_key]), ("002", [self.duty.stable_key]), ("003", many)):
+            with CaptureQueriesContext(connection) as filing:
+                proposal = self._filed(provision_body(key=f"{PARENT_KEY}/{path}", obligations=named))
+            with CaptureQueriesContext(connection) as approving:
+                self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+            costs.append((len(filing), len(approving)))
+        self.assertEqual(costs[1], costs[2], "naming eight duties costs what naming one does")
+        self.assertEqual(ObligationProvision.objects.filter(provision__stable_key=f"{PARENT_KEY}/003").count(), 8)
+
+    def test_an_agent_still_cannot_approve_a_provision_that_names_its_duties(self) -> None:
+        proposal = self._filed(provision_body(obligations=[self.duty.stable_key]))
+        refused, _confirmer = self._approve_as_agent(proposal["id"])
+        self._refused(refused, 409, "person_review_required")
+        self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+        self.assertFalse(ObligationProvision.objects.exists())
+
+    # --- what did not change ---
+    def test_a_payload_that_sends_none_of_this_is_stored_and_applied_as_before(self) -> None:
+        proposal = self._filed(provision_body())
+        self.assertEqual(
+            proposal["payload"],
+            {
+                "key": PROVISION_KEY,
+                "instrument": PARENT_KEY,
+                "provisionKind": "section",
+                "refLabel": "9 kap. 6 §",
+                "heading": "",
+                "sortOrder": 0,
+                "texts": {"sv": SWEDISH, "en": ENGLISH},
+                "originalLanguage": "sv",
+                "isMachine": True,
+                "effectiveFrom": "2027-01-01",
+                "effectiveFromPrecision": "day",
+            },
+        )
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        self.assertEqual(self._flags(PROVISION_KEY), {"sv": (True, False), "en": (False, True)})
+        self.assertFalse(ObligationProvision.objects.exists())
+        self.assertEqual(AuditEvent.objects.get(action="provision.created").after["obligations"], [])
+
+    def test_a_key_may_end_in_a_slash_and_the_provisions_place_and_nothing_looser(self) -> None:
+        for key in ("FFFS-2017-2/9", f"{PARENT_KEY}/009/006", f"{PARENT_KEY}/", f"/{PARENT_KEY}", f"{PARENT_KEY}/009_006"):
+            with self.subTest(key=key):
+                self._refused(self._file(provision_body(key=key)), 422, "validation_error")
+        self.assertEqual(self._filed(provision_body(key=SLASH_KEY))["payload"]["key"], SLASH_KEY)
+
+
+class TheTiesAreWrittenThroughTheDoorAsTheAppRole(TransactionTestCase):
+    """The rest of this module runs as the schema owner, whom the database's door trigger
+    lets through (apps/shared/tests_library_db_guard.py). Here a provision that names its
+    obligations is filed and approved on the cw_app connection, as a console request does
+    it, so `obligation_provision` is proven to be written inside the proposal door and under
+    its row-level policies (H16, ADR 0058, AC-PRO1)."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            seed_languages()
+            seed_jurisdictions()
+            seed_library_vocabularies()
+            seed_term_dimensions()
+            seed_taxonomy_terms()
+            seed_authorities()
+        self.parent = library_build.instrument(key=PARENT_KEY, short_name="FFFS 2017:2", regime="regime:securities")
+        self.duty = library_build.obligation(self.parent, key="obl-kinds-know-the-client")
+        self.proposer = factories.platform_user(roles=("library_editor",), email="tie-proposer@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="tie-reviewer@bleqq.test")
+
+    def test_a_provision_and_its_ties_are_written_as_the_app_role(self) -> None:
+        # Imported here: that module imports this one's bodies.
+        from apps.shared.tests_library_db_guard import as_the_app_role
+
+        body = provision_body(obligations=[self.duty.stable_key])
+        with as_the_app_role():
+            with transaction.atomic():
+                tenancy.clear_tenant()  # the console's session: no bank's zone
+                proposal, _ = logic.create(
+                    kind=body["kind"],
+                    title=body["title"],
+                    payload=body["payload"],
+                    proposer=logic.Proposer(actor=factories.user_actor(user_id=self.proposer.id), user=self.proposer),
+                    field_sources=body["fieldSources"],
+                    source_label=body["sourceLabel"],
+                    source_url=body["sourceUrl"],
+                )
+            with transaction.atomic():
+                tenancy.clear_tenant()
+                logic.approve(
+                    proposal=logic.by_id(proposal.id),
+                    reviewer=self.reviewer,
+                    actor=factories.user_actor(user_id=self.reviewer.id),
+                    note="",
+                    step_up_assertion_id=uuid.uuid4(),
+                )
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            tied = ObligationProvision.objects.filter(provision__stable_key=PROVISION_KEY).values_list("obligation__stable_key", flat=True)
+            self.assertEqual(list(tied), [self.duty.stable_key])
 
 
 class StandardsCheck(KindsTestCase):

@@ -24,8 +24,10 @@ from apps.proposals import baseline, translations
 from apps.shared import outbox
 from apps.shared.models import OutboxEvent
 
-# The approval's own outbox row (apps/proposals/apply.py, `_new_instrument`).
+# The approvals' own outbox rows (apps/proposals/apply.py, `_new_instrument` and
+# `_new_obligation`): what an instrument's duties and summary, and a provision, wait for.
 INSTRUMENT_CREATED = "instrument.created"
+OBLIGATION_CREATED = "obligation.created"
 # The approvals that add a record with texts to translate (apps/proposals/apply.py), and the
 # kind of record each one names.
 TRANSLATED_ON = {"obligation.created": "obligation", "instrument.summary_added": "instrument"}
@@ -37,7 +39,8 @@ _TRANSLATION_QUEUED = "library-translation:queued"
 @shared_task
 def file_library_baseline() -> None:
     """Register the sources the baseline names, then file every entry now due: the
-    instruments the library does not hold, and the duties of every instrument it does."""
+    instruments the library does not hold, the duties and the summary of every instrument it
+    does, and the provisions whose duties it holds."""
     with _one_run_at_a_time():
         baseline.register_sources()
         baseline.file()
@@ -55,15 +58,17 @@ def _one_run_at_a_time() -> Iterator[None]:
 
 
 def register() -> None:
-    """Queue a filing when a library instrument is approved. Safe to call twice."""
-    outbox.register_handler(INSTRUMENT_CREATED, queue_after_approval)
+    """Queue a filing when a library instrument or duty is approved: its duties follow the
+    first, the provisions that cite it the second. Safe to call twice."""
+    for kind in (INSTRUMENT_CREATED, OBLIGATION_CREATED):
+        outbox.register_handler(kind, queue_after_approval)
     for kind in TRANSLATED_ON:
         outbox.register_handler(kind, queue_translation)
 
 
 def queue_after_approval(event: OutboxEvent) -> None:
     """Queue one run a few seconds out, unless one is already queued for this window. A
-    bank's own instrument (recorded in its zone) has no baseline duties and queues nothing."""
+    bank's own record (recorded in its zone) has no baseline entries and queues nothing."""
     wait = settings.LIBRARY_BASELINE_ON_APPROVAL_S
     if event.tenant_id is not None or not wait:
         return

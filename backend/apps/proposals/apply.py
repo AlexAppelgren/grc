@@ -36,6 +36,7 @@ from apps.library.models import (
     InstrumentTitle,
     Jurisdiction,
     Obligation,
+    ObligationProvision,
     ObligationSummary,
     ObligationTerm,
     ObligationTitle,
@@ -48,7 +49,7 @@ from apps.library.models import (
     Verification,
     VerificationOutcome,
 )
-from apps.library.reading import active_obligation, active_provision, active_shared_obligations, live_duty_type, obligation_scope_terms, terms_of
+from apps.library.reading import active_obligation, active_shared_obligations, live_duty_type, obligation_scope_terms, terms_of
 from apps.proposals import private_controls, standards
 from apps.proposals.logic import (
     Reviewer,
@@ -61,6 +62,7 @@ from apps.proposals.logic import (
     validated_obligation,
     validated_instrument_summary,
     validated_provision,
+    validated_provision_version,
     validated_recurring_duty,
     validated_translations,
 )
@@ -702,22 +704,39 @@ def _obligation_scope(
 def _provision_texts(
     version: ProvisionVersion, payload: ProposalProvisionPayload | ProposalProvisionVersionPayload, reviewer: Reviewer
 ) -> None:
+    """One row per language (INV-05): the original, the other languages the authority itself
+    published, which are neither the original nor machine-made, and every remaining text as
+    `_texts` marks it."""
+    official = set(payload.official_languages or [])
     for language, text, is_original, is_machine in _texts(payload.texts, payload.original_language, payload.is_machine, reviewer):
-        ProvisionText.objects.create(version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine)
+        ProvisionText.objects.create(
+            version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine and language not in official
+        )
+
+
+def _cite(provision: Provision, obligations: list[Obligation]) -> list[str]:
+    """Tie each obligation to the provision it cites (INV-02), one row per pair; a pair the
+    library already holds is left as it is. Returns the keys newly tied, for the audit row."""
+    if not obligations:
+        return []
+    held = set(ObligationProvision.objects.filter(provision=provision, obligation__in=obligations).values_list("obligation_id", flat=True))
+    tied = [obligation for obligation in obligations if obligation.id not in held]
+    ObligationProvision.objects.bulk_create([ObligationProvision(obligation=obligation, provision=provision) for obligation in tied])
+    return [obligation.stable_key for obligation in tied]
 
 
 def _new_provision(
     payload: ProposalProvisionPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
     """Add the provision the proposal asks for, with its first verbatim text, which names
-    the proposal that filed it.
+    the proposal that filed it, and tie it to the obligations that cite it.
 
     Checked again by `logic.validated_provision` and the standards check: a standard's text
     is licensed (422 `licensed_text`), and the trigger `provision_not_under_standard` refuses
     the row on its own. The instrument is locked first, so a concurrent level merge is seen
     (H25). The index moves in this transaction.
     """
-    instrument, parent, kind = validated_provision(payload)
+    instrument, parent, kind, obligations = validated_provision(payload)
     # Locked and read again so a level merge onto a standard is seen before the check (H25).
     instrument = Instrument.objects.select_for_update().get(pk=instrument.pk)
     standards.check(proposal.kind, instrument, None, proposal.field_sources, source_label=proposal.source_label)
@@ -739,6 +758,7 @@ def _new_provision(
         applied_by_proposal=proposal,
     )
     _provision_texts(version, payload, reviewer)
+    cited = _cite(provision, obligations)
     reindex_provision(provision.id)
     record(
         action="provision.created",
@@ -754,6 +774,7 @@ def _new_provision(
             "versionNumber": version.version_number,
             "versionId": str(version.id),
             "languages": sorted(payload.texts),
+            "obligations": cited,
             "proposal": str(proposal.id),
         },
         step_up_assertion_id=step_up,
@@ -763,12 +784,14 @@ def _new_provision(
 def _provision_version(
     payload: ProposalProvisionVersionPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
-    """Add the text of a provision in force from a date, and nothing else (INV-02): every
-    earlier version stays as it was written. The provision is read again, and locked, so a
-    retired one is refused and two approvals number their versions one after the other."""
+    """Add the text of a provision in force from a date (INV-02): every earlier version stays
+    as it was written, and the obligations the text names are tied to the provision, an
+    existing tie left alone. The provision is locked and checked again by
+    `logic.validated_provision_version`, so a retired one is refused, the original is still
+    its jurisdiction's language, and two approvals number their versions one after the other."""
     assert proposal.target_id is not None
     Provision.objects.select_for_update().filter(pk=proposal.target_id).exists()
-    provision = active_provision(proposal.target_id)
+    provision, obligations = validated_provision_version(payload, proposal.target_id)
     standards.check(proposal.kind, provision.instrument, None, proposal.field_sources, source_label=proposal.source_label)
     highest = (
         ProvisionVersion.objects.filter(provision=provision)
@@ -784,6 +807,7 @@ def _provision_version(
         applied_by_proposal=proposal,
     )
     _provision_texts(version, payload, reviewer)
+    cited = _cite(provision, obligations)
     reindex_provision(provision.id)
     record(
         action="provision.version_applied",
@@ -800,6 +824,7 @@ def _provision_version(
             "effectiveFrom": payload.effective_from.isoformat() if payload.effective_from else None,
             "effectiveFromPrecision": payload.effective_from_precision,
             "languages": sorted(payload.texts),
+            "obligations": cited,
             "proposal": str(proposal.id),
         },
         step_up_assertion_id=step_up,

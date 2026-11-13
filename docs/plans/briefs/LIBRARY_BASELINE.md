@@ -19,7 +19,10 @@ footprint preview would have answered nothing.
 
 1. **Researched, reviewed data.** `backend/apps/library/baseline/` holds one file per
    tranche. Each entry is a `new_instrument` or `new_obligation` payload exactly as
-   `POST /proposals` takes it, with the official page it was read from. The rules it was
+   `POST /proposals` takes it, with the official page it was read from. Beside the tranches,
+   by the tranche's name, `summaries/` holds what each instrument is in plain words
+   (`new_instrument_summary`, D-124) and `provisions/` the law's own words
+   (`new_provision`, below). The rules it was
    researched under are the definition's `prompt.md` and the folder's `README.md`.
 2. **Checked twice before any deploy.** `check_baseline.py` checks shape and keys without a
    database. `apps/proposals/tests_baseline.py` files every entry through the real proposal
@@ -27,14 +30,17 @@ footprint preview would have answered nothing.
 3. **Filed through the proposal door, by itself.** The beat (every
    `LIBRARY_BASELINE_FILING_MINUTES`, an hour by default, off under E2E) files what the
    library neither holds nor has open as proposals of the platform agent
-   `library-baseline`, instruments first, each duty once its instrument is approved, and
-   registers the pages in `sources.json` for the watch. `manage.py file_library_baseline`
+   `library-baseline`, instruments first, each duty and summary once its instrument is
+   approved, each provision once the duties it names are, and
+   registers the pages in `sources.json` for the watch. An approved instrument or duty queues
+   the same filing a few seconds later. `manage.py file_library_baseline`
    does the same by hand. It is safe to repeat, and a rejected entry stays rejected until
    its file changes.
 4. **Approved by a second principal.** A person in the console with a passkey today, one
    proposal at a time or a page at once (the queue's "New instrument" and "New obligation"
    filters, then select and approve: one passkey, the same approve route per proposal);
-   the confirming agent once it is published and its runner is live. Nothing approves
+   the confirming agent once it is published and its runner is live. A summary and a
+   provision are always a person's to approve (D-79, D-124). Nothing approves
    itself, and the agent that filed an entry can never approve it.
 5. **Kept current by the watch.** Each watch run re-checks the records of the sources it
    checks and proposes a correction where one has drifted, and registers what is new.
@@ -83,6 +89,37 @@ investment recommendations, buy-back and stabilisation, market soundings, disclo
 delay, and insider lists (the 2026 act replacing Implementing Regulation (EU) 2022/1210),
 the short selling and benchmarks regulations, ESMA's guidelines on delaying disclosure and
 on market soundings, and each country's supplementary and criminal provisions.
+
+## The law's own words
+
+Source: Alex, 2026-11-13, on an obligation under a Swedish ordinance whose page read
+"English, original": "it says that the original text is in english while its actually
+swedish.. we need to correctly have the original text. and then we also translate to english
+by default, or to swedish and english if its in another scandinavian language. this applies
+on all legal and similar text", and then "Isn't it better that we now prepare all the
+original words and each translation, so it's in the seed and can be approved in the library".
+
+The baseline's 1,894 summaries are bleqq's own words in English and stay that: their
+original is the language they were written in. What the page lacked was the law itself,
+which belongs in the provision tree (INV-02) and which the baseline never filled (D-120).
+Built as BE-5a:
+
+- **The door.** `new_provision` and `new_provision_version` refuse a text whose
+  `originalLanguage` is not the language its instrument's jurisdiction writes law in, mark
+  the other languages an authority itself publishes (`officialLanguages`, Finland's Swedish)
+  as neither original nor machine-made, and take `obligations`, the duties that cite the
+  provision, which approval ties to it (`backend/apps/proposals/app.md`, PRO-S20).
+- **The format.** `backend/apps/library/baseline/provisions/<tranche>.json`, one entry per
+  section, article or guideline a duty cites, with its source, the day it was read and the
+  duties it is cited by; `withoutProvision` names each duty the file gives no text for, with
+  the reason. The folder's `README.md`, "The law's own words", holds the format, which
+  texts stand beside an original, and what each source asks of someone who republishes it.
+- **The checker and the filer.** `check_baseline.py` holds every provisions file to those
+  rules, and the backend suite runs it over the whole baseline. The filer files a provision
+  once the library holds its instrument and every duty it names.
+
+The texts themselves are fetched from the official sources by script and arrive in later
+changes, one tranche's file at a time.
 
 ## What it leaves out, and why
 

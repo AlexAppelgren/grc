@@ -7,6 +7,12 @@ keys, a source on every entry, languages, dates and precisions, and stable keys 
 the baseline and the sample library. The authority is apps/proposals/tests_baseline.py; this
 is the quick answer while writing one file.
 
+A tranche's provisions, the law's own words (`provisions/<tranche>.json`), are checked with
+the whole baseline, never with a single file: the original is the language its jurisdiction
+writes law in, the translations the README names are there and marked, every obligation a
+provision names sits under its instrument, and every obligation of a tranche that has a
+provisions file is cited by one or excused by name with a reason.
+
 Exit 0 when clean, 1 with every problem listed. No Django, no database: plain Python.
 
     python backend/apps/library/baseline/check_baseline.py [file.json ...]
@@ -56,6 +62,33 @@ MAX_REF_LABEL = 200
 MAX_SUMMARY = 50000
 MAX_TERMS = 20
 
+# The law's own words (INV-02): each tranche's provisions, in a file of its name in this folder.
+PROVISIONS_DIR = "provisions"
+PROVISIONS_FILE_FIELDS = {"tranche", "researchedOn", "provisions", "withoutProvision"}
+PROVISION_FIELDS = {
+    "key", "instrument", "provisionKind", "refLabel", "path", "heading", "texts", "originalLanguage", "isMachine",
+    "officialLanguages", "obligations", "source", "sourceLabel", "readOn",
+}
+WITHOUT_PROVISION_FIELDS = {"obligation", "reason"}
+# The provision kinds the reference seed files, none of them one jurisdiction's own
+# (apps/taxonomy/seeds `_PROVISION_KINDS`).
+PROVISION_KINDS = {"part", "chapter", "section", "article", "paragraph", "guideline", "annex"}
+# The language each jurisdiction writes its law in (apps/library/seeds `JURISDICTIONS`): the
+# original of every provision under it, as the proposal door holds it.
+LEGAL_LANGUAGE = {"eu": "en", "se": "sv", "dk": "da", "no": "nb", "fi": "fi"}
+# The texts a provision carries beside its original, by that original: English always, and
+# Swedish beside Danish, Norwegian and Finnish.
+TRANSLATIONS: dict[str, set[str]] = {"en": set(), "sv": {"en"}, "da": {"en", "sv"}, "nb": {"en", "sv"}, "fi": {"en", "sv"}}
+# Of those, the ones the authority itself publishes: Finland enacts its law in Swedish too.
+OFFICIAL: dict[str, set[str]] = {"fi": {"sv"}}
+MAX_TEXT = 50000  # PROPOSAL_TEXT_MAX_CHARS
+MAX_OBLIGATIONS = 50  # PROPOSAL_PROVISION_MAX_OBLIGATIONS
+# The door takes a key of 200; the filer's retry key, `baseline:<key>:<32 hex>`, has 200 in all.
+MAX_PROVISION_KEY = 158
+# A provision's place in its instrument, the last part of its key.
+PATH = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+NUMBER = re.compile(r"\d+")
+
 
 def load_reference() -> dict[str, set[str]]:
     data = json.loads(FIXTURE.read_text(encoding="utf-8"))
@@ -95,6 +128,7 @@ class Checker:
         self.problems: list[str] = []
         self.instrument_keys: dict[str, str] = {}
         self.obligation_keys: dict[str, str] = {}
+        self.provision_keys: dict[str, str] = {}
         self.counts: dict[str, tuple[int, int]] = {}
 
     def fail(self, where: str, message: str) -> None:
@@ -266,6 +300,114 @@ class Checker:
                 obligations += 1
         self.counts[path.stem] = (len(instruments), obligations)
 
+    def provisions(self, folder: Path) -> None:
+        """Every provisions file of `folder`, each against the tranche it is named after. A
+        tranche with no file is not checked, and a folder with none passes."""
+        tranches = {path.stem: path for path in folder.glob("*.json") if path.name != SOURCES_FILE}
+        for path in sorted((folder / PROVISIONS_DIR).glob("*.json")):
+            where = f"{PROVISIONS_DIR}/{path.name}"
+            if path.stem not in tranches:
+                self.fail(where, f"names no tranche: a provisions file carries its tranche's name ({', '.join(sorted(tranches))})")
+                continue
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                self.fail(where, f"cannot be read: {error}")
+                continue
+            if not isinstance(data, dict) or not isinstance(data.get("provisions"), list):
+                self.fail(where, "must be an object with provisions, a list")
+                continue
+            for stray in sorted(set(data) - PROVISIONS_FILE_FIELDS):
+                self.fail(where, f"unknown field {stray!r}")
+            if data.get("tranche") != path.stem:
+                self.fail(where, f"tranche must be the file's name, {path.stem!r}")
+            self.day(f"{where}.researchedOn", data.get("researchedOn"))
+            # What the tranche holds: each instrument's jurisdiction, and each obligation's instrument.
+            jurisdiction: dict[str, str] = {}
+            under: dict[str, str] = {}
+            for entry in json.loads(tranches[path.stem].read_text(encoding="utf-8"))["instruments"]:
+                jurisdiction[entry["payload"]["key"]] = entry["payload"]["jurisdiction"]
+                under.update({duty["payload"]["key"]: entry["payload"]["key"] for duty in entry.get("obligations", [])})
+            cited: set[str] = set()
+            for i, item in enumerate(data["provisions"]):
+                label = item.get("key", i) if isinstance(item, dict) else i
+                cited |= self.provision(f"{where}[{label}]", item, jurisdiction, under)
+            excused = self.without_provision(where, data.get("withoutProvision", []), under)
+            for key in sorted(set(under) - cited - excused):
+                self.fail(where, f"{key} is cited by no provision: give the text it comes from, or name it in withoutProvision with the reason")
+
+    def provision(self, where: str, item: object, jurisdiction: dict[str, str], under: dict[str, str]) -> set[str]:
+        """One provision as the filer hands it to the door, and what only the baseline asks
+        of it: where it was read, and which translations stand beside the original. Returns
+        the obligations it cites."""
+        if not isinstance(item, dict):
+            self.fail(where, "must be an object")
+            return set()
+        for stray in sorted(set(item) - PROVISION_FIELDS):
+            self.fail(where, f"unknown field {stray!r}")
+        # A name that is not text names nothing, and is refused as an unknown one is.
+        instrument, key, path, original = (str(item.get(name) or "") for name in ("instrument", "key", "path", "originalLanguage"))
+        if instrument not in jurisdiction:
+            self.fail(f"{where}.instrument", f"{instrument!r} is not an instrument of this tranche")
+        if not PATH.match(path) or any(len(number) != 3 for number in NUMBER.findall(path)):
+            self.fail(f"{where}.path", "must be lowercase words and numbers joined by hyphens, every number in three digits (009-006), so an instrument's provisions sort as it reads")
+        if key != f"{instrument}/{path}" or len(key) > MAX_PROVISION_KEY:
+            self.fail(f"{where}.key", f"must be the instrument's key, a slash and the path, at most {MAX_PROVISION_KEY} characters")
+        elif key in self.provision_keys:
+            self.fail(f"{where}.key", f"{key!r} is already used in {self.provision_keys[key]}")
+        else:
+            self.provision_keys[key] = where
+        if item.get("provisionKind") not in PROVISION_KINDS:
+            self.fail(f"{where}.provisionKind", f"{item.get('provisionKind')!r} is not a provision kind ({', '.join(sorted(PROVISION_KINDS))})")
+        self.text(f"{where}.refLabel", item.get("refLabel"), MAX_REF_LABEL)
+        if item.get("heading") is not None:
+            self.text(f"{where}.heading", item["heading"], MAX_TITLE)
+        legal = LEGAL_LANGUAGE.get(jurisdiction.get(instrument, ""))
+        if legal is not None and original != legal:
+            self.fail(f"{where}.originalLanguage", f"must be {legal!r}, the language {instrument} is written in: the original is the authority's own text, never a translation")
+        texts = item.get("texts")
+        self.languages(f"{where}.texts", texts, original, MAX_TEXT)
+        held = set(texts) if isinstance(texts, dict) else set()
+        beside = TRANSLATIONS.get(original, set())
+        if beside - held:
+            self.fail(f"{where}.texts", f"lacks {', '.join(sorted(beside - held))}: beside an original in {original!r} a provision carries {', '.join(sorted(beside))}")
+        official = OFFICIAL.get(original, set())
+        if item.get("officialLanguages", []) != sorted(official):
+            self.fail(f"{where}.officialLanguages", f"must be {sorted(official)}, the languages its authority itself publishes beside {original!r}, and left out when there are none")
+        if item.get("isMachine", False) is not bool(held - {original} - official):
+            self.fail(f"{where}.isMachine", "must be true when the entry holds a translation, which is a machine translation and is marked so, and left out when it holds none")
+        obligations = item.get("obligations")
+        if not isinstance(obligations, list) or not obligations or len(obligations) > MAX_OBLIGATIONS or not all(isinstance(duty, str) for duty in obligations):
+            self.fail(f"{where}.obligations", f"must list the keys of the obligations that cite the provision, at least one and at most {MAX_OBLIGATIONS}")
+            obligations = []
+        if len(set(obligations)) != len(obligations):
+            self.fail(f"{where}.obligations", "names an obligation twice")
+        for duty in obligations:
+            if under.get(duty) != instrument:
+                self.fail(f"{where}.obligations", f"{duty!r} is not an obligation under {instrument!r} in this tranche")
+        self.link(f"{where}.source", item.get("source"))
+        self.text(f"{where}.sourceLabel", item.get("sourceLabel"), MAX_SOURCE_LABEL)
+        if item.get("readOn") is None:
+            self.fail(f"{where}.readOn", "must be the day the text was read, as an ISO date YYYY-MM-DD")
+        self.day(f"{where}.readOn", item.get("readOn"))
+        return set(obligations)
+
+    def without_provision(self, where: str, items: object, under: dict[str, str]) -> set[str]:
+        """The obligations a tranche says no provision is given for, each with its reason."""
+        excused: set[str] = set()
+        if not isinstance(items, list):
+            self.fail(f"{where}.withoutProvision", "must be a list of objects with obligation and reason")
+            return excused
+        for i, item in enumerate(items):
+            spot = f"{where}.withoutProvision[{i}]"
+            if not isinstance(item, dict) or set(item) != WITHOUT_PROVISION_FIELDS or not isinstance(item["obligation"], str):
+                self.fail(spot, "must be an object with obligation, a key, and reason")
+            elif item["obligation"] not in under:
+                self.fail(spot, f"{item['obligation']!r} is not an obligation of this tranche")
+            elif self.text(f"{spot}.reason", item["reason"], MAX_TITLE):
+                excused.add(item["obligation"])
+        return excused
+
 
 def sources(ref: dict[str, set[str]]) -> list[str]:
     """The source list: unique names, https pages, a seeded source kind and authority."""
@@ -341,6 +483,7 @@ def main(argv: list[str]) -> int:
     if not argv:
         checker.problems += sources(checker.ref)
         checker.problems += summaries()
+        checker.provisions(HERE)
     for tranche, (instruments, obligations) in sorted(checker.counts.items()):
         print(f"{tranche}: {instruments} instruments, {obligations} obligations")
     if checker.problems:
@@ -349,7 +492,7 @@ def main(argv: list[str]) -> int:
             print(f"  {problem}")
         return 1
     total = [sum(n) for n in zip(*checker.counts.values(), strict=True)] if checker.counts else [0, 0]
-    print(f"baseline: ok ({total[0]} instruments, {total[1]} obligations)")
+    print(f"baseline: ok ({total[0]} instruments, {total[1]} obligations, {len(checker.provision_keys)} provisions)")
     return 0
 
 

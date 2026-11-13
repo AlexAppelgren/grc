@@ -8,9 +8,10 @@ is that agent's runner. It decides nothing: a second, independent principal appr
 proposal, and `proposal_four_eyes` refuses this agent as its own reviewer.
 
 One call files a `new_instrument` per instrument not held, a `new_obligation` per duty whose
-instrument is held, and a `new_instrument_summary` per held instrument without one (INV-09,
-D-124). Never an entry open in the queue, and never one filed before unchanged: the retry
-key carries the entry's content hash.
+instrument is held, a `new_instrument_summary` per held instrument without one (INV-09,
+D-124), and a `new_provision`, the law's own words, per provision whose instrument and every
+duty it names are held (INV-02). Never an entry open in the queue, and never one filed
+before unchanged: the retry key carries the entry's content hash.
 
 Each entry is filed in its own transaction, so a refused entry stops nothing else. Runs hold
 at most `WATCH_RUN_MAX_PROPOSALS`.
@@ -33,7 +34,7 @@ from django.db import transaction
 from apps.agents import runner_events, tasks
 from apps.agents.models import AgentRun, RunStatus
 from apps.library.models import SubjectType
-from apps.library.reading import held_stable_keys, summarised_stable_keys
+from apps.library.reading import held_stable_keys, summarised_stable_keys, unknown_provision_keys
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -53,10 +54,16 @@ SOURCE_ORDER = ["en"]
 INSTRUMENT = ProposalKind.NEW_INSTRUMENT.value
 OBLIGATION = ProposalKind.NEW_OBLIGATION.value
 SUMMARY = ProposalKind.NEW_INSTRUMENT_SUMMARY.value
+PROVISION = ProposalKind.NEW_PROVISION.value
 # The folder beside the tranches that holds each tranche's instrument summaries, by its name.
 SUMMARIES_DIR = "summaries"
 # The language the baseline's summaries are written in.
 SUMMARY_LANGUAGE = "en"
+# The folder that holds each tranche's provisions, the law's own words, by its name.
+PROVISIONS_DIR = "provisions"
+# The fields of a provision's file entry the door takes as they stand; the rest of the
+# entry says where and when its text was read.
+PROVISION_FIELDS = ("key", "instrument", "provisionKind", "refLabel", "heading", "texts", "originalLanguage", "isMachine", "officialLanguages", "obligations")
 
 
 @dataclass(frozen=True)
@@ -84,13 +91,15 @@ class Entry:
 
 @dataclass
 class Report:
-    """What one call did, per tranche and kind, and every entry the door refused."""
+    """What one call did, per tranche and kind, and every entry the door refused. `waiting`
+    counts the entries whose instrument, or for a provision whose duties, the library does
+    not hold yet."""
 
     filed: Counter[tuple[str, str]] = field(default_factory=Counter)
     held: Counter[tuple[str, str]] = field(default_factory=Counter)
     open: Counter[tuple[str, str]] = field(default_factory=Counter)
     decided: Counter[tuple[str, str]] = field(default_factory=Counter)
-    waiting: Counter[str] = field(default_factory=Counter)
+    waiting: Counter[tuple[str, str]] = field(default_factory=Counter)
     refused: list[tuple[str, str, str]] = field(default_factory=list)
     runs: int = 0
 
@@ -101,7 +110,7 @@ def tranches(folder: Path | None = None) -> list[str]:
 
 def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
     """Every entry of the named tranches of `folder` (the baseline's own by default), or of
-    all, instruments before their duties."""
+    all: each instrument, then its duties, its summary and its provisions."""
     folder = folder or BASELINE_DIR
     names = tranches(folder)
     unknown = sorted(set(only) - set(names))
@@ -113,6 +122,7 @@ def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
             continue
         data = json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
         summaries = _summaries(folder, name)
+        provisions = _provisions(folder, name)
         for item in data["instruments"]:
             payload = item["payload"]
             key = payload["key"]
@@ -128,6 +138,15 @@ def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
                 }
                 body = {"instrument": key, "summaries": summary["text"], "originalLanguage": SUMMARY_LANGUAGE}
                 entries.append(_entry(name, SUMMARY, written, body, key, key=key))
+            for provision in provisions.get(key, []):
+                written = {
+                    "title": f"Add the text of {provision['refLabel']}, {payload['officialRef']}, as read on {provision['readOn']}",
+                    "source": provision["source"],
+                    "sourceLabel": provision["sourceLabel"],
+                }
+                # Copied, never reworded: a field left out or null (a heading) is the door's default.
+                body = {wanted: provision[wanted] for wanted in PROVISION_FIELDS if provision.get(wanted) is not None}
+                entries.append(_entry(name, PROVISION, written, body, key))
     return entries
 
 
@@ -137,6 +156,18 @@ def _summaries(folder: Path, tranche: str) -> dict[str, dict[str, Any]]:
     if not path.exists():
         return {}
     return {item["key"]: item for item in json.loads(path.read_text(encoding="utf-8"))["summaries"]}
+
+
+def _provisions(folder: Path, tranche: str) -> dict[str, list[dict[str, Any]]]:
+    """The tranche's provisions by the instrument each belongs to, in the file's order, or
+    none when it has no file. One that names an instrument outside its tranche is the
+    checker's to refuse and is never filed."""
+    path = folder / PROVISIONS_DIR / f"{tranche}.json"
+    found: dict[str, list[dict[str, Any]]] = {}
+    if path.exists():
+        for item in json.loads(path.read_text(encoding="utf-8"))["provisions"]:
+            found.setdefault(item["instrument"], []).append(item)
+    return found
 
 
 def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any], instrument: str, *, key: str = "") -> Entry:
@@ -159,25 +190,35 @@ def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any
 
 @dataclass(frozen=True)
 class _Library:
-    """What the library and the queue hold for the entries in hand, read in four queries:
-    the stable keys held (lowercased), the keys open in the queue per kind, and the retry
-    keys this agent ever filed."""
+    """What the library and the queue hold for the entries in hand, read in five queries
+    (four while no entry is a provision): the stable keys held (lowercased), the keys open
+    in the queue per kind, and the retry keys this agent ever filed."""
 
     instruments: set[str]
     obligations: set[str]
     summarised: set[str]
+    provisions: set[str]
     open: set[tuple[str, str]]
     filed: set[str]
 
 
+def _cited(entry: Entry) -> set[str]:
+    """The duties a provision names as citing it, lowercased as the held keys are; none for
+    every other kind."""
+    return {key.lower() for key in entry.payload.get("obligations", [])} if entry.kind == PROVISION else set()
+
+
 def _library(entries: list[Entry]) -> _Library:
-    keys = {kind: {entry.key for entry in entries if entry.kind == kind} for kind in (INSTRUMENT, OBLIGATION)}
+    keys = {kind: {entry.key for entry in entries if entry.kind == kind} for kind in (INSTRUMENT, OBLIGATION, PROVISION)}
     parents = {entry.instrument for entry in entries if entry.kind != INSTRUMENT}
-    open_rows = Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind__in=(INSTRUMENT, OBLIGATION, SUMMARY))
+    cited = {key for entry in entries for key in _cited(entry)}
+    open_rows = Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind__in=(INSTRUMENT, OBLIGATION, SUMMARY, PROVISION))
     return _Library(
         instruments=held_stable_keys(SubjectType.INSTRUMENT.value, keys[INSTRUMENT] | parents),
-        obligations=held_stable_keys(SubjectType.OBLIGATION.value, keys[OBLIGATION]),
+        obligations=held_stable_keys(SubjectType.OBLIGATION.value, keys[OBLIGATION] | cited),
         summarised=summarised_stable_keys(),
+        # A provision's key is lowercase wherever it came from: the door and the checker both hold it to that.
+        provisions=keys[PROVISION] - unknown_provision_keys(keys[PROVISION]),
         # A summary is open under the instrument it is for; every other kind under its own key.
         open={
             (kind, summary_for if kind == SUMMARY else key)
@@ -194,8 +235,9 @@ def _library(entries: list[Entry]) -> _Library:
 
 
 def _state(entry: Entry, library: _Library) -> str:
-    """Where `entry` stands: `held`, `open`, `decided`, `waiting` for its instrument, or `due`."""
-    held = {INSTRUMENT: library.instruments, OBLIGATION: library.obligations, SUMMARY: library.summarised}[entry.kind]
+    """Where `entry` stands: `held`, `open`, `decided`, `waiting` for its instrument or, a
+    provision, for a duty it names, or `due`."""
+    held = {INSTRUMENT: library.instruments, OBLIGATION: library.obligations, SUMMARY: library.summarised, PROVISION: library.provisions}[entry.kind]
     if entry.key.lower() in held:
         return "held"
     if (entry.kind, entry.key) in library.open:
@@ -204,15 +246,18 @@ def _state(entry: Entry, library: _Library) -> str:
         return "decided"
     if entry.kind != INSTRUMENT and entry.instrument.lower() not in library.instruments:
         return "waiting"
+    if not _cited(entry) <= library.obligations:
+        return "waiting"
     return "due"
 
 
-def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | None = None, summaries: bool = True) -> Report:
+def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | None = None, only_agent_confirmable: bool = False) -> Report:
     """File every due entry of the named tranches, or of all. A dry run files nothing and
     reports what a real one would. `folder` names another folder of tranches, as the E2E
-    seed's fixture is. `summaries` False leaves the instruments' summaries out, for a caller
-    whose reviewer is an agent: a summary is approved by a person (INV-09)."""
-    entries = [entry for entry in load(only, folder) if summaries or entry.kind != SUMMARY]
+    seed's fixture is. `only_agent_confirmable` leaves out the kinds only a person may
+    approve, an instrument's summary (INV-09) and a provision (D-79), for a caller whose
+    reviewer is an agent."""
+    entries = [entry for entry in load(only, folder) if not only_agent_confirmable or entry.kind in logic.AGENT_CONFIRMABLE_KINDS]
     report = Report()
     library = _library(entries)
     due: list[Entry] = []
@@ -221,8 +266,6 @@ def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | No
         tally = (entry.tranche, entry.kind)
         if state == "due":
             due.append(entry)
-        elif state == "waiting":
-            report.waiting[entry.tranche] += 1
         else:
             getattr(report, state)[tally] += 1
     if dry_run:

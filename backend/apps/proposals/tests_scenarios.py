@@ -1497,7 +1497,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         instrument = Proposal.objects.get(payload__key="pro-s16")
         self.assertEqual((instrument.kind, instrument.status, getattr(instrument.proposed_by_agent, "key", None)), ("new_instrument", "open", "library-baseline"))
         self.assertEqual(set(instrument.field_sources), set(logic.sourced_fields(logic.parsed_payload(instrument.kind, instrument.payload))))
-        self.assertEqual(first.waiting["pro-s16"], 1, "the duty waits for its instrument")
+        self.assertEqual(first.waiting[("pro-s16", baseline.OBLIGATION)], 1, "the duty waits for its instrument")
         run = AgentRun.objects.get(pk=instrument.agent_run_id or uuid.uuid4())
         self.assertEqual((run.agent.key, run.status, run.stats["proposalsSubmitted"], run.external_session_id), ("library-baseline", "succeeded", 1, ""))
 
@@ -1571,3 +1571,78 @@ class ProposalsScenarioTests(ScenarioTestCase):
         again = translations_body(key="fffs-2017-2", titles={"sv": "FFFS 2017:2"})
         filed = self._post("/proposals", again, sign_in(self.second_editor))
         self.assertEqual((filed.status_code, filed.json()["code"]), (409, "duplicate_key"), filed.content)
+
+    def test_pro_s20(self) -> None:
+        """PRO-S20
+
+        The law's own words arrive through the queue, in the authority's language, tied to
+        the duty that cites them (PRO-01, PRO-02, INV-02, INV-05; Alex, 2026-11-13).
+        """
+        from apps.agents.seeds import seed_agent_definitions
+        from apps.library.models import ObligationProvision, ProvisionText
+        from apps.proposals import baseline
+        from apps.proposals.tests_baseline import _duty, _instrument, _provision, write_provisions
+
+        seed_authorities()
+        tenancy.clear_tenant()  # the filing is in no bank's zone
+        seed_agent_definitions()
+        folder = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        ordinance = _instrument("pro-s20", _duty("obl-pro-s20"))
+        swedish = {"titles": {"sv": "Påhittad förordning (2099:1)", "en": "Invented ordinance (2099:1)"}, "originalLanguage": "sv", "isMachine": True}
+        ordinance["payload"].update({**swedish, "officialRef": "SFS 2099:1", "level": "government_regulation", "jurisdiction": "se", "authority": "regeringen"})
+        (folder / "pro-s20.json").write_text(json.dumps({"tranche": "pro-s20", "researchedOn": "2026-11-13", "instruments": [ordinance]}), encoding="utf-8")
+        texts = {"sv": "Ett intygande ska vara undertecknat och daterat.", "en": "A self-certification must be signed and dated."}
+        section = {**_provision("pro-s20", "obl-pro-s20", path="005"), "provisionKind": "section", "refLabel": "5 §", "texts": texts, "originalLanguage": "sv", "isMachine": True}
+        write_provisions(folder, [section], name="pro-s20")
+        self.enterContext(mock.patch.object(baseline, "BASELINE_DIR", folder))
+        tally = ("pro-s20", baseline.PROVISION)
+
+        def approve(key: str) -> None:
+            proposal = Proposal.objects.get(payload__key=key)
+            approved = self._post(f"/proposals/{proposal.id}/approve", {}, sign_in(self.editor, step_up=True))
+            self.assertEqual((approved.status_code, approved.json()["status"]), (200, "approved"), approved.content)
+            tenancy.clear_tenant()
+
+        # The provision waits: first for its regulation, then for the duty that cites it.
+        self.assertEqual(baseline.file().waiting[tally], 1)
+        approve("pro-s20")
+        self.assertEqual(baseline.file().waiting[tally], 1, "the duty it names is proposed, not held")
+        self.assertFalse(Proposal.objects.filter(kind="new_provision").exists())
+        approve("obl-pro-s20")
+
+        self.assertEqual(baseline.file().filed[tally], 1)
+        proposal = Proposal.objects.get(kind="new_provision")
+        self.assertEqual((proposal.status, getattr(proposal.proposed_by_agent, "key", None)), ("open", "library-baseline"))
+        self.assertEqual(set(proposal.field_sources), set(logic.sourced_fields(logic.parsed_payload(proposal.kind, proposal.payload))))
+        self.assertEqual((proposal.payload["originalLanguage"], proposal.payload["obligations"]), ("sv", ["obl-pro-s20"]))
+
+        # An agent may not approve the law's text; a person does, with a fresh passkey.
+        confirmer = agents_testing.reviewer_api_key()
+        tenancy.clear_tenant()
+        refused = self._post(f"/proposals/{proposal.id}/approve", agents_testing.decision(confirmer), {"HTTP_X_API_KEY": confirmer.plain_key})
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "person_review_required"), refused.content)
+        approve("pro-s20/005")
+
+        provision = Provision.objects.get(stable_key="pro-s20/005")
+        flags = {row.language_id: (row.is_original, row.is_machine) for row in ProvisionText.objects.filter(version__provision=provision)}
+        self.assertEqual(flags, {"sv": (True, False), "en": (False, True)}, "Swedish is the original, English a labelled machine translation")
+        duty = Obligation.objects.get(stable_key="obl-pro-s20")
+        self.assertTrue(ObligationProvision.objects.filter(obligation=duty, provision=provision).exists())
+        # A bank reads the section in the regulation's tree, beside the duty that cites it.
+        reader = factories.member_user(self.tenant, roles=("reader",))
+        read = self.client.get(f"{V1}/instruments/{provision.instrument_id}/provisions", **sign_in(reader, tenant=self.tenant))
+        self.assertEqual(read.status_code, 200, read.content)
+        (node,) = read.json()
+        self.assertEqual((node["stableKey"], node["refLabel"], [cited["id"] for cited in node["obligations"]]), ("pro-s20/005", "5 §", [str(duty.id)]))
+        shown = node["versions"][0]["text"]
+        self.assertEqual((shown["text"], shown["language"], shown["isOriginal"], shown["isMachine"]), (texts["en"], "en", False, True))
+
+        # English is never the original of Swedish law, whoever proposes it.
+        tenancy.clear_tenant()
+        english_first = provision_body("pro-s20", key="pro-s20/006", refLabel="6 §", originalLanguage="en")
+        wrong = self._post("/proposals", english_first, sign_in(self.second_editor))
+        self.assertEqual((wrong.status_code, wrong.json()["code"]), (422, "validation_error"), wrong.content)
+        self.assertIn("written in 'sv'", wrong.json()["detail"])
+        tenancy.clear_tenant()
+        last = baseline.file()
+        self.assertEqual((sum(last.filed.values()), last.runs, last.held[tally]), (0, 0, 1))

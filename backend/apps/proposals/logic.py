@@ -4,7 +4,8 @@ A proposal is the only door into the library. People and agents create them here
 second, independent principal decides one here, a person or a platform key bound to an
 agent and holding `proposals:review` (PRO-S13, D-62, ADR 0054), and apps/proposals/apply.py
 applies it. Nothing here writes a library row or names a `LibraryModel` (the library
-fence); library reads go through apps/library/reading.py.
+fence); library reads go through apps/library/reading.py, or through a relation of a record
+it returned.
 
 Four eyes (AC-PRO2) is checked in `_decidable` and by the `proposal_four_eyes` constraint:
 a repeated user, key or agent definition, and a reviewing key that names no agent, are
@@ -39,7 +40,7 @@ from apps.agents.screen import screen_all
 from apps.governance import ai_log
 from apps.governance.models import AiPurpose
 from apps.library import recurrence
-from apps.library.models import DatePrecision, SubjectType
+from apps.library.models import DatePrecision, RecordStatus, SubjectType
 from apps.library.reading import (
     InstrumentRefs,
     RecordTexts,
@@ -175,6 +176,7 @@ UNSOURCED_FIELDS = frozenset(
         "key",
         "originalLanguage",
         "isMachine",
+        "officialLanguages",
         "effectiveFromPrecision",
         "inForceFromPrecision",
         "inForceToPrecision",
@@ -497,19 +499,64 @@ def validated_obligation(payload: ProposalObligationPayload, owner_tenant_id: uu
 def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvisionVersionPayload) -> None:
     """A provision's verbatim text in real content languages, one of them the original the
     authority published (INV-05), each at most `PROPOSAL_TEXT_MAX_CHARS`, and a legal date
-    with a precision (INV-S10)."""
+    with a precision (INV-S10). `officialLanguages` names texts beside the original, so the
+    original is never marked as anything else; listed once each, and left out when empty."""
     from apps.taxonomy import tenant_lists_logic as lists
 
     payload.texts = _capped(lists.validated_labels(payload.texts, max_chars=None), "text")
     _written_in(payload.original_language, payload.texts, "text")
     _validated_precision(payload.effective_from_precision)
+    official = list(dict.fromkeys(payload.official_languages or []))
+    stray = sorted(language for language in official if language == payload.original_language or language not in payload.texts)
+    if stray:
+        raise ValidationError(
+            "officialLanguages names the languages of texts, other than the original, that the authority itself "
+            f"published. Not one of them: {', '.join(stray)}.",
+            code="validation_error",
+        )
+    payload.official_languages = official or None
 
 
-def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, Any]:
+def _law_of(instrument: Any, payload: ProposalProvisionPayload | ProposalProvisionVersionPayload) -> list[Any]:
+    """What a provision's text owes the instrument it belongs to (INV-02, INV-05).
+
+    Its original is the language the instrument's jurisdiction writes law in, so a
+    translation is never recorded as the original: without this rule English stood as the
+    original of Swedish law (Alex, 2026-11-13). And the obligations it names as citing it
+    are shared, in force and that same instrument's, each once: 422 `unknown_key` names the
+    others. Returns those obligations, for the apply."""
+    legal = instrument.jurisdiction.default_language.key
+    if payload.original_language != legal:
+        raise ValidationError(
+            f"The original of a provision is the text its authority published, and {instrument.stable_key!r} is "
+            f"written in {legal!r}. Send the {legal!r} text as the original: {payload.original_language!r} is a "
+            "translation of it, never the original.",
+            code="validation_error",
+        )
+    keys = list(dict.fromkeys(payload.obligations or []))
+    payload.obligations = keys or None
+    if not keys:
+        return []
+    # Read through the instrument's own relation, so this module names no library model
+    # (the library fence).
+    in_force = instrument.obligations.filter(stable_key__in=keys, owner_tenant__isnull=True, status=RecordStatus.ACTIVE.value)
+    found = {obligation.stable_key: obligation for obligation in in_force}
+    unknown = [key for key in keys if key not in found]
+    if unknown:
+        raise ValidationError(
+            f"Not an obligation of {instrument.stable_key!r} in force: {', '.join(unknown)}. A provision is cited "
+            "by shared obligations of its own instrument.",
+            code="unknown_key",
+        )
+    return [found[key] for key in keys]
+
+
+def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, Any, list[Any]]:
     """A new provision (INV-02): a key no provision carries, a shared instrument in force, a
-    parent of that same instrument, a live provision kind, and its text checked as a
-    version's is. Returns the instrument, parent (or None) and kind. A bank's own instrument
-    holds no provisions (ADR 0050): 422 `private_provisions_not_supported`."""
+    parent of that same instrument, a live provision kind, its text checked as a version's
+    is, and what it owes its instrument (`_law_of`). Returns the instrument, parent (or
+    None), kind and the obligations that cite it. A bank's own instrument holds no
+    provisions (ADR 0050): 422 `private_provisions_not_supported`."""
     _validate_text_payload(payload)
     if stable_key_taken(SubjectType.PROVISION.value, payload.key):
         raise ValidationError(f"{payload.key!r} is already a provision's key.", code="duplicate_key")
@@ -517,7 +564,17 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
     if instrument.owner_tenant_id is not None:
         raise ValidationError(PRIVATE_PROVISIONS, code="private_provisions_not_supported")
     parent = parent_provision(instrument, payload.parent) if payload.parent else None
-    return instrument, parent, live_provision_kind(payload.provision_kind)
+    kind = live_provision_kind(payload.provision_kind)
+    return instrument, parent, kind, _law_of(instrument, payload)
+
+
+def validated_provision_version(payload: ProposalProvisionVersionPayload, provision_id: uuid.UUID) -> tuple[Any, list[Any]]:
+    """A provision's new text against the provision it is for (INV-02): the provision in
+    force, and what the text owes its instrument (`_law_of`). Returns the provision and the
+    obligations that cite it. Run where the proposal is made, over a correction and at
+    apply: the payload alone does not say whose law it is."""
+    provision = active_provision(provision_id)
+    return provision, _law_of(provision.instrument, payload)
 
 
 def validated_instrument_summary(payload: ProposalInstrumentSummaryPayload) -> Any:
@@ -627,6 +684,13 @@ def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUI
         active_provision(target_id)
 
 
+def _validate_against_target(payload: pydantic.BaseModel, target_id: uuid.UUID | None) -> None:
+    """What a payload owes the record it names, checked once that record is known to be
+    there: a provision's new text is its provision's instrument's law (`_law_of`)."""
+    if isinstance(payload, ProposalProvisionVersionPayload) and target_id is not None:
+        validated_provision_version(payload, target_id)
+
+
 def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
     """The bank a new proposal belongs to, or None for the shared library (INV-07, D-57).
 
@@ -678,6 +742,8 @@ def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
         fields.append("effectiveFrom")
     if isinstance(payload, ProposalObligationVersionPayload) and payload.terms is not None:
         fields.append("terms")
+    if isinstance(payload, ProposalProvisionVersionPayload) and payload.obligations is not None:
+        fields.append("obligations")
     return fields
 
 
@@ -835,6 +901,7 @@ def create(
     owner_tenant_id = owner_of(kind, private=private, tenant_id=tenant_id)
     parsed = validated_payload(kind, payload, owner_tenant_id)
     _validate_obligation_target(kind, target_type, target_id)
+    _validate_against_target(parsed, target_id)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
     # Before the source check, so a standard's clause pasted as a source answers
     # `licensed_text`, the rule it breaks, rather than a generic refusal (D-35).
@@ -1253,6 +1320,7 @@ def corrected(
         )
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged, proposal.owner_tenant_id)
+    _validate_against_target(parsed, proposal.target_id)
     stored = payload_dict(parsed)
     fresh = {field: source.strip() for field, source in (field_sources or {}).items()}
     sources = {**proposal.field_sources, **fresh}

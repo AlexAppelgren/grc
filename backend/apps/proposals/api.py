@@ -344,7 +344,9 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
     as its own source. An instrument's `regime` is a term of the regime dimension, written
     `regime:<key>`. A new provision is sourced like a new record, and a provision version
-    like an obligation version. A recurring duty names its obligation as `targetType`
+    like an obligation version. A provision's text is the law's own words: its
+    `originalLanguage` is the language its instrument's jurisdiction writes law in, and the
+    obligations it names in `obligations` are tied to it when it is approved. A recurring duty names its obligation as `targetType`
     `obligation` and `targetId`, is sourced like an obligation version, field by field, and
     carries one RRULE line at a day or coarser without DTSTART, which must fall due at least
     once and at most `RECURRENCE_MAX_OCCURRENCES` times (120 unless the platform sets another
@@ -375,15 +377,18 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     source, or a new record no `sourceUrl`; `unknown_key` (422) for a kind, a list, a
     language, a term, a target obligation or provision, an instrument, a parent provision, a
     provision kind, a level, a jurisdiction, an authority or a duty type the library does
-    not hold; `not_a_regime` (422) when a new instrument's regime is not a term of the
+    not hold, and for an obligation a provision names that is not a shared obligation in
+    force under the same instrument; `not_a_regime` (422) when a new instrument's regime is not a term of the
     regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes an
     obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
     `invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a
     day, never falls due, or falls due more often than the cap in ten years;
     `validation_error` (422) for a body the schema or the kind's payload refuses, a
-    `sourceUrl` that is not an https link on any kind, or a summary or text longer than
-    `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
+    `sourceUrl` that is not an https link on any kind, a summary or text longer than
+    `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number), or a
+    provision whose `originalLanguage` is not the language its jurisdiction writes law in,
+    or whose `officialLanguages` name the original or a language it has no text in;
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
     provision version under a standard, a source on a standard's obligation that is not an
@@ -604,9 +609,12 @@ def approve_proposal(
     row through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction
     introduces a field the proposal never sourced, or changes a value without its fresh
     source in `fieldSources`; `validation_error` when a key sends no
-    `decision` or a person sends one or names a run, and when a correction is offered on a
-    kind that cannot be corrected or does not fit its payload; `unknown_key` when the
-    payload names a row the library does not hold; `not_a_regime` when a new instrument's
+    `decision` or a person sends one or names a run, when a correction is offered on a
+    kind that cannot be corrected or does not fit its payload, and when a provision's
+    `originalLanguage`, as corrected or as filed before that rule, is not the language its
+    jurisdiction writes law in; `unknown_key` when the
+    payload names a row the library does not hold, an obligation a provision names that is
+    no longer a shared obligation in force under its instrument included; `not_a_regime` when a new instrument's
     regime is not a term of the regime dimension; `duplicate_key` when a new record's key
     was taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload
     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an

@@ -4,7 +4,8 @@
 `library-baseline`; a second principal approves them. Proved here:
 
 - every entry of the real baseline files and, once a person approves it, applies: the
-  instruments on the first call, their duties on the second, nothing on the third;
+  instruments on the first call, their duties and summaries on the second, the provisions
+  that cite those duties on the third, nothing on the fourth;
 - each proposal names the agent and a run of it, carries a source on every field, and is
   open until someone else decides it; the agent can never be that someone;
 - runs hold at most `WATCH_RUN_MAX_PROPOSALS` filings and close as succeeded with the count;
@@ -12,7 +13,11 @@
   is not filed again until the baseline changes it; a dry run files nothing;
 - an entry the door refuses is reported and files nothing, and the rest still file;
 - approving a library instrument queues the filing, so its duties follow within seconds:
-  one run for a page of approvals, none when it is switched off or for a bank's own.
+  one run for a page of approvals, none when it is switched off or for a bank's own;
+- a provision, the law's own words (INV-02), is filed once its instrument and every duty it
+  names are held, once, as the door takes it; approving a duty queues the filing; a caller
+  whose reviewer is an agent is handed neither provisions nor summaries; and the command's
+  summary counts provisions filed, held and waiting.
 
 Operations exercised (the audit-on-write guard reads these names): none; the command files.
 """
@@ -20,6 +25,7 @@ Operations exercised (the audit-on-write guard reads these names): none; the com
 from __future__ import annotations
 
 import copy
+import io
 import json
 import tempfile
 import uuid
@@ -28,13 +34,14 @@ from typing import Any
 from unittest import mock
 
 from django.core.cache import cache
+from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.conf import settings
 from django.test import TestCase, override_settings
 
 from apps.agents.models import Agent, AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
-from apps.library.models import Instrument, Obligation
+from apps.library.models import Instrument, Obligation, ObligationProvision, Provision, ProvisionText
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.proposals import baseline, logic
@@ -84,6 +91,32 @@ def _duty(key: str, summary: str = "The firm tells the public what it must.") ->
     }
 
 
+def _provision(instrument: str, *duties: str, path: str = "001", text: str = "A firm shall tell the public what it must.") -> dict[str, Any]:
+    """A provision of `instrument` as a provisions file holds it (the baseline's README, "The
+    law's own words"): the text of an article of an invented Union regulation, so English is
+    its original, cited by `duties`."""
+    return {
+        "key": f"{instrument}/{path}",
+        "instrument": instrument,
+        "provisionKind": "article",
+        "refLabel": "Art. 1",
+        "path": path,
+        "heading": None,
+        "texts": {"en": text},
+        "originalLanguage": "en",
+        "obligations": list(duties),
+        "source": f"{SOURCE}#art_1",
+        "sourceLabel": "EUR-Lex, an invented regulation for this test, Article 1, as published in the Official Journal",
+        "readOn": "2026-11-13",
+    }
+
+
+def write_provisions(folder: Path, provisions: list[dict[str, Any]], name: str = "test-tranche") -> None:
+    (folder / baseline.PROVISIONS_DIR).mkdir(exist_ok=True)
+    body = {"tranche": name, "researchedOn": "2026-11-13", "provisions": provisions}
+    (folder / baseline.PROVISIONS_DIR / f"{name}.json").write_text(json.dumps(body), encoding="utf-8")
+
+
 class BaselineCase(TestCase):
     def setUp(self) -> None:
         seed_languages()
@@ -111,30 +144,39 @@ class BaselineCase(TestCase):
 
 
 class TheRealBaseline(BaselineCase):
-    def test_every_entry_files_and_applies_instruments_first_then_their_duties(self) -> None:
+    def test_every_entry_files_and_applies_instruments_first_then_their_duties_then_the_law_they_cite(self) -> None:
         entries = baseline.load()
         instruments = {entry.key for entry in entries if entry.kind == baseline.INSTRUMENT}
         duties = {entry.key for entry in entries if entry.kind == baseline.OBLIGATION}
         summaries = {entry.key for entry in entries if entry.kind == baseline.SUMMARY}
+        # None until the law's own words are filed in `provisions/`; every count below holds either way.
+        provisions = {entry.key for entry in entries if entry.kind == baseline.PROVISION}
         self.assertTrue(instruments, "the baseline holds instruments")
         self.assertEqual(summaries, instruments, "every instrument of the baseline has its summary (INV-09)")
 
         first = baseline.file()
         self.assertEqual(first.refused, [])
         self.assertEqual(sum(first.filed.values()), len(instruments), "only instruments are due on the first call")
-        self.assertEqual(sum(first.waiting.values()), len(duties) + len(summaries))
+        self.assertEqual(sum(first.waiting.values()), len(duties) + len(summaries) + len(provisions))
         self.assertEqual(self.approve_open(), len(instruments))
 
         second = baseline.file()
         self.assertEqual(second.refused, [])
         self.assertEqual(sum(second.filed.values()), len(duties) + len(summaries), "the duties and the summaries follow")
+        self.assertEqual(sum(second.waiting.values()), len(provisions), "a provision waits for the duties that cite it")
         self.assertEqual(self.approve_open(), len(duties) + len(summaries))
 
         third = baseline.file()
-        self.assertEqual((sum(third.filed.values()), third.runs), (0, 0))
-        self.assertEqual(sum(third.held.values()), len(instruments) + len(duties) + len(summaries))
+        self.assertEqual(third.refused, [])
+        self.assertEqual(sum(third.filed.values()), len(provisions), "the law's own words follow the duties that cite them")
+        self.assertEqual(self.approve_open(), len(provisions))
+
+        fourth = baseline.file()
+        self.assertEqual((sum(fourth.filed.values()), fourth.runs), (0, 0))
+        self.assertEqual(sum(fourth.held.values()), len(instruments) + len(duties) + len(summaries) + len(provisions))
         self.assertEqual(set(Instrument.objects.filter(stable_key__in=instruments).values_list("stable_key", flat=True)), instruments)
         self.assertEqual(set(Obligation.objects.filter(stable_key__in=duties).values_list("stable_key", flat=True)), duties)
+        self.assertEqual(set(Provision.objects.filter(stable_key__in=provisions).values_list("stable_key", flat=True)), provisions)
 
 
 class FilingTheBaseline(BaselineCase):
@@ -179,7 +221,7 @@ class FilingTheBaseline(BaselineCase):
 
     def test_duties_wait_for_their_instrument_and_file_once_it_is_approved(self) -> None:
         first = baseline.file()
-        self.assertEqual(first.waiting["test-tranche"], 2)
+        self.assertEqual(first.waiting[("test-tranche", baseline.OBLIGATION)], 2)
         self.approve_open()
         second = baseline.file()
         self.assertEqual(second.filed[("test-tranche", baseline.OBLIGATION)], 2)
@@ -240,6 +282,145 @@ class FilingTheBaseline(BaselineCase):
     def test_an_unknown_tranche_is_refused_by_name(self) -> None:
         with self.assertRaisesMessage(Exception, "No such tranche: nope"):
             baseline.file(only=["nope"])
+
+
+class FilingTheLawsOwnWords(BaselineCase):
+    """A tranche's provisions (INV-02; Alex, 2026-11-13): each is filed as a `new_provision`
+    once the library holds its instrument and every duty it names, as the door takes it, and
+    is held from then on like any other record."""
+
+    TALLY = ("test-tranche", baseline.PROVISION)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.folder = Path(tempfile.mkdtemp())
+        patcher = mock.patch.object(baseline, "BASELINE_DIR", self.folder)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        body = {"tranche": "test-tranche", "researchedOn": "2026-09-30", "instruments": [_instrument("test-a", _duty("obl-test-a-one"), _duty("obl-test-a-two"))]}
+        (self.folder / "test-tranche.json").write_text(json.dumps(body), encoding="utf-8")
+        self.entry = _provision("test-a", "obl-test-a-one", "obl-test-a-two")
+        write_provisions(self.folder, [self.entry])
+
+    def approve(self, key: str) -> None:
+        proposal = Proposal.objects.get(payload__key=key, status=ProposalStatus.OPEN.value)
+        actor = factories.user_actor(user_id=self.reviewer.id, label=self.reviewer.name)
+        logic.approve(proposal=proposal, reviewer=self.reviewer, actor=actor, note="", step_up_assertion_id=None)
+
+    def hold_the_duties(self) -> None:
+        """The instrument and its two duties, filed and approved, with nothing else filed."""
+        for _pass in range(2):
+            baseline.file(only_agent_confirmable=True)
+            self.approve_open()
+
+    def test_a_provision_waits_for_its_instrument_and_every_duty_it_names_and_is_filed_once(self) -> None:
+        first = baseline.file()
+        self.assertEqual((first.filed[self.TALLY], first.waiting[self.TALLY]), (0, 1), "its instrument is not held")
+        self.approve("test-a")
+        second = baseline.file()
+        self.assertEqual((second.filed[self.TALLY], second.waiting[self.TALLY]), (0, 1), "its duties are proposed, not held")
+        self.approve("obl-test-a-one")
+        third = baseline.file()
+        self.assertEqual((third.filed[self.TALLY], third.waiting[self.TALLY]), (0, 1), "one duty it names is still not held")
+        self.assertFalse(Proposal.objects.filter(kind=baseline.PROVISION).exists())
+        self.approve("obl-test-a-two")
+
+        fourth = baseline.file()
+
+        self.assertEqual((fourth.filed[self.TALLY], fourth.waiting[self.TALLY], fourth.refused), (1, 0, []))
+        proposal = Proposal.objects.get(kind=baseline.PROVISION)
+        self.assertEqual(
+            proposal.payload,
+            {
+                "key": "test-a/001",
+                "instrument": "test-a",
+                "provisionKind": "article",
+                "refLabel": "Art. 1",
+                "heading": "",
+                "sortOrder": 0,
+                "texts": self.entry["texts"],
+                "originalLanguage": "en",
+                "isMachine": False,
+                "obligations": ["obl-test-a-one", "obl-test-a-two"],
+                "effectiveFromPrecision": "day",
+            },
+            "the entry's own fields as the door takes them, and nothing the file keeps for itself",
+        )
+        self.assertEqual(proposal.title, "Add the text of Art. 1, Regulation (EU) 2099/test-a, as read on 2026-11-13")
+        self.assertEqual((proposal.source_url, proposal.source_label), (self.entry["source"], self.entry["sourceLabel"]))
+        self.assertEqual(set(proposal.field_sources), {"instrument", "provisionKind", "refLabel", "texts.en", "obligations"})
+        self.assertEqual(set(proposal.field_sources.values()), {self.entry["source"]})
+        self.assertEqual((proposal.status, getattr(proposal.proposed_by_agent, "key", None)), ("open", baseline.AGENT_KEY))
+        self.assertTrue(proposal.idempotency_key.startswith("baseline:test-a/001:"))  # type: ignore[union-attr]
+        fifth = baseline.file()
+        self.assertEqual((fifth.filed[self.TALLY], fifth.open[self.TALLY], fifth.runs), (0, 1, 0), "open in the queue, it is left alone")
+
+        self.approve("test-a/001")
+
+        provision = Provision.objects.get(stable_key="test-a/001")
+        texts = {row.language_id: (row.is_original, row.is_machine) for row in ProvisionText.objects.filter(version__provision=provision)}
+        self.assertEqual(texts, {"en": (True, False)})
+        cited_by = set(ObligationProvision.objects.filter(provision=provision).values_list("obligation__stable_key", flat=True))
+        self.assertEqual(cited_by, {"obl-test-a-one", "obl-test-a-two"})
+        sixth = baseline.file()
+        self.assertEqual((sixth.filed[self.TALLY], sixth.held[self.TALLY], sixth.runs), (0, 1, 0), "held, it is never filed again")
+
+    def test_a_rejected_provision_is_filed_again_only_when_its_entry_changes(self) -> None:
+        self.hold_the_duties()
+        baseline.file()
+        logic.reject(
+            proposal=Proposal.objects.get(kind=baseline.PROVISION),
+            reviewer=self.reviewer,
+            actor=factories.user_actor(user_id=self.reviewer.id),
+            rejection_code="wrong_fact",
+            note="Not the wording of the article.",
+        )
+        self.assertEqual(baseline.file().decided[self.TALLY], 1)
+        write_provisions(self.folder, [_provision("test-a", "obl-test-a-one", "obl-test-a-two", text="A firm shall tell the public at once.")])
+        self.assertEqual(baseline.file().filed[self.TALLY], 1)
+        self.assertEqual(Proposal.objects.filter(kind=baseline.PROVISION, status=ProposalStatus.OPEN.value).count(), 1)
+
+    def test_a_caller_whose_reviewer_is_an_agent_is_handed_nothing_a_person_must_approve(self) -> None:
+        (self.folder / baseline.SUMMARIES_DIR).mkdir()
+        summary = {"key": "test-a", "source": SOURCE, "sourceLabel": "EUR-Lex, an invented regulation for this test", "text": {"en": "What the invented regulation asks of a bank."}}
+        body = {"tranche": "test-tranche", "researchedOn": "2026-11-09", "summaries": [summary]}
+        (self.folder / baseline.SUMMARIES_DIR / "test-tranche.json").write_text(json.dumps(body), encoding="utf-8")
+        self.hold_the_duties()
+
+        for_an_agent = baseline.file(only_agent_confirmable=True)
+
+        self.assertEqual((sum(for_an_agent.filed.values()), sum(for_an_agent.waiting.values()), for_an_agent.runs), (0, 0, 0))
+        self.assertEqual({proposal.kind for proposal in Proposal.objects.all()}, {baseline.INSTRUMENT, baseline.OBLIGATION})
+        for_a_person = baseline.file()
+        self.assertEqual((for_a_person.filed[("test-tranche", baseline.SUMMARY)], for_a_person.filed[self.TALLY]), (1, 1))
+
+    def test_a_dry_run_reports_the_provision_and_files_nothing(self) -> None:
+        self.hold_the_duties()
+        before = Proposal.objects.count()
+        self.assertEqual(baseline.file(dry_run=True).filed[self.TALLY], 1)
+        self.assertEqual(Proposal.objects.count(), before)
+
+    def test_the_command_counts_provisions_filed_held_and_waiting(self) -> None:
+        def run(*arguments: str) -> str:
+            out = io.StringIO()
+            call_command("file_library_baseline", *arguments, stdout=out)
+            return out.getvalue()
+
+        self.assertIn(
+            "test-tranche: filed 1 instruments, 0 duties, 0 summaries, 0 provisions; "
+            "waiting for an approval: 0 instruments, 2 duties, 0 summaries, 1 provisions;",
+            run(),
+        )
+        self.approve_open()
+        baseline.file()
+        self.approve_open()
+        self.assertIn("test-tranche: would file 0 instruments, 0 duties, 0 summaries, 1 provisions;", run("--dry-run"))
+        self.assertIn("test-tranche: filed 0 instruments, 0 duties, 0 summaries, 1 provisions;", run("--tranche", "test-tranche"))
+        self.assertIn("open in the queue: 0 instruments, 0 duties, 0 summaries, 1 provisions;", run())
+        self.approve_open()
+        done = run()
+        self.assertIn("already in the library: 1 instruments, 2 duties, 0 summaries, 1 provisions;", done)
+        self.assertIn("runs: 0, refused: 0", done)
 
 
 class RegisteringTheSources(BaselineCase):
@@ -310,6 +491,18 @@ class DutiesFollowAnApproval(BaselineCase):
         _drain_outbox()
         duty = Proposal.objects.get(payload__key="follow-a-duty")
         self.assertEqual((duty.status, duty.proposed_by_agent.key), (ProposalStatus.OPEN.value, baseline.AGENT_KEY))  # type: ignore[union-attr]
+
+    def test_approving_a_duty_files_the_provisions_that_cite_it_without_waiting_for_the_beat(self) -> None:
+        write_provisions(self.folder, [_provision("follow-a", "follow-a-duty")], name="follow")
+        baseline.file()
+        self.approve_open()
+        _drain_outbox()  # the instruments' approvals queue the run that files the duty
+        self.assertFalse(Proposal.objects.filter(kind=baseline.PROVISION).exists(), "the duty it names is only proposed")
+        cache.clear()  # the duty is approved in a later window
+        self.approve_open()
+        _drain_outbox()
+        provision = Proposal.objects.get(kind=baseline.PROVISION)
+        self.assertEqual((provision.status, provision.payload["obligations"]), (ProposalStatus.OPEN.value, ["follow-a-duty"]))
 
     def test_a_page_of_approvals_queues_one_run(self) -> None:
         from apps.proposals import tasks

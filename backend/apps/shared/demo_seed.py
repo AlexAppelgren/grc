@@ -405,8 +405,9 @@ def seed_library() -> dict[str, int]:
     baseline.register_sources()
     passes = 0
     while True:
-        # Its reviewer is the agent confirmer, and a person approves a summary (INV-09).
-        report = baseline.file(summaries=False)
+        # Its reviewer is the agent confirmer, and a person approves a summary (INV-09) and a
+        # provision (D-79).
+        report = baseline.file(only_agent_confirmable=True)
         if report.refused:
             raise DemoSeedStopped("The proposal door refused baseline entries: " + "; ".join(f"{key}: {detail}" for key, _code, detail in report.refused))
         waiting = list(

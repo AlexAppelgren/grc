@@ -62,9 +62,11 @@ change (INV-05, D-62). Its own requests to a shared list it follows through
 The library's starting inventory arrives through this queue too (D-118, ADR 0065). The
 baseline in `apps/library/baseline/` is researched data in the shape a proposal takes, and
 `manage.py file_library_baseline` files what the library neither holds nor has open as
-proposals of the platform agent `library-baseline`, instruments first and each duty once
-its instrument is approved (`apps/proposals/baseline.py`). A second principal approves each
-one as any other: a person with a passkey today, the confirming agent once it runs.
+proposals of the platform agent `library-baseline`, instruments first, each duty once
+its instrument is approved, and each provision once the duties it names are
+(`apps/proposals/baseline.py`). A second principal approves each one as any other: a person
+with a passkey today, the confirming agent once it runs, and a provision or a summary always
+a person.
 
 The library's translations arrive the same way (D-129, Alex 2026-11-09: "We should probably
 also translate the summary to all languages that the platform supports, while having the
@@ -82,6 +84,38 @@ approval adding an obligation or an instrument's summary queues the same fan-out
 approval window; 0 minutes
 switches both off. A translation row names no confirming agent, so an agent's approval is 409
 `person_review_required` (D-79): a person approves, one at a time or with Approve all.
+
+The law's own words arrive the same way (Alex, 2026-11-13: "it says that the original text
+is in english while its actually swedish.. we need to correctly have the original text. and
+then we also translate to english by default"). An obligation's title and summary are
+bleqq's own wording, and their original is the language they were written in, which is
+English across the baseline. The words of the law live in the provision tree (INV-02), so
+`new_provision` and `new_provision_version` hold a text to three rules, where it is proposed,
+over a correction and at apply:
+
+- **The original is the authority's language.** `originalLanguage` is the language the
+  instrument's jurisdiction writes law in (`Jurisdiction.default_language`: Swedish for
+  Sweden, Danish, Norwegian, Finnish, and English for the Union), or 422 `validation_error`.
+  A translation is never recorded as the original of the law. A new text of a provision is
+  checked against that provision's own instrument.
+- **A language is marked for what it is.** `officialLanguages` names the other languages of
+  `texts` the authority itself published, as Finland enacts its law in Swedish too: each is
+  stored neither as the original nor as machine-made. `isMachine` speaks for every remaining
+  text, which stays labelled machine-made whoever approves, and the original is never marked
+  as anything else (naming it, or a language with no text, is 422 `validation_error`).
+- **A provision names the obligations that cite it.** `obligations` is their stable keys, at
+  most `PROPOSAL_PROVISION_MAX_OBLIGATIONS`, each a shared obligation in force under the same
+  instrument (422 `unknown_key` names one that is not) and sourced like every fact. Approval
+  writes one `obligation_provision` row per pair in the same library write as the provision
+  or its new text, leaves a pair the library already holds, and names the keys it tied on the
+  provision's audit row. Nothing else writes those rows.
+
+A provision's key may end in one slash and its place in the instrument, as the seeded library
+keys them (`fffs-2017-2/9-6`). Approval is unchanged: a person's, never an agent's (D-79).
+The baseline's provisions sit in `apps/library/baseline/provisions/`, one file per tranche,
+produced by script from the official sources; the filer files each as a `new_provision` once
+the library holds its instrument and every duty it names, and an approved duty queues the
+filing as an approved instrument does. PRO-S20 proves it.
 
 A bank's own private records travel the same table but never the console: the
 server sets the proposal's owner from the target, and a second person in the
@@ -494,4 +528,21 @@ When a library editor approves it with a fresh passkey
 Then every row it adds is labelled a machine translation and the English stays the original
 And the regulation's card lists every language of its name and summary, saying which is the original and which a machine translated
 And a translation into a language the regulation already holds is refused with "duplicate_key"
+```
+
+### PRO-S20 — The law's own words arrive through the queue, in the authority's language, tied to the duty that cites them `@integration` (PRO-01, PRO-02, INV-02, INV-05)
+```gherkin
+Given the library baseline holds a Swedish regulation with one duty
+And the text of the section that duty cites, in Swedish with a machine translation into English
+When the platform files the baseline
+Then the provision waits, first for its regulation and then for the duty that cites it
+When a library editor has approved the regulation and the duty, and the platform files again
+Then one new provision waits in the queue, proposed by the agent library-baseline with a source on every field, Swedish its original
+When an agent approves it
+Then it answers 409 "person_review_required"
+When a library editor approves it with a fresh passkey
+Then the library holds the section with its first text, Swedish the original and English labelled a machine translation
+And the duty cites the section, and a bank reads both in the regulation's provision tree
+And a provision whose original is English under that Swedish regulation is refused with "validation_error"
+And filing again proposes nothing, because the library holds the section
 ```

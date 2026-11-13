@@ -239,6 +239,11 @@ class ProposalObligationPayload(WriteBody):
     terms: TermRefs | None = Field(default=None, max_length=settings.PROPOSAL_SCOPE_MAX_TERMS)
 
 
+# A provision's stable key: a record's key, or one followed by a slash and the provision's
+# place in its instrument, as the seeded library writes them (`fffs-2017-2/9-6`).
+PROVISION_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)?$"
+
+
 class ProposalProvisionPayload(WriteBody):
     """`new_provision` (PRO-01, INV-02): a node of a law's structure the library does not
     hold yet, with its first verbatim text.
@@ -247,15 +252,27 @@ class ProposalProvisionPayload(WriteBody):
     shared instrument it belongs to and `parent` the stable key of the provision of that
     instrument it sits under, left out at the top of the tree. `provisionKind` is a key of
     the provision kind list; `refLabel` and `heading` are how the text cites and names it.
-    `texts` is the verbatim text per content language, `originalLanguage` the one the
-    authority published and `isMachine` saying the others are machine-made (INV-05). The
-    date is a plain legal date with a precision.
+    The date is a plain legal date with a precision.
+
+    `texts` is the law's own words per content language. `originalLanguage` is the one the
+    authority published, which is the language its jurisdiction writes law in (Swedish for
+    Swedish law, English for a Union act): any other is 422 `validation_error`, so a
+    translation is never recorded as the original of the law. That rule is a provision's
+    alone: a title or a summary is bleqq's own wording, and its original is the language it
+    was written in. `officialLanguages` names the other languages of `texts` the authority
+    itself published, such as the Swedish text of a Finnish act: each is stored neither as
+    the original nor as machine-made. `isMachine` says every remaining text is a machine
+    translation (INV-05); a text stored machine-made stays so whoever approves.
+
+    `obligations` is the stable keys of the obligations that cite this provision, at most
+    `PROPOSAL_PROVISION_MAX_OBLIGATIONS`, each a shared obligation in force under the same
+    instrument, else 422 `unknown_key` naming it. Approval ties each one to the provision.
 
     Never under a standard, whose text is licensed: 422 `licensed_text` (INV-08, D-35).
     Every fact here needs its source, an https link, in `fieldSources`.
     """
 
-    key: str = Field(max_length=200, pattern=STABLE_KEY_PATTERN)
+    key: str = Field(max_length=200, pattern=PROVISION_KEY_PATTERN)
     instrument: str
     parent: str | None = None
     provision_kind: str
@@ -265,6 +282,8 @@ class ProposalProvisionPayload(WriteBody):
     texts: dict[str, str]
     original_language: str
     is_machine: bool = False
+    official_languages: list[str] | None = None
+    obligations: list[str] | None = Field(default=None, max_length=settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
     effective_from: date | None = None
     effective_from_precision: str = "day"
 
@@ -273,14 +292,19 @@ class ProposalProvisionVersionPayload(WriteBody):
     """`new_provision_version` (PRO-01, INV-02): the verbatim text of a provision that
     exists, in force from a date. Nothing is overwritten; the earlier text stays.
 
-    `texts`, `originalLanguage`, `isMachine` and the date read as on `new_provision`. Never
-    on a standard's provision: 422 `licensed_text` (INV-08, D-35). Every field needs its
-    source in `fieldSources`.
+    `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and the date read as on
+    `new_provision`, the original being the language of the provision's own jurisdiction.
+    `obligations` reads as there too: each one named is tied to the provision when the text
+    is approved, and one it is already tied to stays as it is. Never on a standard's
+    provision: 422 `licensed_text` (INV-08, D-35). Every field needs its source in
+    `fieldSources`.
     """
 
     texts: dict[str, str]
     original_language: str
     is_machine: bool = False
+    official_languages: list[str] | None = None
+    obligations: list[str] | None = Field(default=None, max_length=settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
     effective_from: date | None = None
     effective_from_precision: str = "day"
 
@@ -1393,11 +1417,26 @@ class ProposalCreateBody(WriteBody):
             "`effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one "
             "conformance obligation, carrying exactly one standard term (else 422 "
             "`one_conformance_obligation` or `standard_term_required`), and a law's obligation carries "
-            "none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, "
+            "none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may "
+            "end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, at most "
+            "200 characters), `instrument`, "
             "`parent` (the stable key of a provision of the same instrument, left out at the top), "
-            "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, "
-            "`originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. "
-            "`new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and "
+            "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), "
+            "`originalLanguage` (the language the authority published the text in, which must be the "
+            "language its instrument's jurisdiction writes law in, Swedish for Swedish law and English for "
+            "a Union act, else 422 `validation_error`: a translation is never the original of the law, "
+            "though a title or a summary, being bleqq's own wording, keeps the language it was written "
+            "in), `officialLanguages` (the other languages of `texts` the authority itself published, such "
+            "as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; "
+            "naming the original, or a language with no text, answers 422 `validation_error`), `isMachine` "
+            "(true when every remaining text is a machine translation, which then stays labelled so whoever "
+            "approves), `obligations` (the stable keys of the obligations that cite the provision, each "
+            f"once and at most {settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS}, every one a shared obligation "
+            "in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to "
+            "the provision), `effectiveFrom` and `effectiveFromPrecision`. "
+            "`new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and "
+            "`obligations`, each read as on a new provision against the provision's own instrument (an "
+            "obligation the provision is already tied to stays as it is), `effectiveFrom` and "
             "`effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, "
             "`originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), "
             "`key` (its stable key), `titles` and `summaries` per language, each in a content language the "
@@ -1466,7 +1505,7 @@ class ProposalCreateBody(WriteBody):
         default_factory=dict,
         description=(
             "Per field the payload sets, where its value came from, keyed as the queue names the field "
-            "(`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`). Each source is at most "
+            "(`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`, `obligations`). Each source is at most "
             f"{settings.PROPOSAL_SOURCE_MAX_CHARS} characters and is an https link, or for an obligation "
             "or provision version also the stable key of a provision the library holds. A new "
             "instrument, obligation or provision takes https links only, since it has no provision of "
