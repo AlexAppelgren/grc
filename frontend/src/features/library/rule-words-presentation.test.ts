@@ -2,7 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 
-import { CLAMP_CHARACTERS, CLAMP_LINES, firstText, isLong, originalOf, provisionChipLabel, provisionPlace, provisionTextLabel, summaryMachineLabel } from './rule-words-presentation';
+import {
+  CLAMP_CHARACTERS,
+  CLAMP_LINES,
+  chosenText,
+  diffFlags,
+  firstText,
+  isLong,
+  originalOf,
+  provisionChipLabel,
+  provisionPlace,
+  provisionTextLabel,
+  regulationName,
+  summaryMachineLabel,
+} from './rule-words-presentation';
 import type { LocalizedText } from './types';
 
 const t = createT('en');
@@ -30,6 +43,39 @@ describe('firstText', () => {
 
   it('has nothing to open when the library holds no wording', () => {
     expect(firstText([], 'en')).toBeNull();
+  });
+});
+
+describe('chosenText', () => {
+  it('shows the language chosen when this text holds it, else the one it opens in', () => {
+    expect(chosenText([svOriginal, enMachine], 'sv', 'en')).toBe(svOriginal);
+    expect(chosenText([fiOriginal, daMachine], 'sv', 'en')).toBe(fiOriginal);
+    expect(chosenText([svOriginal, enMachine], null, 'en')).toBe(enMachine);
+    expect(chosenText([], 'sv', 'sv')).toBeNull();
+  });
+});
+
+describe('diffFlags', () => {
+  it('reads a comparison as the original only when it is in the original language and no machine made either side', () => {
+    expect(diffFlags({ language: 'sv', isMachine: false }, [svOriginal, enMachine])).toEqual({ language: 'sv', isMachine: false, isOriginal: true });
+    expect(diffFlags({ language: 'en', isMachine: true }, [svOriginal, enMachine])).toEqual({ language: 'en', isMachine: true, isOriginal: false });
+    expect(provisionTextLabel(diffFlags({ language: 'sv', isMachine: false }, [fiOriginal, svOfficial]), [fiOriginal, svOfficial], 'en', t)).toBe('Swedish, official text');
+  });
+});
+
+describe('regulationName', () => {
+  const swedishName: LocalizedText = { text: 'Lag om värdepappersmarknaden', language: 'sv', isOriginal: true, isMachine: false };
+  const englishName: LocalizedText = { text: 'Securities Market Act', language: 'en', isOriginal: false, isMachine: true };
+
+  it("prefers the authority's own name in the reader's language to a machine's in the summary's", () => {
+    expect(regulationName([swedishName, englishName], 'en', 'sv', englishName)).toBe(swedishName);
+  });
+
+  it("follows the summary's language, and takes the machine's name only where the reader has no own name", () => {
+    expect(regulationName([swedishName, englishName], 'sv', 'en', englishName)).toBe(swedishName);
+    expect(regulationName([swedishName, englishName], 'en', 'en', swedishName)).toBe(englishName);
+    expect(regulationName([swedishName], 'en', 'en', swedishName)).toBe(swedishName);
+    expect(regulationName([], 'en', 'en', null)).toBeNull();
   });
 });
 

@@ -174,6 +174,7 @@ And the record carries no tenant_id and is readable by every tenant
 Given the EU directive "Directive 2002/47/EC" with a summary, and the Swedish act "SFS 2004:46" whose implementsNote names Directive 2002/47/EC
 When a reader opens the directive's card
 Then it carries the summary, the Swedish act among the laws that implement it, opened in place on its page, and no duties of its own
+And the summary, bleqq's wording, names its languages only and never reads "original"; the name under the short name is the authority's own in the reader's language before a machine translation
 And the act's card names the directive among what it implements, and an act numbered 2002/470 is never matched
 And the counts of duties held and in scope are those GET /obligations answers for the same regulation, with new duties waiting for review counted apart
 And a regulation's page says those counts before its list of duties, and names the duties by the level of the regulation
@@ -187,7 +188,8 @@ Given an instrument with chapters, sections and paragraphs, whose level kind is 
 When a provision's text is replaced by an amendment in force on 2026-11-01
 Then a new text version row exists with that effective date and a transitional note
 And each version in the tree carries its own text in every language it holds, the original first, beside the one picked for the reader (INV-S23)
-And the tree screen shows the current text with "Show what changed" opening the diff
+And the tree screen shows the current text as the rule's own words: in the reader's language when the version holds it, else English, else the original, a chip per language, and above it "Swedish, original", "Machine translation from Swedish. The original is authoritative." or, for the authority's own second language, "Swedish, official text"
+And "Show what changed" opens the diff in the language shown, labelled the same way
 ```
 
 ### INV-S3 — An obligation states the duty and its facets `@integration` `@e2e` (INV-03)

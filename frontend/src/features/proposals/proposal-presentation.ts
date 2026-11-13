@@ -233,18 +233,82 @@ export function newObligationPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'
   return newRecordPayloadOf(row, 'new_obligation') as NewObligationPayload | null;
 }
 
+/** A `new_provision` or `new_provision_version` payload: the law's own words per language (D-142). */
+export interface ProvisionPayload {
+  /** The structure of a new provision; a new version of one carries none of it. */
+  key?: string;
+  instrument?: string;
+  parent?: string | null;
+  provisionKind?: string;
+  refLabel?: string;
+  heading?: string;
+  texts: Record<string, string>;
+  /** The language the authority published the text in, which governs. */
+  originalLanguage: string;
+  /** The other languages the authority itself published, such as a Finnish act's Swedish. */
+  officialLanguages?: string[] | null;
+  isMachine?: boolean;
+  /** The stable keys of the obligations approval ties the provision to. */
+  obligations?: string[] | null;
+  effectiveFrom?: string | null;
+  effectiveFromPrecision?: string;
+}
+
+export function provisionPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): ProvisionPayload | null {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  const kind = row.kind === 'new_provision' || row.kind === 'new_provision_version';
+  return kind && typeof payload.texts === 'object' && payload.texts !== null ? (payload as unknown as ProvisionPayload) : null;
+}
+
 export interface LanguageText {
   language: string;
   text: string;
-  /** `original` for the language it was written in, `machine` for a machine translation (AUD-02), else `none`. */
-  mark: 'original' | 'machine' | 'none';
+  /**
+   * `original` for the language the authority published in, `official` for one it also
+   * published in, `machine` for a machine translation (AUD-02), else `none`.
+   */
+  mark: 'original' | 'official' | 'machine' | 'none';
 }
 
-/** A text per language, the original first and then the rest alphabetically, each marked as the original or a machine translation. */
-export function languageTexts(texts: Readonly<Record<string, string>>, originalLanguage: string, isMachine = false): LanguageText[] {
+export interface LanguageMarks {
+  /** Every text but the original is a machine translation. */
+  isMachine?: boolean;
+  /** Languages the authority itself published beside the original. */
+  officialLanguages?: readonly string[] | null;
+  /**
+   * The texts are bleqq's own wording, a duty's title or a summary: the language they were
+   * written in comes first but is never called the original, which only the rule's own
+   * words and the authority's name have (D-142).
+   */
+  bleqqWording?: boolean;
+}
+
+/**
+ * A text per language, each marked for what it is: the one written first, then any the
+ * authority itself published, then the rest, each group alphabetically.
+ */
+export function languageTexts(texts: Readonly<Record<string, string>>, originalLanguage: string, marks: LanguageMarks = {}): LanguageText[] {
+  const official = (language: string) => marks.officialLanguages?.includes(language) === true;
+  const markOf = (language: string): LanguageText['mark'] => {
+    if (language === originalLanguage) return marks.bleqqWording === true ? 'none' : 'original';
+    if (official(language)) return 'official';
+    return marks.isMachine === true ? 'machine' : 'none';
+  };
+  const rank = (language: string) => (language === originalLanguage ? 0 : official(language) ? 1 : 2);
   return Object.entries(texts)
-    .map(([language, text]): LanguageText => ({ language, text, mark: language === originalLanguage ? 'original' : isMachine ? 'machine' : 'none' }))
-    .sort((a, b) => Number(b.mark === 'original') - Number(a.mark === 'original') || a.language.localeCompare(b.language));
+    .map(([language, text]): LanguageText => ({ language, text, mark: markOf(language) }))
+    .sort((a, b) => rank(a.language) - rank(b.language) || a.language.localeCompare(b.language));
+}
+
+const MARK_LABEL: Readonly<Record<Exclude<LanguageText['mark'], 'none'>, MessageKey>> = {
+  original: 'console.queue.detail.languageOriginal',
+  official: 'console.queue.detail.languageOfficial',
+  machine: 'console.queue.detail.languageMachine',
+};
+
+/** The line above a text: its language's name, and what it is when it is the original, an official text or a machine translation. */
+export function languageTextLabel(mark: LanguageText['mark'], language: string, t: Translate): string {
+  return mark === 'none' ? language : t(MARK_LABEL[mark], { language });
 }
 
 /** The label of `key` in a list read from its own rows, or the key itself while the list is loading or holds no such row. */
@@ -266,6 +330,7 @@ export function bindingLabel(binding: boolean | null | undefined, t: Translate):
 const FIELD_LABEL = {
   instrument: 'console.queue.field.instrument',
   parent: 'console.queue.field.parent',
+  sortOrder: 'console.queue.field.sortOrder',
   titles: 'console.queue.field.title',
   summaries: 'console.queue.field.text',
   texts: 'console.queue.field.legalText',
@@ -285,6 +350,7 @@ const FIELD_LABEL = {
   inForceFrom: 'console.queue.field.inForceFrom',
   inForceTo: 'console.queue.field.inForceTo',
   terms: 'console.queue.field.scope',
+  obligations: 'console.queue.field.obligations',
   implementsNote: 'console.queue.field.implementsNote',
 } as const satisfies Record<string, MessageKey>;
 

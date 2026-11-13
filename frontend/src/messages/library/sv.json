@@ -51,7 +51,6 @@
   "library.languageOriginal": "{language}, original",
   "library.noTextTitle": "Ingen text på {language} ännu",
   "library.noTextBody": "Välj ett av språken ovan för att läsa det biblioteket har.",
-  "library.showOriginal": "Visa originalet",
   "library.lastVerifiedBy": "{date} av {name}",
   "library.notVerifiedYet": "Inte verifierad ännu",
   "library.scope.label": "Omfattning",

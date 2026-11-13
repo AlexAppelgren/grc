@@ -88,7 +88,13 @@ const FIELD_LABEL = {
   effectiveFrom: 'privateRecords.field.effectiveFrom',
   terms: 'privateRecords.field.terms',
 } as const satisfies Record<string, MessageKey>;
-const TEXT_FIELDS: ReadonlySet<string> = new Set(['titles', 'summaries']);
+// A text in a language other than the one it was written in, on a payload that says the
+// others are machine-made, says so in its label (INV-05).
+const MACHINE_LABEL: Readonly<Record<string, MessageKey>> = {
+  titles: 'privateRecords.field.titlesMachine',
+  summaries: 'privateRecords.field.summariesMachine',
+};
+const TEXT_FIELDS: ReadonlySet<string> = new Set(Object.keys(MACHINE_LABEL));
 const DATE_FIELDS: ReadonlySet<string> = new Set(['inForceFrom', 'inForceTo', 'effectiveFrom']);
 
 function shownValue(field: string, value: unknown, ctx: FormatContext): string {
@@ -115,7 +121,9 @@ export function payloadRows(row: Pick<PrivateProposalRow, 'payload' | 'fieldSour
       for (const [language, text] of Object.entries(value)) {
         if (typeof text !== 'string' || text === '') continue;
         const path = `${field}.${language}`;
-        rows.push({ field: path, label: t(labelKey, { language: languageName(language, ctx.locale) }), value: text, source: numberOf(path), language });
+        const machine = payload.isMachine === true && language !== payload.originalLanguage;
+        const label = t(machine ? (MACHINE_LABEL[field] ?? labelKey) : labelKey, { language: languageName(language, ctx.locale) });
+        rows.push({ field: path, label, value: text, source: numberOf(path), language });
       }
       continue;
     }

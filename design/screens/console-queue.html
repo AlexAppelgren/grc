@@ -308,13 +308,34 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <h2 class="k">New obligation proposal (scope suggested by the agent, editable)</h2>
     <div class="panel"><div class="meta" style="margin-bottom:6px"><span class="pill notice">New obligation</span><span class="pill warning">Waiting</span></div><h2>Add obligation: apply AMLR customer due diligence from 10 July 2027</h2><dl class="kv" style="margin:10px 0"><dt>Instrument</dt><dd>Regulation (EU) 2024/1624 (AMLR), art. 20</dd><dt>Scope suggested</dt><dd class="facets"><span class="pill brand">Bank</span><span class="pill brand">Insurer</span><span class="pill brand">All services</span><span class="pill brand">Retail</span><span class="pill brand">Professional</span></dd><dt>Duty type</dt><dd>Conduct</dd><dt>Source</dt><dd><a href="#" rel="noopener">EUR-Lex, art. 20(1)</a></dd></dl><p class="meta" style="display:block">Every field lists its source; a field without one blocks approval.</p></div>
 
+    <h2 class="k">New provision proposal (the rule's own words, each text labelled for what it is)</h2>
+    <div class="panel"><div class="meta" style="margin-bottom:6px"><span class="pill notice">New provision</span><span class="pill warning">Waiting</span></div><h2>Add the text of 6 §, FFFS 2017:2, as read on 1 Nov 2026</h2>
+      <dl class="kv" style="margin:10px 0"><dt>Regulation</dt><dd class="mono">fffs-2017-2</dd><dt>Parent provision</dt><dd class="mono">fffs-2017-2/9</dd><dt>Reference</dt><dd>6 §</dd><dt>Provision kind</dt><dd>Section</dd><dt>Heading</dt><dd lang="sv">Betalning för analys</dd></dl>
+      <p class="meta" style="display:block;margin-bottom:4px">The rule's own words</p>
+      <div class="grid" style="gap:8px">
+        <div class="quote"><span class="meta" style="display:block">Swedish (original)</span><span lang="sv" style="white-space:pre-wrap;display:block">Investeringsanalys från tredje part får tas emot endast om den betalas
+  1. med institutets egna medel,
+  2. från ett analyskonto, eller
+  3. gemensamt med orderutförande enligt de villkor som anges i reglerna.</span></div>
+        <div class="quote"><span class="meta" style="display:block">English (machine translation)</span><span lang="en" style="white-space:pre-wrap;display:block">Investment research from a third party may be received only if it is paid
+  1. from the institution's own resources,
+  2. from a research payment account, or
+  3. jointly with execution under the conditions set out in these regulations.</span></div>
+      </div>
+      <p class="meta" style="display:block;margin-top:8px">A Finnish act's Swedish text, which the authority itself publishes, reads "Swedish (official text)". A text longer than about a screen is clamped, with "Show all".</p>
+      <dl class="kv" style="margin:10px 0"><dt>Obligations it ties to</dt><dd class="mono">obl-research-payments</dd></dl>
+      <p class="meta" style="display:block;margin-top:10px">A new version of a provision: it names the provision it changes, then its texts, the date it is in force from and the obligations it ties to.</p>
+      <dl class="kv" style="margin:6px 0 10px"><dt>Regulation</dt><dd>FFFS 2017:2</dd><dt>Reference</dt><dd>9 kap. 6 §</dd><dt>Heading</dt><dd lang="sv">Betalning för analys</dd><dt>In force from</dt><dd>1 Oct 2026</dd></dl>
+      <p class="meta" style="display:block">The regulation and reference lines wait on the detail read naming the provision a version belongs to (TODO_FOR_alex, 2026-11-13); until then the screen shows the texts, the date and the obligations.</p>
+      <div class="bar"><button class="btn danger">Reject</button><button class="btn">Approve and apply</button></div></div>
+
     <h2 class="k">Empty, loading, error, denied</h2>
     <div class="empty"><h2>Nothing waiting</h2><p>Approved and rejected proposals stay under their tabs.</p><a href="#">See the coverage log</a></div>
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the queue</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs proposals review</p></div>
     </div>
-    <p class="note">Queue card. The kind is a notice pill from the proposal kind, the status a warning "Waiting", positive "Approved" or information "Rejected". The source sits at the bottom of the same card as the diff (Alex, 2026-11-09), so the editor never approves without it in view; each changed field names its own source. The editor may correct wording, dates and scope before Approve and apply, which asks for a passkey and writes version, audit row and re-index in one transaction. The proposer, agent or person, never approves: the row shows "Yours", the detail the refusal, and the server answers 409 four_eyes_violation. Reject needs a reason. Two buttons per row on phones, primary on the right.</p>
+    <p class="note">Queue card. The kind is a notice pill from the proposal kind, the status a warning "Waiting", positive "Approved" or information "Rejected". The source sits at the bottom of the same card as the diff (Alex, 2026-11-09), so the editor never approves without it in view; each changed field names its own source. The editor may correct wording, dates and scope before Approve and apply, which asks for a passkey and writes version, audit row and re-index in one transaction. The proposer, agent or person, never approves: the row shows "Yours", the detail the refusal, and the server answers 409 four_eyes_violation. Reject needs a reason. Two buttons per row on phones, primary on the right. Each text sits in a block of its own, the one written first (D-142): a provision's text and an instrument's name are the authority's, so their first block reads "(original)", a text the authority also published "(official text)" and the rest "(machine translation)"; a duty's title and every summary are bleqq's wording, named by language only, with machine translations still labelled.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queue<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h9a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3z"/><path d="M20 5h-4v14h4z"/></svg>Vocabularies</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Sources</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>Reports<span class="dot">2</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

@@ -532,7 +532,7 @@ When an agent approves it
 Then it answers 409 "person_review_required"
 When a library editor approves it with a fresh passkey
 Then every row it adds is labelled a machine translation and the English stays the original
-And the regulation's card lists every language of its name and summary, saying which is the original and which a machine translated
+And the regulation's card lists every language of its name and summary, labelling each machine translation as one; only the name, the authority's own, is ever called the original, since the summary is bleqq's wording (D-142)
 And a translation into a language the regulation already holds is refused with "duplicate_key"
 ```
 

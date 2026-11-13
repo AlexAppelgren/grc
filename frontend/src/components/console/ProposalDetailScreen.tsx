@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
 import { ProposalCorrectionForm } from '@/components/console/ProposalCorrectionForm';
@@ -27,15 +27,20 @@ import {
   isObligationVersion,
   isVocabularyKind,
   labelOfKey,
+  languageTextLabel,
   languageTexts,
   newObligationPayloadOf,
   obligationPayloadOf,
   presentProposal,
   proposerLine,
+  provisionPayloadOf,
   scopeTermPills,
   vocabularyPayloadOf,
+  type LanguageMarks,
+  type LanguageText,
 } from '@/features/proposals/proposal-presentation';
 import type { ProposalDetail, ProposalRow } from '@/features/proposals/types';
+import { isLong } from '@/features/library/rule-words-presentation';
 import { languageName } from '@/features/library/version-presentation';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { listLabel, presentVocabularyValue } from '@/features/vocabularies/vocabulary-presentation';
@@ -57,6 +62,9 @@ import { hasProblemCode } from '@/shared/utils/problem';
 //
 // "What changes" shows the proposed text plainly; a console session has no
 // tenant, so there is no "Open the obligation" link to a tenant-scoped page.
+// Every text says what it is (D-142): the rule's own words and an authority's
+// name mark their original, an official text and a machine translation;
+// bleqq's own wording, a duty's title or a summary, names its language only.
 
 /** The proposal's sources, at the bottom of the card that shows what it changes or adds. */
 function SourceSection({ proposal }: { proposal: ProposalRow }) {
@@ -102,19 +110,14 @@ function ObligationChanges({ proposal, footer }: { proposal: ProposalRow; footer
   if (payload === null) return <Panel>{footer}</Panel>;
   return (
     <Panel title={t('console.queue.detail.whatChanges')} data-proposal-changes="">
-      <p className="microlabel mb-1 text-muted">{t('console.queue.detail.proposedText')}</p>
-      <div className="grid gap-3">
-        {Object.entries(payload.summaries).map(([language, text]) => (
-          <div key={language} lang={language} className="rounded-card border border-line bg-surface-2 p-3">
-            <p className="mb-1 text-meta text-muted">
-              {languageName(language, ctx.locale)}
-              {language === payload.originalLanguage ? ` (${t('console.queue.detail.original')})` : ''}
-            </p>
-            <p>{text}</p>
-          </div>
-        ))}
-      </div>
-      <dl className="mt-3 grid grid-cols-1 gap-x-3.5 gap-y-2 md:grid-cols-[140px_1fr]">
+      <LanguageTextBlocks
+        heading={t('console.queue.detail.proposedText')}
+        texts={payload.summaries}
+        originalLanguage={payload.originalLanguage}
+        marks={{ isMachine: payload.isMachine, bleqqWording: true }}
+        field="summaries"
+      />
+      <dl className="grid grid-cols-1 gap-x-3.5 gap-y-2 md:grid-cols-[140px_1fr]">
         <dt className="text-meta text-muted">{t('console.queue.detail.effectiveDate')}</dt>
         <dd className="m-0">{payload.effectiveFrom ? formatDate(payload.effectiveFrom, ctx) : t('common.never')}</dd>
         <dt className="text-meta text-muted">{t('console.queue.detail.scope')}</dt>
@@ -125,25 +128,40 @@ function ObligationChanges({ proposal, footer }: { proposal: ProposalRow; footer
   );
 }
 
-/** A text per content language, the original first, each marked as the original or a machine translation (AUD-02). */
-function LanguageTextBlocks({ heading, texts, originalLanguage, isMachine, field }: { heading: string; texts: Record<string, string>; originalLanguage: string; isMachine?: boolean; field: string }) {
+/** One language's text: its label in the reader's language, outside the text's, and the text with its own line breaks, clamped when long. */
+function LanguageTextBlock({ language, text, mark }: LanguageText) {
   const t = useT();
   const ctx = useFormatContext();
+  const textId = useId();
+  const [expanded, setExpanded] = useState(false);
+  const long = isLong(text);
+  return (
+    <div className="rounded-card border border-line bg-surface-2 p-3" data-language={language}>
+      <p className="mb-1 text-meta text-muted">{languageTextLabel(mark, languageName(language, ctx.locale), t)}</p>
+      <p id={textId} lang={language} className={cn('whitespace-pre-wrap', long && !expanded && 'max-h-80 overflow-hidden')}>
+        {text}
+      </p>
+      {long ? (
+        <Button variant="ghost" size="small" className="mt-2" aria-expanded={expanded} aria-controls={textId} onClick={() => setExpanded(!expanded)}>
+          {expanded ? t('inventory.obligation.showLess') : t('inventory.obligation.showAll')}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A text per content language, the one written first, each marked for what it is (AUD-02,
+ * D-142): the rule's original, an official text or a machine translation; bleqq's own
+ * wording names its languages only.
+ */
+function LanguageTextBlocks({ heading, texts, originalLanguage, marks, field }: { heading: string; texts: Record<string, string>; originalLanguage: string; marks: LanguageMarks; field: string }) {
   return (
     <div className="mb-3" data-proposal-fact={field}>
       <p className="microlabel mb-1 text-muted">{heading}</p>
       <div className="grid gap-2">
-        {languageTexts(texts, originalLanguage, isMachine).map(({ language, text, mark }) => (
-          <div key={language} lang={language} className="rounded-card border border-line bg-surface-2 p-3" data-language={language}>
-            <p className="mb-1 text-meta text-muted">
-              {mark === 'original'
-                ? t('console.queue.detail.languageOriginal', { language: languageName(language, ctx.locale) })
-                : mark === 'machine'
-                  ? t('console.queue.detail.languageMachine', { language: languageName(language, ctx.locale) })
-                  : languageName(language, ctx.locale)}
-            </p>
-            <p>{text}</p>
-          </div>
+        {languageTexts(texts, originalLanguage, marks).map((entry) => (
+          <LanguageTextBlock key={entry.language} {...entry} />
         ))}
       </div>
     </div>
@@ -191,7 +209,7 @@ function NewInstrumentFacts({ proposal, footer }: { proposal: ProposalRow; foote
   const implementsNote = payload.implementsNote ?? '';
   return (
     <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
-      <LanguageTextBlocks heading={t('console.queue.detail.titles')} texts={payload.titles} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine} field="titles" />
+      <LanguageTextBlocks heading={t('console.queue.detail.titles')} texts={payload.titles} originalLanguage={payload.originalLanguage} marks={{ isMachine: payload.isMachine }} field="titles" />
       <dl className={FACTS}>
         <Fact field="shortName" label={t('console.queue.field.shortName')}>
           {payload.shortName}
@@ -256,8 +274,8 @@ function NewObligationFacts({ proposal, footer }: { proposal: ProposalDetail; fo
           {proposal.instrumentShortName === '' ? <span className="block text-meta text-muted">{t('console.queue.detail.instrumentNotHeld')}</span> : null}
         </Fact>
       </dl>
-      <LanguageTextBlocks heading={t('console.queue.detail.titles')} texts={payload.titles} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine} field="titles" />
-      <LanguageTextBlocks heading={t('console.queue.detail.summaries')} texts={payload.summaries} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine} field="summaries" />
+      <LanguageTextBlocks heading={t('console.queue.detail.titles')} texts={payload.titles} originalLanguage={payload.originalLanguage} marks={{ isMachine: payload.isMachine, bleqqWording: true }} field="titles" />
+      <LanguageTextBlocks heading={t('console.queue.detail.summaries')} texts={payload.summaries} originalLanguage={payload.originalLanguage} marks={{ isMachine: payload.isMachine, bleqqWording: true }} field="summaries" />
       <dl className={FACTS}>
         <Fact field="refLabel" label={t('console.queue.field.refLabel')}>
           {payload.refLabel}
@@ -290,7 +308,85 @@ function NewSummaryFacts({ proposal, footer }: { proposal: ProposalDetail; foote
           {proposal.instrumentShortName === '' ? <span className="block text-meta text-muted">{t('console.queue.detail.instrumentNotHeld')}</span> : null}
         </Fact>
       </dl>
-      <LanguageTextBlocks heading={t('console.queue.detail.summary')} texts={payload.summaries} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine ?? false} field="summaries" />
+      <LanguageTextBlocks heading={t('console.queue.detail.summary')} texts={payload.summaries} originalLanguage={payload.originalLanguage} marks={{ isMachine: payload.isMachine, bleqqWording: true }} field="summaries" />
+      {footer}
+    </Panel>
+  );
+}
+
+// A law's own words (D-142): a provision new to the library, or a new text of one it holds,
+// as the reviewer is about to approve it. Each text in a block of its own, the original
+// first: the language the authority published in, which governs, then any text it also
+// published itself, then the machine translations. The structure a new provision adds
+// (where it sits, how it is cited, its kind and heading) comes first, and the obligations
+// approval ties it to last. The regulation is named by the key the payload carries.
+function NewProvisionFacts({ proposal, footer }: { proposal: ProposalDetail; footer: ReactNode }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const payload = provisionPayloadOf(proposal);
+  const kinds = useVocabularyValues('provision_kind', true, payload?.provisionKind !== undefined);
+  if (payload === null) return <Panel>{footer}</Panel>;
+  const heading = payload.heading ?? '';
+  const obligations = payload.obligations ?? [];
+  return (
+    <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
+      <dl className={cn(FACTS, 'mb-3')}>
+        {payload.instrument === undefined ? null : (
+          <Fact field="instrument" label={t('console.queue.field.instrument')}>
+            {proposal.instrumentShortName === '' ? null : <span className="mr-2">{proposal.instrumentShortName}</span>}
+            <span className="font-mono text-meta text-muted">{payload.instrument}</span>
+          </Fact>
+        )}
+        {payload.parent == null ? null : (
+          <Fact field="parent" label={t('console.queue.field.parent')}>
+            <span className="font-mono text-meta">{payload.parent}</span>
+          </Fact>
+        )}
+        {payload.refLabel === undefined ? null : (
+          <Fact field="refLabel" label={t('console.queue.field.refLabel')}>
+            {payload.refLabel}
+          </Fact>
+        )}
+        {payload.provisionKind === undefined ? null : (
+          <Fact field="provisionKind" label={t('console.queue.field.provisionKind')}>
+            {labelOfKey(kinds.data, payload.provisionKind)}
+          </Fact>
+        )}
+        {heading === '' ? null : (
+          <Fact field="heading" label={t('console.queue.field.heading')}>
+            <span lang={payload.originalLanguage}>{heading}</span>
+          </Fact>
+        )}
+        {payload.effectiveFrom ? (
+          <Fact field="effectiveFrom" label={t('console.queue.field.effectiveFrom')}>
+            {formatPartialDate(payload.effectiveFrom, datePrecisionOf(payload.effectiveFromPrecision), ctx)}
+          </Fact>
+        ) : null}
+      </dl>
+      <LanguageTextBlocks
+        heading={t('console.queue.detail.ruleWords')}
+        texts={payload.texts}
+        originalLanguage={payload.originalLanguage}
+        // A law's text is its original, the authority's own in an official language, or a
+        // machine translation: nothing else, whatever the payload's isMachine says (D-142).
+        marks={{ isMachine: true, officialLanguages: payload.officialLanguages }}
+        field="texts"
+      />
+      <dl className={FACTS}>
+        <Fact field="obligations" label={t('console.queue.field.obligations')}>
+          {obligations.length === 0 ? (
+            t('console.queue.detail.noObligations')
+          ) : (
+            <ul className="m-0 grid list-none gap-1 p-0">
+              {obligations.map((key) => (
+                <li key={key} className="font-mono text-meta">
+                  {key}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Fact>
+      </dl>
       {footer}
     </Panel>
   );
@@ -303,8 +399,9 @@ function NewTranslationsFacts({ proposal, footer }: { proposal: ProposalDetail; 
   const payload = translationsPayloadOf(proposal);
   if (payload === null) return <Panel>{footer}</Panel>;
   const blocks = [
-    { field: 'titles', heading: t('console.queue.detail.titles'), texts: payload.titles, original: proposal.originalTitle, from: payload.titlesFrom ?? '' },
-    { field: 'summaries', heading: t('console.queue.detail.summaries'), texts: payload.summaries, original: proposal.originalSummary, from: payload.summariesFrom ?? '' },
+    // An instrument's title is the authority's own name; a duty's title and every summary are bleqq's wording.
+    { field: 'titles', heading: t('console.queue.detail.titles'), texts: payload.titles, original: proposal.originalTitle, from: payload.titlesFrom ?? '', bleqqWording: payload.target === 'obligation' },
+    { field: 'summaries', heading: t('console.queue.detail.summaries'), texts: payload.summaries, original: proposal.originalSummary, from: payload.summariesFrom ?? '', bleqqWording: true },
   ].filter((block) => Object.keys(block.texts).length > 0);
   return (
     <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
@@ -321,7 +418,7 @@ function NewTranslationsFacts({ proposal, footer }: { proposal: ProposalDetail; 
           heading={block.heading}
           texts={block.original == null ? block.texts : { ...block.texts, [block.original.language]: block.original.text }}
           originalLanguage={block.from}
-          isMachine
+          marks={{ isMachine: true, bleqqWording: block.bleqqWording }}
           field={block.field}
         />
       ))}
@@ -478,6 +575,8 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
         <NewSummaryFacts proposal={proposal} footer={source} />
       ) : proposal.kind === 'new_translations' ? (
         <NewTranslationsFacts proposal={proposal} footer={source} />
+      ) : proposal.kind === 'new_provision' || proposal.kind === 'new_provision_version' ? (
+        <NewProvisionFacts proposal={proposal} footer={source} />
       ) : (
         <Panel>{source}</Panel>
       )}

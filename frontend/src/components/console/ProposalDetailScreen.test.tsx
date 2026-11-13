@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { installAdapter, resetApiForTests } from '@/shared/testing/api-adapter';
@@ -83,6 +83,7 @@ function detail(overrides: Partial<ProposalDetail>): ProposalDetail {
 const READS: Readonly<Record<string, unknown>> = {
   '/api/v1/vocab/instrument_level': { items: [{ key: 'eu_regulation', kind: null, label: 'EU regulation', labels: {}, usageNote: '', sortOrder: 0, active: true, isSystem: true, isDefault: false, usageCount: 0, extra: {} }], total: 1 },
   '/api/v1/vocab/duty_type': { items: [{ key: 'reporting', kind: null, label: 'Reporting', labels: {}, usageNote: '', sortOrder: 0, active: true, isSystem: true, isDefault: false, usageCount: 0, extra: {} }], total: 1 },
+  '/api/v1/vocab/provision_kind': { items: [{ key: 'section', kind: 'unit', label: 'Section', labels: {}, usageNote: '', sortOrder: 0, active: true, isSystem: true, isDefault: false, usageCount: 0, extra: {} }], total: 1 },
   '/api/v1/reference/jurisdictions': [{ key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null }],
 };
 
@@ -240,7 +241,9 @@ describe('the decision panel', () => {
     const panel = (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
     const fact = (field: string) => panel.querySelector(`[data-proposal-fact="${field}"]`);
     expect(fact('instrument')).toHaveTextContent('SSR ITS 827/2012celex-32012r0827');
-    expect(fact('titles')).toHaveTextContent('English (original)Hold a qualifying borrow agreement');
+    // A duty's title and summary are bleqq's wording: their language is named, never called the original.
+    expect(fact('titles')).toHaveTextContent('EnglishHold a qualifying borrow agreement');
+    expect(fact('titles')).not.toHaveTextContent('original');
     expect(fact('summaries')).toHaveTextContent('Before short selling a share');
     expect(fact('refLabel')).toHaveTextContent('Art. 5-7');
     expect(fact('effectiveFrom')).toHaveTextContent('1 Nov 2012');
@@ -286,6 +289,148 @@ describe('the decision panel', () => {
     ]);
     expect(panel.querySelector('[data-proposal-fact="summaries"]')).toBeNull();
     expect(screen.getByText('New translations')).toBeInTheDocument();
+  });
+
+  it("labels a duty's summary translations as machine-made, and its own language by name only", async () => {
+    showProposal(
+      detail({
+        kind: 'new_translations',
+        targetType: '',
+        targetId: null,
+        payload: { target: 'obligation', key: 'obl-research-payments', titles: { sv: 'Betala för analys' }, titlesFrom: 'en', summaries: {} },
+        instrumentShortName: 'FFFS 2017:2',
+        originalTitle: { text: 'Pay for research', language: 'en', isOriginal: true, isMachine: false },
+        originalSummary: null,
+      }),
+    );
+    const panel = (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
+    const titles = panel.querySelector('[data-proposal-fact="titles"]') as HTMLElement;
+    expect([...titles.querySelectorAll('[data-language]')].map((block) => block.textContent)).toEqual(['EnglishPay for research', 'Swedish (machine translation)Betala för analys']);
+  });
+
+  it('names the language of a new summary version without calling it the original', async () => {
+    showProposal(detail({ payload: { summaries: { sv: 'Investeringsanalys.', en: 'Research.' }, originalLanguage: 'sv', isMachine: true } }));
+    const changes = (await screen.findByRole('heading', { name: 'What changes' })).closest('section') as HTMLElement;
+    const blocks = [...changes.querySelectorAll('[data-language]')];
+    expect(blocks.map((block) => block.querySelector('p')?.textContent)).toEqual(['Swedish', 'English (machine translation)']);
+    expect(blocks[0]?.querySelector('[lang]')).toHaveAttribute('lang', 'sv');
+  });
+
+  describe('a proposed provision', () => {
+    const svText = 'Investeringsanalys från tredje part får tas emot endast om den betalas\n  1. med institutets egna medel, eller\n  2. från ett analyskonto.';
+    const provision = (overrides: Partial<ProposalDetail>) =>
+      detail({
+        kind: 'new_provision',
+        title: 'Add the text of 6 §, FFFS 2017:2, as read on 1 Nov 2026',
+        targetType: '',
+        targetId: null,
+        payload: {
+          key: 'fffs-2017-2/9-6',
+          instrument: 'fffs-2017-2',
+          parent: 'fffs-2017-2/9',
+          provisionKind: 'section',
+          refLabel: '6 §',
+          heading: 'Betalning för analys',
+          texts: { en: 'Investment research from a third party may be received only if it is paid for.', sv: svText },
+          originalLanguage: 'sv',
+          isMachine: true,
+          obligations: ['obl-research-payments', 'obl-research-budget'],
+        },
+        ...overrides,
+      });
+    const panelOf = async () => (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
+    const blocksOf = (panel: HTMLElement) => [...panel.querySelectorAll('[data-proposal-fact="texts"] [data-language]')] as HTMLElement[];
+
+    it('shows where it sits, how it is cited, its kind and heading, each text labelled with the original first, and the obligations it ties to', async () => {
+      showProposal(provision({}));
+      const panel = await panelOf();
+      expect(panel).toHaveAttribute('data-proposal-record', 'new_provision');
+      const fact = (field: string) => panel.querySelector(`[data-proposal-fact="${field}"]`);
+      expect(fact('instrument')).toHaveTextContent('fffs-2017-2');
+      expect(fact('parent')).toHaveTextContent('fffs-2017-2/9');
+      expect(fact('refLabel')).toHaveTextContent('6 §');
+      await waitFor(() => expect(fact('provisionKind')).toHaveTextContent('Section'));
+      expect(within(fact('heading') as HTMLElement).getByText('Betalning för analys')).toHaveAttribute('lang', 'sv');
+      expect(within(fact('texts') as HTMLElement).getByText("The rule's own words")).toBeInTheDocument();
+      const blocks = blocksOf(panel);
+      expect(blocks.map((block) => block.querySelector('p')?.textContent)).toEqual(['Swedish (original)', 'English (machine translation)']);
+      // The law's own words keep their line breaks, in their own language.
+      const original = blocks[0]?.querySelector('[lang]') as HTMLElement;
+      expect(original).toHaveAttribute('lang', 'sv');
+      expect(original.textContent).toBe(svText);
+      expect(original.className).toContain('whitespace-pre-wrap');
+      expect([...(fact('obligations') as HTMLElement).querySelectorAll('li')].map((item) => item.textContent)).toEqual(['obl-research-payments', 'obl-research-budget']);
+      expect(screen.getByRole('button', { name: 'Approve and apply' })).toBeInTheDocument();
+    });
+
+    it("labels a Finnish act's Swedish text as the authority's own", async () => {
+      showProposal(
+        provision({
+          payload: {
+            key: 'fi-laki-2014-610/1',
+            instrument: 'fi-laki-2014-610',
+            provisionKind: 'section',
+            refLabel: '1 §',
+            texts: { fi: 'Luottolaitoksen on…', sv: 'Kreditinstitutet ska…', en: 'The credit institution must…' },
+            originalLanguage: 'fi',
+            officialLanguages: ['sv'],
+            isMachine: true,
+          },
+        }),
+      );
+      const panel = await panelOf();
+      expect(blocksOf(panel).map((block) => block.querySelector('p')?.textContent)).toEqual(['Finnish (original)', 'Swedish (official text)', 'English (machine translation)']);
+      expect(panel.querySelector('[data-proposal-fact="heading"]')).toBeNull();
+      expect(panel.querySelector('[data-proposal-fact="parent"]')).toBeNull();
+      expect(panel.querySelector('[data-proposal-fact="obligations"]')).toHaveTextContent('None yet');
+    });
+
+    it('labels every text that is neither the original nor official a machine translation, whatever the payload says', async () => {
+      showProposal(
+        provision({
+          payload: {
+            key: 'fffs-2017-2/9-6',
+            instrument: 'fffs-2017-2',
+            provisionKind: 'section',
+            refLabel: '6 §',
+            texts: { sv: 'Betalning…', en: 'Payment…' },
+            originalLanguage: 'sv',
+            isMachine: false,
+          },
+        }),
+      );
+      const panel = await panelOf();
+      expect(blocksOf(panel).map((block) => block.querySelector('p')?.textContent)).toEqual(['Swedish (original)', 'English (machine translation)']);
+    });
+
+    it('shows a new version of a provision by its texts, its date and its obligations, without the structure it already has', async () => {
+      showProposal(
+        provision({
+          kind: 'new_provision_version',
+          targetType: 'provision',
+          targetId: 'pr-6',
+          payload: { texts: { sv: 'Ny lydelse.' }, originalLanguage: 'sv', effectiveFrom: '2026-10-01', obligations: ['obl-research-payments'] },
+        }),
+      );
+      const panel = await panelOf();
+      expect(panel).toHaveAttribute('data-proposal-record', 'new_provision_version');
+      expect(panel.querySelector('[data-proposal-fact="instrument"]')).toBeNull();
+      expect(panel.querySelector('[data-proposal-fact="refLabel"]')).toBeNull();
+      expect(panel.querySelector('[data-proposal-fact="effectiveFrom"]')).toHaveTextContent('1 Oct 2026');
+      expect(blocksOf(panel).map((block) => block.querySelector('p')?.textContent)).toEqual(['Swedish (original)']);
+      expect(panel.querySelector('[data-proposal-fact="obligations"]')).toHaveTextContent('obl-research-payments');
+    });
+
+    it('clamps a long text, with "Show all"', async () => {
+      const long = Array.from({ length: 40 }, (_, i) => `${i + 1} §. Stycke.`).join('\n');
+      showProposal(provision({ payload: { texts: { sv: long }, originalLanguage: 'sv', refLabel: '6 §', instrument: 'fffs-2017-2', provisionKind: 'section' } }));
+      const panel = await panelOf();
+      const text = blocksOf(panel)[0]?.querySelector('[lang]') as HTMLElement;
+      expect(text.className).toContain('overflow-hidden');
+      fireEvent.click(within(panel).getByRole('button', { name: 'Show all' }));
+      expect(text.className).not.toContain('overflow-hidden');
+      expect(within(panel).getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
+    });
   });
 
   it('shows no warning for a proposal the screen found nothing in', async () => {

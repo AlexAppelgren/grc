@@ -51,7 +51,6 @@
   "library.languageOriginal": "{language}, original",
   "library.noTextTitle": "No {language} text yet",
   "library.noTextBody": "Choose one of the languages above to read what the library holds.",
-  "library.showOriginal": "Show the original",
   "library.lastVerifiedBy": "{date} by {name}",
   "library.notVerifiedYet": "Not verified yet",
   "library.scope.label": "Scope",

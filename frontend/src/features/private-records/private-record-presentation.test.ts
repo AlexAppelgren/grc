@@ -98,7 +98,8 @@ describe('payloadRows', () => {
   it('lists each field the proposal sets beside the number of its source, texts per language', () => {
     expect(payloadRows(agentRow, t, defaultFormatContext).map((row) => [row.field, row.label, row.value, row.source, row.language ?? null])).toEqual([
       ['titles.sv', 'Title (Swedish)', 'Ge betalaren informationen före en enstaka betalning', 1, 'sv'],
-      ['titles.en', 'Title (English)', 'Give the payer the information before a single payment', null, 'en'],
+      // The payload says every text but the original is a machine's: that one says so.
+      ['titles.en', 'Title (English, machine translation)', 'Give the payer the information before a single payment', null, 'en'],
       ['refLabel', 'Reference', '4 kap.', null, null],
       ['summaries.sv', 'Text (Swedish)', 'Innan betalaren blir bunden ska informationen lämnas.', 1, 'sv'],
       ['originalLanguage', 'Original language', 'Swedish', null, null],
@@ -107,6 +108,17 @@ describe('payloadRows', () => {
       ['effectiveFrom', 'In force from', '1 May 2010', null, null],
       ['terms', 'Scope', 'regime:payments', 2, null],
     ]);
+  });
+
+  it('labels a machine translation only when the payload says the texts beside the original are one, in Swedish too', () => {
+    const payload = { titles: { sv: 'Ge betalaren informationen', en: 'Give the payer the information' }, originalLanguage: 'sv' };
+    const labels = (isMachine: boolean, translate = t, ctx = defaultFormatContext) =>
+      payloadRows({ payload: { ...payload, isMachine }, sourceUrl: '' }, translate, ctx)
+        .filter((row) => row.field.startsWith('titles.'))
+        .map((row) => row.label);
+    expect(labels(false)).toEqual(['Title (Swedish)', 'Title (English)']);
+    expect(labels(true)).toEqual(['Title (Swedish)', 'Title (English, machine translation)']);
+    expect(labels(true, sv, { ...defaultFormatContext, locale: 'sv' })).toEqual(['Titel (svenska)', 'Titel (engelska, maskinöversättning)']);
   });
 
   it('shows nothing for an empty payload', () => {

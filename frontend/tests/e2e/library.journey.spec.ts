@@ -194,15 +194,34 @@ test.describe('library journeys', () => {
     // The transitional note is the fixture's own text (T8), not app copy.
     await expect(section).toContainText('The annual assessment is first due for research received after 1 October 2026.');
 
+    // The text is the rule's own words (D-142): FI published it in Swedish, so the English
+    // the officer reads first is a machine translation and says so, and the Swedish original
+    // is one chip away. 6 § holds 6.1 § under it, so its own label and text come first.
+    const label = section.locator('[data-provision-label]').first();
+    const text = section.locator('[data-provision-text]').first();
+    await expect(label).toHaveText('Machine translation from Swedish. The original is authoritative.');
+    await expect(text).toHaveAttribute('lang', 'en');
+    const original = section.getByRole('button', { name: 'Swedish, original' }).first();
+    await original.click();
+    await expect(label).toHaveText('Swedish, original');
+    await expect(text).toHaveAttribute('lang', 'sv');
+    await section.getByRole('button', { name: 'English', exact: true }).first().click();
+    await expect(text).toHaveAttribute('lang', 'en');
+
     // "Show what changed" opens the sentence-level diff between the two
-    // versions, names both of them, and, because the officer reads an English
-    // translation of Swedish law, says it is a machine translation.
+    // versions, names both of them, and, taken in the English the officer
+    // reads, says it is a machine translation.
     await section.getByRole('button', { name: 'Show what changed' }).click();
     const banner = section.locator('[data-diff-banner]');
     await expect(banner).toContainText('in force from 3 Jan 2018');
     await expect(banner).toContainText('in force from 1 Oct 2026');
-    await expect(section.locator('[data-diff-banner] + [data-machine-translation]')).toHaveText('Machine translation. The original is authoritative.');
+    await expect(label).toHaveText('Machine translation from Swedish. The original is authoritative.');
     await expect(section.locator('[data-legal-text] ins, [data-legal-text] del').first()).toBeVisible();
+    // Taken again in the Swedish original, the diff is labelled the original.
+    await original.click();
+    await expect(label).toHaveText('Swedish, original');
+    await expect(text).toHaveAttribute('lang', 'sv');
+    await expect(section.locator('[data-legal-text] ins').first()).toBeVisible();
 
     // The provision half of INV-S7: with 6 § expanded, the card still shows
     // the instrument's own source link and verified date (chunk3-rest-T17).
@@ -225,6 +244,14 @@ test.describe('library journeys', () => {
     // obligations by the level of the regulation: these are a supervisor's rules.
     await openInstrument(page, 'fffs-2017-2');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('FFFS 2017:2');
+    // Under the short name, the authority's own name, which no machine made (a library fact,
+    // read through a locator rather than as app copy).
+    await expect(page.locator('[data-instrument="fffs-2017-2"] h1 + p')).toHaveText('FFFS 2017:2 om värdepappersrörelse');
+    await expect(page.locator('[data-name-machine]')).toHaveCount(0);
+    // The provisions say what each text is: no line above a text is left unlabelled.
+    const provisionLabels = page.locator('[data-provision-tree] [data-provision-label]');
+    await expect(provisionLabels.first()).toBeVisible();
+    await expect(provisionLabels.filter({ hasNotText: /^(Machine translation from \w+\. The original is authoritative\.|\w+, original|\w+, official text)$/ })).toHaveCount(0);
     const obligations = page.locator('[data-obligations-panel]');
     await expect(obligations.getByRole('heading', { name: 'Obligations from these rules' })).toBeVisible();
     await expect(obligations.locator('[data-applies-counts]')).toContainText('in the library.');

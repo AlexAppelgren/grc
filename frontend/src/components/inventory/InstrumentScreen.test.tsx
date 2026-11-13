@@ -130,13 +130,13 @@ const ME = {
 
 const REGISTER_READER = ['library.read', 'problems.report', 'register.read'];
 
-function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'problems.report']) {
+function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'problems.report'], locale: 'en' | 'sv' = 'en') {
   const { wrapper } = queryWrapper();
   const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
   return render(
     <Wrapper>
       {
-        <LocaleProvider locale="en">
+        <LocaleProvider locale={locale}>
           <PermissionsProvider permissions={permissions}>{node}</PermissionsProvider>
         </LocaleProvider>
       }
@@ -366,29 +366,50 @@ describe('InstrumentScreen', () => {
     expect(panel().querySelector('[data-applies-waiting]')).toHaveTextContent('2 more obligations wait for review before reaching the library.');
   });
 
-  it('reads the summary and the name in any language the library holds, labels a machine translation and offers the original', async () => {
-    const original = { text: 'Finansinspektionens regler om värdepappersrörelse.', language: 'sv', isOriginal: true, isMachine: false };
+  describe('in the languages the library holds', () => {
     const swedishName = { text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false };
+    const englishName = { text: 'FFFS 2017:2 on securities business', language: 'en', isOriginal: false, isMachine: true };
+    const swedish = { text: 'Finansinspektionens regler om värdepappersrörelse.', language: 'sv', isOriginal: true, isMachine: false };
     const english = { text: "Finansinspektionen's rules on securities business.", language: 'en', isOriginal: false, isMachine: true };
-    serve({
-      ...fffs,
-      name: { text: 'FFFS 2017:2 on securities business', language: 'en', isOriginal: false, isMachine: true },
-      nameTranslations: [swedishName, { text: 'FFFS 2017:2 on securities business', language: 'en', isOriginal: false, isMachine: true }],
-      summary: english,
-      summaryTranslations: [original, english],
+    const chips = (summary: HTMLElement) => within(summary.querySelector('[data-language-chips]') as HTMLElement).getAllByRole('button').map((chip) => chip.textContent);
+
+    it("names the summary's languages only, labels its machine translation as the obligation page does, and follows it with the name", async () => {
+      serve({ ...fffs, name: englishName, nameTranslations: [swedishName, englishName], summary: english, summaryTranslations: [swedish, english] });
+      renderIn(<InstrumentScreen instrumentId="in-1" />);
+      const summary = (await screen.findByText(english.text)).closest('[data-summary-panel]') as HTMLElement;
+      // The summary is bleqq's wording: no language of it is the original.
+      expect(chips(summary)).toEqual(['Swedish', 'English']);
+      expect(summary).not.toHaveTextContent(/original/i);
+      expect(summary.querySelector('[data-machine-translation]')).toHaveTextContent('Machine-translated from Swedish');
+      // An English reader has no name of the authority's own in English: the machine's, labelled.
+      expect(document.querySelector('[data-name-machine]')).toHaveTextContent('Name machine-translated from Swedish');
+      expect(screen.getByText(englishName.text)).toBeInTheDocument();
+
+      fireEvent.click(within(summary).getByRole('button', { name: 'Swedish' }));
+
+      expect(within(summary).getByText(swedish.text)).toHaveAttribute('lang', 'sv');
+      expect(summary.querySelector('[data-machine-translation]')).toBeNull();
+      expect(screen.getByText(swedishName.text)).toBeInTheDocument();
+      expect(document.querySelector('[data-name-machine]')).toBeNull();
     });
-    renderIn(<InstrumentScreen instrumentId="in-1" />);
-    const summary = (await screen.findByText(english.text)).closest('[data-summary-panel]') as HTMLElement;
-    expect(summary.querySelector('[data-machine-translation]')).toHaveTextContent('Machine translation from Swedish. The original is authoritative.');
-    expect(document.querySelector('[data-name-machine]')).toHaveTextContent('Name machine-translated from Swedish');
-    expect(screen.getByText('FFFS 2017:2 on securities business')).toBeInTheDocument();
 
-    fireEvent.click(within(summary).getByRole('button', { name: 'Swedish, original' }));
+    it("gives a Swedish reader the authority's Swedish name, not the machine's English one, when the summary is held in English only", async () => {
+      const englishOnly = { text: "Finansinspektionen's rules on securities business.", language: 'en', isOriginal: true, isMachine: false };
+      serve({ ...fffs, name: swedishName, nameTranslations: [swedishName, englishName], summary: englishOnly, summaryTranslations: [englishOnly] });
+      renderIn(<InstrumentScreen instrumentId="in-1" />, ['library.read', 'problems.report'], 'sv');
+      const summary = (await screen.findByText(englishOnly.text)).closest('[data-summary-panel]') as HTMLElement;
+      expect(screen.getByText(swedishName.text)).toBeInTheDocument();
+      expect(screen.queryByText(englishName.text)).toBeNull();
+      expect(document.querySelector('[data-name-machine]')).toBeNull();
+      // The summary's own language and the reader's, by name only.
+      expect(chips(summary)).toEqual(['engelska', 'svenska']);
 
-    expect(within(summary).getByText(original.text)).toHaveAttribute('lang', 'sv');
-    expect(summary.querySelector('[data-machine-translation]')).toBeNull();
-    expect(screen.getByText('FFFS 2017:2 om värdepappersrörelse')).toBeInTheDocument();
-    expect(document.querySelector('[data-name-machine]')).toBeNull();
+      // The reader's language, not held: says so and offers the language it is written in.
+      fireEvent.click(within(summary).getByRole('button', { name: 'svenska' }));
+      expect(within(summary).getByText('Ingen text på svenska ännu')).toBeVisible();
+      fireEvent.click(within(summary).getByRole('link', { name: 'Läs den på engelska' }));
+      expect(within(summary).getByText(englishOnly.text)).toHaveAttribute('lang', 'en');
+    });
   });
 
   describe('a directive', () => {

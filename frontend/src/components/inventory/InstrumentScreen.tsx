@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { BackLink } from '@/components/admin/AdminGate';
 import { ObligationsPanel } from '@/components/inventory/InstrumentObligations';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
-import { languageChoices, originalLanguage, textIn } from '@/components/inventory/ObligationScreen';
+import { originalLanguage, summaryChoices, textIn } from '@/components/inventory/ObligationScreen';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
 import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
@@ -26,6 +26,7 @@ import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligat
 import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef } from '@/features/library/types';
 import { inForceLabel, languageName } from '@/features/library/version-presentation';
 import { useRecordProblemReports, useRefreshProblemReports } from '@/features/library/problem-reports/hooks';
+import { regulationName, summaryMachineLabel } from '@/features/library/rule-words-presentation';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';
@@ -130,20 +131,22 @@ function InstrumentLinks({ links }: { links: readonly InstrumentLinkRef[] }) {
 
 /**
  * "What it is": the instrument in plain words (INV-09), when the library holds a summary, in
- * the language chosen above it. The chips offer every language the summary is held in, the
- * original named as such, and a machine translation says so above its text (INV-05, D-129).
+ * the language chosen above it. The summary is bleqq's wording, never the rule's, so its
+ * chips name each language only and nothing on it is called the original; a machine
+ * translation names the language bleqq wrote it in, as the obligation page's summary does
+ * (INV-05, D-129, D-142).
  */
 function SummaryPanel({ instrument, selected, onChoose }: { instrument: InstrumentDetail; selected: string; onChoose: (language: string) => void }) {
   const t = useT();
   const locale = useLocale();
   if (instrument.summary === null) return null;
   const shown = textIn(instrument.summaryTranslations, selected);
-  const original = originalLanguage(instrument.summaryTranslations);
+  const writtenIn = originalLanguage(instrument.summaryTranslations);
   return (
     <Panel title={t('inventory.instrument.summaryTitle')} data-summary-panel="">
       <div data-language-chips="">
         <ChipRow className="mb-3">
-          {languageChoices(instrument.summaryTranslations, selected, locale, t).map((choice) => (
+          {summaryChoices(instrument.summaryTranslations, selected, locale).map((choice) => (
             <Chip key={choice.language} pressed={choice.selected} onClick={() => onChoose(choice.language)}>
               {choice.label}
             </Chip>
@@ -154,13 +157,13 @@ function SummaryPanel({ instrument, selected, onChoose }: { instrument: Instrume
         <EmptyState
           title={t('library.noTextTitle', { language: languageName(selected, locale) })}
           body={t('library.noTextBody')}
-          action={original === null ? undefined : { label: t('library.showOriginal'), href: '#', onClick: () => onChoose(original) }}
+          action={writtenIn === null ? undefined : { label: t('inventory.obligation.summaryReadIn', { language: languageName(writtenIn, locale) }), href: '#', onClick: () => onChoose(writtenIn) }}
         />
       ) : (
         <>
-          {shown.isMachine && original !== null ? (
+          {shown.isMachine && writtenIn !== null ? (
             <p data-machine-translation="" className="mb-2 text-meta font-medium text-brass">
-              {t('legal.machineTranslation', { language: languageName(original, locale) })}
+              {summaryMachineLabel(writtenIn, locale, t)}
             </p>
           ) : null}
           <p lang={shown.language} className="max-w-[72ch] text-body">
@@ -258,9 +261,10 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   const facts = pills.filter((pill) => !pill.key.startsWith('instrument:'));
   // The bank's own instrument leads its head with "Private to us", as its obligations do (OWN-04).
   const header = record.privateToUs ? markPrivateToUs(facts, t) : facts;
-  // The official name follows the language chosen for the summary, where the library holds it in that one.
+  // The official name follows the language chosen for the summary, but never puts a machine's
+  // name before the authority's own in the reader's language.
   const selected = chosen ?? record.summary?.language ?? locale;
-  const name = textIn(record.nameTranslations, selected) ?? record.name;
+  const name = regulationName(record.nameTranslations, selected, locale, record.name);
   const officialTitle = name === null || name.text === record.shortName ? undefined : name.text;
   const nameOriginal = originalLanguage(record.nameTranslations);
   const context: ReportContext = {};

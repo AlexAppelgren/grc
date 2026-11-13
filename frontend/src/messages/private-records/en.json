@@ -21,6 +21,8 @@
   "privateRecords.adds": "What it adds",
   "privateRecords.field.titles": "Title ({language})",
   "privateRecords.field.summaries": "Text ({language})",
+  "privateRecords.field.titlesMachine": "Title ({language}, machine translation)",
+  "privateRecords.field.summariesMachine": "Text ({language}, machine translation)",
   "privateRecords.field.shortName": "Short name",
   "privateRecords.field.officialRef": "Official reference",
   "privateRecords.field.refLabel": "Reference",

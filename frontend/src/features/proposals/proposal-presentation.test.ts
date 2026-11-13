@@ -15,8 +15,10 @@ import {
   isVocabularyKind,
   kindLabel,
   labelOfKey,
+  languageTextLabel,
   languageTexts,
   newObligationPayloadOf,
+  provisionPayloadOf,
   obligationPayloadOf,
   presentProposal,
   proposerLine,
@@ -276,7 +278,7 @@ describe("a new record's payload", () => {
 
   it('lists the texts original first, then the rest alphabetically, marking machine translations only when the payload says so', () => {
     const texts = { sv: 'Titel', en: 'Title', da: 'Titel' };
-    expect(languageTexts(texts, 'sv', true)).toEqual([
+    expect(languageTexts(texts, 'sv', { isMachine: true })).toEqual([
       { language: 'sv', text: 'Titel', mark: 'original' },
       { language: 'da', text: 'Titel', mark: 'machine' },
       { language: 'en', text: 'Title', mark: 'machine' },
@@ -286,6 +288,41 @@ describe("a new record's payload", () => {
       ['da', 'none'],
       ['sv', 'none'],
     ]);
+  });
+
+  it("marks the authority's own second language official, never machine, and lists it before the machine translations", () => {
+    const texts = { en: 'The credit institution must…', fi: 'Luottolaitoksen on…', sv: 'Kreditinstitutet ska…' };
+    expect(languageTexts(texts, 'fi', { isMachine: true, officialLanguages: ['sv'] }).map((text) => [text.language, text.mark])).toEqual([
+      ['fi', 'original'],
+      ['sv', 'official'],
+      ['en', 'machine'],
+    ]);
+  });
+
+  it("never calls bleqq's own wording the original, though it still comes first", () => {
+    const texts = { sv: 'Sammanfattning', en: 'Summary' };
+    expect(languageTexts(texts, 'en', { isMachine: true, bleqqWording: true }).map((text) => [text.language, text.mark])).toEqual([
+      ['en', 'none'],
+      ['sv', 'machine'],
+    ]);
+  });
+
+  it('labels each text by its language and what it is, in the reader language', () => {
+    expect(languageTextLabel('original', 'Swedish', t)).toBe('Swedish (original)');
+    expect(languageTextLabel('official', 'Swedish', t)).toBe('Swedish (official text)');
+    expect(languageTextLabel('machine', 'English', t)).toBe('English (machine translation)');
+    expect(languageTextLabel('none', 'English', t)).toBe('English');
+    expect(languageTextLabel('official', 'svenska', createT('sv'))).toBe('svenska (officiell språkversion)');
+    expect(languageTextLabel('machine', 'engelska', createT('sv'))).toBe('engelska (maskinöversättning)');
+  });
+
+  it("reads a provision's payload for its two kinds only, and only with its texts", () => {
+    const payload = { texts: { sv: 'Text.' }, originalLanguage: 'sv' };
+    expect(provisionPayloadOf({ kind: 'new_provision', payload })).toEqual(payload);
+    expect(provisionPayloadOf({ kind: 'new_provision_version', payload })).toEqual(payload);
+    expect(provisionPayloadOf({ kind: 'new_obligation', payload })).toBeNull();
+    expect(provisionPayloadOf({ kind: 'new_provision', payload: { originalLanguage: 'sv' } })).toBeNull();
+    expect(provisionPayloadOf({ kind: 'new_provision' })).toBeNull();
   });
 
   it('labels a key from the rows of its list, and leaves the key while the list is loading or lacks it', () => {
@@ -349,10 +386,11 @@ describe('field sources', () => {
   });
 
   it("names every fact a new obligation or provision sources in words, its texts per language", () => {
-    const fields = ['instrument', 'parent', 'titles.en', 'summaries.en', 'texts.fi', 'refLabel', 'heading', 'provisionKind', 'dutyType', 'effectiveFrom', 'terms'];
+    const fields = ['instrument', 'parent', 'sortOrder', 'titles.en', 'summaries.en', 'texts.fi', 'refLabel', 'heading', 'provisionKind', 'dutyType', 'effectiveFrom', 'terms', 'obligations'];
     expect(fields.map((field) => fieldSourceLabel(field, langName, t))).toEqual([
       'Regulation',
       'Parent provision',
+      'Place under its parent',
       'Title (English)',
       'Text (English)',
       'Legal text (Finnish)',
@@ -362,6 +400,7 @@ describe('field sources', () => {
       'Duty type',
       'Effective date',
       'Scope',
+      'Obligations it ties to',
     ]);
   });
 

@@ -2,6 +2,30 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## Proposed provisions in the library queue (2026-11-13, D-142)
+
+The queue now shows a proposed provision's texts, each labelled original, official text or
+machine translation. Three gaps need a backend change before the 2,000 provisions arrive:
+
+- [ ] **A new version of a provision does not say which law it changes.** For
+      `new_provision_version` the payload carries no regulation, reference or heading, and the
+      detail's `target` covers obligations only, so the reviewer sees the texts, a date and
+      obligation keys, and only the proposer's own title names the law. Ask for the detail to
+      fill `target` (regulation short name, reference label, heading) from the provision the
+      version belongs to; the screen then draws them as it does for a new provision.
+- [ ] **A provision's text that is neither original nor official is stored as the authority's
+      own.** The queue labels such a text a machine translation, but when a person approves a
+      payload with `isMachine` false, `_provision_texts` stores it as neither original nor
+      machine, and the regulation page then calls it "<Language>, official text". Decide one:
+      store every such text as machine-made, or refuse a provision payload whose non-official
+      texts are not marked `isMachine`.
+- [ ] **The queue names the regulation and the obligations by stable key only** for a proposed
+      provision (`instrumentShortName` is empty for provision kinds). Ask for the short name and
+      the obligations' titles, to show title over key as a new obligation does.
+- [ ] **No E2E journey checks the regulation page's "What it is" chips**, because the E2E seed
+      holds no instrument summary. The unit tests pin that they never say "original"; a seeded
+      summary would let INV-S16 check it end to end.
+
 ## The new mail layout (2026-11-12, D-138)
 
 Every mail now has an HTML part in the Letterhead layout, with no picture and no remote font.

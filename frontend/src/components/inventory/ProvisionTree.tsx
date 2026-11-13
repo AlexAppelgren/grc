@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Chip, ChipRow } from '@/components/ui/Chip';
-import { DiffText } from '@/components/inventory/DiffText';
-import { LegalText } from '@/components/inventory/LegalText';
+import { LegalText, RuleText } from '@/components/inventory/LegalText';
 import { diffSentence } from '@/components/inventory/ObligationScreen';
 import { Notice } from '@/components/ui/Notice';
 import { Meta, Panel } from '@/components/ui/Panel';
@@ -13,6 +12,7 @@ import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrumentProvisions, useProvisionDiff } from '@/features/library/hooks';
 import { STANDARD_LEVEL_KIND } from '@/features/library/obligation-presentation';
+import { chosenText } from '@/features/library/rule-words-presentation';
 import type { ProvisionNode } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
@@ -25,14 +25,16 @@ import { problemStatus } from '@/shared/utils/problem';
 // date, and "Show what changed" opens the sentence-level diff between two of
 // them. A unit with no version of its own still shows its children.
 //
-// A version's `text` is the one resolved for this reader, not the full set
-// of translations (that is the obligation card's own shape): there is no
-// language here to name as "the original", so a machine translation is
-// labelled on its own terms rather than through LegalText's `translatedFrom`,
-// which needs that language and would otherwise have to guess it. The diff
-// carries the same label when either side of it is machine translated, and
-// names the two versions it compares, which are the latest and the one
-// before it whichever chip is pressed.
+// Each version's text is the rule's own words, drawn as the obligation page
+// draws a cited provision (RuleText, D-142): every language the version
+// holds on a chip of its own, the reader's language first when it is held,
+// else English, else the original, under the line that is always true of
+// it. The language chosen stays across versions where the version holds it.
+// "Show what changed" is taken in the language shown, labelled the same way,
+// and names the two versions it compares, which are the latest and the one
+// before it whichever chip is pressed. A version that holds no text says so,
+// and shows no comparison: with no text of its own there is no language to
+// take one in and no original to label it against.
 //
 // A standard's text is licensed (D-37): the library holds no provision under
 // it, so the panel says so and links the publisher's catalogue instead of
@@ -45,24 +47,20 @@ export function defaultVersion(node: ProvisionNode): number | null {
   return node.versions[0]?.versionNumber ?? null;
 }
 
-/** The label a machine-translated text carries until a person confirms it (INV-05). */
-function MachineTranslation() {
-  const t = useT();
-  return (
-    <p className="mb-2 text-meta font-medium text-brass" data-machine-translation="">
-      {t('inventory.instrument.provisionMachineTranslation')}
-    </p>
-  );
-}
-
 function ProvisionUnit({ node }: { node: ProvisionNode }) {
   const t = useT();
   const ctx = useFormatContext();
   const locale = useLocale();
   const [selected, setSelected] = useState<number | null>(defaultVersion(node));
+  const [chosen, setChosen] = useState<string | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const version = node.versions.find((row) => row.versionNumber === selected);
-  const diff = useProvisionDiff(node.id, version?.text?.language ?? locale, showDiff);
+  const texts = version?.texts ?? [];
+  const shown = chosenText(texts, chosen, locale);
+  // The comparison is taken in the language shown, so a chip changes both.
+  const comparing = showDiff && shown !== null;
+  const diff = useProvisionDiff(node.id, shown?.language ?? locale, comparing);
+  const compared = comparing ? diff.data : undefined;
 
   return (
     <li>
@@ -72,7 +70,7 @@ function ProvisionUnit({ node }: { node: ProvisionNode }) {
           {node.heading}
         </summary>
         <div className="py-2">
-          {node.versions.length === 0 ? null : (
+          {version === undefined ? null : (
             <>
               <ChipRow className="mb-2">
                 {node.versions.map((row) => (
@@ -87,27 +85,21 @@ function ProvisionUnit({ node }: { node: ProvisionNode }) {
                 ) : null}
               </ChipRow>
 
-              {showDiff && diff.isError ? <ErrorState title={t('inventory.obligation.diffErrorTitle')} onRetry={() => void diff.refetch()} /> : null}
-              {showDiff && diff.data !== undefined ? (
-                <>
-                  <Notice data-diff-banner="">{diffSentence(diff.data, t, ctx)}</Notice>
-                  {diff.data.isMachine ? <MachineTranslation /> : null}
-                  <LegalText lang={diff.data.language} reference={node.refLabel}>
-                    <DiffText segments={diff.data.segments} />
-                  </LegalText>
-                </>
-              ) : version === undefined || version.text === null ? null : (
-                <>
-                  {version.text.isMachine ? <MachineTranslation /> : null}
-                  <LegalText lang={version.text.language} reference={node.refLabel}>
-                    {version.text.text}
-                  </LegalText>
-                  {version.transitionalNote === '' ? null : (
-                    <p className="mt-2 text-meta text-muted" data-transitional-note="">
-                      {version.transitionalNote}
-                    </p>
-                  )}
-                </>
+              {comparing && diff.isError ? <ErrorState title={t('inventory.obligation.diffErrorTitle')} onRetry={() => void diff.refetch()} /> : null}
+              {compared === undefined ? null : <Notice data-diff-banner="">{diffSentence(compared, t, ctx)}</Notice>}
+              {shown === null ? (
+                <p className="text-meta text-muted" data-provision-not-held="">
+                  {t('inventory.obligation.ruleWordsNotHeld')}
+                </p>
+              ) : (
+                <LegalText reference={node.refLabel}>
+                  <RuleText texts={texts} shown={shown} onChoose={setChosen} diff={compared} />
+                </LegalText>
+              )}
+              {compared !== undefined || version.transitionalNote === '' ? null : (
+                <p className="mt-2 text-meta text-muted" data-transitional-note="">
+                  {version.transitionalNote}
+                </p>
               )}
             </>
           )}

@@ -29,6 +29,11 @@ export function firstText(texts: readonly LocalizedText[], reader: Locale): Loca
   return texts.find((text) => text.language === reader) ?? texts.find((text) => text.language === 'en') ?? originalOf(texts);
 }
 
+/** The text a reader is shown: the language they chose when this text holds it, else the one it opens in. */
+export function chosenText(texts: readonly LocalizedText[], chosen: string | null, reader: Locale): LocalizedText | null {
+  return texts.find((text) => text.language === chosen) ?? firstText(texts, reader);
+}
+
 /** The text that governs: the one flagged original, else the first, which the read puts first. */
 export function originalOf(texts: readonly LocalizedText[]): LocalizedText | null {
   return texts.find((text) => text.isOriginal) ?? texts[0] ?? null;
@@ -40,8 +45,30 @@ export function provisionChipLabel(text: LocalizedText, reader: Locale, t: Trans
   return text.isOriginal ? t('library.languageOriginal', { language: name }) : name;
 }
 
+type TextFlags = Pick<LocalizedText, 'language' | 'isOriginal' | 'isMachine'>;
+
+/**
+ * The flags of a comparison between two versions of a provision, as of a text: it is in
+ * the original's language and no machine's, or a machine translation on either side.
+ */
+export function diffFlags(diff: { language: string; isMachine: boolean }, texts: readonly LocalizedText[]): TextFlags {
+  return { language: diff.language, isMachine: diff.isMachine, isOriginal: !diff.isMachine && originalOf(texts)?.language === diff.language };
+}
+
+/**
+ * A regulation's name under its short name, in the language its summary is read in. The
+ * authority's own name in the reader's language, or in the one chosen, comes before a
+ * machine translation: a Swedish reader of a Swedish regulation whose summary is held only
+ * in English reads its Swedish name, never the machine's English one.
+ */
+export function regulationName(names: readonly LocalizedText[], selected: string, reader: Locale, fallback: LocalizedText | null): LocalizedText | null {
+  const inLanguage = (language: string) => names.find((name) => name.language === language);
+  const own = [selected, reader].map(inLanguage).find((name) => name !== undefined && !name.isMachine);
+  return own ?? inLanguage(selected) ?? fallback;
+}
+
 /** The line above a provision's text, always true of it: the original, a machine translation of it, or an official text. */
-export function provisionTextLabel(text: LocalizedText, texts: readonly LocalizedText[], reader: Locale, t: Translate): string {
+export function provisionTextLabel(text: TextFlags, texts: readonly LocalizedText[], reader: Locale, t: Translate): string {
   if (text.isOriginal) return t('library.languageOriginal', { language: languageName(text.language, reader) });
   if (text.isMachine) return t('legal.machineTranslation', { language: languageName(originalOf(texts)?.language ?? text.language, reader) });
   return t('inventory.obligation.officialText', { language: languageName(text.language, reader) });

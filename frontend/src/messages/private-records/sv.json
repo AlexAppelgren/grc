@@ -21,6 +21,8 @@
   "privateRecords.adds": "Vad det lägger till",
   "privateRecords.field.titles": "Titel ({language})",
   "privateRecords.field.summaries": "Text ({language})",
+  "privateRecords.field.titlesMachine": "Titel ({language}, maskinöversättning)",
+  "privateRecords.field.summariesMachine": "Text ({language}, maskinöversättning)",
   "privateRecords.field.shortName": "Kortnamn",
   "privateRecords.field.officialRef": "Officiell beteckning",
   "privateRecords.field.refLabel": "Hänvisning",
