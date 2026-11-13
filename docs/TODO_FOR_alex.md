@@ -83,6 +83,12 @@ most urgent first.
       now reads by its short name; the obligations' titles would need the same.
 - [ ] **No journey checks the regulation page's "What it is" chips**, because the E2E seed
       holds no instrument summary. The unit tests pin that they never say "original".
+- [ ] **The public demo does not show the law's own words.** Its data is the baseline
+      approved by the confirming agent, and a provision needs a person (D-79), so the demo's
+      library holds none: an obligation there reads its summary and its citation, as before.
+      The demo was recorded again for What applies and the regulation page's new reads. Say
+      if the demo should show the text too; its seed would then need a person's approval of
+      the provisions, which is a rule to decide and not a detail.
 
 ## The new mail layout (2026-11-12, D-138)
 
