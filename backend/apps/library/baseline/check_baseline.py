@@ -371,6 +371,8 @@ class Checker:
         beside = TRANSLATIONS.get(original, set())
         if beside - held:
             self.fail(f"{where}.texts", f"lacks {', '.join(sorted(beside - held))}: beside an original in {original!r} a provision carries {', '.join(sorted(beside))}")
+        if held - beside - {original}:
+            self.fail(f"{where}.texts", f"holds {', '.join(sorted(held - beside - {original}))}: beside an original in {original!r} a provision carries {', '.join(sorted(beside)) or 'nothing'}")
         official = OFFICIAL.get(original, set())
         if item.get("officialLanguages", []) != sorted(official):
             self.fail(f"{where}.officialLanguages", f"must be {sorted(official)}, the languages its authority itself publishes beside {original!r}, and left out when there are none")

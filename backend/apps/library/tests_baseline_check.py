@@ -142,6 +142,8 @@ class TheLawsOwnWords(SimpleTestCase):
             ("an empty text", entry(swedish, texts={"sv": TEXTS["sv"], "en": " "}), ".texts.en: must be a non-empty string"),
             ("a text over the door's maximum", entry(swedish, texts={"sv": long, "en": TEXTS["en"]}), ".texts.sv: is 50001 characters, at most 50000"),
             ("a language the library does not hold", entry(union, texts={"en": TEXTS["en"], "de": "Ein Text."}, isMachine=True), ".texts.de: is not a content language"),
+            ("a Swedish text beside a Union act", entry(union, texts={"en": TEXTS["en"], "sv": TEXTS["sv"]}, isMachine=True), ".texts: holds sv: beside an original in 'en' a provision carries nothing"),
+            ("a Danish text beside Swedish law", entry(swedish, texts={"sv": TEXTS["sv"], "en": TEXTS["en"], "da": TEXTS["da"]}), ".texts: holds da: beside an original in 'sv' a provision carries en"),
             ("a translation not marked machine", entry(swedish, isMachine=...), ".isMachine: must be true when the entry holds a translation"),
             ("machine marked where nothing is translated", entry(union, isMachine=True), ".isMachine: must be true when the entry holds a translation"),
             ("Finland's Swedish passed off as a machine's", entry(finnish, officialLanguages=...), ".officialLanguages: must be ['sv']"),
@@ -212,6 +214,9 @@ class TheRealBaseline(SimpleTestCase):
         self.assertEqual(check_baseline.PROVISION_KINDS, {row.key for row in LIBRARY_SYSTEM_ROWS["provision_kind"][1]})
         self.assertEqual(set(check_baseline.TRANSLATIONS), set(legal.values()), "every legal language says which translations stand beside it")
         self.assertLessEqual(set(check_baseline.OFFICIAL), set(check_baseline.TRANSLATIONS))
+        from apps.proposals.logic import OFFICIAL_BESIDE
+
+        self.assertEqual(check_baseline.OFFICIAL, {original: set(beside) for original, beside in OFFICIAL_BESIDE.items()}, "the checker and the door name the same official languages")
         self.assertEqual(check_baseline.MAX_TEXT, settings.PROPOSAL_TEXT_MAX_CHARS)
         self.assertEqual(check_baseline.MAX_OBLIGATIONS, settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
         # The filer's retry key, `baseline:<key>:<32 hex>`, fits the proposal's own column.

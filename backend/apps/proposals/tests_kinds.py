@@ -924,6 +924,38 @@ class TheLawsOwnWords(KindsTestCase):
         self.assertEqual(self._approve(proposal["id"]).status_code, 200)
         self.assertEqual(self._flags(PROVISION_KEY), {"sv": (True, False), "en": (False, True)})
 
+    def test_only_a_language_the_authority_publishes_in_sheds_the_machine_mark(self) -> None:
+        """Review 2026-11-13: a payload could name the machine English of Swedish law as the
+        authority's own and store it unlabelled."""
+        act = library_build.instrument(key="fi-sd-2014-610", short_name="Luottolaitoslaki", jurisdiction="fi", regime="regime:banking")
+        texts = {"fi": "Tätä lakia sovelletaan luottolaitostoimintaan.", "sv": "Denna lag tillämpas på kreditinstitutsverksamhet.", "en": "This Act applies to credit institution activity."}
+        for case, body in (
+            ("English beside Swedish law", provision_body(officialLanguages=["en"])),
+            ("English beside Finnish law", provision_body(act.stable_key, key="fi-sd-2014-610/001-001", refLabel="1 luku 1 §", texts=texts, originalLanguage="fi", officialLanguages=["sv", "en"])),
+        ):
+            with self.subTest(case=case):
+                refused = self._file(body)
+                self._refused(refused, 422, "validation_error")
+                self.assertIn("Not one of them: en.", refused.json()["detail"])
+        proposal = self._filed(provision_body())
+        self._refused(self._approve(proposal["id"], {"payloadOverrides": {"officialLanguages": ["en"]}}), 422, "validation_error")
+        self.assertEqual(Proposal.objects.count(), 1)
+        self.assertFalse(Provision.objects.exists(), "nothing is written over a correction that names one")
+
+    def test_the_lists_are_bounded_at_the_door(self) -> None:
+        cases: tuple[tuple[str, dict[str, Any]], ...] = (
+            ("an obligation key longer than a key", {"obligations": ["o" * 121]}),
+            ("an obligation key that is not one", {"obligations": ["OBL Kinds"]}),
+            ("more official languages than languages", {"officialLanguages": ["sv", "en", "da", "nb", "fi"]}),
+            ("a language key longer than one", {"officialLanguages": ["s" * 9]}),
+            # The cap counts the list as sent, though a repeat would be kept once.
+            ("one key sent past the cap", {"obligations": [self.duty.stable_key] * (settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS + 1)}),
+        )
+        for case, fields in cases:
+            with self.subTest(case=case):
+                self._refused(self._file(provision_body(**fields)), 422, "validation_error")
+        self.assertFalse(Proposal.objects.exists())
+
     # --- the obligations that cite it ---
     def test_the_obligations_named_are_shared_ones_in_force_under_the_same_instrument(self) -> None:
         elsewhere = library_build.obligation(library_build.instrument(key="fffs-2014-1", regime="regime:securities"), key="obl-kinds-elsewhere")
@@ -975,6 +1007,21 @@ class TheLawsOwnWords(KindsTestCase):
             self.assertEqual(self._approve(proposal["id"]).status_code, 500)
         self.assertFalse(ObligationProvision.objects.exists())
         self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+
+    def test_a_reviewer_may_clear_the_obligations_a_proposer_named(self) -> None:
+        """Review 2026-11-13: the proposer's source for `obligations` outlived the field and
+        refused the correction that cleared it."""
+        proposal = self._filed(provision_body(obligations=[self.duty.stable_key]))
+
+        approved = self._approve(proposal["id"], {"payloadOverrides": {"obligations": []}})
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertFalse(ObligationProvision.objects.exists(), "nothing is tied")
+        row = Proposal.objects.get(pk=proposal["id"])
+        self.assertNotIn("obligations", row.corrected_payload or {"obligations": "no correction stored"})
+        self.assertNotIn("obligations", row.field_sources, "the source went with its field")
+        event = AuditEvent.objects.get(action="proposal.approved", subject_id=row.id)
+        self.assertEqual(event.before["fieldSources"], {"obligations": SOURCE}, "the dropped source stays on the record")
 
     def test_a_new_text_ties_what_is_missing_and_leaves_an_existing_tie_alone(self) -> None:
         provision = library_build.provision(self.parent, key=PROVISION_KEY, ref_label="9 kap. 6 §", kind="section")
@@ -1047,6 +1094,11 @@ class TheLawsOwnWords(KindsTestCase):
         for key in ("FFFS-2017-2/9", f"{PARENT_KEY}/009/006", f"{PARENT_KEY}/", f"/{PARENT_KEY}", f"{PARENT_KEY}/009_006"):
             with self.subTest(key=key):
                 self._refused(self._file(provision_body(key=key)), 422, "validation_error")
+        # Before the slash stands the provision's own instrument, never another's.
+        library_build.instrument(key="fffs-2014-1", regime="regime:securities")
+        refused = self._file(provision_body(key="fffs-2014-1/009-006"))
+        self._refused(refused, 422, "validation_error")
+        self.assertIn(repr(PARENT_KEY), refused.json()["detail"])
         self.assertEqual(self._filed(provision_body(key=SLASH_KEY))["payload"]["key"], SLASH_KEY)
 
 

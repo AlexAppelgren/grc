@@ -100,18 +100,24 @@ over a correction and at apply:
   checked against that provision's own instrument.
 - **A language is marked for what it is.** `officialLanguages` names the other languages of
   `texts` the authority itself published, as Finland enacts its law in Swedish too: each is
-  stored neither as the original nor as machine-made. `isMachine` speaks for every remaining
+  stored neither as the original nor as machine-made. Only such a language may be named
+  (today Swedish beside a Finnish original, and nothing beside any other), so a machine text
+  never loses its mark. `isMachine` speaks for every remaining
   text, which stays labelled machine-made whoever approves, and the original is never marked
-  as anything else (naming it, or a language with no text, is 422 `validation_error`).
+  as anything else (naming it, a language with no text, or one the authority does not publish
+  in, is 422 `validation_error`).
 - **A provision names the obligations that cite it.** `obligations` is their stable keys, at
-  most `PROPOSAL_PROVISION_MAX_OBLIGATIONS`, each a shared obligation in force under the same
-  instrument (422 `unknown_key` names one that is not) and sourced like every fact. Approval
+  most `PROPOSAL_PROVISION_MAX_OBLIGATIONS` as the list is sent, a repeat being merged into
+  one, each a shared obligation in force under the same
+  instrument (422 `unknown_key` names one that is not) and sourced like every fact. A
+  reviewer's correction may change the list or clear it. Approval
   writes one `obligation_provision` row per pair in the same library write as the provision
   or its new text, leaves a pair the library already holds, and names the keys it tied on the
   provision's audit row. Nothing else writes those rows.
 
 A provision's key may end in one slash and its place in the instrument, as the seeded library
-keys them (`fffs-2017-2/9-6`). Approval is unchanged: a person's, never an agent's (D-79).
+keys them (`fffs-2017-2/9-6`); the part before the slash is then its own instrument's key,
+or 422 `validation_error`. Approval is unchanged: a person's, never an agent's (D-79).
 The baseline's provisions sit in `apps/library/baseline/provisions/`, one file per tranche,
 produced by script from the official sources; the filer files each as a `new_provision` once
 the library holds its instrument and every duty it names, and an approved duty queues the

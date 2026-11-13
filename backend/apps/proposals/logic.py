@@ -190,6 +190,11 @@ UNSOURCED_FIELDS = frozenset(
 )
 # The records a translation is for (D-129).
 TRANSLATION_TARGETS = (SubjectType.INSTRUMENT.value, SubjectType.OBLIGATION.value)
+# The languages an authority itself publishes its law in beside the original, by that
+# original: Finland enacts its law in Swedish too. Only these may be named in a provision's
+# `officialLanguages`, so a machine translation never loses its mark (the baseline checker's
+# `OFFICIAL` holds the same).
+OFFICIAL_BESIDE: dict[str, frozenset[str]] = {"fi": frozenset({"sv"})}
 
 
 @dataclass(frozen=True)
@@ -507,11 +512,13 @@ def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvision
     _written_in(payload.original_language, payload.texts, "text")
     _validated_precision(payload.effective_from_precision)
     official = list(dict.fromkeys(payload.official_languages or []))
-    stray = sorted(language for language in official if language == payload.original_language or language not in payload.texts)
+    published = OFFICIAL_BESIDE.get(payload.original_language, frozenset())
+    stray = sorted(language for language in official if language not in published or language not in payload.texts)
     if stray:
         raise ValidationError(
             "officialLanguages names the languages of texts, other than the original, that the authority itself "
-            f"published. Not one of them: {', '.join(stray)}.",
+            f"published, which beside {payload.original_language!r} is {', '.join(sorted(published)) or 'none'}. "
+            f"Not one of them: {', '.join(stray)}.",
             code="validation_error",
         )
     payload.official_languages = official or None
@@ -552,8 +559,8 @@ def _law_of(instrument: Any, payload: ProposalProvisionPayload | ProposalProvisi
 
 
 def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, Any, list[Any]]:
-    """A new provision (INV-02): a key no provision carries, a shared instrument in force, a
-    parent of that same instrument, a live provision kind, its text checked as a version's
+    """A new provision (INV-02): a key no provision carries, whose part before a slash is its
+    instrument's own key, a shared instrument in force, a parent of that same instrument, a live provision kind, its text checked as a version's
     is, and what it owes its instrument (`_law_of`). Returns the instrument, parent (or
     None), kind and the obligations that cite it. A bank's own instrument holds no
     provisions (ADR 0050): 422 `private_provisions_not_supported`."""
@@ -563,6 +570,12 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
     instrument = active_instrument(payload.instrument)
     if instrument.owner_tenant_id is not None:
         raise ValidationError(PRIVATE_PROVISIONS, code="private_provisions_not_supported")
+    # A key kept for ever never names another instrument than its own.
+    if "/" in payload.key and payload.key.split("/", 1)[0] != instrument.stable_key.lower():
+        raise ValidationError(
+            f"A provision's key before the slash is its instrument's own key: {instrument.stable_key.lower()!r}.",
+            code="validation_error",
+        )
     parent = parent_provision(instrument, payload.parent) if payload.parent else None
     kind = live_provision_kind(payload.provision_kind)
     return instrument, parent, kind, _law_of(instrument, payload)
@@ -1310,7 +1323,8 @@ def corrected(
     reason instead.
 
     A correction that changes a sourced field names the fresh source it read, and only such a
-    field takes one (H35). Returns the proposer's sources the fresh ones replaced, for the
+    field takes one (H35); a field the correction clears drops its source. Returns the
+    proposer's sources the fresh ones replaced or the correction dropped, for the
     audit row. Only a person corrects (review 2026-11-11 S-3).
     """
     if proposal.kind not in CORRECTABLE_KINDS:
@@ -1323,7 +1337,12 @@ def corrected(
     _validate_against_target(parsed, proposal.target_id)
     stored = payload_dict(parsed)
     fresh = {field: source.strip() for field, source in (field_sources or {}).items()}
-    sources = {**proposal.field_sources, **fresh}
+    # A proposer's source goes with the field it was for: a correction that clears a field
+    # (a provision's `obligations`, say) leaves no source behind for a field it no longer sets.
+    # A fresh source for a field the correction does not change is refused below.
+    sourceable = set(sourceable_fields(parsed))
+    carried = {field: source for field, source in proposal.field_sources.items() if field in sourceable}
+    sources = {**carried, **fresh}
     # Before the source checks, so a correction that breaks a standards rule answers the rule
     # it breaks, as at creation (D-35).
     standards.check_payload(proposal.kind, proposal.target_id, parsed, sources, proposal.source_label)
@@ -1340,7 +1359,7 @@ def corrected(
             code="validation_error",
         )
     check_field_sources(parsed, sources)
-    replaced = {field: proposal.field_sources[field] for field in fresh if field in proposal.field_sources}
+    replaced = {field: source for field, source in proposal.field_sources.items() if field in fresh or field not in sources}
     proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
@@ -1443,7 +1462,7 @@ def approve(
             subject_title=proposal.title,
             summary=f"Approved: {proposal.title}",
             tenant_id=proposal.owner_tenant_id,
-            before={"status": ProposalStatus.OPEN.value, **({"fieldSources": replaced} if field_sources else {})},
+            before={"status": ProposalStatus.OPEN.value, **({"fieldSources": replaced} if field_sources or replaced else {})},
             after={
                 "status": proposal.status,
                 "corrected": proposal.corrected_payload is not None,

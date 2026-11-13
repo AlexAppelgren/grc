@@ -9,7 +9,7 @@ the queue never holds a proposal nobody can apply.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from django.conf import settings
@@ -242,6 +242,12 @@ class ProposalObligationPayload(WriteBody):
 # A provision's stable key: a record's key, or one followed by a slash and the provision's
 # place in its instrument, as the seeded library writes them (`fffs-2017-2/9-6`).
 PROVISION_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)?$"
+# An obligation a provision names, by the stable key it carries (`Obligation.stable_key`).
+ObligationKey = Annotated[str, Field(max_length=120, pattern=STABLE_KEY_PATTERN)]
+# A content language, by its key (`Language.key`, a slug of at most 8 characters).
+LanguageKey = Annotated[str, Field(max_length=8, pattern=r"^[a-z0-9-]+$")]
+# At most every content language but the original: the library holds five (I18N-01).
+PROVISION_OFFICIAL_LANGUAGES_MAX = 4
 
 
 class ProposalProvisionPayload(WriteBody):
@@ -261,11 +267,17 @@ class ProposalProvisionPayload(WriteBody):
     alone: a title or a summary is bleqq's own wording, and its original is the language it
     was written in. `officialLanguages` names the other languages of `texts` the authority
     itself published, such as the Swedish text of a Finnish act: each is stored neither as
-    the original nor as machine-made. `isMachine` says every remaining text is a machine
-    translation (INV-05); a text stored machine-made stays so whoever approves.
+    the original nor as machine-made, and only a language the authority publishes in beside
+    the original may be named (Swedish beside Finnish), else 422 `validation_error`; at most
+    four language keys of at most 8 characters each. `isMachine` says every remaining text is
+    a machine translation (INV-05); a text stored machine-made stays so whoever approves.
 
-    `obligations` is the stable keys of the obligations that cite this provision, at most
-    `PROPOSAL_PROVISION_MAX_OBLIGATIONS`, each a shared obligation in force under the same
+    `key`, when it holds a slash, starts with the instrument's own key, else 422
+    `validation_error`.
+
+    `obligations` is the stable keys of the obligations that cite this provision, each at
+    most 120 characters, at most `PROPOSAL_PROVISION_MAX_OBLIGATIONS` counted as the list is
+    sent, a repeat merged into one; each a shared obligation in force under the same
     instrument, else 422 `unknown_key` naming it. Approval ties each one to the provision.
 
     Never under a standard, whose text is licensed: 422 `licensed_text` (INV-08, D-35).
@@ -282,8 +294,8 @@ class ProposalProvisionPayload(WriteBody):
     texts: dict[str, str]
     original_language: str
     is_machine: bool = False
-    official_languages: list[str] | None = None
-    obligations: list[str] | None = Field(default=None, max_length=settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
+    official_languages: list[LanguageKey] | None = Field(default=None, max_length=PROVISION_OFFICIAL_LANGUAGES_MAX)
+    obligations: list[ObligationKey] | None = Field(default=None, max_length=settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
     effective_from: date | None = None
     effective_from_precision: str = "day"
 
@@ -303,8 +315,8 @@ class ProposalProvisionVersionPayload(WriteBody):
     texts: dict[str, str]
     original_language: str
     is_machine: bool = False
-    official_languages: list[str] | None = None
-    obligations: list[str] | None = Field(default=None, max_length=settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
+    official_languages: list[LanguageKey] | None = Field(default=None, max_length=PROVISION_OFFICIAL_LANGUAGES_MAX)
+    obligations: list[ObligationKey] | None = Field(default=None, max_length=settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
     effective_from: date | None = None
     effective_from_precision: str = "day"
 
@@ -1418,7 +1430,8 @@ class ProposalCreateBody(WriteBody):
             "conformance obligation, carrying exactly one standard term (else 422 "
             "`one_conformance_obligation` or `standard_term_required`), and a law's obligation carries "
             "none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may "
-            "end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, at most "
+            "end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, the part "
+            "before the slash then being the instrument's own key, else 422 `validation_error`, at most "
             "200 characters), `instrument`, "
             "`parent` (the stable key of a provision of the same instrument, left out at the top), "
             "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), "
@@ -1428,10 +1441,14 @@ class ProposalCreateBody(WriteBody):
             "though a title or a summary, being bleqq's own wording, keeps the language it was written "
             "in), `officialLanguages` (the other languages of `texts` the authority itself published, such "
             "as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; "
-            "naming the original, or a language with no text, answers 422 `validation_error`), `isMachine` "
+            f"at most {PROVISION_OFFICIAL_LANGUAGES_MAX} language keys of at most 8 characters; naming the "
+            "original, a language with no text, or a language the authority does not publish in beside "
+            "the original (today only Swedish beside a Finnish original may be named) answers 422 "
+            "`validation_error`), `isMachine` "
             "(true when every remaining text is a machine translation, which then stays labelled so whoever "
-            "approves), `obligations` (the stable keys of the obligations that cite the provision, each "
-            f"once and at most {settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS}, every one a shared obligation "
+            "approves), `obligations` (the stable keys of the obligations that cite the provision, each at "
+            f"most 120 characters, at most {settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS} counted as the list "
+            "is sent, a key sent twice being kept once, every one a shared obligation "
             "in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to "
             "the provision), `effectiveFrom` and `effectiveFromPrecision`. "
             "`new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and "
