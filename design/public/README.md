@@ -142,7 +142,13 @@ linear.app the same day); ours is the app itself.
   screen, its tabs, its toggles and the records it links to. What the backend answered is
   the recording, with grants that only open administration left out of the person's `/me`,
   so the app's own rules hide Admin. The bank's register sits on the duties that sort first
-  in its inventory, because the walk follows at most twenty records a route.
+  in its inventory, because the walk follows at most twenty records a route. What applies
+  is opened once more for each company under each filter, by the address the screen itself
+  writes, because its chips count per company and pressing one renames the rest; and when
+  recording, every regulation's line on those first pages is opened, so that in the demo
+  each of them shows its own obligations. A later page of its regulations and a search in
+  it are not recorded: like every list of the demo, they are answered by another recording
+  of the same list.
 - **How it stays current.** CI's `demo` job, on every push, boots the demo's stack and
   walks the app again and compares the answers with the committed
   recordings by API path template and field shape, never by value. A screen

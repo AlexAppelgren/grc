@@ -44,6 +44,7 @@ const DEMO_LOGIN = LOGINS.reader;
 const SCREENS = destinations
   .filter((d) => d.surface === 'tenant' && d.group !== 'admin' && d.group !== 'account' && d.id !== 'my-work')
   .map((d) => d.href);
+const WHAT_APPLIES = '/applies';
 
 // Grants that open only administration, which the demo leaves out: the demo
 // person's /me is recorded without them, so the app's own rules hide Admin.
@@ -138,24 +139,45 @@ async function walk(page: Page): Promise<DemoRecording[]> {
   const queue = [...SCREENS];
   const seen = new Set<string>(queue);
   const perRoute = new Map<string, number>();
+  /** Queues an address of the app once, as long as its route still has room. */
+  const visitLater = (href: string) => {
+    const url = new URL(href, 'http://demo.invalid');
+    const target = `${url.pathname}${url.search}`;
+    if (seen.has(target) || !onAScreen(url.pathname)) return;
+    const route = `${routeOf(url.pathname)}?${[...url.searchParams.keys()].sort().join('&')}`;
+    const followed = perRoute.get(route) ?? 0;
+    if (followed >= PER_ROUTE) return;
+    perRoute.set(route, followed + 1);
+    seen.add(target);
+    queue.push(target);
+  };
   const follow = async () => {
     const hrefs = await page.locator('main a[href^="/"]').evaluateAll((anchors) => anchors.map((anchor) => anchor.getAttribute('href') ?? ''));
-    for (const href of hrefs) {
-      const url = new URL(href, 'http://demo.invalid');
-      const target = `${url.pathname}${url.search}`;
-      if (seen.has(target) || !onAScreen(url.pathname)) continue;
-      const route = `${routeOf(url.pathname)}?${[...url.searchParams.keys()].sort().join('&')}`;
-      const followed = perRoute.get(route) ?? 0;
-      if (followed >= PER_ROUTE) continue;
-      perRoute.set(route, followed + 1);
-      seen.add(target);
-      queue.push(target);
-    }
+    hrefs.forEach(visitLater);
   };
   for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
     await page.goto(next);
     await settle();
     await follow();
+    if (next === WHAT_APPLIES) {
+      // Its view is in its address, and its chips count per company, so pressing one renames
+      // the others and the presses below miss views: each company under each filter is
+      // visited by its address, as the screen itself writes it. All comes before Decided,
+      // because the comparison keeps one address a route and no press of a chip reaches All.
+      await Promise.all(pending);
+      const companies = (entries.get('GET /api/v1/applicability/companies')?.body ?? []) as { orgUnit: { id: string } }[];
+      for (const { orgUnit } of companies) for (const filter of ['', '&state=all', '&state=decided']) visitLater(`${WHAT_APPLIES}?company=${orgUnit.id}${filter}`);
+    }
+    if (RECORD && next.split('?')[0] === WHAT_APPLIES) {
+      // A regulation's line reads its obligations when it opens. The recording opens every
+      // line of the page, so in the demo each of them shows its own obligations. A later
+      // page of regulations and a search are not recorded, as on every list of the demo.
+      const closed = page.locator('main [data-regulation] [data-slot="fold-trigger"][aria-expanded="false"]');
+      for (let left = await closed.count(); left > 0; left -= 1) {
+        await closed.first().click();
+        await settle();
+      }
+    }
     // A toggle shows another view of the same page (a version's diff, a filter): press it, follow, release it.
     // Found by name, because pressing one re-renders the others.
     const names = await page.locator('main button[aria-pressed="false"]').evaluateAll((buttons) => buttons.map((button) => button.textContent ?? ''));
@@ -191,7 +213,7 @@ function serialise(recordings: DemoRecordings): string {
 
 test.describe('public page demo', () => {
   test("the demo's recordings still answer every request its screens make @demo", async ({ page, apiGuard }) => {
-    test.setTimeout(RECORD ? 600_000 : 180_000);
+    test.setTimeout(RECORD ? 900_000 : 180_000);
     allowFreshContext(apiGuard);
     // The briefing links to the week before its first one, and the demo keeps that answer too.
     apiGuard.allow(/\/api\/v1\/briefings\/\d{4}-\d{2}-\d{2}$/, 404, 'the week before the first briefing has none');

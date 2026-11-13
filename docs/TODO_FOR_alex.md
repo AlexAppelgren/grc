@@ -89,6 +89,27 @@ most urgent first.
       The demo was recorded again for What applies and the regulation page's new reads. Say
       if the demo should show the text too; its seed would then need a person's approval of
       the provisions, which is a rule to decide and not a detail.
+- [ ] **What the public demo shows where it has no recording.** In the demo, What applies
+      answers both companies under all three filters, and each of the twenty regulations on
+      a first page opens to its own obligations (checked in a browser on the public page).
+      Three things beside it are not right, and each was true of the demo before this
+      screen; only the third is new:
+      - A page with no recording says "Not found. There is nothing at this address in your
+        organisation." and not the demo's own line. From What applies that is 12 of the 21
+        regulation names and 62 of the 65 obligation titles; the inventory beyond its first
+        page is the same.
+      - The second page of a list and a search are answered by another recording of the
+        same list. On What applies both show the first regulation alone; in the inventory
+        page two shows five other obligations.
+      - The Licences link on What applies opens Licences, which the demo answers, under
+        Admin's tab bar, whose Organisation, Agents and Support access say "Could not
+        load. Check your connection and try again." Before this link nothing in the demo led
+        into Admin.
+
+      Recommended, as one change: an address or a page the demo holds no recording for says
+      "The demo has no sample data for this page." everywhere, a later page and a search
+      say the same instead of showing another list, and the demo draws no Admin tab bar, so
+      Licences stands alone. Say yes, or say which of the three you want otherwise.
 
 ## The new mail layout (2026-11-12, D-138)
 
