@@ -639,6 +639,13 @@ test.describe('register journeys', () => {
     // pending: REG-S9 (REG-06)
   });
 
+  test.fixme("REG-S23: AI drafts the reason from the licence facts alone, and the person stands behind it", async () => {
+    // pending: REG-S23 (REG-01, D-143). The call, the prompt and the confirmation are proved by
+    // apps/register/tests_scenarios.py and the dialog by DecideDialog.test.tsx; the journey waits
+    // for a run against the real stack, which this slice did not have, before it asserts the
+    // mock model's draft in REG-S22's dialog.
+  });
+
   test("REG-S22: A compliance officer decides what a company's licences bring in, in one go", async ({ page, apiGuard }, testInfo) => {
     // REG-01, AC-REG1: from What applies, the insurer's SFL duties nobody has answered (the
     // ISK control statements span the bank and the insurer, and the seed answers neither

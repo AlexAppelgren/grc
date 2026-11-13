@@ -1,9 +1,12 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import type { AxiosAdapter, AxiosResponse } from 'axios';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { renderWith } from '@/shared/testing/render';
+import { api, pathOf } from '@/shared/utils/api-client';
 
 import { DecideDialog, type Current } from './DecideDialog';
 
@@ -223,10 +226,139 @@ describe('DecideDialog for one obligation', () => {
 
   it('speaks Swedish', () => {
     renderWith(<DecideDialog company={null} current={{ applicability: 'applies', reason: 'Vi ger råd.' }} notAssessed suggestion="" pending={false} onSubmit={vi.fn()} onClose={vi.fn()} />, { locale: 'sv' });
+    expect(screen.queryByRole('button', { name: 'Skriv utkast med AI' })).toBeNull();
     expect(screen.getByRole('dialog', { name: 'Gäller den oss?' })).toBeInTheDocument();
     expect(screen.getByText('Just nu: Gäller')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sätt till Gäller' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Inte bedömd' }));
     expect(screen.getByRole('button', { name: 'Sätt till Inte bedömd' })).toBeDisabled();
+  });
+});
+
+describe('DecideDialog drafting the reason with AI', () => {
+  const DRAFT_PATH = '/api/v1/applicability/reason-draft';
+  const DRAFT = 'The company holds a fund management licence under the UCITS Act, which brings these obligations into its scope.';
+  const SCOPE = { orgUnitId: 'fonder', instrument: 'sfs-2004-46' };
+
+  beforeEach(() => resetApiForTests());
+
+  function server(answer: (sent: Sent) => Answer): Sent[] {
+    return installAdapter((sent) => (sent.path === DRAFT_PATH ? answer(sent) : { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } }));
+  }
+
+  function drafting(permissions: readonly string[] = ['applicability.approve'], props: Partial<Parameters<typeof DecideDialog>[0]> = {}) {
+    const onSubmit = vi.fn();
+    renderWith(
+      <DecideDialog company="Example Fonder AB" covers="9 obligations in LVF" count={9} suggestion={SUGGESTION} draftScope={SCOPE} pending={false} onSubmit={onSubmit} onClose={vi.fn()} {...props} />,
+      { permissions },
+    );
+    return { onSubmit };
+  }
+
+  const draftButton = () => screen.getByRole('button', { name: 'Draft with AI' });
+  const aiLabel = () => screen.queryByText('AI draft — check it before you set it');
+
+  it('fills the reason with the draft, labelled as AI, sends only the scope and the answer, and the draft id with the answer', async () => {
+    const sent = server(() => ({ status: 200, data: { text: DRAFT, generationId: 'gen-1', aiGenerated: true } }));
+    const { onSubmit } = drafting();
+    expect(hint()).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Does not apply' }));
+    fireEvent.click(draftButton());
+    expect(await screen.findByText('AI draft — check it before you set it')).toBeInTheDocument();
+    expect(reason().value).toBe(DRAFT);
+    expect(reason()).toHaveAccessibleDescription('AI draft — check it before you set it');
+    expect(hint()).toBeNull();
+    // The facts are the server's to read: the request names the company, the filter and the answer, never the field.
+    expect(sent.filter((s) => s.path === DRAFT_PATH).map((s) => s.body)).toEqual([{ ...SCOPE, applicability: 'not_applicable' }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Set 9 to Does not apply' }));
+    expect(onSubmit).toHaveBeenCalledWith({ applicability: 'not_applicable', reason: DRAFT, reasonDraftId: 'gen-1' });
+  });
+
+  it('drops the label once the person edits the draft, and still sends the draft id', async () => {
+    server(() => ({ status: 200, data: { text: DRAFT, generationId: 'gen-2', aiGenerated: true } }));
+    const { onSubmit } = drafting();
+    fireEvent.click(draftButton());
+    await screen.findByText('AI draft — check it before you set it');
+    fireEvent.change(reason(), { target: { value: `${DRAFT} Checked against the register.` } });
+    expect(aiLabel()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Set 9 to Applies' }));
+    expect(onSubmit).toHaveBeenCalledWith({ applicability: 'applies', reason: `${DRAFT} Checked against the register.`, reasonDraftId: 'gen-2' });
+  });
+
+  it('forgets the draft when a change of answer replaces it', async () => {
+    server(() => ({ status: 200, data: { text: DRAFT, generationId: 'gen-3', aiGenerated: true } }));
+    const { onSubmit } = drafting();
+    fireEvent.click(draftButton());
+    await screen.findByText('AI draft — check it before you set it');
+    fireEvent.click(screen.getByRole('button', { name: 'Does not apply' }));
+    expect(reason().value).toBe('');
+    expect(aiLabel()).toBeNull();
+    fireEvent.change(reason(), { target: { value: 'The company manages no such funds.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Set 9 to Does not apply' }));
+    expect(onSubmit).toHaveBeenCalledWith({ applicability: 'not_applicable', reason: 'The company manages no such funds.' });
+  });
+
+  it('shows progress while drafting', async () => {
+    server(() => ({ status: 200, data: {} }));
+    // The draft's answer is held until the test lets it go, so the busy button can be read.
+    const scripted = api.defaults.adapter as AxiosAdapter;
+    let release: () => void = () => undefined;
+    api.defaults.adapter = (config) =>
+      pathOf(config) === DRAFT_PATH
+        ? new Promise<AxiosResponse>((resolve) => {
+            release = () => resolve({ data: { text: DRAFT, generationId: 'gen-4', aiGenerated: true }, status: 200, statusText: '200', headers: {}, config });
+          })
+        : scripted(config);
+    drafting();
+    fireEvent.click(draftButton());
+    const busy = await screen.findByRole('button', { name: 'Drafting…' });
+    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    release();
+    expect(await screen.findByRole('button', { name: 'Draft with AI' })).toBeEnabled();
+    expect(reason().value).toBe(DRAFT);
+  });
+
+  it('says AI is switched off, and keeps the suggestion in the field', async () => {
+    server(() => ({ status: 403, data: { code: 'feature_off', detail: 'Your organisation has switched its AI features off.' } }));
+    drafting();
+    fireEvent.click(draftButton());
+    expect(await screen.findByText('AI features are switched off for your organisation, so the reason is yours to write.')).toBeInTheDocument();
+    expect(reason().value).toBe(SUGGESTION);
+    expect(aiLabel()).toBeNull();
+  });
+
+  it('words a refused regulation', async () => {
+    server(() => ({ status: 422, data: { code: 'draft_refused', detail: 'x' } }));
+    drafting();
+    fireEvent.click(draftButton());
+    expect(await screen.findByText("A reason for your organisation's own regulation or for a standard is not drafted by AI. Write it yourself.")).toBeInTheDocument();
+  });
+
+  it('words a model that could not draft', async () => {
+    server(() => ({ status: 503, data: { code: 'model_unavailable', detail: 'x' } }));
+    drafting();
+    fireEvent.click(draftButton());
+    expect(await screen.findByText('The draft could not be written. Try again, or write the reason yourself.')).toBeInTheDocument();
+  });
+
+  it('is not offered without applicability.approve, or where no company is named', () => {
+    drafting(['register.read']);
+    expect(screen.queryByRole('button', { name: 'Draft with AI' })).toBeNull();
+  });
+
+  it('is not offered for the obligation as a whole', () => {
+    renderWith(<DecideDialog company={null} current={null} notAssessed suggestion="" pending={false} onSubmit={vi.fn()} onClose={vi.fn()} />, { permissions: ['applicability.approve'] });
+    expect(screen.queryByRole('button', { name: 'Draft with AI' })).toBeNull();
+  });
+
+  it('speaks Swedish', async () => {
+    server(() => ({ status: 200, data: { text: 'Bolaget har tillstånd att driva fondverksamhet.', generationId: 'gen-5', aiGenerated: true } }));
+    renderWith(
+      <DecideDialog company="Example Fonder AB" count={2} suggestion="Förslag." draftScope={SCOPE} pending={false} onSubmit={vi.fn()} onClose={vi.fn()} />,
+      { permissions: ['applicability.approve'], locale: 'sv' },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Skriv utkast med AI' }));
+    expect(await screen.findByText('AI-utkast – kontrollera det innan du sätter svaret')).toBeInTheDocument();
   });
 });

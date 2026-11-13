@@ -106,12 +106,22 @@ function DecideOne({ obligationId, answer, onClose }: { obligationId: string; an
       current={unanswered(answer) ? null : { applicability: answer.applicability, reason: answer.reason }}
       notAssessed
       suggestion={suggestion}
+      // A draft rests on one company's licence facts, so the obligation as a whole is offered none.
+      draftScope={answer.orgUnitId === null ? undefined : { orgUnitId: answer.orgUnitId, obligationIds: [obligationId] }}
       pending={set.isPending}
       error={set.isError ? set.error : undefined}
       codes={{ [STALE_WRITE_CODE]: t('obligationApplicability.stale') }}
-      onSubmit={({ applicability, reason }) =>
+      onSubmit={({ applicability, reason, reasonDraftId }) =>
         set.mutate(
-          { body: { applicability, reason, ...(answer.orgUnitId === null ? {} : { orgUnitId: answer.orgUnitId }) }, version: answer.version },
+          {
+            body: {
+              applicability,
+              reason,
+              ...(answer.orgUnitId === null ? {} : { orgUnitId: answer.orgUnitId }),
+              ...(reasonDraftId === undefined ? {} : { reasonDraftId }),
+            },
+            version: answer.version,
+          },
           {
             onSuccess: () => {
               refresh();

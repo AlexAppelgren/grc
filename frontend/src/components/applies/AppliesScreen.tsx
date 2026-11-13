@@ -418,6 +418,7 @@ function CompanyView({
           covers={target.covers}
           count={target.count}
           suggestion={suggestReason(target.bases, name, register, t, ctx)}
+          draftScope={{ orgUnitId, ...target.scope }}
           pending={decideAll.start.isPending}
           error={decideAll.start.isError && !hasProblemCode(decideAll.start.error, 'decision_running') ? decideAll.start.error : undefined}
           codes={{ not_found: t('applies.dialog.notFound') }}

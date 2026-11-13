@@ -9,7 +9,17 @@ import { orgKeys } from '@/features/tenant-admin/organisation/hooks';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
 import * as applies from './api';
-import type { ApplicabilityAnswerPage, ApplicabilityCompany, ApplicabilityRegulationPage, DecideAll, DecideAllBody, RegulationQuery, RowQuery } from './api';
+import type {
+  ApplicabilityAnswerPage,
+  ApplicabilityCompany,
+  ApplicabilityRegulationPage,
+  DecideAll,
+  DecideAllBody,
+  ReasonDraft,
+  ReasonDraftBody,
+  RegulationQuery,
+  RowQuery,
+} from './api';
 import { basisOf, type Basis, type RegisterRead } from './suggestion';
 
 // Query keys for "What applies" (playbook 6.1). The query is part of each list's key,
@@ -82,6 +92,11 @@ export function useRefreshAnswers(): () => void {
   return () => {
     for (const queryKey of [appliesKeys.all, OBLIGATION_LISTS]) void queryClient.invalidateQueries({ queryKey });
   };
+}
+
+/** A reason drafted by AI for the dialog (D-143): a call that stores nothing, so nothing is read again after it. */
+export function useDraftReason(): UseMutationResult<ReasonDraft, unknown, ReasonDraftBody> {
+  return useMutation({ mutationFn: applies.draftReason });
 }
 
 /** How often the page reads a running Decide all run, in milliseconds. */

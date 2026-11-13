@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useId, useState } from 'react';
 
+import { AiLabel } from '@/components/ui/AiLabel';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextArea, TextInput } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
@@ -127,14 +128,6 @@ function NoAnswer({ onSearchInstead, t }: { onSearchInstead: () => void; t: Tran
         </Button>
       </ButtonBar>
     </section>
-  );
-}
-
-function AiLabel({ text }: { text: string }) {
-  return (
-    <div className="mb-3 rounded-control bg-surface px-3.5 py-3">
-      <span className="block text-meta font-semibold text-brass">{text}</span>
-    </div>
   );
 }
 

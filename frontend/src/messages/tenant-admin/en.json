@@ -209,6 +209,7 @@
   "admin.aiLog.purpose.translation": "Translation",
   "admin.aiLog.purpose.answer": "Ask answer",
   "admin.aiLog.purpose.what_applies": "What applies summary",
+  "admin.aiLog.purpose.reason_draft": "Drafted reason",
   "admin.aiLog.review.draft": "Not yet reviewed",
   "admin.aiLog.review.confirmed": "Confirmed",
   "admin.aiLog.review.edited": "Rewritten",

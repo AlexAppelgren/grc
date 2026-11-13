@@ -22,6 +22,11 @@ export type RowQuery = operations['listApplicabilityRows']['parameters']['query'
 /** The caller's latest Decide all run, as the worker last wrote it. */
 export type DecideAll = Schemas['RegisterDecideAll'];
 export type DecideAllBody = Schemas['RegisterDecideAllBody'];
+/** A reason a model drafted from the licence facts (D-143), labelled as AI until the person sets the answer. */
+export type ReasonDraft = Schemas['RegisterReasonDraft'];
+export type ReasonDraftBody = Schemas['RegisterReasonDraftBody'];
+/** What a draft is for, as the dialog's caller knows it: the company and its filter, without the answer. */
+export type ReasonDraftScope = Omit<ReasonDraftBody, 'applicability'>;
 
 const APPLICABILITY = '/api/v1/applicability';
 
@@ -45,4 +50,9 @@ export async function startDecideAll(body: DecideAllBody): Promise<DecideAll> {
 
 export async function readDecideAll(): Promise<DecideAll> {
   return (await api.get<DecideAll>(`${APPLICABILITY}/decide-all`)).data;
+}
+
+/** Asks a model to draft the reason; the server reads the facts itself and stores nothing. */
+export async function draftReason(body: ReasonDraftBody): Promise<ReasonDraft> {
+  return (await api.post<ReasonDraft>(`${APPLICABILITY}/reason-draft`, body)).data;
 }

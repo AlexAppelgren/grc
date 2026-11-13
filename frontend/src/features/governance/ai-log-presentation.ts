@@ -17,7 +17,7 @@ const ORDER = { purpose: 0, review: 1, feedback: 2 };
  * confirming agent's decision (`agent_review`) is the platform's alone, so a
  * bank's log never lists one and the filter does not offer it.
  */
-export const AI_PURPOSES = ['so_what', 'change_summary', 'scope_suggestion', 'link_suggestion', 'translation', 'answer', 'what_applies'] as const;
+export const AI_PURPOSES = ['so_what', 'change_summary', 'scope_suggestion', 'link_suggestion', 'translation', 'answer', 'what_applies', 'reason_draft'] as const;
 
 export const AI_REVIEW_STATES = ['draft', 'confirmed', 'edited', 'rejected'] as const satisfies readonly AiReviewKind[];
 
@@ -29,6 +29,7 @@ const PURPOSE_LABELS: Record<(typeof AI_PURPOSES)[number], MessageKey> = {
   translation: 'admin.aiLog.purpose.translation',
   answer: 'admin.aiLog.purpose.answer',
   what_applies: 'admin.aiLog.purpose.what_applies',
+  reason_draft: 'admin.aiLog.purpose.reason_draft',
 };
 
 const REVIEW_LABELS: Record<AiReviewKind, MessageKey> = {
