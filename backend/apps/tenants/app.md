@@ -315,7 +315,7 @@ And the participations of his teams are unchanged
 ```gherkin
 Given an admin with vocab.manage and the legal entity "Example Bank AB"
 When they record the licence "ISO/IEC 27001:2022 certificate, issued by Example Certification AB" with a certificate number, a scope statement, an issue date, a validity end date, a next audit date and an owner
-Then the entity screen lists it under "Licences and certificates" with its validity and next audit
+Then the Licences page lists it under the entity's "Recorded by us" with its validity and next audit
 And the write is audited with before and after values
 And no obligation, scope row or applicability changes
 When they set a withdrawal date
@@ -333,10 +333,11 @@ Then the row reads as withdrawn and stays in the history
 > the bank's active departments, and the departments section lists each one's teams.
 
 > **c8-ui-organisation (TEN-02, ADM-01).** `/admin/organisation` draws the legal entities as a
-> tree under the group, each entity's licences and certificates, and the products, with Add
-> and Edit for `vocab.manage` only; `stale_write`, `unknown_member`, `unknown_key` and a 422's
-> named fields render where they belong. The departments and teams sections are mounted as
-> stubs for their own package. TEN-S2 and TEN-S10 are journeys in `tenants.journey.spec.ts`.
+> tree under the group and the products, with Add and Edit for `vocab.manage` only;
+> `stale_write`, `unknown_member`, `unknown_key` and a 422's named fields render where they
+> belong. Each entity's licences and certificates are recorded and read on `/admin/licences`
+> (TEN-S16), which the Organisation page links to where they used to sit. TEN-S2 and TEN-S10
+> are journeys in `tenants.journey.spec.ts`.
 
 ### TEN-S11 — A support session reads and never writes, and never approves itself `@integration` (TEN-06)
 ```gherkin
@@ -407,3 +408,26 @@ Then none of its lines names a term
 > reason for a term lists that term here. A line none of whose terms the taxonomy holds live
 > is listed in `unmapped`, as wording the mapping does not know is; wording it knows to add
 > nothing is in neither list. A typed licence row still carries no scope term (ADR 0037).
+
+### TEN-S16 — A member reads every company's licences and what each brings into scope `@e2e` (TEN-02, TEN-07, ADM-01)
+```gherkin
+Given a bank whose legal entities are Example Bank AB, Example Liv Försäkring AB and Example Fonder AB
+And Example Bank AB holds the certificate "ISO/IEC 27001" issued by Example Certification AB
+When a member holding no admin permission opens Admin, Organisation, Licences
+Then each legal entity has its own card, in the order the Organisation page lists them, with its type, organisation number, country and a link to what applies to it
+And a company read from the public registers lists, under "From the register", its businesses and each licence line as the register words it, with the grant date
+And each line that brings scope terms shows them as pills under "Brings into scope", and a line the mapping does not use reads "Not used for scope yet"
+And under "Recorded by us" Example Bank AB lists the certificate, with nothing to add or change it by
+And a company with exclusions lists the terms outside its own scope
+And a member holding register.read sees how many obligations the company's licences bring, linked to what applies to it, and a member without it reads the page without that line
+When an admin holding vocab.manage adds a licence to Example Liv Försäkring AB there
+Then it is listed under "Recorded by us", and setting its withdrawal date moves it behind "Show withdrawn"
+```
+
+> **Note — the Licences page (TEN-S16).** `/admin/licences` is a page of Admin's Organisation
+> group, readable by any member, read from `GET /tenant/org-units` alone; the offered count is
+> `GET /applicability/companies`, read only for `register.read`. A line is matched to its terms
+> by comparing the line's text with `registerEntry.mapped[].line`. Nothing seeded carries
+> register facts, so the journey reads the register lines on tenant B after J-13 fills them in
+> (`taxonomy.journey.spec.ts`); the rest of TEN-S16 is its own journey in
+> `tenants.journey.spec.ts`.

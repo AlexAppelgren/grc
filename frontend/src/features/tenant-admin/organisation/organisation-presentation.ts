@@ -200,6 +200,37 @@ export function businessLine(facts: Pick<RegisterEntry['facts'], 'mainBusiness' 
   return [facts.mainBusiness, ...facts.otherBusinesses].filter((name) => name !== '').join(' · ');
 }
 
+/** Brand pills for scope terms: the scope block's, as every pill on these screens. */
+export function presentTerms(terms: readonly { key: string; label: string; dimension?: string }[]): PresentedPill[] {
+  return terms.map((term, i) => brand(`term:${term.dimension ?? ''}:${term.key}`, term.label, i));
+}
+
+/**
+ * One line of a company's register facts and what it brings into scope: the terms
+ * bleqq's mapping reads from it, `unmapped` when the mapping does not use it for the
+ * scope, or null when the line is in neither list (wording that adds nothing).
+ */
+export interface RegisterLine {
+  text: string;
+  grantedOn: string | null;
+  brings: PresentedPill[] | 'unmapped' | null;
+}
+
+/** The register's businesses (the main one first) and its licence lines, each matched to its terms by the line's own text. */
+export function registerLines(entry: Pick<RegisterEntry, 'facts' | 'mapped' | 'unmapped'>): { businesses: RegisterLine[]; licences: RegisterLine[] } {
+  const brings = (text: string): RegisterLine['brings'] => {
+    const mapped = entry.mapped.find((line) => line.line === text);
+    if (mapped !== undefined) return presentTerms(mapped.terms);
+    return entry.unmapped.includes(text) ? 'unmapped' : null;
+  };
+  const line = (text: string, grantedOn: string | null): RegisterLine => ({ text, grantedOn, brings: brings(text) });
+  const { facts } = entry;
+  return {
+    businesses: [facts.mainBusiness, ...facts.otherBusinesses].filter((name) => name !== '').map((name) => line(name, null)),
+    licences: facts.licences.map((licence) => line(licence.text, licence.grantedOn)),
+  };
+}
+
 /** "Example Bank AB, filial i Danmark (Danmark)": each branch with its country, as the register names them. */
 export function branchesLine(branches: RegisterEntry['facts']['branches'], t: Translate): string {
   return branches.map((branch) => (branch.countryName === '' ? branch.name : t('admin.org.registers.branch', { name: branch.name, country: branch.countryName }))).join(' · ');

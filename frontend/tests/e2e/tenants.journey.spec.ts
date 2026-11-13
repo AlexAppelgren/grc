@@ -282,9 +282,11 @@ test.describe('tenants journeys', () => {
       const entity = entities.locator(`[data-org-unit="${entityName}"]`);
       await expect(entity.locator('[data-pill="brand"]')).toHaveCount(1);
 
-      // The licence: its type and its services are terms of the same dimensions.
+      // The licence, on the Licences page: its type and its services are terms of the same dimensions.
+      await page.locator('[data-org-section="licences"]').getByRole('link', { name: 'Licences and certificates, company by company' }).click();
+      await expect(page).toHaveURL(/\/admin\/licences$/);
       const licences = page.locator(`[data-licences-of="${entityName}"]`);
-      await expect(licences.getByText('No licences or certificates recorded.')).toBeVisible();
+      await expect(licences.getByText('No licences from the register and none recorded by us.')).toBeVisible();
       await licences.getByRole('button', { name: `Add a licence or certificate to ${entityName}` }).click();
       dialog = page.getByRole('dialog');
       await dialog.getByLabel('Type').selectOption('bank');
@@ -297,6 +299,7 @@ test.describe('tenants journeys', () => {
       await expect(licence.locator('[data-pill="brand"]')).toHaveCount(1);
 
       // The product: its entity and its scope terms, all brand pills.
+      await page.goto('/admin/organisation');
       const products = page.locator('[data-org-section="products"]');
       await products.getByRole('button', { name: 'Add a product' }).click();
       dialog = page.getByRole('dialog');
@@ -1004,7 +1007,7 @@ test.describe('departments, teams and certificates', () => {
     const [issued, validUntil, nextAudit] = [day(-200), day(900), day(165)];
 
     await signInAs(page, LOGINS.admin);
-    await page.goto('/admin/organisation');
+    await page.goto('/admin/licences');
     const licences = page.locator('[data-licences-of="Example Bank AB"]');
     await expect(licences.locator('[data-licence]').first()).toBeVisible();
 
@@ -1043,6 +1046,59 @@ test.describe('departments, teams and certificates', () => {
     await expect(certificate).toHaveAttribute('data-withdrawn', '');
     await expect(certificate).toContainText(`Withdrawn ${shown(withdrawnOn)}`);
     await expect(certificate.getByRole('button')).toHaveCount(0);
+  });
+
+  // TEN-S16 (TEN-02, TEN-07, ADM-01). A reader opens Licences from Admin's tab bar: every seeded
+  // company, the seeded certificate with nothing to change it by, the way to What applies and the
+  // obligations its licences offer (a member without register.read reads the page without that
+  // count: LicencesScreen.test.tsx). An admin adds a licence there and withdraws it on the way
+  // out, on failure too.
+  // The register's lines and the terms each brings are read in J-13 (taxonomy.journey.spec.ts):
+  // nothing seeded carries register facts, and that journey is the one that reads them in.
+  test("TEN-S16: A member reads every company's licences and what each brings into scope", async ({ page, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    const reference = `FI S16 ${Date.now()}-${testInfo.retry}`;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/admin');
+    await openAdminSection(page, 'admin-licences');
+    await expect(page).toHaveURL(/\/admin\/licences$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Licences' })).toBeVisible();
+    for (const name of ['Example Bank AB', 'Example Liv Försäkring AB', 'Example Fonder AB']) {
+      await expect(page.locator(`[data-licences-page] [data-company="${name}"]`)).toBeVisible();
+    }
+    const bank = page.locator('[data-company="Example Bank AB"]');
+    await expect(bank.getByRole('link', { name: 'What applies to Example Bank AB' })).toHaveAttribute('href', /^\/applies\?company=[0-9a-f-]+$/);
+    const certificate = bank.locator('[data-licences-of="Example Bank AB"] [data-licence="iso_iec_27001"]').filter({ hasText: 'Example Certification AB' }).first();
+    await expect(certificate).toContainText('Certificate');
+    await expect(certificate.getByRole('button')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Add a licence or certificate to / })).toHaveCount(0);
+    await expect(bank.locator('[data-offered]').getByRole('link')).toHaveText(/^\d+ obligations? within its licences$/);
+    await signOut(page);
+
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/licences');
+    const liv = page.locator('[data-licences-of="Example Liv Försäkring AB"]');
+    const added = liv.locator('[data-licence]').filter({ hasText: reference });
+    try {
+      await liv.getByRole('button', { name: 'Add a licence or certificate to Example Liv Försäkring AB' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Add a licence or certificate to Example Liv Försäkring AB' });
+      await dialog.getByLabel('Type').selectOption('insurer');
+      await dialog.getByLabel('Reference').fill(reference);
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(added).toContainText('Licence');
+    } finally {
+      if ((await added.count()) > 0) {
+        await added.getByRole('button', { name: /^Edit / }).click();
+        const edit = page.getByRole('dialog');
+        await edit.getByLabel('Withdrawn').fill(today);
+        await edit.getByRole('button', { name: 'Save' }).click();
+        await expect(edit).toBeHidden();
+        await expect(added).toHaveCount(0);
+      }
+    }
   });
 });
 

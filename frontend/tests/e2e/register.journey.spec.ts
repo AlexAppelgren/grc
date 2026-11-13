@@ -859,7 +859,7 @@ test.describe('standards per legal entity', () => {
       await expect(standardTerm(page)).toHaveText(/^ISO\/IEC 27001 In our scope$/);
 
       // 2. The officer records the certificate on Example Bank AB, with its next audit.
-      await page.goto('/admin/organisation');
+      await page.goto('/admin/licences');
       const licences = page.locator(`[data-licences-of="${BANK}"]`);
       await licences.getByRole('button', { name: `Add a licence or certificate to ${BANK}` }).click();
       const dialog = page.getByRole('dialog', { name: `Add a licence or certificate to ${BANK}` });
@@ -912,7 +912,7 @@ test.describe('standards per legal entity', () => {
     } finally {
       // Every step back, on failure too: the certificate withdrawn, the answer taken back,
       // and the standard out of the scope through the same door.
-      await page.goto('/admin/organisation');
+      await page.goto('/admin/licences');
       const certificate = page.locator(`[data-licences-of="${BANK}"] [data-licence]`).filter({ hasText: number });
       await expect(page.locator(`[data-licences-of="${BANK}"] [data-licence]`).first()).toBeVisible();
       if ((await certificate.count()) > 0) {

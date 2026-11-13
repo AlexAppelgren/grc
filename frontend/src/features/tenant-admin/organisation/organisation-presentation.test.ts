@@ -24,6 +24,8 @@ import {
   presentEntity,
   presentProductScope,
   presentServices,
+  presentTerms,
+  registerLines,
   scopeTermGroups,
 } from './organisation-presentation';
 import type { Licence, OrgUnit, RegisterLookupEntity } from './types';
@@ -247,5 +249,59 @@ describe('the public registers (TEN-07)', () => {
     expect(businessLine(facts)).toBe('Bankaktiebolag · Värdepappersbolag · Försäkringsdistribution');
     expect(businessLine({ mainBusiness: '', otherBusinesses: ['Fondbolag'] })).toBe('Fondbolag');
     expect(branchesLine(facts.branches, t)).toBe('Example Bank AB, filial i Danmark (Danmark) · Example Bank AB, filial i Ukraina');
+  });
+});
+
+describe('the register lines and what each brings into scope (TEN-S16)', () => {
+  const term = (key: string, label: string) => ({ key, label, kind: null, dimension: 'regime' });
+  const entry = {
+    facts: {
+      name: 'Example Bank AB',
+      registrationNumber: '556000-0001',
+      lei: '',
+      mainBusiness: 'Bankaktiebolag',
+      otherBusinesses: ['Värdepappersbolag', 'Medelstort institut'],
+      licences: [
+        { text: 'Tillstånd att driva bankrörelse', grantedOn: '1995-03-01' },
+        { text: 'Tillstånd att ge ut elektroniska pengar', grantedOn: null },
+        { text: 'IM_MR_SA', grantedOn: '2016-06-26' },
+      ],
+      branches: [],
+      branchesRead: true,
+      listed: true,
+    },
+    mapped: [
+      { line: 'Bankaktiebolag', terms: [term('banking', 'Banking')] },
+      { line: 'Värdepappersbolag', terms: [term('securities', 'Securities')] },
+      { line: 'Tillstånd att driva bankrörelse', terms: [term('banking', 'Banking'), term('payments', 'Payments')] },
+    ],
+    unmapped: ['Tillstånd att ge ut elektroniska pengar'],
+  };
+
+  it('matches each line to its terms by its own text, says when a line is not used, and leaves the rest bare', () => {
+    const { businesses, licences } = registerLines(entry);
+    expect(businesses.map((line) => [line.text, line.brings === null || line.brings === 'unmapped' ? line.brings : line.brings.map((pill) => pill.label)])).toEqual([
+      ['Bankaktiebolag', ['Banking']],
+      ['Värdepappersbolag', ['Securities']],
+      ['Medelstort institut', null],
+    ]);
+    expect(licences.map((line) => [line.text, line.grantedOn, line.brings === null || line.brings === 'unmapped' ? line.brings : line.brings.map((pill) => pill.label)])).toEqual([
+      ['Tillstånd att driva bankrörelse', '1995-03-01', ['Banking', 'Payments']],
+      ['Tillstånd att ge ut elektroniska pengar', null, 'unmapped'],
+      ['IM_MR_SA', '2016-06-26', null],
+    ]);
+  });
+
+  it('never matches a line on part of its text, and leaves out an empty main business', () => {
+    const { businesses, licences } = registerLines({ ...entry, facts: { ...entry.facts, mainBusiness: '', otherBusinesses: [], licences: [{ text: 'Tillstånd att driva bankrörelse, enligt lag', grantedOn: null }] } });
+    expect(businesses).toEqual([]);
+    expect(licences[0]?.brings).toBeNull();
+  });
+
+  it('draws every term as a brand pill, in the order given', () => {
+    expect(presentTerms([term('banking', 'Banking'), term('payments', 'Payments')])).toEqual([
+      { key: 'term:regime:banking', label: 'Banking', tone: 'brand', order: 0 },
+      { key: 'term:regime:payments', label: 'Payments', tone: 'brand', order: 1 },
+    ]);
   });
 });

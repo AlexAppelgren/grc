@@ -73,6 +73,8 @@ export const destinations: readonly Destination[] = [
   // Admin sections (ADM-03): each gated by its own permission. The
   // organisation profile is readable by any member; the server refuses edits.
   { id: 'admin-organisation', href: '/admin/organisation', labelKey: 'nav.admin.organisation', surface: 'tenant', anyOfPermissions: [], group: 'admin', parent: 'admin' },
+  // Each company's licences and what they bring into scope (TEN-02, TEN-07): read as the organisation is, by any member.
+  { id: 'admin-licences', href: '/admin/licences', labelKey: 'nav.admin.licences', surface: 'tenant', anyOfPermissions: [], group: 'admin', parent: 'admin' },
   { id: 'admin-members', href: '/admin/members', labelKey: 'nav.admin.members', surface: 'tenant', anyOfPermissions: ['members.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-roles', href: '/admin/roles', labelKey: 'nav.admin.roles', surface: 'tenant', anyOfPermissions: ['roles.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-vocabularies', href: '/admin/vocabularies', labelKey: 'nav.admin.vocabularies', surface: 'tenant', anyOfPermissions: ['vocab.manage'], group: 'admin', parent: 'admin' },
@@ -140,7 +142,7 @@ export interface AdminGroup {
 
 export const ADMIN_GROUPS: readonly AdminGroup[] = [
   { id: 'people', labelKey: 'admin.group.people', pages: ['admin-members', 'admin-roles'] },
-  { id: 'organisation', labelKey: 'admin.group.organisation', pages: ['admin-organisation', 'admin-footprint', 'admin-vocabularies', 'admin-workflow'] },
+  { id: 'organisation', labelKey: 'admin.group.organisation', pages: ['admin-organisation', 'admin-licences', 'admin-footprint', 'admin-vocabularies', 'admin-workflow'] },
   { id: 'agents', labelKey: 'admin.group.agents', pages: ['admin-agents', 'admin-agents-access', 'admin-api-keys'] },
   { id: 'security', labelKey: 'admin.group.security', pages: ['admin-security', 'admin-support-access'] },
   { id: 'logs', labelKey: 'admin.group.logs', pages: ['admin-audit-log', 'admin-security-log', 'admin-ai-log'] },

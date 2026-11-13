@@ -479,7 +479,7 @@ section as one full-width row, 13 of them for an administrator, and it read as a
   row of group tabs, then a row with the pages of the current group. `/admin` itself opens the first page
   of the first group the person may open and keeps no list of its own.
 - **The groups** are `ADMIN_GROUPS` in `frontend/src/shared/navigation/registry.ts`, in this order:
-  People (Members, Roles); Organisation (Organisation, Regulatory scope, Vocabularies, Workflow); Agents
+  People (Members, Roles); Organisation (Organisation, Licences, Regulatory scope, Vocabularies, Workflow); Agents
   and keys (Agents, Agent access, API keys); Security (Security, Support access); Logs (Audit log,
   Security log, AI log). Every admin page sits in exactly one group (`registry.test.ts`). Agents' own
   Watch | Access tabs are gone: Agent access is a page of the second row.

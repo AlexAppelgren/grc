@@ -41,6 +41,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   // /admin opens the first page of its tab bar (D-137): Members, for the administrator who measures it.
   admin: { ready: '[data-members-list] [data-member-id]', lands: '/admin/members' },
   'admin-organisation': { ready: '[data-onboarding] [data-step]' },
+  // Each legal entity's card, drawn once the units are read.
+  'admin-licences': { ready: '[data-licences-page] [data-company]' },
   'admin-members': { ready: '[data-members-list] [data-member-id]' },
   'admin-roles': { ready: '[data-roles-list] [data-role-key]' },
   'admin-vocabularies': { ready: '[data-vocabulary-lists] [data-vocabulary-list]' },

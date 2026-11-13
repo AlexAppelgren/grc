@@ -52,6 +52,14 @@ describe("Admin's tab bar (D-137)", () => {
     expect(pages().getAllByRole('link').map((a) => a.textContent)).toEqual(['Agents']);
   });
 
+  it('offers Licences to any member, second in Organisation', () => {
+    nav.pathname = '/admin/licences';
+    open(['audit.read']);
+    expect(groups().getByRole('link', { name: 'Organisation' })).toHaveAttribute('aria-current', 'page');
+    expect(pages().getAllByRole('link').map((a) => a.textContent)).toEqual(['Organisation', 'Licences']);
+    expect(pages().getByRole('link', { name: 'Licences' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('shows the groups without a current one on a page the person may not open', () => {
     nav.pathname = '/admin/members';
     open(['audit.read']);

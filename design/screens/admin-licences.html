@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: licences (/admin/licences)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4) by way of
+   admin-organisation.html: the tenant shell, .panel, .field, .pair, .row, .btn. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;--brand-pill:#ece5d6;--brand-text:#6a5730;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;letter-spacing:-.01em;line-height:1.2;font-weight:500}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}
+p{margin:0 0 .75rem}a{color:var(--text);text-underline-offset:3px}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 8px 20px}.logo{display:block;width:100%;height:auto;max-width:196px}
+.nav button{display:flex;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
+.nav button[aria-current="page"]{background:#f8f6f1;color:#003824;font-weight:600}
+.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
+.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
+.who b{display:block;color:#fff;font-weight:600}
+main{padding:32px 36px 96px;max-width:1100px;width:100%}
+.mbrand{display:none}
+.back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel.sand{background:var(--sand);border-color:var(--sand-2)}
+.panel>h2{margin-bottom:12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:grid;gap:5px;margin-bottom:14px}.field label{font-weight:600;font-size:.9rem}
+.field input,.field select{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.field .hint{color:var(--muted);font-size:.82rem}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand)}
+.check .done{text-decoration:line-through;color:var(--muted)}
+.check small{display:block;color:var(--muted);font-size:.82rem}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.err{color:var(--red);font-size:.88rem;margin-top:6px}
+.ok{color:var(--green);font-size:.88rem;margin-top:6px}
+.meter{height:10px;border-radius:999px;background:var(--grey-soft);overflow:hidden;margin:10px 0 6px}
+.meter i{display:block;height:100%;border-radius:999px;background:var(--brand);width:25%}
+.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.rows{display:grid;gap:10px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.row h3{font-size:1rem;font-weight:600;margin:0 0 4px}
+.row .meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row .bar{margin-top:0}
+.empty h2{color:var(--text);margin-bottom:8px}
+.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+/* Chunk 8: legal entities, licences and certificates, products. Pills are the
+   scope block's brand pills (pills-and-labels.md), plus the plain information
+   pill; values are Green's l3-brand-02 / content-brand-02 and l3-neutral-02. */
+.pill{display:inline-block;border-radius:999px;padding:0 8px;font-size:.8rem;line-height:20px;font-weight:500;background:var(--grey-soft);color:var(--text);white-space:nowrap}
+.pill.brand{background:var(--brand-pill);color:var(--brand-text)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
+.tree{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tree .tree{margin:10px 0 0 20px;padding-left:12px;border-left:1px solid var(--line)}
+.dim{opacity:.6}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 14px;font-size:.9rem;margin:8px 0 0}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.mono{font-family:"Noto Sans Mono",ui-monospace,Menlo,monospace;font-size:.86rem}
+.sub{font-size:.95rem;font-weight:600;margin:16px 0 8px}
+.theme.light{--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;--brand-pill:#ece5d6;--brand-text:#6a5730}
+.theme.dark{--bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;--brand-pill:#33291a;--brand-text:#d9cba9}
+.theme{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:12px}
+.phones{display:flex;flex-wrap:wrap;gap:16px}
+.phones>*{flex:0 1 375px;min-width:0}
+.phones .kv{grid-template-columns:1fr;gap:0}.phones .kv dd{margin-bottom:6px}
+.tabbar{display:none}
+@media (max-width:820px){
+  .kv{grid-template-columns:1fr;gap:0}.kv dd{margin-bottom:6px}
+  .app{grid-template-columns:1fr}.side{display:none}
+  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
+  main{padding:20px 16px 100px}h1{font-size:1.6rem}
+  .g2,.pair{grid-template-columns:1fr}
+  .bar{flex-wrap:nowrap}.bar .btn{order:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .btn:not(.ghost){order:3}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem}
+}
+/* Licences (TEN-02, TEN-07, ADM-01; TEN-S16): every legal entity's licences
+   and what each brings into scope, a page of Admin's Organisation group.
+   Lines of the register are matched to the scope terms bleqq's mapping reads
+   from them; the licences and certificates the bank typed moved here from
+   admin-organisation.html unchanged. */
+.admintabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:12px}
+.admintabs a{padding:8px 10px;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);text-decoration:none;font-weight:500;white-space:nowrap}
+.admintabs a[aria-current="page"]{border-color:var(--text);color:var(--text)}
+.admintabs.second{border:0;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.admintabs.second a{border:1px solid transparent;border-radius:8px;padding:4px 12px;margin:0}
+.admintabs.second a[aria-current="page"]{border-color:var(--line-strong);background:var(--grey-soft)}
+.microlabel{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin:0 0 8px}
+.grid{display:grid;gap:16px}
+.ehead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ehead>.link{margin-left:auto}
+.link{font-weight:500;white-space:nowrap}
+.meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sect{margin-top:16px}
+.sect>h3{font-size:1rem;font-weight:600;margin:0 0 6px}
+.row h4{font-size:1rem;font-weight:600;margin:0}
+.lic{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
+.lic>.meta{flex-basis:100%}
+.lic>.when{color:var(--muted);font-size:.86rem;white-space:nowrap}
+.fold{border-top:1px solid var(--line)}
+.fold>summary{cursor:pointer;padding:12px 0;font-weight:500;list-style:none;display:flex;justify-content:space-between}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::after{content:"⌄";color:var(--muted)}
+.offered{margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.split{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced bläck"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <nav class="nav" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Roadmap</button><button>Search and ask</button><hr><button aria-current="page">Admin</button></nav>
+    <div class="who">Signed in as<b>Erik Holm</b>Example Bank AB · Administrator</div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced bläck"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <p class="microlabel">Admin</p>
+    <nav class="admintabs" aria-label="Admin sections">
+      <a href="#">People</a>
+      <a href="#" aria-current="page">Organisation</a>
+      <a href="#">Agents and keys</a>
+      <a href="#">Security</a>
+      <a href="#">Logs</a>
+    </nav>
+    <nav class="admintabs second" aria-label="Pages in this section">
+      <a href="admin-organisation.html">Organisation</a>
+      <a href="#" aria-current="page">Licences</a>
+      <a href="admin-footprint.html">Regulatory scope</a>
+      <a href="#">Vocabularies</a>
+      <a href="#">Workflow</a>
+    </nav>
+
+    <div class="head"><div><h1>Licences</h1><p>What each company is licensed or certified for. A certificate's expiry and next audit show on the roadmap as your own deadlines.</p></div></div>
+
+    <div class="states">
+    <div class="grid" data-licences-page>
+
+      <!-- Example Bank AB: read from the register, more than five licence lines, one certificate and one withdrawn -->
+      <section class="panel" aria-labelledby="c-bank" data-company="Example Bank AB">
+        <div class="ehead">
+          <h2 id="c-bank">Example Bank AB</h2>
+          <span class="pill brand">Bank</span>
+          <span class="meta"><span class="mono">556000-0001</span><span>Sweden</span></span>
+          <a class="link" href="#" aria-label="What applies to Example Bank AB">What applies</a>
+        </div>
+
+        <div class="sect" data-register-lines>
+          <h3>From the register</h3>
+          <div class="meta" style="margin-bottom:8px"><span>Finansinspektionen · read 11 Nov 2026</span><a href="#" rel="noopener noreferrer">Source</a></div>
+          <div class="lic" data-register-line><span>Bankaktiebolag</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Banking</span><span class="pill brand">Payments</span><span class="pill brand">Bank</span><span class="pill brand">Custody</span><span class="pill brand">Card issuing</span><span class="pill brand">Card acquiring</span></span></div></div>
+          <div class="lic" data-register-line><span>Värdepappersbolag</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span><span class="pill brand">Investment firm</span></span></div></div>
+          <div class="lic" data-register-line><span>Medelstort institut</span></div>
+          <div class="lic" data-register-line><span>Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse</span><span class="when">granted 1 Mar 1995</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Banking</span><span class="pill brand">Payments</span><span class="pill brand">Custody</span><span class="pill brand">Card issuing</span><span class="pill brand">Card acquiring</span></span></div></div>
+          <div class="lic" data-register-line><span>Investeringsrådgivning till kund beträffande finansiella instrument</span><span class="when">granted 1 Nov 2007</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span><span class="pill brand">Advice</span></span></div></div>
+          <div class="lic" data-register-line><span>Diskretionär portföljförvaltning beträffande finansiella instrument</span><span class="when">granted 1 Nov 2007</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span><span class="pill brand">Portfolio management</span></span></div></div>
+          <div class="lic" data-register-line><span>Tillstånd att ge ut elektroniska pengar</span><span class="when">granted 9 Sep 2011</span>
+            <div class="meta" data-unmapped><span>Not used for scope yet</span></div></div>
+          <div class="lic" data-register-line><span>Tillstånd att bedriva försäkringsdistribution avseende försäkringsbaserade investeringsprodukter</span><span class="when">granted 1 Oct 2018</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Insurance</span><span class="pill brand">Insurance distribution</span></span></div></div>
+          <details class="fold">
+            <summary>Show 2 more</summary>
+            <div class="lic" data-register-line><span>Tillstånd att ge ut säkerställda obligationer</span><span class="when">granted 14 Jun 2006</span>
+              <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Banking</span></span></div></div>
+            <div class="lic" data-register-line><span>IM_MR_SA</span><span class="when">granted 26 Jun 2016</span>
+              <div class="meta" data-unmapped><span>Not used for scope yet</span></div></div>
+          </details>
+        </div>
+
+        <div class="sect" data-licences-of="Example Bank AB">
+          <div class="split"><h3 style="margin:0">Recorded by us</h3><button class="btn small" aria-label="Add a licence or certificate to Example Bank AB">Add a licence</button></div>
+          <div class="rows">
+            <div class="row" data-licence="iso_iec_27001"><div style="flex:1;min-width:0"><h4>ISO/IEC 27001</h4><div class="meta"><span>Certificate</span><span>Example Certification AB</span></div>
+              <dl class="kv"><dt>Certificate number</dt><dd class="mono">EC-27001-0421</dd><dt>Scope statement</dt><dd>The information security management system for retail banking IT operations in Stockholm and Göteborg.</dd><dt>Issued</dt><dd>12 Mar 2025</dd><dt>Valid until</dt><dd>11 Mar 2028</dd><dt>Next audit</dt><dd>10 Mar 2027</dd><dt>Owner</dt><dd>Sara Lindqvist</dd></dl></div>
+              <div class="bar"><button class="btn ghost small" aria-label="Edit ISO/IEC 27001">Edit</button></div></div>
+            <div class="row" data-licence="bank"><div style="flex:1;min-width:0"><h4>Bank</h4><div class="meta"><span>Licence</span></div>
+              <dl class="kv"><dt>Reference</dt><dd>FI Dnr 04-1234</dd><dt>Granted</dt><dd>1 Jun 2004</dd><dt>Services</dt><dd><div class="pills" style="margin:0"><span class="pill brand">Custody</span></div></dd><dt>Scope note</dt><dd>Banking business</dd></dl></div>
+              <div class="bar"><button class="btn ghost small" aria-label="Edit Bank">Edit</button></div></div>
+          </div>
+          <div class="bar"><button class="btn ghost small" aria-pressed="false">Show 1 withdrawn</button></div>
+        </div>
+
+        <div class="sect" data-outside-scope>
+          <div class="split"><h3 style="margin:0">Outside this company's scope</h3><a class="link" href="admin-footprint.html">Regulatory scope</a></div>
+          <div class="pills"><span class="pill brand">Insurance</span></div>
+        </div>
+
+        <p class="offered" data-offered><a href="#">142 obligations within its licences</a></p>
+      </section>
+
+      <!-- Example Fonder AB: read from the register, nothing recorded, exclusions -->
+      <section class="panel" aria-labelledby="c-fonder" data-company="Example Fonder AB">
+        <div class="ehead">
+          <h2 id="c-fonder">Example Fonder AB</h2>
+          <span class="pill brand">Fund company</span>
+          <span class="meta"><span class="mono">556000-0003</span><span>Sweden</span></span>
+          <a class="link" href="#" aria-label="What applies to Example Fonder AB">What applies</a>
+        </div>
+        <div class="sect" data-register-lines>
+          <h3>From the register</h3>
+          <div class="meta" style="margin-bottom:8px"><span>Finansinspektionen · read 11 Nov 2026</span><a href="#" rel="noopener noreferrer">Source</a></div>
+          <div class="lic" data-register-line><span>Fondbolag</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span><span class="pill brand">Fund company</span></span></div></div>
+          <div class="lic" data-register-line><span>Tillstånd att driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder</span><span class="when">granted 1 May 2001</span>
+            <div class="meta" data-brings><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span></span></div></div>
+        </div>
+        <div class="sect" data-licences-of="Example Fonder AB">
+          <div class="split"><h3 style="margin:0">Recorded by us</h3><button class="btn small" aria-label="Add a licence or certificate to Example Fonder AB">Add a licence</button></div>
+          <p class="meta">None</p>
+        </div>
+        <div class="sect" data-outside-scope>
+          <div class="split"><h3 style="margin:0">Outside this company's scope</h3><a class="link" href="admin-footprint.html">Regulatory scope</a></div>
+          <div class="pills"><span class="pill brand">Banking</span><span class="pill brand">Payments</span><span class="pill brand">Insurance</span></div>
+        </div>
+        <p class="offered" data-offered><a href="#">58 obligations within its licences</a></p>
+      </section>
+
+      <!-- Example Liv Försäkring AB: no register facts and nothing recorded -->
+      <section class="panel" aria-labelledby="c-liv" data-company="Example Liv Försäkring AB">
+        <div class="ehead">
+          <h2 id="c-liv">Example Liv Försäkring AB</h2>
+          <span class="pill brand">Insurer</span>
+          <span class="meta"><span class="mono">516000-0002</span><span>Sweden</span></span>
+          <a class="link" href="#" aria-label="What applies to Example Liv Försäkring AB">What applies</a>
+        </div>
+        <div class="sect" data-licences-of="Example Liv Försäkring AB">
+          <div class="split"><p class="meta" style="margin:0">No licences from the register and none recorded by us.</p><button class="btn small" aria-label="Add a licence or certificate to Example Liv Försäkring AB">Add a licence</button></div>
+        </div>
+        <p class="offered" data-offered><a href="#">77 obligations within its licences</a></p>
+      </section>
+    </div>
+
+    <h2 class="k">A member without vocab manage: the same cards without Add and Edit; without register read, without What applies and the obligations line</h2>
+    <section class="panel" aria-labelledby="c-reader">
+      <div class="ehead"><h2 id="c-reader">Example Fonder AB</h2><span class="pill brand">Fund company</span><span class="meta"><span class="mono">556000-0003</span><span>Sweden</span></span></div>
+      <div class="sect"><h3>Recorded by us</h3><p class="meta">None</p></div>
+    </section>
+
+    <h2 class="k">An inactive company: dimmed and marked, without What applies, which lists active companies only</h2>
+    <section class="panel" aria-labelledby="c-inactive" style="opacity:.6">
+      <div class="ehead"><h2 id="c-inactive">Example Finans AB</h2><span class="pill brand">Credit market company</span><span class="meta"><span class="mono">556000-0004</span><span>Sweden</span><span>Inactive</span></span></div>
+      <div class="sect"><p class="meta">No licences from the register and none recorded by us.</p></div>
+    </section>
+
+    <h2 class="k">Record a licence or certificate (dialog; the certificate fields show when the kind is certificate)</h2>
+    <form class="panel" aria-labelledby="lf"><h2 id="lf">Add a licence or certificate to Example Bank AB</h2>
+      <div class="pair">
+        <div class="field"><label for="lk">Kind</label><select id="lk"><option>Licence</option><option selected>Certificate</option></select></div>
+        <div class="field"><label for="lt">Type</label><select id="lt"><option>ISO/IEC 27001</option></select></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="li">Issuer</label><input id="li" value="Example Certification AB"></div>
+        <div class="field"><label for="ln">Certificate number</label><input id="ln" value="EC-27001-0421"></div>
+      </div>
+      <div class="field"><label for="ls">Scope statement</label><input id="ls" value="The information security management system for retail banking IT operations"></div>
+      <div class="pair">
+        <div class="field"><label for="ld">Issued</label><input id="ld" type="date" value="2025-03-12"></div>
+        <div class="field"><label for="lv">Valid until</label><input id="lv" type="date" value="2028-03-11"></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="la">Next audit</label><input id="la" type="date" value="2027-03-10"></div>
+        <div class="field"><label for="lo">Owner</label><select id="lo"><option>Sara Lindqvist</option></select><span class="hint">They see the expiry and the next audit on the roadmap.</span></div>
+      </div>
+      <div class="field"><label for="lw">Withdrawn</label><input id="lw" type="date"><span class="hint">Set it when the licence or certificate ends. It stays in the history.</span></div>
+      <p class="err" role="alert">That person is not an active member of your organisation.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
+    </form>
+    <form class="panel" style="margin-top:10px" aria-labelledby="lf2"><h2 id="lf2">Add a licence or certificate to Example Bank AB</h2>
+      <div class="pair">
+        <div class="field"><label for="lk2">Kind</label><select id="lk2"><option selected>Licence</option><option>Certificate</option></select></div>
+        <div class="field"><label for="lt2">Type</label><select id="lt2"><option>Bank</option><option>Investment firm</option></select></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="lr2">Reference</label><input id="lr2"></div>
+        <div class="field"><label for="lg2">Granted</label><input id="lg2" type="date"></div>
+      </div>
+      <div class="field"><label>Services</label><div class="pills"><span class="pill brand">Custody ×</span></div><span class="hint">Terms from the lists obligations are scoped with.</span></div>
+      <div class="field"><label for="ln2">Scope note</label><input id="ln2"></div>
+      <div class="field"><label for="lw2">Withdrawn</label><input id="lw2" type="date"><span class="hint">Set it when the licence or certificate ends. It stays in the history.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Save</button></div>
+    </form>
+
+    <h2 class="k">No legal entity yet</h2>
+    <div class="empty"><h2>No legal entities yet</h2><p>Add the bank's companies on the Organisation page, then the licences and certificates each one holds.</p><a href="admin-organisation.html">Go to Organisation</a></div>
+
+    <h2 class="k">One company at 375 px, light and dark</h2>
+    <div class="phones">
+      <div class="theme light"><section class="panel">
+        <div class="ehead"><h2>Example Fonder AB</h2><span class="pill brand">Fund company</span><span class="meta"><span class="mono">556000-0003</span><span>Sweden</span></span><a class="link" href="#">What applies</a></div>
+        <div class="sect"><h3>From the register</h3>
+          <div class="lic"><span>Tillstånd att driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder</span><span class="when">granted 1 May 2001</span><div class="meta"><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span></span></div></div></div>
+        <div class="sect"><div class="split"><h3 style="margin:0">Recorded by us</h3><button class="btn small">Add a licence</button></div><p class="meta">None</p></div>
+        <p class="offered"><a href="#">58 obligations within its licences</a></p>
+      </section></div>
+      <div class="theme dark"><section class="panel">
+        <div class="ehead"><h2>Example Fonder AB</h2><span class="pill brand">Fund company</span><span class="meta"><span class="mono">556000-0003</span><span>Sweden</span></span><a class="link" href="#">What applies</a></div>
+        <div class="sect"><h3>From the register</h3>
+          <div class="lic"><span>Tillstånd att driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder</span><span class="when">granted 1 May 2001</span><div class="meta"><span>Brings into scope</span><span class="pills" style="margin:0"><span class="pill brand">Securities</span></span></div></div></div>
+        <div class="sect"><div class="split"><h3 style="margin:0">Recorded by us</h3><button class="btn small">Add a licence</button></div><p class="meta">None</p></div>
+        <p class="offered"><a href="#">58 obligations within its licences</a></p>
+      </section></div>
+    </div>
+
+    <h2 class="k">Loading and error</h2>
+    <div class="panel" aria-busy="true" style="height:160px;background:var(--surface-2)"></div>
+    <div class="empty" role="alert" style="margin-top:10px"><h2>The licences could not be loaded</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+    </div>
+
+    <p class="note">Licences card (TEN-02, TEN-07, ADM-01; TEN-S16; Alex 2026-11-12). Any member reads the page, which lists every legal entity of the bank in the Organisation page's order, one card each; people are not tied to single companies yet. The head row names the company, its legal-entity term as the scope block's brand pill, its organisation number and country, and, for someone holding register.read and an active company, links to What applies for that company; an inactive company is dimmed and marked Inactive, as on the Organisation page. From the register shows only for a company read from the public registers: the authority, the date read and the source (a link only when the address is an absolute http or https address), then the main business, the other businesses and each licence line as the register words it, with the grant date. Under each line, the scope terms bleqq's mapping reads from it as brand pills under Brings into scope, or Not used for scope yet for a line the mapping does not know; a line the mapping knows to add nothing shows no second row. Lines are matched to their terms by their own text. After five licence lines the rest sit in a fold. Recorded by us is what the bank typed, moved from the Organisation page unchanged, with Add beside its heading and None when nothing is recorded: a licence with its type, reference, grant date, services and scope note, a certificate with its issuer, number, scope statement, dates and owner and no term; withdrawn rows behind Show withdrawn; Add and Edit for vocab.manage, no step-up. Outside this company's scope lists the exclusions an approved regulatory scope request gave it, with the way to Regulatory scope for someone who may open it. The last line, only with register.read, is how many obligations the register offers within the company's licences, linking to What applies. Register wording, names and numbers are data, never strings.</p>
+  </main>
+</div>
+<nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
+</body>
+</html>

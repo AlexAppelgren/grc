@@ -1350,8 +1350,22 @@ test.describe('regulatory scope, markets and standards', () => {
         await expect(bank.locator('[data-register-facts]')).toContainText('Example Bank AB, filial i Danmark (Danmark)');
         await bank.getByRole('button', { name: 'Show 5 licences' }).click();
         await expect(bank.locator('[data-register-facts]')).toContainText('Tillstånd att driva bankrörelse');
-        await expect(page.locator('[data-licences-of="Example Fonder AB"]').getByText('No licences or certificates recorded.')).toBeVisible();
         await expect(entities.locator('[data-org-unit="Example Liv Försäkring AB"]')).toHaveCount(0);
+
+        // TEN-S16's register half: on Licences each register line names the scope terms it
+        // brings, a line the mapping does not use says so, and nothing was recorded by the bank.
+        await page.locator('[data-org-section="licences"]').getByRole('link', { name: 'Licences and certificates, company by company' }).click();
+        await expect(page).toHaveURL(/\/admin\/licences$/);
+        const fonderCard = page.locator('[data-company="Example Fonder AB"]');
+        const fundLine = fonderCard.locator('[data-register-lines] [data-register-line]').filter({ hasText: 'Tillstånd att driva fondverksamhet' });
+        await expect(fundLine).toContainText('granted 1 May 2001');
+        await expect(fundLine.locator('[data-brings]')).toContainText('Brings into scope');
+        await expect(fundLine.locator('[data-brings] [data-pill="brand"]').filter({ hasText: 'Securities' })).toHaveCount(1);
+        await expect(fonderCard.locator('[data-licences-of="Example Fonder AB"]').getByText('None', { exact: true })).toBeVisible();
+        const capitalLine = page.locator('[data-company="Example Bank AB"] [data-register-line]').filter({ hasText: 'IM_MR_SA' });
+        await expect(capitalLine.locator('[data-unmapped]')).toHaveText('Not used for scope yet');
+        await expect(capitalLine.locator('[data-pill]')).toHaveCount(0);
+        await page.goto('/admin/organisation');
 
         // Looked up again, both are already in the organisation: linked, never added twice.
         await entities.getByRole('button', { name: 'Fill in from public registers' }).click();
@@ -1404,6 +1418,8 @@ test.describe('regulatory scope, markets and standards', () => {
         await expect(suggestions.locator('[data-suggestion^="exclude:"]')).toHaveCount(0);
         await page.goto('/admin/organisation');
         await expect(fonder.locator('[data-register-facts]')).toContainText("Outside this company's scope");
+        await page.goto('/admin/licences');
+        await expect(fonderCard.locator('[data-outside-scope] [data-pill="brand"]').filter({ hasText: 'Insurance' })).toHaveCount(1);
       } finally {
         await restoreSecondBank(page, approver);
         await approver.context().close();

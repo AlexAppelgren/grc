@@ -147,9 +147,10 @@ describe('navigation registry (playbook 6.2)', () => {
   });
 
   it('keeps admin sections and account links under their parent, gated by their own permission', () => {
-    expect(childDestinations('admin', ['members.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-members', 'admin-support-access']);
+    expect(childDestinations('admin', ['members.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-licences', 'admin-members', 'admin-support-access']);
     expect(childDestinations('admin', ['roles.manage', 'integrations.manage', 'security.manage']).map((d) => d.id)).toEqual([
       'admin-organisation',
+      'admin-licences',
       'admin-roles',
       'admin-api-keys',
       'admin-security-log',
@@ -158,9 +159,9 @@ describe('navigation registry (playbook 6.2)', () => {
     ]);
     // Chunk 2: the vocabulary screen needs vocab.manage; the footprint screen
     // opens for either footprint grant and is read-only without the first.
-    expect(childDestinations('admin', ['vocab.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-vocabularies', 'admin-support-access']);
-    expect(childDestinations('admin', ['footprint.request']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
-    expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
+    expect(childDestinations('admin', ['vocab.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-licences', 'admin-vocabularies', 'admin-support-access']);
+    expect(childDestinations('admin', ['footprint.request']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-licences', 'admin-footprint', 'admin-support-access']);
+    expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-licences', 'admin-footprint', 'admin-support-access']);
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'my-work', 'admin']);
     // Notifications (COL-02) is any member's own inbox, first in the account group. A member's
@@ -186,6 +187,10 @@ describe('navigation registry (playbook 6.2)', () => {
     expect([...grouped].sort()).toEqual([...adminPages].sort());
     expect(new Set(grouped).size).toBe(grouped.length);
     expect(adminGroups(['audit.read']).map((g) => g.id)).toEqual(['organisation', 'security', 'logs']);
+    // Licences sits second in Organisation, for any member, and has its page.
+    expect(adminGroups(['audit.read']).find((g) => g.id === 'organisation')?.pages.map((d) => d.id)).toEqual(['admin-organisation', 'admin-licences']);
+    expect(ADMIN_GROUPS.find((g) => g.id === 'organisation')?.pages.slice(0, 3)).toEqual(['admin-organisation', 'admin-licences', 'admin-footprint']);
+    expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(tenant)', 'admin', 'licences', 'page.tsx'))).toBe(true);
     const agents = adminGroups(['watch.read', 'agent_access.manage']).find((g) => g.id === 'agents');
     expect(currentAdminPage(agents?.pages ?? [], '/admin/agents/access')?.id).toBe('admin-agents-access');
   });
@@ -194,7 +199,7 @@ describe('navigation registry (playbook 6.2)', () => {
   // admin section a reader reaches, and it is what puts Admin in their rail.
   it('lets any member reach Admin for the audit log and the organisation profile', () => {
     expect(visibleDestinations('tenant', ['audit.read']).map((d) => d.id)).toEqual(['today', 'my-work', 'admin']);
-    expect(childDestinations('admin', ['audit.read']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-support-access', 'admin-audit-log']);
+    expect(childDestinations('admin', ['audit.read']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-licences', 'admin-support-access', 'admin-audit-log']);
     expect(findDestination('admin-audit-log')?.href).toBe('/admin/audit-log');
     expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(tenant)', 'admin', 'audit-log', 'page.tsx'))).toBe(true);
   });

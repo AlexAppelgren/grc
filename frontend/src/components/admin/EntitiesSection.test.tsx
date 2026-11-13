@@ -5,13 +5,11 @@ import { EntitiesSection } from '@/components/admin/EntitiesSection';
 import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { renderWith } from '@/shared/testing/render';
 
-// Legal entities with their licences and certificates (TEN-02, TEN-S2,
-// TEN-S10): the tree under the group, a certificate recorded with its owner,
-// a withdrawn row kept behind Show withdrawn, Edit and Add only for
-// vocab.manage, and a refused write placed by its code.
+// Legal entities (TEN-02, TEN-S2): the tree under the group, Edit and Add only
+// for vocab.manage, and the line that points to the Licences page, where the
+// licences and certificates are (LicencesScreen.test.tsx).
 
 const UNITS = '/api/v1/tenant/org-units';
-const bankLicences = `${UNITS}/bank/licences`;
 
 const group = { id: 'group', kind: 'group', name: 'Example Group', parentId: null, orgNumber: '', lei: '', countryCode: '', entityTerm: null, head: null, active: true, version: 1, registerEntry: null };
 const bank = { ...group, id: 'bank', kind: 'legal_entity', name: 'Example Bank AB', parentId: 'group', orgNumber: '556000-0001', countryCode: 'SE', entityTerm: { key: 'bank', kind: null, label: 'Bank' } };
@@ -60,7 +58,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
 
 async function renderSection(permissions: string[]): Promise<void> {
   renderWith(<EntitiesSection />, { permissions });
-  await screen.findByText('FI 12-3456');
+  await screen.findByText('Example Bank AB', { selector: '[data-org-unit] h3' });
 }
 
 beforeEach(() => {
@@ -83,84 +81,14 @@ describe('legal entities', () => {
     await renderSection([]);
     expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add a legal entity' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Add a licence or certificate to Example Bank AB' })).not.toBeInTheDocument();
   });
 
-  it('keeps a withdrawn licence behind Show withdrawn, dimmed and without Edit', async () => {
+  it('points to the Licences page where the licences used to be', async () => {
     server();
-    await renderSection(['vocab.manage']);
-    expect(screen.queryByText('Consumer credit')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show 1 withdrawn' }));
-    const row = screen.getByText('Consumer credit').closest('[data-licence]') as HTMLElement;
-    expect(row).toHaveAttribute('data-withdrawn');
-    expect(within(row).getByText(/^Withdrawn /)).toBeInTheDocument();
-    expect(within(row).queryByRole('button')).not.toBeInTheDocument();
-  });
-
-  it('reads the licences off the units list and never once per entity', async () => {
-    const sent = server();
-    await renderSection(['vocab.manage']);
-    expect(await screen.findByText('FI 12-3456', { exact: false })).toBeInTheDocument();
-    expect(sent.some((s) => s.method === 'get' && s.path === bankLicences)).toBe(false);
-  });
-});
-
-describe('recording a certificate', () => {
-  it('sends the certificate fields with its owner and no licence field', async () => {
-    const sent = server((s) => ({ status: 201, data: { ...banking, id: 'l3', ...(s.body as object) } }));
-    await renderSection(['vocab.manage']);
-    fireEvent.click(screen.getByRole('button', { name: 'Add a licence or certificate to Example Bank AB' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Kind'), { target: { value: 'certificate' } });
-    await within(dialog).findByRole('option', { name: 'ISO/IEC 27001' });
-    fireEvent.change(within(dialog).getByLabelText('Type'), { target: { value: 'iso_iec_27001' } });
-    fireEvent.change(within(dialog).getByLabelText('Issuer'), { target: { value: 'Example Certification AB' } });
-    fireEvent.change(within(dialog).getByLabelText('Certificate number'), { target: { value: 'EC-27001-0421' } });
-    fireEvent.change(within(dialog).getByLabelText('Valid until'), { target: { value: '2028-03-11' } });
-    await within(dialog).findByRole('option', { name: 'Sara Lindqvist' });
-    fireEvent.change(within(dialog).getByLabelText('Owner'), { target: { value: 'u-sara' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    const post = sent.find((s) => s.method === 'post' && s.path === bankLicences);
-    expect(post?.body).toEqual({
-      licenceType: 'iso_iec_27001',
-      reference: '',
-      grantedOn: null,
-      withdrawnOn: null,
-      scopeNote: '',
-      issuer: 'Example Certification AB',
-      number: 'EC-27001-0421',
-      scopeStatement: '',
-      issuedOn: null,
-      validUntil: '2028-03-11',
-      nextAuditOn: null,
-      ownerUserId: 'u-sara',
-      serviceTerms: [],
-    });
-  });
-
-  it('puts unknown_member on the owner and keeps the dialog open', async () => {
-    server(() => ({ status: 422, data: { code: 'unknown_member', detail: 'That person is not an active member of your organisation.' } }));
-    await renderSection(['vocab.manage']);
-    fireEvent.click(screen.getByRole('button', { name: 'Add a licence or certificate to Example Bank AB' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Kind'), { target: { value: 'certificate' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    const owner = await within(dialog).findByText('That person is not an active member of your organisation.');
-    expect(owner).toHaveAttribute('id', 'licence-ownerUserId-error');
-  });
-});
-
-describe('changing a licence', () => {
-  it('withdraws with If-Match by sending only the withdrawal date, and says so when someone changed it first', async () => {
-    const sent = server(() => ({ status: 409, data: { code: 'stale_write', detail: 'The record changed.' } }));
-    await renderSection(['vocab.manage']);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Bank' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Withdrawn'), { target: { value: '2026-09-30' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    await within(dialog).findByText('Someone changed this while you were editing. Close it and open it again to see their change.');
-    expect(sent.find((s) => s.method === 'patch')).toMatchObject({ path: '/api/v1/tenant/licences/l1', body: { withdrawnOn: '2026-09-30' } });
+    await renderSection([]);
+    const line = document.querySelector<HTMLElement>('[data-org-section="licences"]')!;
+    expect(within(line).getByRole('link', { name: 'Licences and certificates, company by company' })).toHaveAttribute('href', '/admin/licences');
+    expect(document.querySelector('[data-licences-of]')).toBeNull();
   });
 });
 
