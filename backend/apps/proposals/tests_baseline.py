@@ -151,29 +151,45 @@ class TheRealBaseline(BaselineCase):
         summaries = {entry.key for entry in entries if entry.kind == baseline.SUMMARY}
         # None until the law's own words are filed in `provisions/`; every count below holds either way.
         provisions = {entry.key for entry in entries if entry.kind == baseline.PROVISION}
+        # The corrections of the duties (D-144): those naming provisions wait for them as well.
+        corrections = [entry for entry in entries if entry.kind == baseline.CORRECTION]
+        citing = [entry for entry in corrections if entry.payload.get("provisions")]
         self.assertTrue(instruments, "the baseline holds instruments")
         self.assertEqual(summaries, instruments, "every instrument of the baseline has its summary (INV-09)")
 
         first = baseline.file()
         self.assertEqual(first.refused, [])
         self.assertEqual(sum(first.filed.values()), len(instruments), "only instruments are due on the first call")
-        self.assertEqual(sum(first.waiting.values()), len(duties) + len(summaries) + len(provisions))
+        self.assertEqual(sum(first.waiting.values()), len(duties) + len(summaries) + len(provisions) + len(corrections))
         self.assertEqual(self.approve_open(), len(instruments))
 
         second = baseline.file()
         self.assertEqual(second.refused, [])
         self.assertEqual(sum(second.filed.values()), len(duties) + len(summaries), "the duties and the summaries follow")
-        self.assertEqual(sum(second.waiting.values()), len(provisions), "a provision waits for the duties that cite it")
+        self.assertEqual(sum(second.waiting.values()), len(provisions) + len(corrections), "a provision and a correction wait for their duty")
         self.assertEqual(self.approve_open(), len(duties) + len(summaries))
 
         third = baseline.file()
         self.assertEqual(third.refused, [])
-        self.assertEqual(sum(third.filed.values()), len(provisions), "the law's own words follow the duties that cite them")
-        self.assertEqual(self.approve_open(), len(provisions))
+        due = len(provisions) + len(corrections) - len(citing)
+        self.assertEqual(sum(third.filed.values()), due, "the law's own words follow the duties that cite them, and so do the corrections")
+        self.assertEqual(self.approve_open(), due)
 
         fourth = baseline.file()
-        self.assertEqual((sum(fourth.filed.values()), fourth.runs), (0, 0))
-        self.assertEqual(sum(fourth.held.values()), len(instruments) + len(duties) + len(summaries) + len(provisions))
+        self.assertEqual(fourth.refused, [])
+        self.assertEqual(sum(fourth.filed.values()), len(citing), "a correction naming provisions follows them")
+        self.assertEqual(self.approve_open(), len(citing))
+
+        fifth = baseline.file()
+        self.assertEqual((sum(fifth.filed.values()), fifth.runs), (0, 0))
+        self.assertEqual(sum(fifth.held.values()), len(instruments) + len(duties) + len(summaries) + len(provisions))
+        self.assertEqual(sum(fifth.decided.values()), len(corrections), "a correction applied is never filed again")
+        for entry in corrections:
+            duty = Obligation.objects.get(stable_key=entry.key)
+            if "refLabel" in entry.payload:
+                self.assertEqual(duty.ref_label, entry.payload["refLabel"])
+            if "titles" in entry.payload:
+                self.assertEqual(dict(duty.titles.values_list("language_id", "text")), entry.payload["titles"])
         self.assertEqual(set(Instrument.objects.filter(stable_key__in=instruments).values_list("stable_key", flat=True)), instruments)
         self.assertEqual(set(Obligation.objects.filter(stable_key__in=duties).values_list("stable_key", flat=True)), duties)
         self.assertEqual(set(Provision.objects.filter(stable_key__in=provisions).values_list("stable_key", flat=True)), provisions)
@@ -407,20 +423,161 @@ class FilingTheLawsOwnWords(BaselineCase):
             return out.getvalue()
 
         self.assertIn(
-            "test-tranche: filed 1 instruments, 0 duties, 0 summaries, 0 provisions; "
-            "waiting for an approval: 0 instruments, 2 duties, 0 summaries, 1 provisions;",
+            "test-tranche: filed 1 instruments, 0 duties, 0 summaries, 0 provisions, 0 corrections; "
+            "waiting for an approval: 0 instruments, 2 duties, 0 summaries, 1 provisions, 0 corrections;",
             run(),
         )
         self.approve_open()
         baseline.file()
         self.approve_open()
-        self.assertIn("test-tranche: would file 0 instruments, 0 duties, 0 summaries, 1 provisions;", run("--dry-run"))
-        self.assertIn("test-tranche: filed 0 instruments, 0 duties, 0 summaries, 1 provisions;", run("--tranche", "test-tranche"))
-        self.assertIn("open in the queue: 0 instruments, 0 duties, 0 summaries, 1 provisions;", run())
+        self.assertIn("test-tranche: would file 0 instruments, 0 duties, 0 summaries, 1 provisions, 0 corrections;", run("--dry-run"))
+        self.assertIn("test-tranche: filed 0 instruments, 0 duties, 0 summaries, 1 provisions, 0 corrections;", run("--tranche", "test-tranche"))
+        self.assertIn("open in the queue: 0 instruments, 0 duties, 0 summaries, 1 provisions, 0 corrections;", run())
         self.approve_open()
         done = run()
-        self.assertIn("already in the library: 1 instruments, 2 duties, 0 summaries, 1 provisions;", done)
+        self.assertIn("already in the library: 1 instruments, 2 duties, 0 summaries, 1 provisions, 0 corrections;", done)
         self.assertIn("runs: 0, refused: 0", done)
+
+
+def write_corrections(folder: Path, corrections: list[dict[str, Any]], name: str = "test-tranche") -> None:
+    (folder / baseline.CORRECTIONS_DIR).mkdir(exist_ok=True)
+    body = {"tranche": name, "readOn": "2026-11-13", "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json", "obligations": corrections}
+    (folder / baseline.CORRECTIONS_DIR / f"{name}.json").write_text(json.dumps(body), encoding="utf-8")
+
+
+def _correction(key: str = "obl-test-a-one", summary: str = "The firm tells the public, and does so at once.", **payload: Any) -> dict[str, Any]:
+    """A correction of `key` as a corrections file holds it (the baseline's README,
+    "Corrections"): a new summary and whatever else `payload` names."""
+    return {
+        "key": key,
+        "title": f"Correct {key}: the duty is immediate",
+        "source": f"{SOURCE}#art_1",
+        "sourceLabel": "EUR-Lex, an invented regulation for this test, Article 1",
+        "why": "Article 1 says the firm tells the public at once, which the old summary left out.",
+        "payload": {"summaries": {"en": summary}, "originalLanguage": "en", **payload},
+    }
+
+
+class FilingTheCorrections(BaselineCase):
+    """A tranche's corrections of its duties (D-144): each is filed as a `new_obligation_version`
+    of the held duty once every provision it names is held, never twice, and an agent may
+    confirm it as any version."""
+
+    TALLY = ("test-tranche", baseline.CORRECTION)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.folder = Path(tempfile.mkdtemp())
+        patcher = mock.patch.object(baseline, "BASELINE_DIR", self.folder)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        body = {"tranche": "test-tranche", "researchedOn": "2026-09-30", "instruments": [_instrument("test-a", _duty("obl-test-a-one"), _duty("obl-test-a-two"))]}
+        (self.folder / "test-tranche.json").write_text(json.dumps(body), encoding="utf-8")
+        write_provisions(self.folder, [_provision("test-a", "obl-test-a-one"), _provision("test-a", "obl-test-a-two", path="002")])
+        self.entry = _correction(titles={"en": "Tell the public at once"}, refLabel="Art. 1-2", provisions=["test-a/001", "test-a/002"])
+        write_corrections(self.folder, [self.entry])
+
+    def approve(self, kind: str) -> None:
+        for proposal in Proposal.objects.filter(kind=kind, status=ProposalStatus.OPEN.value):
+            logic.approve(proposal=proposal, reviewer=self.reviewer, actor=factories.user_actor(user_id=self.reviewer.id), note="", step_up_assertion_id=None)
+
+    def test_a_correction_waits_for_its_duty_and_every_provision_it_names_and_is_filed_once(self) -> None:
+        self.assertEqual(baseline.file().waiting[self.TALLY], 1, "its duty is not held")
+        self.approve(baseline.INSTRUMENT)
+        self.assertEqual(baseline.file().waiting[self.TALLY], 1, "its duty is proposed, not held")
+        self.approve(baseline.OBLIGATION)
+        third = baseline.file()
+        self.assertEqual((third.filed[self.TALLY], third.waiting[self.TALLY]), (0, 1), "the provisions it names are proposed, not held")
+        self.approve(baseline.PROVISION)
+
+        fourth = baseline.file()
+
+        self.assertEqual((fourth.filed[self.TALLY], fourth.waiting[self.TALLY], fourth.refused), (1, 0, []))
+        duty = Obligation.objects.get(stable_key="obl-test-a-one")
+        proposal = Proposal.objects.get(kind=baseline.CORRECTION)
+        self.assertEqual((proposal.target_type, proposal.target_id, proposal.status), ("obligation", duty.id, ProposalStatus.OPEN.value))
+        self.assertEqual(proposal.title, f"{self.entry['title']}. {self.entry['why']}", "the reviewer reads why in the queue's one line")
+        self.assertEqual((getattr(proposal.proposed_by_agent, "key", None), proposal.source_url), (baseline.AGENT_KEY, self.entry["source"]))
+        self.assertEqual(set(proposal.field_sources), {"summaries.en", "titles.en", "refLabel", "provisions"})
+        self.assertTrue(proposal.idempotency_key.startswith("baseline:correction:obl-test-a-one:"))  # type: ignore[union-attr]
+        self.assertEqual(baseline.file().open[self.TALLY], 1, "open in the queue, it is left alone")
+
+        self.approve(baseline.CORRECTION)
+
+        duty.refresh_from_db()
+        self.assertEqual((duty.ref_label, list(duty.titles.values_list("text", flat=True))), ("Art. 1-2", ["Tell the public at once"]))
+        cited = set(ObligationProvision.objects.filter(obligation=duty).values_list("provision__stable_key", flat=True))
+        self.assertEqual(cited, {"test-a/001", "test-a/002"})
+        again = baseline.file()
+        self.assertEqual((again.filed[self.TALLY], again.decided[self.TALLY], again.runs), (0, 1, 0), "applied, it is never filed again")
+
+    def test_a_decided_correction_is_filed_again_only_when_its_entry_changes(self) -> None:
+        write_corrections(self.folder, [_correction()])
+        for kind in (baseline.INSTRUMENT, baseline.OBLIGATION):
+            baseline.file(only_agent_confirmable=True)
+            self.approve(kind)
+        self.assertEqual(baseline.file().filed[self.TALLY], 1, "it names no provision, so it follows its duty")
+        logic.reject(
+            proposal=Proposal.objects.get(kind=baseline.CORRECTION),
+            reviewer=self.reviewer,
+            actor=factories.user_actor(user_id=self.reviewer.id),
+            rejection_code="wrong_fact",
+            note="Not what the article says.",
+        )
+        self.assertEqual(baseline.file().decided[self.TALLY], 1)
+        write_corrections(self.folder, [_correction(summary="The firm tells the public without delay.")])
+        self.assertEqual(baseline.file().filed[self.TALLY], 1)
+
+    def test_a_correction_of_a_duty_that_applies_from_a_date_is_in_force_from_that_date(self) -> None:
+        """Left out, its date would read as "since always" and lose to the first version,
+        which starts later: the filer gives it the duty's own start, so it wins that day."""
+        from datetime import date
+
+        from apps.library.logic import in_force
+        from apps.library.models import ObligationVersion
+
+        later = _duty("obl-test-a-one")
+        later["payload"].update({"effectiveFrom": "2026-01-01", "effectiveFromPrecision": "month"})
+        body = {"tranche": "test-tranche", "researchedOn": "2026-09-30", "instruments": [_instrument("test-a", later)]}
+        (self.folder / "test-tranche.json").write_text(json.dumps(body), encoding="utf-8")
+        write_corrections(self.folder, [_correction()])
+        for kind in (baseline.INSTRUMENT, baseline.OBLIGATION):
+            baseline.file(only_agent_confirmable=True)
+            self.approve(kind)
+        baseline.file(only_agent_confirmable=True)
+        proposal = Proposal.objects.get(kind=baseline.CORRECTION)
+        self.assertEqual((proposal.payload["effectiveFrom"], proposal.payload["effectiveFromPrecision"]), ("2026-01-01", "month"))
+        self.approve(baseline.CORRECTION)
+        versions = list(ObligationVersion.objects.filter(obligation__stable_key="obl-test-a-one"))
+        self.assertEqual(getattr(in_force(versions, date(2026, 6, 1)), "version_number", None), 2)
+
+    def test_a_version_of_the_duty_open_from_anyone_holds_the_correction_back(self) -> None:
+        write_corrections(self.folder, [_correction()])
+        for kind in (baseline.INSTRUMENT, baseline.OBLIGATION):
+            baseline.file(only_agent_confirmable=True)
+            self.approve(kind)
+        editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        logic.create(
+            kind=baseline.CORRECTION,
+            title="A person's own version of the duty",
+            payload={"summaries": {"en": "The firm tells the public."}, "originalLanguage": "en"},
+            proposer=logic.Proposer(actor=factories.user_actor(user_id=editor.id), user=editor),
+            target_type="obligation",
+            target_id=Obligation.objects.get(stable_key="obl-test-a-one").id,
+            field_sources={"summaries.en": SOURCE},
+        )
+        report = baseline.file()
+        self.assertEqual((report.open[self.TALLY], report.filed[self.TALLY]), (1, 0))
+
+    def test_an_agent_reviewer_is_handed_the_correction_and_may_confirm_it(self) -> None:
+        """`new_obligation_version` is agent-confirmable, so the demo's confirmer applies a
+        correction as it applies any version: machine-confirmed, never a person's."""
+        write_corrections(self.folder, [_correction(titles={"en": "Tell the public at once"})])
+        for kind in (baseline.INSTRUMENT, baseline.OBLIGATION):
+            baseline.file(only_agent_confirmable=True)
+            self.approve(kind)
+        self.assertEqual(baseline.file(only_agent_confirmable=True).filed[self.TALLY], 1)
+        self.assertTrue(baseline.CORRECTION in logic.AGENT_CONFIRMABLE_KINDS)
 
 
 class RegisteringTheSources(BaselineCase):

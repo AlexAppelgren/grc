@@ -1,0 +1,23 @@
+{
+  "tranche": "dk-bekendtgorelser",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-dk-afvplan-financial-contracts-register",
+      "title": "Correct obl-dk-afvplan-financial-contracts-register: every firm keeps the register",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/2018",
+      "sourceLabel": "Retsinformation, BEK nr 2018 af 26/10/2021 (afviklingsplanlægning og afviklingsberedskab), § 12",
+      "why": "§ 12 obliges every firm to keep a register of financial contracts; only what the register must hold, the information Commission Delegated Regulation (EU) 2016/1712 sets out, depends on the resolution plan or group resolution plan showing that the firm is to be resolved. The old title and summary made the register itself depend on the plan.",
+      "payload": {
+        "summaries": {
+          "en": "The firm must keep a register of financial contracts. Where its resolution plan or group resolution plan shows that the firm is to be resolved, the register must hold the information set out in Commission Delegated Regulation (EU) 2016/1712."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Keep a register of financial contracts"
+        }
+      }
+    }
+  ]
+}

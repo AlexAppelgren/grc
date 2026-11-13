@@ -9,9 +9,10 @@ proposal, and `proposal_four_eyes` refuses this agent as its own reviewer.
 
 One call files a `new_instrument` per instrument not held, a `new_obligation` per duty whose
 instrument is held, a `new_instrument_summary` per held instrument without one (INV-09,
-D-124), and a `new_provision`, the law's own words, per provision whose instrument and every
-duty it names are held (INV-02). Never an entry open in the queue, and never one filed
-before unchanged: the retry key carries the entry's content hash.
+D-124), a `new_provision`, the law's own words, per provision whose instrument and every
+duty it names are held (INV-02), and a `new_obligation_version` per correction of a held
+duty whose every named provision is held (D-144). Never an entry open in the queue, and
+never one filed before unchanged: the retry key carries the entry's content hash.
 
 Each entry is filed in its own transaction, so a refused entry stops nothing else. Runs hold
 at most `WATCH_RUN_MAX_PROPOSALS`.
@@ -21,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from collections import Counter
 from collections.abc import Collection, Iterator
 from dataclasses import dataclass, field
@@ -34,7 +36,7 @@ from django.db import transaction
 from apps.agents import runner_events, tasks
 from apps.agents.models import AgentRun, RunStatus
 from apps.library.models import SubjectType
-from apps.library.reading import held_stable_keys, summarised_stable_keys, unknown_provision_keys
+from apps.library.reading import held_obligation_ids, held_stable_keys, summarised_stable_keys, unknown_provision_keys
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -55,6 +57,9 @@ INSTRUMENT = ProposalKind.NEW_INSTRUMENT.value
 OBLIGATION = ProposalKind.NEW_OBLIGATION.value
 SUMMARY = ProposalKind.NEW_INSTRUMENT_SUMMARY.value
 PROVISION = ProposalKind.NEW_PROVISION.value
+CORRECTION = ProposalKind.NEW_OBLIGATION_VERSION.value
+# The folder that holds each tranche's corrections of its duties, by the tranche's name (D-144).
+CORRECTIONS_DIR = "corrections"
 # The folder beside the tranches that holds each tranche's instrument summaries, by its name.
 SUMMARIES_DIR = "summaries"
 # The language the baseline's summaries are written in.
@@ -83,17 +88,18 @@ class Entry:
 
     @property
     def retry_key(self) -> str:
-        """The key this agent files the entry under: its stable key and a hash of all it says."""
+        """The key this agent files the entry under: its stable key and a hash of all it says.
+        A correction's names the duty it corrects, which already holds a key of its own."""
         body = [self.kind, self.title, self.payload, self.field_sources, self.source_url, self.source_label]
         digest = hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:32]
-        return f"baseline:{self.key}:{digest}"
+        return f"baseline:{'correction:' if self.kind == CORRECTION else ''}{self.key}:{digest}"
 
 
 @dataclass
 class Report:
     """What one call did, per tranche and kind, and every entry the door refused. `waiting`
-    counts the entries whose instrument, or for a provision whose duties, the library does
-    not hold yet."""
+    counts the entries whose instrument, for a provision whose duties, or for a correction
+    whose duty or named provisions, the library does not hold yet."""
 
     filed: Counter[tuple[str, str]] = field(default_factory=Counter)
     held: Counter[tuple[str, str]] = field(default_factory=Counter)
@@ -110,7 +116,8 @@ def tranches(folder: Path | None = None) -> list[str]:
 
 def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
     """Every entry of the named tranches of `folder` (the baseline's own by default), or of
-    all: each instrument, then its duties, its summary and its provisions."""
+    all: each instrument, then its duties, its summary and its provisions, and after them
+    the tranche's corrections of its duties."""
     folder = folder or BASELINE_DIR
     names = tranches(folder)
     unknown = sorted(set(only) - set(names))
@@ -123,6 +130,7 @@ def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
         data = json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
         summaries = _summaries(folder, name)
         provisions = _provisions(folder, name)
+        duties = {duty["payload"]["key"]: (item["payload"]["key"], duty["payload"]) for item in data["instruments"] for duty in item.get("obligations", [])}
         for item in data["instruments"]:
             payload = item["payload"]
             key = payload["key"]
@@ -147,7 +155,25 @@ def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
                 # Copied, never reworded: a field left out or null (a heading) is the door's default.
                 body = {wanted: provision[wanted] for wanted in PROVISION_FIELDS if provision.get(wanted) is not None}
                 entries.append(_entry(name, PROVISION, written, body, key))
+        for correction in _corrections(folder, name):
+            # The proposal carries no reasoning of its own, so its one line says why.
+            written = {**correction, "title": f"{correction['title'].rstrip('.')}. {correction['why']}"}
+            instrument, duty = duties.get(correction["key"], ("", {}))
+            # In force from the duty's own start: a duty that applies from a date carries it, so
+            # the correction is the later version of that day and wins (`in_force`).
+            start = {part: duty[part] for part in ("effectiveFrom", "effectiveFromPrecision") if part in duty}
+            entries.append(_entry(name, CORRECTION, written, {**correction["payload"], **start}, instrument, key=correction["key"]))
     return entries
+
+
+def _corrections(folder: Path, tranche: str) -> list[dict[str, Any]]:
+    """The tranche's corrections of its duties, in the file's order, or none when it has no
+    file (D-144). One naming a duty outside its tranche is the checker's to refuse."""
+    path = folder / CORRECTIONS_DIR / f"{tranche}.json"
+    if not path.exists():
+        return []
+    found: list[dict[str, Any]] = json.loads(path.read_text(encoding="utf-8"))["obligations"]
+    return found
 
 
 def _summaries(folder: Path, tranche: str) -> dict[str, dict[str, Any]]:
@@ -191,8 +217,10 @@ def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any
 @dataclass(frozen=True)
 class _Library:
     """What the library and the queue hold for the entries in hand, read in five queries
-    (four while no entry is a provision): the stable keys held (lowercased), the keys open
-    in the queue per kind, and the retry keys this agent ever filed."""
+    (four while no entry is a provision, two more while one is a correction): the stable keys
+    held (lowercased), the keys open in the queue per kind, the retry keys this agent ever
+    filed, and for the corrections the ids of the duties they target and those of them with
+    a version open in the queue."""
 
     instruments: set[str]
     obligations: set[str]
@@ -200,6 +228,8 @@ class _Library:
     provisions: set[str]
     open: set[tuple[str, str]]
     filed: set[str]
+    targets: dict[str, uuid.UUID]
+    corrections_open: set[str]
 
 
 def _cited(entry: Entry) -> set[str]:
@@ -208,17 +238,26 @@ def _cited(entry: Entry) -> set[str]:
     return {key.lower() for key in entry.payload.get("obligations", [])} if entry.kind == PROVISION else set()
 
 
+def _named(entry: Entry) -> set[str]:
+    """The provisions a correction names as its duty's citations; none for every other kind."""
+    return set(entry.payload.get("provisions", [])) if entry.kind == CORRECTION else set()
+
+
 def _library(entries: list[Entry]) -> _Library:
-    keys = {kind: {entry.key for entry in entries if entry.kind == kind} for kind in (INSTRUMENT, OBLIGATION, PROVISION)}
-    parents = {entry.instrument for entry in entries if entry.kind != INSTRUMENT}
+    keys = {kind: {entry.key for entry in entries if entry.kind == kind} for kind in (INSTRUMENT, OBLIGATION, PROVISION, CORRECTION)}
+    parents = {entry.instrument for entry in entries if entry.kind not in (INSTRUMENT, CORRECTION)}
     cited = {key for entry in entries for key in _cited(entry)}
+    provisions = keys[PROVISION] | {key for entry in entries for key in _named(entry)}
     open_rows = Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind__in=(INSTRUMENT, OBLIGATION, SUMMARY, PROVISION))
+    targets = held_obligation_ids(keys[CORRECTION]) if keys[CORRECTION] else {}
+    corrected = Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind=CORRECTION, target_id__in=targets.values())
+    open_targets = set(corrected.values_list("target_id", flat=True)) if targets else set()
     return _Library(
         instruments=held_stable_keys(SubjectType.INSTRUMENT.value, keys[INSTRUMENT] | parents),
         obligations=held_stable_keys(SubjectType.OBLIGATION.value, keys[OBLIGATION] | cited),
         summarised=summarised_stable_keys(),
         # A provision's key is lowercase wherever it came from: the door and the checker both hold it to that.
-        provisions=keys[PROVISION] - unknown_provision_keys(keys[PROVISION]),
+        provisions=provisions - unknown_provision_keys(provisions),
         # A summary is open under the instrument it is for; every other kind under its own key.
         open={
             (kind, summary_for if kind == SUMMARY else key)
@@ -231,12 +270,24 @@ def _library(entries: list[Entry]) -> _Library:
             )
             if key
         },
+        targets=targets,
+        corrections_open={key for key, target in targets.items() if target in open_targets},
     )
 
 
 def _state(entry: Entry, library: _Library) -> str:
     """Where `entry` stands: `held`, `open`, `decided`, `waiting` for its instrument or, a
-    provision, for a duty it names, or `due`."""
+    provision, for a duty it names, or `due`. A correction is never held: it is `open` while
+    any version of its duty waits in the queue, whoever filed it, `decided` once filed in
+    these words, and `waiting` until its duty and every provision it names are held."""
+    if entry.kind == CORRECTION:
+        if entry.key.lower() in library.corrections_open:
+            return "open"
+        if entry.retry_key in library.filed:
+            return "decided"
+        if entry.key.lower() not in library.targets or not _named(entry) <= library.provisions:
+            return "waiting"
+        return "due"
     held = {INSTRUMENT: library.instruments, OBLIGATION: library.obligations, SUMMARY: library.summarised, PROVISION: library.provisions}[entry.kind]
     if entry.key.lower() in held:
         return "held"
@@ -272,7 +323,7 @@ def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | No
         report.filed.update((entry.tranche, entry.kind) for entry in due)
         return report
     for batch in _batches(due, settings.WATCH_RUN_MAX_PROPOSALS):
-        _file_run(batch, report)
+        _file_run(batch, report, library.targets)
     return report
 
 
@@ -281,8 +332,9 @@ def _batches(entries: list[Entry], size: int) -> Iterator[list[Entry]]:
         yield entries[start : start + size]
 
 
-def _file_run(batch: list[Entry], report: Report) -> None:
-    """One run of the agent: opened, a transaction per entry, closed with what it filed."""
+def _file_run(batch: list[Entry], report: Report, targets: dict[str, uuid.UUID]) -> None:
+    """One run of the agent: opened, a transaction per entry, closed with what it filed.
+    `targets` are the ids of the duties the corrections correct, by lowercased key."""
     with transaction.atomic():
         run = tasks.open_baseline_run(AGENT_KEY, actor=RUN_ACTOR)
     report.runs += 1
@@ -290,7 +342,7 @@ def _file_run(batch: list[Entry], report: Report) -> None:
     for entry in batch:
         try:
             with transaction.atomic():
-                _file_one(entry, run)
+                _file_one(entry, run, targets.get(entry.key.lower()) if entry.kind == CORRECTION else None)
         except ValidationError as refused:
             report.refused.append((entry.key, getattr(refused, "code", "") or "validation_error", " ".join(refused.messages)))
             continue
@@ -299,7 +351,8 @@ def _file_run(batch: list[Entry], report: Report) -> None:
     runner_events.apply_event(RunnerEvent(run_id=run.id, status=RunStatus.SUCCEEDED, stats={"proposalsSubmitted": filed}))
 
 
-def _file_one(entry: Entry, run: AgentRun) -> None:
+def _file_one(entry: Entry, run: AgentRun, target: uuid.UUID | None) -> None:
+    """File `entry`; a correction names the duty it corrects as its target."""
     logic.create(
         kind=entry.kind,
         title=entry.title,
@@ -307,6 +360,8 @@ def _file_one(entry: Entry, run: AgentRun) -> None:
         proposer=logic.Proposer(actor=Actor(kind=ActorType.AGENT, id=run.agent_id, label=AGENT_KEY), agent_id=run.agent_id),
         idempotency_key=entry.retry_key,
         agent_run_id=run.id,
+        target_type=logic.OBLIGATION_TARGET if target is not None else "",
+        target_id=target,
         field_sources=entry.field_sources,
         source_label=entry.source_label,
         source_url=entry.source_url,

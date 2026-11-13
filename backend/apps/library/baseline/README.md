@@ -11,8 +11,9 @@ checks and proposes a correction where one has drifted (WAT-01, D-50).
 
 One file per tranche, named by its `tranche`, and `sources.json`, the pages the watch checks
 for these records, which the same filing registers. Beside them, by the tranche's name:
-`summaries/`, what each instrument is in plain words (INV-09), and `provisions/`, the law's
-own words (INV-02, below). `check_baseline.py` checks every file's shape
+`summaries/`, what each instrument is in plain words (INV-09), `provisions/`, the law's
+own words (INV-02, below), and `corrections/`, corrections of duties the library already
+holds (D-144, below). `check_baseline.py` checks every file's shape
 and keys without a database; `apps/proposals/tests_baseline.py` files and approves the whole
 baseline through the real proposal code, so an entry the door would refuse fails the
 backend suite, and `apps/library/tests_baseline_check.py` runs the checker over the whole
@@ -197,3 +198,54 @@ named:
 | Finland, `finlex.fi` | No copyright in laws, decrees or official translations (tekijänoikeuslaki 9 §). Finlex open data is CC BY 4.0 (`finlex.fi/en/faq`); every request carries a User-Agent | `sourceLabel` names Finlex. FIN-FSA's regulations bind in Finnish and Swedish and are published as PDF |
 | EU, `eur-lex.europa.eu` | Legal documents may be reused, commercially or not; a consolidated text is CC BY 4.0, the source acknowledged and changes indicated. Only the Official Journal is authentic (`eur-lex.europa.eu/content/legal-notice/legal-notice.html`) | `sourceLabel` names EUR-Lex and the Official Journal reference, and says so when the text is a consolidated one |
 | EBA, ESMA, EIOPA | Reproduction with the source acknowledged (EBA); "Source: EIOPA - European Insurance and Occupational Pensions Authority."; a republished translation of an ESMA document says "This document constitutes a translation of a document downloaded from ESMA's website" | `sourceLabel` carries the authority's own wording |
+
+## Corrections
+
+A duty already in the library is never edited here: its corrections arrive as
+`corrections/<tranche>.json`, one file per tranche, each entry filed as a
+`new_obligation_version` proposal of the duty it names (D-144). They come from reading every
+duty beside the law it cites (`docs/reviews/law-text-2026-11-13/duty-reading.json`). The filer
+files an entry once the library holds the duty and every provision the entry names (so a
+provision it cites for the first time is approved first), never while a version of that duty
+waits in the queue, and never again in the same words once decided: the retry key is
+`baseline:correction:<key>:<content hash>`. A version is agent-confirmable, so the demo's
+confirmer applies the corrections too.
+
+```json
+{
+  "tranche": "dk-bekendtgorelser",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-dk-afvplan-financial-contracts-register",
+      "title": "Correct obl-dk-afvplan-financial-contracts-register: every firm keeps the register",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/2018",
+      "sourceLabel": "Retsinformation, BEK nr 2018 af 26/10/2021 (...), § 12",
+      "why": "What the cited law says that the old text did not, for the reviewer.",
+      "payload": {
+        "summaries": {"en": "..."},
+        "originalLanguage": "en",
+        "titles": {"en": "..."},
+        "refLabel": "§ 12",
+        "provisions": ["dk-bek-2021-2018/012"]
+      }
+    }
+  ]
+}
+```
+
+- `key` is a duty of the same tranche, corrected by at most one entry in the whole baseline.
+- `title` and `why` become the proposal's one line, joined by a full stop, at most 500
+  characters together: a proposal has no field of its own for the proposer's reasoning, and
+  the reviewer has to read why. `source`, `sourceLabel` and `fieldSources` read as on a duty.
+- `payload` is a `new_obligation_version` payload (`ProposalObligationVersionPayload`):
+  `summaries` and `originalLanguage` always, the summary one to three sentences; `titles`,
+  `refLabel` and `provisions` only when they change, and the checker refuses one equal to
+  what the duty already has. Each one given replaces that part of the duty whole. Never
+  `isMachine`, `effectiveFrom` or `terms` (the scope is not corrected here): a correction is
+  in force from the duty's start, so the filer gives it the duty's own `effectiveFrom`, when
+  the duty has one, and the correction is the later version of that day.
+- `provisions` are keys of the provisions files under the duty's own instrument, at most 50:
+  the door refuses a provision of another instrument. Where a summary element comes from
+  another instrument, the summary says so in words rather than citing it.

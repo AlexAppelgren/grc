@@ -4,8 +4,9 @@ D-118; apps/proposals/baseline.py). The beat runs the same every
 `LIBRARY_BASELINE_FILING_MINUTES`; this is for a first run by hand or `--dry-run`.
 
 Run it after `seed_reference`, approve the instruments, run it again for their duties and
-summaries, approve the duties, and run it once more for the provisions that cite them. Every
-run is idempotent and never refiles an unchanged entry that was decided."""
+summaries, approve the duties, and run it once more for the provisions that cite them and the
+corrections of those duties. Every run is idempotent and never refiles an unchanged entry that
+was decided."""
 
 from __future__ import annotations
 
@@ -19,7 +20,13 @@ from django.core.exceptions import ValidationError
 from apps.proposals import baseline
 
 # Each kind the filing files, as the summary names it.
-NOUNS = ((baseline.INSTRUMENT, "instruments"), (baseline.OBLIGATION, "duties"), (baseline.SUMMARY, "summaries"), (baseline.PROVISION, "provisions"))
+NOUNS = (
+    (baseline.INSTRUMENT, "instruments"),
+    (baseline.OBLIGATION, "duties"),
+    (baseline.SUMMARY, "summaries"),
+    (baseline.PROVISION, "provisions"),
+    (baseline.CORRECTION, "corrections"),
+)
 
 
 def _counted(tally: Counter[tuple[str, str]], tranche: str) -> str:
@@ -44,7 +51,8 @@ class Command(BaseCommand):
         for tranche in baseline.tranches():
             if options["tranche"] and tranche not in options["tranche"]:
                 continue
-            # A duty and a summary wait for their instrument's approval, a provision for its duties'.
+            # A duty and a summary wait for their instrument's approval, a provision for its duties',
+            # a correction for its duty's and those of the provisions it names.
             self.stdout.write(
                 f"{tranche}: {verb} {_counted(report.filed, tranche)}; waiting for an approval: {_counted(report.waiting, tranche)}; "
                 f"already in the library: {_counted(report.held, tranche)}; open in the queue: {_counted(report.open, tranche)}; "

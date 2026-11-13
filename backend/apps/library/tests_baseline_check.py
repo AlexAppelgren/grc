@@ -199,6 +199,107 @@ class TheLawsOwnWords(SimpleTestCase):
         self.assertEqual(self.problems(everything_excused), [], "a tranche may say that none of its texts is here yet")
 
 
+def correction(**fields: Any) -> dict[str, Any]:
+    """A correction of `obl-dk-one` that every rule passes: a new title, citation and cited
+    provisions, all of its own instrument."""
+    return {
+        "key": "obl-dk-one",
+        "title": "Correct obl-dk-one: the duty rests on two sections",
+        "source": "https://www.retsinformation.dk/eli/lta/2099/1",
+        "sourceLabel": "Retsinformation, BEK nr 1 af 1/1/2099, §§ 1-2",
+        "why": "§ 2 sets the deadline the summary names, and the old citation left it out.",
+        "payload": {
+            "summaries": {"en": "The firm keeps the record. It sends it to the supervisor within a month."},
+            "originalLanguage": "en",
+            "titles": {"en": "Keep the record and send it"},
+            "refLabel": "§§ 1-2",
+            "provisions": ["dk-act/001", "dk-act/002"],
+        },
+        **fields,
+    }
+
+
+class TheBaselinesCorrections(SimpleTestCase):
+    """A tranche's corrections of its duties (D-144): each a version payload the door takes,
+    naming a duty of its tranche once, saying why, and citing provisions of the duty's own
+    instrument only."""
+
+    def setUp(self) -> None:
+        self.folder = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        duty = {"key": "obl-dk-one", "titles": {"en": "Keep the record"}, "refLabel": "§ 1"}
+        instruments = [
+            {"payload": {"key": "dk-act", "jurisdiction": "dk"}, "obligations": [{"payload": duty}, {"payload": {"key": "obl-dk-two"}}]},
+            {"payload": {"key": "dk-other", "jurisdiction": "dk"}, "obligations": []},
+        ]
+        (self.folder / f"{TRANCHE}.json").write_text(json.dumps({"tranche": TRANCHE, "instruments": instruments}), encoding="utf-8")
+        provisions = [
+            {"key": "dk-act/001", "instrument": "dk-act", "obligations": ["obl-dk-one"]},
+            {"key": "dk-act/002", "instrument": "dk-act", "obligations": ["obl-dk-two"]},
+            {"key": "dk-other/001", "instrument": "dk-other", "obligations": []},
+        ]
+        (self.folder / check_baseline.PROVISIONS_DIR).mkdir()
+        (self.folder / check_baseline.PROVISIONS_DIR / f"{TRANCHE}.json").write_text(json.dumps({"provisions": provisions}), encoding="utf-8")
+        (self.folder / check_baseline.CORRECTIONS_DIR).mkdir()
+
+    def problems(self, data: Any = None, *, name: str = TRANCHE) -> list[str]:
+        if data is not None:
+            text = data if isinstance(data, str) else json.dumps(data)
+            (self.folder / check_baseline.CORRECTIONS_DIR / f"{name}.json").write_text(text, encoding="utf-8")
+        checker = check_baseline.Checker()
+        checker.corrections(self.folder)
+        return checker.problems
+
+    @staticmethod
+    def good(*entries: dict[str, Any]) -> dict[str, Any]:
+        return {"tranche": TRANCHE, "readOn": "2026-11-13", "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json", "obligations": list(entries) or [correction()]}
+
+    def test_a_good_file_passes_and_a_folder_with_none_passes(self) -> None:
+        self.assertEqual(self.problems(), [], "no corrections file at all")
+        self.assertEqual(self.problems(self.good()), [])
+
+    def test_each_rule_refuses_the_correction_that_breaks_it(self) -> None:
+        def payload(**fields: Any) -> dict[str, Any]:
+            body = {**correction()["payload"], **fields}
+            return correction(payload={name: value for name, value in body.items() if value is not ...})
+
+        cases: list[tuple[str, dict[str, Any], str]] = [
+            ("a duty of no tranche here", correction(key="obl-nobody"), ".key: 'obl-nobody' is not an obligation of this tranche"),
+            ("a field a correction does not know", correction(note="later"), ": unknown field 'note'"),
+            ("no why", correction(why=" "), ".why: must be a non-empty string"),
+            ("title and why longer than a proposal's title", correction(why="x" * 450), "title and why together are the proposal's title, at most 500 characters"),
+            ("a source that is not https", correction(source="http://www.retsinformation.dk/"), ".source: must be an https link"),
+            ("a payload that is not an object", correction(payload=["x"]), ".payload: must be an object"),
+            ("a date the correction never sets", payload(effectiveFrom="2026-01-01"), ".payload: unknown field 'effectiveFrom'"),
+            ("a scope the correction never sets", payload(terms=[]), ".payload: unknown field 'terms'"),
+            ("a machine mark", payload(isMachine=True), ".payload: unknown field 'isMachine'"),
+            ("a summary without its original", payload(summaries={"da": "Virksomheden fører registret."}), ".payload.summaries: has no text in its original language 'en'"),
+            ("a summary of four sentences", payload(summaries={"en": "One. Two. Three. Four."}), ".payload.summaries.en: is 4 sentences"),
+            ("a title without its original", payload(titles={"da": "Før registret"}), ".payload.titles: has no text in its original language 'en'"),
+            ("the title the duty has", payload(titles={"en": "Keep the record"}), ".payload.titles: is the title the duty already has"),
+            ("the citation the duty has", payload(refLabel="§ 1"), ".payload.refLabel: is the citation the duty already has"),
+            ("a blank citation", payload(refLabel=""), ".payload.refLabel: must be a non-empty string"),
+            ("a provision of another instrument", payload(provisions=["dk-act/001", "dk-other/001"]), "'dk-other/001' is not a provision of 'dk-act' in the provisions files"),
+            ("a provision nobody extracted", payload(provisions=["dk-act/099"]), "'dk-act/099' is not a provision of 'dk-act'"),
+            ("a provision named twice", payload(provisions=["dk-act/001", "dk-act/001"]), ".payload.provisions: names a provision twice"),
+            ("the provisions that cite it already", payload(provisions=["dk-act/001"]), ".payload.provisions: are the provisions that already cite the duty"),
+            ("a source for a field it does not set", correction(fieldSources={"terms": "https://www.retsinformation.dk/"}), ".fieldSources.terms: names no field this correction sets"),
+        ]
+        for case, entry, expected in cases:
+            with self.subTest(case=case):
+                found = self.problems(self.good(entry))
+                self.assertTrue(any(expected in problem for problem in found), f"{expected!r} not among {found}")
+
+    def test_the_file_its_name_and_one_correction_per_duty(self) -> None:
+        self.assertIn("corrections/test.json: cannot be read", self.problems("{not json")[0])
+        self.assertEqual(self.problems({"tranche": TRANCHE, "obligations": []}), ["corrections/test.json: must be an object with obligations, a non-empty list"])
+        twice = self.problems(self.good(correction(), correction()))
+        self.assertTrue(any("'obl-dk-one' is already corrected in corrections/test.json[obl-dk-one]" in problem for problem in twice), twice)
+        no_day = self.problems({**self.good(), "readOn": None, "reading": ""})
+        self.assertTrue(any(".readOn: must be the day" in problem for problem in no_day) and any(".reading: must be a non-empty string" in problem for problem in no_day), no_day)
+        (self.folder / check_baseline.CORRECTIONS_DIR / f"{TRANCHE}.json").unlink()
+        self.assertEqual(self.problems(self.good(), name="tset"), ["corrections/tset.json: names no tranche: a corrections file carries its tranche's name (test)"])
+
+
 class TheRealBaseline(SimpleTestCase):
     def test_the_whole_baseline_passes_its_checker(self) -> None:
         """The quick check is a gate: a provisions file that breaks a rule fails the suite."""
@@ -219,6 +320,21 @@ class TheRealBaseline(SimpleTestCase):
         self.assertEqual(check_baseline.OFFICIAL, {original: set(beside) for original, beside in OFFICIAL_BESIDE.items()}, "the checker and the library name the same official languages")
         self.assertEqual(check_baseline.MAX_TEXT, settings.PROPOSAL_TEXT_MAX_CHARS)
         self.assertEqual(check_baseline.MAX_OBLIGATIONS, settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS)
+        self.assertEqual(check_baseline.MAX_PROVISIONS, settings.PROPOSAL_OBLIGATION_MAX_PROVISIONS)
+        from apps.proposals.models import Proposal
+        from apps.proposals.schemas import ProposalObligationVersionPayload
+
+        self.assertEqual(check_baseline.MAX_PROPOSAL_TITLE, Proposal._meta.get_field("title").max_length)
+        door = {field.alias or name for name, field in ProposalObligationVersionPayload.model_fields.items()}
+        self.assertLessEqual(check_baseline.CORRECTION_PAYLOAD_FIELDS, door, "a correction sets only what the door's version payload names")
+
+    def test_every_correction_of_the_real_baseline_is_a_version_the_door_parses(self) -> None:
+        from apps.proposals import logic
+
+        for path in sorted((check_baseline.HERE / check_baseline.CORRECTIONS_DIR).glob("*.json")):
+            for item in json.loads(path.read_text(encoding="utf-8"))["obligations"]:
+                with self.subTest(correction=item["key"]):
+                    logic.parsed_payload("new_obligation_version", item["payload"])
         # The filer's retry key, `baseline:<key>:<32 hex>`, fits the proposal's own column.
         from apps.proposals.logic import IDEMPOTENCY_KEY_MAX_CHARS
 

@@ -123,6 +123,15 @@ produced by script from the official sources; the filer files each as a `new_pro
 the library holds its instrument and every duty it names, and an approved duty queues the
 filing as an approved instrument does. PRO-S20 proves it.
 
+The baseline's corrections of its own duties, found when every duty was read beside the
+law it cites (`docs/reviews/law-text-2026-11-13/duty-reading.json`, D-144), sit in
+`apps/library/baseline/corrections/`, one file per tranche. The filer files each as a
+`new_obligation_version` of the held duty once every provision it names is held, under the
+retry key `baseline:correction:<key>:<content hash>`, and never while a version of that duty
+is open in the queue or once these words were decided. The proposal's one line carries the
+entry's title and its reason, since a proposal has no field of its own for why. A version
+is agent-confirmable, so the demo's confirmer applies them too. PRO-S21 proves it.
+
 A bank's own private records travel the same table but never the console: the
 server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
@@ -559,4 +568,17 @@ Then the library holds the section with its first text, Swedish the original and
 And the duty cites the section, and a bank reads both in the regulation's provision tree
 And a provision whose original is English under that Swedish regulation is refused with "validation_error"
 And filing again proposes nothing, because the library holds the section
+```
+
+### PRO-S21 — The baseline corrects a duty's title, citation and cited provisions through the queue `@integration` (PRO-01, PRO-02, INV-02, INV-04)
+```gherkin
+Given the library holds a duty under a Danish order citing its § 12, and the order's § 12 and § 13
+And the baseline's corrections give that duty a new title, the citation "§§ 12-13" and both sections, and say why
+When the platform files the baseline
+Then one new version of the duty waits in the queue, proposed by the agent library-baseline, its one line saying why, with a source on every field
+And the review screen's read shows the old and the new title and citation, and § 13 as a section it starts citing
+When a library editor approves it with a fresh passkey
+Then the duty carries the new title, citation and sections, and the approval's audit row holds what was there before and what came
+And a version citing a section of another act is refused with "unknown_key"
+And filing again proposes nothing, because the correction was decided
 ```

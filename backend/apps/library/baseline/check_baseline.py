@@ -11,7 +11,8 @@ A tranche's provisions, the law's own words (`provisions/<tranche>.json`), are c
 the whole baseline, never with a single file: the original is the language its jurisdiction
 writes law in, the translations the README names are there and marked, every obligation a
 provision names sits under its instrument, and every obligation of a tranche that has a
-provisions file is cited by one or excused by name with a reason.
+provisions file is cited by one or excused by name with a reason. A tranche's corrections
+(`corrections/<tranche>.json`, D-144) are checked with the whole baseline too.
 
 Exit 0 when clean, 1 with every problem listed. No Django, no database: plain Python.
 
@@ -89,6 +90,21 @@ MAX_PROVISION_KEY = 158
 # A provision's place in its instrument, the last part of its key.
 PATH = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 NUMBER = re.compile(r"\d+")
+
+# Corrections of the baseline's duties (D-144): each tranche's in a file of its name here, each
+# entry a `new_obligation_version` the filer files once the duty and its provisions are held.
+CORRECTIONS_DIR = "corrections"
+CORRECTIONS_FILE_FIELDS = {"tranche", "readOn", "reading", "obligations"}
+CORRECTION_FIELDS = {"key", "title", "source", "sourceLabel", "fieldSources", "why", "payload"}
+# What a correction's payload may set (`ProposalObligationVersionPayload`): never `isMachine`,
+# `effectiveFrom` or `terms`, since a correction is in force from the duty's start and leaves
+# its scope alone.
+CORRECTION_PAYLOAD_FIELDS = {"summaries", "originalLanguage", "titles", "refLabel", "provisions"}
+MAX_PROVISIONS = 50  # PROPOSAL_OBLIGATION_MAX_PROVISIONS
+# The proposal's own title, which carries the entry's title and its why (Proposal.title).
+MAX_PROPOSAL_TITLE = 500
+# Where a sentence of a summary ends: a stop, then a capital or the end.
+SENTENCE_END = re.compile(r"[.!?](?=\s+[A-Z§(]|\s*$)")
 
 
 def load_reference() -> dict[str, set[str]]:
@@ -395,6 +411,118 @@ class Checker:
         self.day(f"{where}.readOn", item.get("readOn"))
         return set(obligations)
 
+    def corrections(self, folder: Path) -> None:
+        """Every corrections file of `folder` (D-144), each against the tranche it is named
+        after: a correction names a duty of that tranche, once in the whole baseline, says
+        why, and carries a version payload whose provisions are the duty's own instrument's
+        in the provisions files, and which changes what it names."""
+        tranches = {path.stem: path for path in folder.glob("*.json") if path.name != SOURCES_FILE}
+        provision_of: dict[str, str] = {}
+        cited_by: dict[str, set[str]] = {}
+        for path in (folder / PROVISIONS_DIR).glob("*.json"):
+            for item in json.loads(path.read_text(encoding="utf-8")).get("provisions", []):
+                provision_of[item["key"]] = item["instrument"]
+                for duty in item.get("obligations", []):
+                    cited_by.setdefault(duty, set()).add(item["key"])
+        corrected: dict[str, str] = {}
+        for path in sorted((folder / CORRECTIONS_DIR).glob("*.json")):
+            where = f"{CORRECTIONS_DIR}/{path.name}"
+            if path.stem not in tranches:
+                self.fail(where, f"names no tranche: a corrections file carries its tranche's name ({', '.join(sorted(tranches))})")
+                continue
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                self.fail(where, f"cannot be read: {error}")
+                continue
+            if not isinstance(data, dict) or not isinstance(data.get("obligations"), list) or not data["obligations"]:
+                self.fail(where, "must be an object with obligations, a non-empty list")
+                continue
+            for stray in sorted(set(data) - CORRECTIONS_FILE_FIELDS):
+                self.fail(where, f"unknown field {stray!r}")
+            if data.get("tranche") != path.stem:
+                self.fail(where, f"tranche must be the file's name, {path.stem!r}")
+            if data.get("readOn") is None:
+                self.fail(f"{where}.readOn", "must be the day the duties were read beside the law, as an ISO date YYYY-MM-DD")
+            self.day(f"{where}.readOn", data.get("readOn"))
+            self.text(f"{where}.reading", data.get("reading"))
+            duties = {
+                duty["payload"]["key"]: (entry["payload"]["key"], duty["payload"])
+                for entry in json.loads(tranches[path.stem].read_text(encoding="utf-8"))["instruments"]
+                for duty in entry.get("obligations", [])
+            }
+            for i, item in enumerate(data["obligations"]):
+                label = item.get("key", i) if isinstance(item, dict) else i
+                spot = f"{where}[{label}]"
+                if not isinstance(item, dict):
+                    self.fail(spot, "must be an object")
+                    continue
+                key = str(item.get("key") or "")
+                if key not in duties:
+                    self.fail(f"{spot}.key", f"{key!r} is not an obligation of this tranche")
+                elif key in corrected:
+                    self.fail(f"{spot}.key", f"{key!r} is already corrected in {corrected[key]}: one correction per obligation")
+                else:
+                    corrected[key] = spot
+                instrument, duty = duties.get(key, ("", {}))
+                self.correction(spot, item, instrument, duty, provision_of, cited_by.get(key, set()))
+
+    def correction(self, where: str, item: dict, instrument: str, duty: dict, provision_of: dict[str, str], cited: set[str]) -> None:
+        """One correction as the filer hands it to the door, a `new_obligation_version` of the
+        duty under `instrument` whose baseline payload is `duty` and whose provisions files
+        cite it with `cited`."""
+        for stray in sorted(set(item) - CORRECTION_FIELDS):
+            self.fail(where, f"unknown field {stray!r}")
+        title, why = item.get("title"), item.get("why")
+        written = [self.text(f"{where}.title", title, MAX_TITLE), self.text(f"{where}.why", why)]
+        if all(written) and len(f"{str(title).rstrip('.')}. {why}") > MAX_PROPOSAL_TITLE:
+            self.fail(where, f"title and why together are the proposal's title, at most {MAX_PROPOSAL_TITLE} characters")
+        self.link(f"{where}.source", item.get("source"))
+        self.text(f"{where}.sourceLabel", item.get("sourceLabel"), MAX_SOURCE_LABEL)
+        payload = item.get("payload")
+        if not isinstance(payload, dict):
+            self.fail(f"{where}.payload", "must be an object")
+            return
+        for stray in sorted(set(payload) - CORRECTION_PAYLOAD_FIELDS):
+            self.fail(f"{where}.payload", f"unknown field {stray!r}: a correction sets {', '.join(sorted(CORRECTION_PAYLOAD_FIELDS))}")
+        original = payload.get("originalLanguage")
+        summaries = payload.get("summaries")
+        self.languages(f"{where}.payload.summaries", summaries, original, MAX_SUMMARY)
+        for language, text in (summaries.items() if isinstance(summaries, dict) else []):
+            sentences = len(SENTENCE_END.findall(str(text)))
+            if not 1 <= sentences <= 3:
+                self.fail(f"{where}.payload.summaries.{language}", f"is {sentences} sentences: a summary says in one to three what the firm must do")
+        if "titles" in payload:
+            self.languages(f"{where}.payload.titles", payload["titles"], original, MAX_TITLE)
+            if payload["titles"] == duty.get("titles"):
+                self.fail(f"{where}.payload.titles", "is the title the duty already has: leave it out")
+        if "refLabel" in payload:
+            self.text(f"{where}.payload.refLabel", payload["refLabel"], MAX_REF_LABEL)
+            if payload["refLabel"] == duty.get("refLabel"):
+                self.fail(f"{where}.payload.refLabel", "is the citation the duty already has: leave it out")
+        if "provisions" in payload:
+            provisions = payload["provisions"]
+            if not isinstance(provisions, list) or len(provisions) > MAX_PROVISIONS or not all(isinstance(key, str) for key in provisions):
+                self.fail(f"{where}.payload.provisions", f"must list the keys of the provisions the duty cites, at most {MAX_PROVISIONS}")
+                provisions = []
+            if len(set(provisions)) != len(provisions):
+                self.fail(f"{where}.payload.provisions", "names a provision twice")
+            for key in provisions:
+                if provision_of.get(key) != instrument:
+                    self.fail(f"{where}.payload.provisions", f"{key!r} is not a provision of {instrument!r} in the provisions files")
+            if set(provisions) == cited:
+                self.fail(f"{where}.payload.provisions", "are the provisions that already cite the duty: leave it out")
+        sources = item.get("fieldSources", {})
+        if not isinstance(sources, dict):
+            self.fail(f"{where}.fieldSources", "must be an object of field -> https link")
+            return
+        sourced = {f"{name}.{language}" for name in ("summaries", "titles") for language in (payload.get(name) or {})}
+        sourced |= {name for name in ("refLabel", "provisions") if name in payload}
+        for name, value in sources.items():
+            self.link(f"{where}.fieldSources.{name}", value)
+            if name not in sourced:
+                self.fail(f"{where}.fieldSources.{name}", f"names no field this correction sets: {', '.join(sorted(sourced))}")
+
     def without_provision(self, where: str, items: object, under: dict[str, str]) -> set[str]:
         """The obligations a tranche says no provision is given for, each with its reason."""
         excused: set[str] = set()
@@ -487,6 +615,7 @@ def main(argv: list[str]) -> int:
         checker.problems += sources(checker.ref)
         checker.problems += summaries()
         checker.provisions(HERE)
+        checker.corrections(HERE)
     for tranche, (instruments, obligations) in sorted(checker.counts.items()):
         print(f"{tranche}: {instruments} instruments, {obligations} obligations")
     if checker.problems:

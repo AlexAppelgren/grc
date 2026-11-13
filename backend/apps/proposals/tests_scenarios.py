@@ -1646,3 +1646,70 @@ class ProposalsScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()
         last = baseline.file()
         self.assertEqual((sum(last.filed.values()), last.runs, last.held[tally]), (0, 0, 1))
+
+    def test_pro_s21(self) -> None:
+        """PRO-S21
+
+        The baseline corrects a duty's title, citation and cited provisions through the
+        queue (PRO-01, PRO-02, INV-02, INV-04; D-144, Alex 2026-11-13).
+        """
+        from apps.agents.seeds import seed_agent_definitions
+        from apps.library.models import ObligationProvision, ObligationTitle
+        from apps.proposals import baseline
+        from apps.proposals.tests_baseline import _correction, _duty, _instrument, write_corrections
+
+        tenancy.clear_tenant()  # the filing is in no bank's zone
+        seed_agent_definitions()
+        order = library_build.instrument(key="pro-s21", jurisdiction="dk", regime="regime:banking")
+        s12 = library_build.provision(order, key="pro-s21/012", ref_label="§ 12", kind="section", sort_order=12)
+        library_build.provision(order, key="pro-s21/013", ref_label="§ 13", kind="section", sort_order=13)
+        duty = library_build.obligation(order, key="obl-pro-s21", titles={"en": "Keep a register where the plan requires it"}, ref_label="§ 12", cites=(s12,))
+        other = library_build.instrument(key="pro-s21-other", jurisdiction="dk", regime="regime:banking")
+        library_build.provision(other, key="pro-s21-other/001", ref_label="§ 1", kind="section")
+        folder = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (folder / "pro-s21.json").write_text(json.dumps({"tranche": "pro-s21", "researchedOn": "2026-11-13", "instruments": [_instrument("pro-s21", _duty("obl-pro-s21"))]}), encoding="utf-8")
+        entry = _correction("obl-pro-s21", titles={"en": "Keep a register"}, refLabel="§§ 12-13", provisions=["pro-s21/012", "pro-s21/013"])
+        write_corrections(folder, [entry], name="pro-s21")
+        self.enterContext(mock.patch.object(baseline, "BASELINE_DIR", folder))
+
+        self.assertEqual(baseline.file().filed[("pro-s21", baseline.CORRECTION)], 1)
+        proposal = Proposal.objects.get(kind="new_obligation_version", target_id=duty.id)
+        self.assertEqual((proposal.status, getattr(proposal.proposed_by_agent, "key", None)), ("open", "library-baseline"))
+        self.assertTrue(proposal.title.endswith(entry["why"]), "the reviewer reads why in the queue's one line")
+        self.assertEqual(set(proposal.field_sources), set(logic.sourced_fields(logic.parsed_payload(proposal.kind, proposal.payload))))
+
+        read = self.client.get(f"{V1}/proposals/{proposal.id}", **sign_in(self.editor))
+        self.assertEqual(read.status_code, 200, read.content)
+        shown = read.json()
+        self.assertEqual((shown["titleBefore"], shown["titleAfter"]), ("Keep a register where the plan requires it", "Keep a register"))
+        self.assertEqual((shown["refLabelBefore"], shown["refLabelAfter"]), ("§ 12", "§§ 12-13"))
+        self.assertEqual((shown["provisionsAdded"], shown["provisionsRemoved"]), ([{"key": "pro-s21/013", "referenceLabel": "§ 13"}], []))
+        tenancy.clear_tenant()
+
+        approved = self._post(f"/proposals/{proposal.id}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual((approved.status_code, approved.json()["status"]), (200, "approved"), approved.content)
+        tenancy.clear_tenant()
+        duty.refresh_from_db()
+        self.assertEqual(duty.ref_label, "§§ 12-13")
+        self.assertEqual(list(ObligationTitle.objects.filter(obligation=duty).values_list("text", flat=True)), ["Keep a register"])
+        self.assertEqual(sorted(ObligationProvision.objects.filter(obligation=duty).values_list("provision__stable_key", flat=True)), ["pro-s21/012", "pro-s21/013"])
+        event = AuditEvent.objects.get(action="obligation.version_applied", subject_id=duty.id)
+        self.assertEqual((event.before["refLabel"], event.after["refLabel"]), ("§ 12", "§§ 12-13"))
+        self.assertEqual((event.before["provisions"], event.after["provisions"]), (["pro-s21/012"], ["pro-s21/012", "pro-s21/013"]))
+
+        across = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Cite a section of another act",
+                "targetType": "obligation",
+                "targetId": str(duty.id),
+                "payload": {"summaries": {"en": "The firm keeps the register."}, "originalLanguage": "en", "provisions": ["pro-s21-other/001"]},
+                "fieldSources": {"summaries.en": "https://www.retsinformation.dk/", "provisions": "https://www.retsinformation.dk/"},
+            },
+            sign_in(self.editor),
+        )
+        self.assertEqual((across.status_code, across.json()["code"]), (422, "unknown_key"), across.content)
+        tenancy.clear_tenant()
+        last = baseline.file()
+        self.assertEqual((sum(last.filed.values()), last.runs, last.decided[("pro-s21", baseline.CORRECTION)]), (0, 0, 1))

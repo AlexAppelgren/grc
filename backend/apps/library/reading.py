@@ -462,6 +462,16 @@ def held_stable_keys(subject: str, keys: Collection[str]) -> set[str]:
     return set(held)
 
 
+def held_obligation_ids(keys: Collection[str]) -> dict[str, uuid.UUID]:
+    """The shared obligations in force among `keys`, as their lowercased stable key to their
+    id, in one query: what the baseline filer targets a correction at (D-144)."""
+    wanted = {key.lower() for key in keys}
+    held = Obligation.objects.annotate(folded=Lower("stable_key")).filter(
+        folded__in=wanted, owner_tenant__isnull=True, status=RecordStatus.ACTIVE.value
+    )
+    return dict(held.values_list("folded", "id"))
+
+
 def has_summary(instrument: Instrument) -> bool:
     """Whether the library holds a summary of `instrument` (INV-09), for the proposal door,
     which never names a library model itself."""
