@@ -18,7 +18,16 @@ the re-verification stamp is the single exception.
 Nothing is overwritten. Summaries and legal text are version rows with
 effective dates, which is what makes "as of" reads and "show what changed"
 possible. Text lives in its original language with translations as rows and
-machine translations labelled.
+machine translations labelled. Two kinds of text carry that flag and mean different
+things by it. The law's own words are a provision's text, whose original is the
+language the authority published the rule in and whose wording governs; an
+obligation's title and summary and an instrument's summary are bleqq's plain words
+about the rule, whose original is only the language bleqq wrote them in. The
+obligation read carries both: its `summary` and `translations`, and the words of each
+provision it cites in `provisions[].texts` (INV-S20). A cited provision is read as the
+provision tree reads it: one whose instrument the caller may not read (one outside a bank's
+own agent's entry, or a bank's own instrument to a support session) is left out of
+`provisions` altogether, reference included, as related obligations already are.
 
 Labelling covers who confirmed a fact, not only who wrote it. Since PRD 0.4
 (D-62, ADR 0054) the proposal that applies a record may have been confirmed by
@@ -203,10 +212,11 @@ And the screen names the two effective dates being compared
 
 ### INV-S6 — Text exists in the original language with labelled translations `@integration` `@e2e` (INV-05)
 ```gherkin
-Given an obligation whose original text is sv
+Given an obligation whose summary bleqq wrote in sv, so its sv summary row is the one marked original
 When a user whose language order is en, sv reads it
-Then the en translation is shown with the label "Machine translation" until a person confirms it
-And "Show original" reveals the sv text
+Then the en translation of the summary is shown with the label "Machine translation" until a person confirms it
+And "Show original" reveals the sv summary, which is bleqq's wording and never the rule's own
+And the rule's own words, in the language the authority published them in, are the cited provisions' text (INV-S20)
 ```
 
 ### INV-S7 — Every record has a source link, a last-verified date and a way to report it `@integration` `@e2e` (INV-06)
@@ -354,5 +364,16 @@ Then it says a directive binds the member states, and how many duties the nation
 And the Swedish law comes first and open, with its first page of duties in scope and a link to all of them on its own page
 And the Norwegian law comes after it, closed, and reads its duties only once opened
 And the page never claims the laws listed are every law that implements the directive
+```
+
+### INV-S20 — An obligation shows the words of the rule it comes from, in the language they were published in `@integration` (INV-02, INV-05)
+```gherkin
+Given a Swedish ordinance whose two sections were published in Swedish, each with an English machine translation
+And an obligation under it citing both sections, whose plain-words summary bleqq wrote in English
+When a reader opens the obligation
+Then each cited section carries its words in every language its version in force holds, the original first
+And the Swedish text is marked original and the English text is marked machine
+And the summary is still returned as before, English marked as the language bleqq wrote it in
+And an obligation citing no provision returns an empty list of provisions
 ```
 

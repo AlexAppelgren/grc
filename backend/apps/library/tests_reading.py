@@ -34,7 +34,7 @@ from apps.library import reading
 from apps.library import testing as build
 from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision
 from apps.library.reading import instrument_scope_term_ids, instrument_scopes, obligation_scopes, scope_term_ids
-from apps.library.schemas import ObligationRow
+from apps.library.schemas import ObligationDetail, ObligationRow
 from apps.library.seeds.library import seed_authorities
 from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
@@ -51,6 +51,7 @@ URL = "/api/v1/obligations"
 D = datetime.date
 EARLY = D(2026, 6, 30)  # the day the fixture's library was last verified
 CHANGE_DAY = D(2026, 10, 1)  # research payments version 2
+FIRST_TEXT_DAY = D(2018, 1, 3)  # the first version of the cited 9 kap.'s own words
 FOOTPRINT = ("regime:securities", "service_type:non_advised", "service_type:execution_only", "account_type:isk")
 ALL_SERVICES = (
     "service_type:advice",
@@ -85,8 +86,10 @@ LIST_QUERIES = 2 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
 # with their term counts and labels (2); the footprint and its restricting dimensions (2);
 # the relations, the titles of what they point at and the relation types' labels (3); the
 # bank's own tags on it with their labels (1, VOC-08); the bank's register overlay on it (1,
-# c8-inventory-overlay).
-DETAIL_QUERIES = 2 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1
+# c8-inventory-overlay); since BE-5b (2026-11-13, INV-02, INV-05), the cited provisions'
+# versions and their texts, the law's own words, for all of them at once (2): 29 before, 31
+# now, and two fewer when no provision is cited.
+DETAIL_QUERIES = 2 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1 + 2
 # Who confirmed a version the library was seeded with: nobody, since nobody approved it.
 SEEDED = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
 
@@ -506,8 +509,18 @@ class ObligationDetailTests(TestCase):
             titles={"sv": "Tung skyldighet", "en": "A heavy duty"},
             terms=ALL_SERVICES,
             tags=("advice", "costs", "disclosure"),
-            cites=(Provision.objects.get(stable_key="lvm/9"), build.provision(lvm, key="lvm/10", ref_label="10 kap.")),
+            cites=(Provision.objects.get(stable_key="lvm/9"), build.provision(lvm, key="lvm/10", ref_label="10 kap.", heading="Ersättning")),
             versions=((None, {"en": "One."}), (D(2025, 1, 1), {"en": "Two."}), (CHANGE_DAY, {"en": "Three."})),
+        )
+        # The law's own words under 9 kap. (INV-02): published in Swedish from 2018 and amended
+        # on CHANGE_DAY, each version with machine translations beside the original.
+        chapter = Provision.objects.get(stable_key="lvm/9")
+        build.provision_version(chapter, effective_from=FIRST_TEXT_DAY, texts={"sv": "Kunden ska bedömas.", "en": "The client shall be assessed."})
+        build.provision_version(
+            chapter,
+            version_no=2,
+            effective_from=CHANGE_DAY,
+            texts={"sv": "Kunden ska bedömas årligen.", "en": "The client shall be assessed annually.", "da": "Kunden skal vurderes årligt."},
         )
         build.relate(cls.heavy, cls.appropriateness)
         build.relate(cls.heavy, cls.research)
@@ -549,7 +562,21 @@ class ObligationDetailTests(TestCase):
         self.assertEqual((scope["client_category"]["terms"], scope["client_category"]["allSelected"]), ([], False))
         self.assertEqual((card["inFootprint"], card["outsideReason"]), (True, []))
         chapter = Provision.objects.get(stable_key="lvm/9")
-        self.assertEqual(card["provisions"], [{"id": str(chapter.id), "refLabel": "9 kap.", "path": "LVM > 9 kap."}])
+        self.assertEqual(
+            card["provisions"],
+            [
+                {
+                    "id": str(chapter.id),
+                    "refLabel": "9 kap.",
+                    "path": "LVM > 9 kap.",
+                    "heading": None,
+                    "texts": [
+                        {"text": "Kunden ska bedömas.", "language": "sv", "isOriginal": True, "isMachine": False},
+                        {"text": "The client shall be assessed.", "language": "en", "isOriginal": False, "isMachine": True},
+                    ],
+                }
+            ],
+        )
         guidance = Obligation.objects.get(stable_key="obl-e-guidance")
         self.assertEqual(
             card["related"],
@@ -642,6 +669,50 @@ class ObligationDetailTests(TestCase):
             ],
             "every language of the version in force, so the card can offer the original",
         )
+
+    def test_each_cited_provision_carries_its_heading_and_the_law_s_words_original_first(self) -> None:
+        # INV-02, INV-05: every language the version in force holds, the original first and
+        # then by language key, each flag as stored; nothing is picked for the reader.
+        cited = {row["refLabel"]: row for row in self.card(self.heavy, {"asOf": CHANGE_DAY.isoformat()})["provisions"]}
+        self.assertEqual(
+            cited["9 kap."]["texts"],
+            [
+                {"text": "Kunden ska bedömas årligen.", "language": "sv", "isOriginal": True, "isMachine": False},
+                {"text": "Kunden skal vurderes årligt.", "language": "da", "isOriginal": False, "isMachine": True},
+                {"text": "The client shall be assessed annually.", "language": "en", "isOriginal": False, "isMachine": True},
+            ],
+        )
+        self.assertIsNone(cited["9 kap."]["heading"], "a provision the source gives no heading answers null")
+        self.assertEqual((cited["10 kap."]["heading"], cited["10 kap."]["texts"]), ("Ersättning", []), "no version, no words")
+
+    def test_as_of_picks_the_provision_version_in_force_on_the_read_s_date(self) -> None:
+        def words(params: dict[str, Any] | None) -> list[str]:
+            return [text["text"] for text in self.card(self.appropriateness, params)["provisions"][0]["texts"]]
+
+        self.assertEqual(words({"asOf": EARLY.isoformat()}), ["Kunden ska bedömas.", "The client shall be assessed."])
+        self.assertEqual(words({"asOf": (CHANGE_DAY - datetime.timedelta(days=1)).isoformat()})[0], "Kunden ska bedömas.")
+        self.assertEqual(words({"asOf": CHANGE_DAY.isoformat()})[0], "Kunden ska bedömas årligen.")
+        before = self.card(self.appropriateness, {"asOf": (FIRST_TEXT_DAY - datetime.timedelta(days=1)).isoformat()})
+        self.assertEqual(before["provisions"][0]["texts"], [], "a date before the first version: no words")
+        self.assertEqual(before["summary"]["text"], "Assess the fit.", "the duty's own summary does not depend on the law's version")
+        # The same rule as the tree's: the version the tree names in force on that date.
+        tree = self.client.get(
+            f"/api/v1/instruments/{self.appropriateness.instrument_id}/provisions", {"asOf": EARLY.isoformat()}, **sign_in(self.reader, tenant=self.tenant)
+        ).json()
+        node = next(row for row in tree if row["refLabel"] == "9 kap.")
+        in_force = next(row for row in node["versions"] if row["versionNumber"] == node["inForceVersion"])
+        self.assertIn(in_force["text"]["text"], words({"asOf": EARLY.isoformat()}))
+
+    def test_the_published_example_has_the_shape_of_a_live_read(self) -> None:
+        # The contract's example is what a client builds against: it validates, and every
+        # object in a cited provision carries exactly the fields a live read returns.
+        example = ObligationDetail.model_json_schema()["examples"][0]
+        ObligationDetail.model_validate(example)
+        live = self.card(self.appropriateness, {"asOf": EARLY.isoformat()})
+        self.assertEqual(set(example), set(live))
+        self.assertEqual(set(example["provisions"][0]), set(live["provisions"][0]))
+        self.assertEqual(set(example["provisions"][0]["texts"][0]), set(live["provisions"][0]["texts"][0]))
+        self.assertEqual([text["isOriginal"] for text in example["provisions"][0]["texts"]], [True, False], "the original first")
 
     def test_an_address_with_nothing_at_it_answers_404_and_a_malformed_one_422(self) -> None:
         missing = self.client.get(f"{URL}/{uuid.uuid4()}", **sign_in(self.reader, tenant=self.tenant))

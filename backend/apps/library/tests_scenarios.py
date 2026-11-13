@@ -1086,6 +1086,42 @@ class LibraryScenarioTests(ScenarioTestCase):
             lineage = self.read(f"{V1}/instruments/{card_of.id}")["lineage"]
             self.assertIn((other.stable_key, str(other.id)), [(link["instrument"]["key"], link["instrument"]["id"]) for link in lineage])
 
+    def test_inv_s20(self) -> None:
+        """INV-S20
+
+        An obligation shows the words of the rule it comes from, in the language they were
+        published in (INV-02, INV-05).
+        """
+        self.activate(self.tenant)
+        # Given a Swedish ordinance whose two sections were published in Swedish, each with a
+        # machine translation into English, and bleqq's own summary of the duty in English.
+        ordinance = build.instrument(key="inv-s20-forordning", short_name="SFS 2015:921", regime="regime:securities", jurisdiction="se")
+        sections = []
+        for number in (4, 5):
+            section = build.provision(ordinance, key=f"inv-s20-forordning/{number}", ref_label=f"{number} §", kind="section", sort_order=number)
+            build.provision_version(section, texts={"sv": f"Paragraf {number} i sin lydelse.", "en": f"Section {number} as it reads."})
+            sections.append(section)
+        summary = "Collect a self-certification from every new account holder."
+        duty = build.obligation(ordinance, key="obl-inv-s20-self-certification", cites=sections, versions=((None, {"en": summary}),))
+        uncited = build.obligation(ordinance, key="obl-inv-s20-uncited", versions=((None, {"en": summary}),))
+
+        card = self.card(duty.stable_key)
+        self.assertEqual([row["refLabel"] for row in card["provisions"]], ["4 §", "5 §"])
+        for row, number in zip(card["provisions"], (4, 5), strict=True):
+            with self.subTest(section=row["refLabel"]):
+                self.assertEqual(
+                    row["texts"],
+                    [
+                        {"text": f"Paragraf {number} i sin lydelse.", "language": "sv", "isOriginal": True, "isMachine": False},
+                        {"text": f"Section {number} as it reads.", "language": "en", "isOriginal": False, "isMachine": True},
+                    ],
+                    "the authority's language is the original, the translation is labelled machine",
+                )
+        # The summary is bleqq's, returned as before: written in English, so English is its original.
+        self.assertEqual(card["summary"], {"text": summary, "language": "en", "isOriginal": True, "isMachine": False})
+        self.assertEqual(card["translations"], [card["summary"]])
+        self.assertEqual(self.card(uncited.stable_key)["provisions"], [], "a duty citing no provision carries no words")
+
     def _found_and_approved(self, filing: dict[str, Any], approver: User) -> Any:
         """`filing` found by the bank's own agent in the worker, then approved in the bank's
         own queue by `approver` with a passkey."""

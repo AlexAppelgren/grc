@@ -1115,16 +1115,40 @@ def _related_obligations(obligation: Obligation, order: list[str], reader: Reade
     ]
 
 
+def _cited(provision: Provision, on: datetime.date) -> ObligationProvisionRef:
+    """A provision an obligation cites, with the law's own words (INV-02, INV-05): every
+    language its version in force on `on` holds, on the tree's rule (`in_force`), the
+    original first and then by language. Reads only what the caller prefetched."""
+    current = in_force(provision.versions.all(), on)
+    texts = sorted(current.texts.all(), key=lambda text: (not text.is_original, text.language_id)) if current else []
+    return ObligationProvisionRef(
+        id=provision.id,
+        ref_label=provision.ref_label,
+        path=provision.path,
+        heading=provision.heading or None,
+        texts=[text_of(text) for text in texts],
+    )
+
+
 def obligation_detail(
     tenant: Tenant, order: list[str], obligation_id: uuid.UUID | str, query: ObligationAsOfQuery, reader: Reader = OPEN
 ) -> ObligationDetail:
     """One obligation as of a date (INV-03, INV-04) in the caller's language order (INV-05),
     with the footprint verdict the list gives it (FP-03) and its provenance (INV-06),
     addressed by its id or its stable key. The queries fan out: their number does not grow
-    with the versions, terms, tags, provisions or related obligations the record carries."""
+    with the versions, terms, tags, provisions or related obligations the record carries,
+    nor with the provisions' versions and texts (two queries for all of them)."""
     obligation = _visible(
         readable_obligations(reader).select_related("instrument__level", "duty_type", "verified_by").prefetch_related(
-            "titles", "instrument__titles", versions_with_confirmation(), "versions__summaries", "tags", "provisions"
+            "titles",
+            "instrument__titles",
+            versions_with_confirmation(),
+            "versions__summaries",
+            "tags",
+            # A cited provision is read as its tree reads it (INV-02): one whose instrument
+            # this caller may not read is not here, as the tree answers that instrument 404.
+            Prefetch("provisions", queryset=Provision.objects.filter(instrument__in=readable_instruments(reader))),
+            "provisions__versions__texts",
         ),
         obligation_id,
     )
@@ -1179,10 +1203,7 @@ def obligation_detail(
         translations=[text_of(summary) for summary in summaries],
         version=in_force_row,
         versions=list(rows.values()),
-        provisions=[
-            ObligationProvisionRef(id=provision.id, ref_label=provision.ref_label, path=provision.path)
-            for provision in obligation.provisions.all()
-        ],
+        provisions=[_cited(provision, as_of) for provision in obligation.provisions.all()],
         related=_related_obligations(obligation, order, reader),
         provenance=ObligationProvenance(
             created_origin=obligation.created_origin,
@@ -1577,7 +1598,7 @@ def provision_diff(order: list[str], provision_id: uuid.UUID, query: VersionDiff
         to_version=newer.version_number,
         from_effective=partial_date(older.effective_from, older.effective_from_precision),
         to_effective=partial_date(newer.effective_from, newer.effective_from_precision),
-        # No proposal kind writes a provision's text, so its versions record no approval.
+        # A provision's text version records no approval of its own (no confirming columns).
         from_confirmation=None,
         to_confirmation=None,
         language=language,

@@ -205,6 +205,24 @@ class ObligationsInScope(AgentReadCase):
         widest = {row["id"] for row in self.get(w.general_key, f"{OBLIGATIONS}/{w.futures.id}").json()["related"]}
         self.assertEqual(widest, {str(w.untagged.id), str(w.cards.id)})
 
+    def test_the_card_gives_the_law_s_words_exactly_where_the_provision_tree_does(self) -> None:
+        # INV-02: a cited provision's words reach the agent through the card only where the
+        # same agent reads them in the tree. The untagged duty cites a provision of the
+        # payments act, whose tree the entry reads, and one of the insurance act, outside it.
+        w = self.world
+        outside = build.provision(w.lfd, key="acc-reads-lfd-cited")
+        build.provision_version(outside, texts={"en": "Insurance words."})
+        with tenancy.platform_zone(), build.library_write(build.REASON):
+            w.untagged.provisions.add(outside)
+        self.assert_not_here(self.get(w.trading_key, f"{INSTRUMENTS}/{w.lfd.id}/provisions"))
+        tree = self.get(w.trading_key, f"{INSTRUMENTS}/{w.psd.id}/provisions").json()
+        in_tree = next(row for row in tree[0]["versions"] if row["versionNumber"] == tree[0]["inForceVersion"])["text"]
+        cited = self.get(w.trading_key, f"{OBLIGATIONS}/{w.untagged.id}").json()["provisions"]
+        self.assertEqual([(row["id"], row["texts"]) for row in cited], [(str(w.chapter.id), [in_tree])], "the insurance provision is left out")
+        # A person of the same bank reads both trees, and so both provisions on the card.
+        person = self.client.get(f"{OBLIGATIONS}/{w.untagged.id}", **sign_in(w.officer, tenant=w.tenant)).json()["provisions"]
+        self.assertEqual({row["id"] for row in person}, {str(w.chapter.id), str(outside.id)})
+
     def test_an_entry_naming_what_derives_nothing_reads_nothing(self) -> None:
         w = self.world
         back_office = w.bank.entry(departments=[w.bank.unit("Back office")], name="Back office")

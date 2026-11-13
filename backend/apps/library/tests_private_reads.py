@@ -97,6 +97,40 @@ class PrivateReads(TestCase):
                 self.assertEqual(self.status(path, support), (404, "not_found"))
         self.assertEqual(self.status(f"/obligations/{self.shared.id}", support)[0], 200)
 
+    def test_the_law_s_words_on_a_card_follow_the_provision_tree_s_readers(self) -> None:
+        # INV-02, INV-07: the bank's own act holds a provision of its own, cited by its own
+        # duty beside a shared one. The bank reads both on the card as in both trees; a
+        # support session reads the shared provision's words as the shared tree gives them,
+        # and the bank's own duty and act are the 404 of a record that is not there.
+        shared_provision = build.provision(self.shared_act, key="reads-shared-act/1", ref_label="1 §")
+        build.provision_version(shared_provision, texts={"sv": "Delade ord.", "en": "Shared words."})
+        own_provision = build.provision(self.own_act, key="reads-own-act/1", ref_label="1 §")
+        build.provision_version(own_provision, texts={"sv": "Bankens egna ord."})
+        shared_duty = build.obligation(self.shared_act, key="reads-shared-cites", cites=(shared_provision,))
+        own_duty = build.obligation(self.own_act, key="reads-own-cites", owner_tenant=self.bank, cites=(shared_provision, own_provision))
+        tenancy.clear_tenant()
+
+        def cited(duty: Obligation, headers: dict[str, Any]) -> dict[str, list[str]]:
+            response = self.client.get(f"{V1}/obligations/{duty.id}", **headers)
+            self.assertEqual(response.status_code, 200, response.content)
+            return {row["id"]: [text["text"] for text in row["texts"]] for row in response.json()["provisions"]}
+
+        officer = sign_in(self.officer, tenant=self.bank)
+        shared_words = {str(shared_provision.id): ["Delade ord.", "Shared words."]}
+        self.assertEqual(cited(own_duty, officer), {**shared_words, str(own_provision.id): ["Bankens egna ord."]})
+        own_tree = self.client.get(f"{V1}/instruments/{self.own_act.id}/provisions", **officer).json()
+        self.assertEqual(own_tree[0]["versions"][0]["text"]["text"], "Bankens egna ord.")
+
+        support = self.support_session()
+        self.assertEqual(cited(shared_duty, support), shared_words)
+        shared_tree = self.client.get(f"{V1}/instruments/{self.shared_act.id}/provisions", **support)
+        self.assertEqual(shared_tree.status_code, 200, shared_tree.content)
+        self.assertIn(shared_tree.json()[0]["versions"][0]["text"]["text"], shared_words[str(shared_provision.id)])
+        for path in (f"/obligations/{own_duty.id}", f"/instruments/{self.own_act.id}/provisions"):
+            with self.subTest(path=path):
+                self.assertEqual(self.status(path, support), (404, "not_found"))
+        self.assertEqual(self.status(f"/obligations/{own_duty.id}", sign_in(self.other_officer, tenant=self.other_bank)), (404, "not_found"))
+
     def test_another_bank_reads_neither(self) -> None:
         other = sign_in(self.other_officer, tenant=self.other_bank)
         self.assertNotIn(str(self.own.id), self.ids("/obligations", other))

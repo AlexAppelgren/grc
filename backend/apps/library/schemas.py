@@ -77,9 +77,15 @@ class LocalizedText(LibraryResponse):
     )
     is_original: bool = Field(
         description=(
-            "True when this is the language the source itself published in, which is the "
-            "wording that governs wherever two languages read differently. False on every "
-            "translation, whoever or whatever made it."
+            "True when this is the text the others were translated from; false on every "
+            "translation, whoever or whatever made it. What that means depends on whose words "
+            "the text is. On a provision's text, the law's own words, it is the language the "
+            "authority published the rule in, and that wording governs wherever two languages "
+            "read differently; on an instrument's official name it is the language the "
+            "authority named it in. On a title or a summary bleqq wrote, an obligation's title "
+            "and summary or an instrument's summary, it is only the language bleqq wrote it in: "
+            "it says nothing about the language of the law itself, so a summary whose original "
+            "is English may describe a Swedish rule published in Swedish."
         ),
         examples=[False],
     )
@@ -87,8 +93,10 @@ class LocalizedText(LibraryResponse):
         description=(
             "True while a machine made this translation and no person has confirmed it, so "
             "a screen has to label it as such (INV-05). It says nothing about whether the "
-            "translation is faithful, only that nobody has checked it; the original is the "
-            "text that governs either way."
+            "translation is faithful, only that nobody has checked it. It is never true of "
+            "an original. On a provision's text the original is the wording that governs; "
+            "on a title or a summary bleqq wrote, the original is bleqq's own wording and "
+            "governs nothing, because neither the summary nor its translation is the law."
         ),
         examples=[True],
     )
@@ -782,8 +790,10 @@ class ObligationInstrumentSummary(LibraryResponse):
 
 
 class ObligationProvisionRef(LibraryResponse):
-    """A provision the obligation cites (INV-02, INV-03), by reference and path. The
-    verbatim text is the provision tree's, never this read's."""
+    """A provision the obligation cites (INV-02, INV-03, INV-05), by reference and path,
+    with its heading and the law's own words: every language the provision's version in
+    force on the read's date holds, the original first. The same words the provision
+    tree gives the same caller, read on the same rule."""
 
     id: UUID = Field(
         description=(
@@ -805,10 +815,31 @@ class ObligationProvisionRef(LibraryResponse):
         description=(
             "Where the provision sits in its instrument's structure, read from the top, so a "
             "reader can place the citation without opening the tree. It is a breadcrumb a "
-            "person reads and may be relabelled; cite the provision by `id`. The verbatim "
-            "legal text is not here: it belongs to the provision tree, version by version."
+            "person reads and may be relabelled; cite the provision by `id`."
         ),
         examples=["FFFS 2017:2 > 9 kap. > 6 §"],
+    )
+    heading: str | None = Field(
+        description=(
+            "The provision's own heading as the source prints it above the text, such as "
+            "`Betalning för analys`, or null when the source gives it none. One text in the "
+            "source's language, never translated."
+        ),
+        examples=["Betalning för analys"],
+    )
+    texts: list[LocalizedText] = Field(
+        description=(
+            "The law's own words: the verbatim text of this provision's version in force on "
+            "the read's date (`asOf`, or today in the bank's time zone), on the rule the "
+            "provision tree uses, in every language the library holds it in. The original, "
+            "the language the authority published the rule in and whose wording governs, "
+            "comes first, then every translation by language key, each one a machine made "
+            "and no person has confirmed marked `isMachine`. Nothing is picked for the "
+            "reader: a screen chooses the language, as it does among `translations`. An "
+            "empty list when no version of the provision is in force on that date, such as "
+            "a date before its first version, or when the library holds no text for it yet. "
+            "It is never bleqq's summary of the duty, which is `summary`."
+        ),
     )
 
 
@@ -956,6 +987,14 @@ _SAMPLE_SUMMARY_EN = (
     "own resources, from a research payment account, or jointly with execution under the "
     "conditions set out in the rules."
 )
+_SAMPLE_PROVISION_SV = (
+    "Ett värdepappersinstitut får ta emot investeringsanalys från tredje part endast om "
+    "analysen betalas med institutets egna medel eller från ett analyskonto."
+)
+_SAMPLE_PROVISION_EN = (
+    "A securities firm may receive investment research from a third party only if the "
+    "research is paid for from the firm's own resources or from a research payment account."
+)
 _SAMPLE_DETAIL: dict[str, Any] = {
     **{key: _SAMPLE_ROW[key] for key in ("id", "stableKey", "refLabel", "title")},
     "instrument": {
@@ -983,10 +1022,12 @@ _SAMPLE_DETAIL: dict[str, Any] = {
     "scope": _SAMPLE_SCOPE,
     "inFootprint": True,
     "outsideReason": [],
-    "summary": {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": False, "isMachine": True},
+    # bleqq wrote the summary in English; the Swedish is a machine translation of it. The
+    # law's own words, published in Swedish, are the provision's `texts` below.
+    "summary": {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": True, "isMachine": False},
     "translations": [
-        {"text": _SAMPLE_SUMMARY_SV, "language": "sv", "isOriginal": True, "isMachine": False},
-        {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": False, "isMachine": True},
+        {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": True, "isMachine": False},
+        {"text": _SAMPLE_SUMMARY_SV, "language": "sv", "isOriginal": False, "isMachine": True},
     ],
     "version": {
         **_SAMPLE_SEEDED,
@@ -1016,6 +1057,11 @@ _SAMPLE_DETAIL: dict[str, Any] = {
             "id": "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10",
             "refLabel": "9 kap. 6 §",
             "path": "FFFS 2017:2 > 9 kap. > 6 §",
+            "heading": "Betalning för analys",
+            "texts": [
+                {"text": _SAMPLE_PROVISION_SV, "language": "sv", "isOriginal": True, "isMachine": False},
+                {"text": _SAMPLE_PROVISION_EN, "language": "en", "isOriginal": False, "isMachine": True},
+            ],
         }
     ],
     "related": [
@@ -1124,16 +1170,22 @@ class ObligationDetail(LibraryResponse):
     outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
     summary: LocalizedText | None = Field(
         description=(
-            "The duty in plain language as the version in force on the read's date words "
-            "it, in the best language this reader can be served. Null when that version "
-            "carries no summary in any language, or when no version is in force on the date "
-            "asked for."
+            "bleqq's plain-words summary of the duty, as the version in force on the read's "
+            "date words it, in the best language this reader can be served. It is never the "
+            "law's wording and never quotes it as such: the law's own words are "
+            "`provisions[].texts`. Its `isOriginal` names the language bleqq wrote the "
+            "summary in, which says nothing about the language the rule was published in. "
+            "Null when that version carries no summary in any language, or when no version "
+            "is in force on the date asked for."
         )
     )
     translations: list[LocalizedText] = Field(
         description=(
-            "Every language the version in force holds its summary in, so a screen can offer "
-            "\"Show original\" and label what a machine translated. `summary` is the one of "
+            "Every language the version in force holds bleqq's summary in, the language bleqq "
+            "wrote it in marked `isOriginal` and each machine translation nobody has confirmed "
+            "marked `isMachine`, so a screen can offer each language and label what a machine "
+            "translated. Like `summary`, these are bleqq's plain words about the duty and "
+            "never the law's wording, which is `provisions[].texts`. `summary` is the one of "
             "these picked for this reader; the list is the same for everyone."
         )
     )
@@ -1152,10 +1204,13 @@ class ObligationDetail(LibraryResponse):
     )
     provisions: list[ObligationProvisionRef] = Field(
         description=(
-            "The provisions of the instrument this duty was drawn from, as citations. An "
-            "empty list means no provision was cited, not that the duty is unsourced: "
-            "`provenance` still names the page it came from. The verbatim legal text is not "
-            "here; it lives in the provision tree."
+            "The provisions this duty was drawn from, in the tree's own order, each with "
+            "its heading and the law's own words in force on the read's date, in every "
+            "language the library holds them in (`texts`). This is where the rule's wording "
+            "is, as opposed to bleqq's `summary` of it. A provision appears here exactly when "
+            "this caller may read its instrument's provision tree; one it may not is left out "
+            "silently. An empty list means no provision is cited, not that the duty is "
+            "unsourced: `provenance` still names the page it came from."
         )
     )
     related: list[RelatedObligation] = Field(
@@ -1209,7 +1264,7 @@ _SAMPLE_DIFF: dict[str, Any] = {
     "fromConfirmation": _SAMPLE_SEEDED,
     "toConfirmation": _SAMPLE_BY_AGENTS,
     "language": "en",
-    "isMachine": True,
+    "isMachine": False,
     "segments": [
         {"op": "equal", "text": _SAMPLE_SUMMARY_EN},
         {
@@ -1295,8 +1350,10 @@ class VersionDiff(LibraryResponse):
         description=(
             "True when either side of the comparison is a machine translation nobody has "
             "confirmed, so a screen must label the whole diff as machine-made (INV-05). It "
-            "does not say the difference is wrong; it says the words compared are not the "
-            "ones that govern, which are the original's."
+            "does not say the difference is wrong; it says the words compared are a "
+            "machine's and not the original's. On a provision's diff the original is the "
+            "wording that governs; on an obligation's diff both sides are bleqq's summary, "
+            "never the law's wording."
         ),
         examples=[True],
     )
@@ -2275,10 +2332,13 @@ class InstrumentDetail(LibraryResponse):
     )
     summary: LocalizedText | None = Field(
         description=(
-            "What the instrument is and what it means for a bank, in two to four plain sentences, "
-            "in the caller's first content language the summary is written in, or null when the "
-            "library holds no summary for it yet. Written once from the instrument's own source "
-            "and entered through an approved proposal (INV-09)."
+            "bleqq's plain-words summary of what the instrument is and what it means for a bank, "
+            "in two to four sentences, in the caller's first content language the summary is "
+            "written in, or null when the library holds no summary for it yet. Written once from "
+            "the instrument's own source and entered through an approved proposal (INV-09). It is "
+            "never the law's wording: its `isOriginal` names the language bleqq wrote it in, not "
+            "the language the instrument was published in, and the law's own words are the "
+            "provision tree's (`GET /instruments/{instrumentId}/provisions`)."
         )
     )
     name_translations: list[LocalizedText] = Field(
@@ -2292,10 +2352,11 @@ class InstrumentDetail(LibraryResponse):
     )
     summary_translations: list[LocalizedText] = Field(
         description=(
-            "Every language the library holds the summary in, the original marked `isOriginal` and each "
-            "machine translation marked `isMachine` until a person confirms it (INV-05), so a screen can "
-            "offer the original and label what a machine translated. `summary` is the one picked for "
-            "this reader. Empty when the library holds no summary yet."
+            "Every language the library holds bleqq's summary in, the language bleqq wrote it in marked "
+            "`isOriginal` and each machine translation marked `isMachine` until a person confirms it "
+            "(INV-05), so a screen can offer each language and label what a machine translated. Like "
+            "`summary`, never the law's wording. `summary` is the one picked for this reader. Empty "
+            "when the library holds no summary yet."
         ),
     )
     implements: list[InstrumentLinkRef] = Field(
