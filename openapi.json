@@ -11685,6 +11685,23 @@
             "binding": true,
             "eliUri": "",
             "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+            "implementedBy": [],
+            "implements": [
+              {
+                "id": "c4a81e36-7f20-4d95-8b1a-52e9d0f3a6c7",
+                "jurisdiction": {
+                  "key": "eu",
+                  "kind": "supranational",
+                  "label": "European Union"
+                },
+                "key": "celex-32017l0593",
+                "obligationCounts": {
+                  "inLibrary": 0,
+                  "inScope": 0
+                },
+                "shortName": "EU 2017/593"
+              }
+            ],
             "implementsNote": "MiFID II delegated directive (EU) 2017/593",
             "inForceFrom": {
               "date": "2018-01-03",
@@ -11707,6 +11724,7 @@
                 "direction": "incoming",
                 "fromRef": "",
                 "instrument": {
+                  "id": "9b2d4c70-1e5f-4a86-b3c9-7d0e2f6a8b14",
                   "key": "fffs-2026-11",
                   "shortName": "FFFS 2026:11"
                 },
@@ -11739,6 +11757,11 @@
                 "text": "FFFS 2017:2 on securities business"
               }
             ],
+            "obligationCounts": {
+              "inLibrary": 4,
+              "inScope": 3,
+              "waitingForReview": 0
+            },
             "officialRef": "FFFS 2017:2",
             "privateToUs": false,
             "regime": {
@@ -11749,6 +11772,12 @@
             "shortName": "FFFS 2017:2",
             "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
             "stableKey": "fffs-2017-2",
+            "summary": {
+              "isMachine": false,
+              "isOriginal": true,
+              "language": "en",
+              "text": "Finansinspektionen's rules for investment firms on how they conduct securities business."
+            },
             "summaryTranslations": [
               {
                 "isMachine": false,
@@ -11804,7 +11833,7 @@
             "type": "string"
           },
           "implementedBy": {
-            "description": "The instruments that implement this one, read the other way: each library instrument whose `implementsNote` names this instrument's official number. For an EU directive these are the national laws that carry its duties. Empty when the library holds none this caller may read.",
+            "description": "The instruments that implement this one, read the other way: each library instrument whose `implementsNote` names this instrument's official number. For an EU directive these are the national laws that carry its duties, and each says how many it holds and how many fall in the caller's scope. Empty when the library holds none this caller may read.",
             "items": {
               "$ref": "#/components/schemas/InstrumentLinkRef"
             },
@@ -11812,7 +11841,7 @@
             "type": "array"
           },
           "implements": {
-            "description": "The instruments this one implements, read from its `implementsNote`: each library instrument whose official number (such as 2014/59 in Directive 2014/59/EU) the note names. Empty when the note names none the library holds or this caller may read.",
+            "description": "The instruments this one implements, read from its `implementsNote`: each library instrument whose official number (such as 2014/59 in Directive 2014/59/EU) the note names, with how many duties sit under it. Empty when the note names none the library holds or this caller may read.",
             "items": {
               "$ref": "#/components/schemas/InstrumentLinkRef"
             },
@@ -12030,7 +12059,7 @@
           },
           "instrument": {
             "$ref": "#/components/schemas/ObligationInstrumentRef",
-            "description": "The other instrument in the relation, by key and short name."
+            "description": "The other instrument in the relation, by id, key and short name: never the instrument whose card this is."
           },
           "note": {
             "description": "What the relation is, in the library's own words. An empty string when nothing was recorded, never null.",
@@ -12064,8 +12093,35 @@
         "title": "InstrumentLineageRef",
         "type": "object"
       },
+      "InstrumentLinkObligationCounts": {
+        "description": "How many duties sit under an instrument that another instrument's card links to\n(INV-09): the two numbers that instrument's own card answers, held and in the caller's\nscope. The duties still waiting for review are on its own card only.",
+        "properties": {
+          "inLibrary": {
+            "description": "How many obligations the library holds under the other instrument that this caller may read, inside the caller's regulatory scope or outside it: the number that instrument's own card answers as `obligationCounts.inLibrary`. 0 or more.",
+            "examples": [
+              12
+            ],
+            "title": "Inlibrary",
+            "type": "integer"
+          },
+          "inScope": {
+            "description": "How many of those fall inside the caller's regulatory scope, counted exactly as `GET /obligations?instrument=<key>` lists them with the default `footprint=in`: the number the other instrument's own card answers as `obligationCounts.inScope`. In scope is a filter and not the decision that a duty applies to this bank. 0 or more.",
+            "examples": [
+              9
+            ],
+            "title": "Inscope",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "inLibrary",
+          "inScope"
+        ],
+        "title": "InstrumentLinkObligationCounts",
+        "type": "object"
+      },
       "InstrumentLinkRef": {
-        "description": "Another instrument this one is tied to by implementation, as the card links to it.",
+        "description": "Another instrument this one is tied to by implementation, as the card links to it,\nwith how many duties sit under it.",
         "properties": {
           "id": {
             "description": "The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.",
@@ -12085,6 +12141,10 @@
             "title": "Key",
             "type": "string"
           },
+          "obligationCounts": {
+            "$ref": "#/components/schemas/InstrumentLinkObligationCounts",
+            "description": "How many duties sit under the other instrument: held in the library, and in the caller's scope. On a directive's `implementedBy` it says which national laws hold duties and how many of them fall in this bank's scope, while the directive's own `obligationCounts` stay at zero, since it holds no duties of its own."
+          },
           "shortName": {
             "description": "The other instrument's short name, to print. At most three words (`INSTRUMENT_SHORT_NAME_MAX_WORDS`): where the short name the library holds is longer, this is the compact official reference instead, such as `BEK 330/2016` or `EU 2016/167`.",
             "examples": [
@@ -12098,7 +12158,8 @@
           "id",
           "key",
           "shortName",
-          "jurisdiction"
+          "jurisdiction",
+          "obligationCounts"
         ],
         "title": "InstrumentLinkRef",
         "type": "object"
@@ -15029,6 +15090,7 @@
             "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
             "inFootprint": true,
             "instrument": {
+              "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
               "implementsNote": "MiFID II delegated directive (EU) 2017/593",
               "key": "fffs-2017-2",
               "name": {
@@ -15081,6 +15143,7 @@
                 "binding": true,
                 "id": "1d8c5a09-6b47-4e21-8f3a-0c7e2b4d9a63",
                 "instrument": {
+                  "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
                   "key": "fffs-2017-2",
                   "shortName": "FFFS 2017:2"
                 },
@@ -15409,7 +15472,7 @@
           },
           "instrument": {
             "$ref": "#/components/schemas/ObligationInstrumentSummary",
-            "description": "Where the duty comes from: the instrument it was broken out of, with the reference the authority publishes it under and what it implements. Its provision tree and its lineage to other instruments live on the instrument's own read."
+            "description": "Where the duty comes from: the instrument it was broken out of, with the reference the authority publishes it under and what it implements. Its provision tree and its lineage to other instruments live on the instrument's own read, which its `id` opens."
           },
           "outsideReason": {
             "description": "Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `footprint=all` or `footprint=watched` reveals.",
@@ -15620,8 +15683,17 @@
         "type": "object"
       },
       "ObligationInstrumentRef": {
-        "description": "The instrument a duty was broken out of, as a row or a related record names it: the\nkey to filter on and the short name to print.",
+        "description": "The instrument a duty was broken out of, as a row or a related record names it: the\nid to open it by, the key to filter on and the short name to print.",
         "properties": {
+          "id": {
+            "description": "The instrument's identifier in the shared library, as a UUID: the value `GET /instruments/{instrumentId}` takes, so a record that names the instrument can link to its card. It names the instrument and promises nothing more: that read applies its own rules to the caller, and answers 404 for an instrument the caller may not open. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f"
+            ],
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
           "key": {
             "description": "The instrument's stable key, the value to store and to send back as `?instrument=`. It is issued once and never changes, however the instrument is renamed or amended. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
             "examples": [
@@ -15640,6 +15712,7 @@
           }
         },
         "required": [
+          "id",
           "key",
           "shortName"
         ],
@@ -15647,8 +15720,17 @@
         "type": "object"
       },
       "ObligationInstrumentSummary": {
-        "description": "The instrument an obligation belongs to, as \"Where it comes from\" reads it (INV-01).\nIts provisions and lineage live on the instrument's own read.",
+        "description": "The instrument an obligation belongs to, as \"Where it comes from\" reads it (INV-01).\nIts provisions and lineage live on the instrument's own read, which `id` opens.",
         "properties": {
+          "id": {
+            "description": "The instrument's identifier in the shared library, as a UUID: the value `GET /instruments/{instrumentId}` takes, so a record that names the instrument can link to its card. It names the instrument and promises nothing more: that read applies its own rules to the caller, and answers 404 for an instrument the caller may not open. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f"
+            ],
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
           "implementsNote": {
             "description": "What this instrument implements or elaborates, in the library's own words, so a reader can see where a Swedish rule comes from. Free text for a person and never a machine-readable link; an empty string when nothing was recorded, never null. The structured lineage between instruments lives on the instrument's own read.",
             "examples": [
@@ -15694,6 +15776,7 @@
           }
         },
         "required": [
+          "id",
           "key",
           "shortName",
           "name",
@@ -15733,6 +15816,7 @@
                 "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
                 "inFootprint": true,
                 "instrument": {
+                  "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
                   "key": "fffs-2017-2",
                   "shortName": "FFFS 2017:2"
                 },
@@ -16204,7 +16288,7 @@
           },
           "instrument": {
             "$ref": "#/components/schemas/ObligationInstrumentRef",
-            "description": "The instrument this duty was broken out of, by key and short name. The card adds the instrument's official reference and what it implements; this row carries only what a column shows."
+            "description": "The instrument this duty was broken out of, by id, key and short name. The card adds the instrument's official reference and what it implements; this row carries only what a column shows and links to."
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
@@ -21566,6 +21650,190 @@
         "title": "RegisterApplicability",
         "type": "object"
       },
+      "RegisterApplicabilityAnswer": {
+        "description": "One obligation the register offers for one legal entity, with the answer so far and what\nto send to answer it. It never carries a suggested answer: whether the obligation applies\nis a person's decision, stored through `PUT /obligations/{obligationId}/applicability` or\n`POST /applicability`.",
+        "examples": [
+          {
+            "applicability": "applies",
+            "decidedAt": "2026-09-14T08:30:00Z",
+            "decidedBy": {
+              "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+              "name": "Sara Lind"
+            },
+            "matchedTerms": [
+              {
+                "dimension": "service_type",
+                "key": "custody",
+                "kind": null,
+                "label": "Custody"
+              }
+            ],
+            "obligationId": "44444444-4444-4444-8444-444444444444",
+            "orgUnitId": "55555555-5555-4555-8555-555555555555",
+            "reason": "Holds client assets under the securities licence",
+            "refLabel": "9 kap. 6 \u00a7",
+            "title": "Keep client assets apart from the firm's own",
+            "version": 2
+          }
+        ],
+        "properties": {
+          "applicability": {
+            "description": "Whether the obligation applies to the bank here: `applies` when it binds this bank, legal entity or unit; `not_applicable` when a compliance person decided it does not, with the reason beside it; `under_assessment` until anyone has decided. A fixed kind, not a list the bank edits. It says nothing about whether the bank complies, which is the separate compliance status. Read from the row `orgUnitId` names; an obligation nobody answered there reads `under_assessment`.",
+            "enum": [
+              "applies",
+              "not_applicable",
+              "under_assessment"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "decidedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The UTC timestamp at which the applicability answer was last set, null while it is `under_assessment` and nobody has answered. Set by the server.",
+            "title": "Decidedat"
+          },
+          "decidedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NamedRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered."
+          },
+          "matchedTerms": {
+            "description": "Which of the obligation's own scope terms the legal entity carries: its entity type, or a term the entity's public register entry gives it. Terms of the shared library's taxonomy vocabulary, each with its dimension, which an administrator may extend through an approved proposal; read `GET /taxonomy/terms` for the live set. The regime and the jurisdictions the obligation inherits from its regulation are never listed here. Empty means the row is offered through its regulation's regime alone. A match is a fact about scope and never an answer: it does not say the obligation applies.",
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermRef"
+            },
+            "title": "Matchedterms",
+            "type": "array"
+          },
+          "obligationId": {
+            "description": "The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone. Send it as `obligationId` when answering.",
+            "format": "uuid",
+            "title": "Obligationid",
+            "type": "string"
+          },
+          "orgUnitId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What an answer for this row must name as `orgUnitId`: the legal entity's UUID where the obligation spans two or more of the bank's legal entities, and null, for the obligation as a whole, where it spans fewer. The write refuses a legal entity the obligation does not span, so send this value back as it is.",
+            "title": "Orgunitid"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.",
+            "title": "Reason"
+          },
+          "refLabel": {
+            "description": "Where in its regulation the obligation sits, as the regulation numbers it, such as `9 kap. 6 \u00a7`. A library fact.",
+            "title": "Reflabel",
+            "type": "string"
+          },
+          "title": {
+            "description": "The obligation's title in the reader's language, from the shared library; empty when the library holds none.",
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "description": "The version of the row the answer lands on, 0 when nobody has written it yet: what `If-Match` takes on `PUT /obligations/{obligationId}/applicability`, so that an answer a colleague stored in between is refused instead of overwritten.",
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "obligationId",
+          "refLabel",
+          "title",
+          "orgUnitId",
+          "applicability",
+          "reason",
+          "decidedAt",
+          "decidedBy",
+          "version",
+          "matchedTerms"
+        ],
+        "title": "RegisterApplicabilityAnswer",
+        "type": "object"
+      },
+      "RegisterApplicabilityAnswerPage": {
+        "description": "`{items, total}` with `limit` and `offset` (playbook 10).",
+        "examples": [
+          {
+            "items": [
+              {
+                "applicability": "applies",
+                "decidedAt": "2026-09-14T08:30:00Z",
+                "decidedBy": {
+                  "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+                  "name": "Sara Lind"
+                },
+                "matchedTerms": [
+                  {
+                    "dimension": "service_type",
+                    "key": "custody",
+                    "kind": null,
+                    "label": "Custody"
+                  }
+                ],
+                "obligationId": "44444444-4444-4444-8444-444444444444",
+                "orgUnitId": "55555555-5555-4555-8555-555555555555",
+                "reason": "Holds client assets under the securities licence",
+                "refLabel": "9 kap. 6 \u00a7",
+                "title": "Keep client assets apart from the firm's own",
+                "version": 2
+              }
+            ],
+            "total": 1
+          }
+        ],
+        "properties": {
+          "items": {
+            "description": "The offered obligations on this page, by stable key, the inventory's own order.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterApplicabilityAnswer"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "description": "How many offered obligations match in total, not how many are on this page; use it to size a pager.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "RegisterApplicabilityAnswerPage",
+        "type": "object"
+      },
       "RegisterApplicabilityBody": {
         "additionalProperties": false,
         "description": "`PUT /obligations/{obligationId}/applicability`: one confirmed answer.",
@@ -21626,6 +21894,89 @@
           "reason"
         ],
         "title": "RegisterApplicabilityBody",
+        "type": "object"
+      },
+      "RegisterApplicabilityCompany": {
+        "description": "One of the bank's active legal entities, with how its answers stand over the\nobligations the register offers for it (REG-01, FP-05).",
+        "examples": [
+          {
+            "applies": 9,
+            "notApplicable": 2,
+            "offered": 14,
+            "orgUnit": {
+              "id": "55555555-5555-4555-8555-555555555555",
+              "name": "Example Bank AB"
+            },
+            "underAssessment": 3
+          }
+        ],
+        "properties": {
+          "applies": {
+            "description": "How many of the offered obligations a person answered `applies` for the legal entity. The answer read for the entity is its own row where the obligation spans two or more of the bank's legal entities, and the obligation's own answer where it spans fewer, which is how the obligation page asks and stores it. It says nothing about whether the bank complies, which is the separate compliance status.",
+            "title": "Applies",
+            "type": "integer"
+          },
+          "notApplicable": {
+            "description": "How many of the offered obligations a person answered `not_applicable` for the legal entity, each with its reason. The answer read for the entity is its own row where the obligation spans two or more of the bank's legal entities, and the obligation's own answer where it spans fewer, which is how the obligation page asks and stores it.",
+            "title": "Notapplicable",
+            "type": "integer"
+          },
+          "offered": {
+            "description": "How many obligations the register offers for the legal entity here. An obligation is offered for a legal entity when it is in the bank's working inventory, the rows `GET /obligations` lists by default, and it spans the entity: the obligation is scoped to the entity's type or to no type at all, and in every dimension it carries terms in, at least one is still inside the entity's own scope, which an approved regulatory scope request may have narrowed. Being offered decides nothing: a person answers each one. Always the sum of the three counts beside it.",
+            "title": "Offered",
+            "type": "integer"
+          },
+          "orgUnit": {
+            "$ref": "#/components/schemas/NamedRef",
+            "description": "The legal entity, by the id and the name of its unit in the bank's organisation. Send the id as `orgUnitId` to list the regulations and the obligations offered for it."
+          },
+          "underAssessment": {
+            "description": "How many of the offered obligations nobody has answered for the legal entity yet, or a person took back to undecided. An obligation with no answer stored at all counts here.",
+            "title": "Underassessment",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offered",
+          "applies",
+          "notApplicable",
+          "underAssessment",
+          "orgUnit"
+        ],
+        "title": "RegisterApplicabilityCompany",
+        "type": "object"
+      },
+      "RegisterApplicabilityInstrument": {
+        "description": "A regulation as the \"What applies\" lists name it: enough to print it and to open it.",
+        "properties": {
+          "id": {
+            "description": "The regulation's id in the library, a UUID: the value `GET /instruments/{instrumentId}` and its `/applicability` roll-up take.",
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "$ref": "#/components/schemas/VocabRef",
+            "description": "Where the regulation applies, as a row of the shared library's jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` on day one), which a platform admin may extend, relabel or retire; read `GET /reference/jurisdictions` for the live set and match on the key. A library fact, the same for every bank."
+          },
+          "key": {
+            "description": "The regulation's stable key, issued once and never changed, such as `fffs-2017-2`. Send it as `instrument` to list its obligations.",
+            "title": "Key",
+            "type": "string"
+          },
+          "shortName": {
+            "description": "The regulation's short name, to print, as the instruments list gives it: at most three words, the compact official reference where the library's own short name is longer.",
+            "title": "Shortname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "shortName",
+          "jurisdiction"
+        ],
+        "title": "RegisterApplicabilityInstrument",
         "type": "object"
       },
       "RegisterApplicabilityMany": {
@@ -21697,6 +22048,136 @@
         "title": "RegisterApplicabilityManyBody",
         "type": "object"
       },
+      "RegisterApplicabilityRegulation": {
+        "description": "A regulation with at least one obligation the register offers for one legal entity,\nwith how the entity's answers stand over those obligations.",
+        "examples": [
+          {
+            "applies": 2,
+            "instrument": {
+              "id": "33333333-3333-4333-8333-333333333333",
+              "jurisdiction": {
+                "key": "se",
+                "kind": "country",
+                "label": "Sweden"
+              },
+              "key": "fffs-2017-2",
+              "shortName": "FFFS 2017:2"
+            },
+            "notApplicable": 1,
+            "offered": 4,
+            "through": {
+              "lines": [
+                "V\u00e4rdepappersbolag"
+              ],
+              "term": {
+                "dimension": "regime",
+                "key": "securities",
+                "kind": null,
+                "label": "Securities"
+              }
+            },
+            "underAssessment": 1
+          }
+        ],
+        "properties": {
+          "applies": {
+            "description": "How many of the offered obligations a person answered `applies` for the legal entity. The answer read for the entity is its own row where the obligation spans two or more of the bank's legal entities, and the obligation's own answer where it spans fewer, which is how the obligation page asks and stores it. It says nothing about whether the bank complies, which is the separate compliance status.",
+            "title": "Applies",
+            "type": "integer"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/RegisterApplicabilityInstrument",
+            "description": "The regulation, a shared library fact: its id, stable key, short name and jurisdiction."
+          },
+          "notApplicable": {
+            "description": "How many of the offered obligations a person answered `not_applicable` for the legal entity, each with its reason. The answer read for the entity is its own row where the obligation spans two or more of the bank's legal entities, and the obligation's own answer where it spans fewer, which is how the obligation page asks and stores it.",
+            "title": "Notapplicable",
+            "type": "integer"
+          },
+          "offered": {
+            "description": "How many obligations the register offers for the legal entity here. An obligation is offered for a legal entity when it is in the bank's working inventory, the rows `GET /obligations` lists by default, and it spans the entity: the obligation is scoped to the entity's type or to no type at all, and in every dimension it carries terms in, at least one is still inside the entity's own scope, which an approved regulatory scope request may have narrowed. Being offered decides nothing: a person answers each one. Always the sum of the three counts beside it.",
+            "title": "Offered",
+            "type": "integer"
+          },
+          "through": {
+            "$ref": "#/components/schemas/RegisterApplicabilityThrough",
+            "description": "The regulation's regime and the lines of the entity's register entry that give the entity that regime, empty when none does."
+          },
+          "underAssessment": {
+            "description": "How many of the offered obligations nobody has answered for the legal entity yet, or a person took back to undecided. An obligation with no answer stored at all counts here.",
+            "title": "Underassessment",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offered",
+          "applies",
+          "notApplicable",
+          "underAssessment",
+          "instrument",
+          "through"
+        ],
+        "title": "RegisterApplicabilityRegulation",
+        "type": "object"
+      },
+      "RegisterApplicabilityRegulationPage": {
+        "description": "`{items, total}` with `limit` and `offset` (playbook 10).",
+        "examples": [
+          {
+            "items": [
+              {
+                "applies": 2,
+                "instrument": {
+                  "id": "33333333-3333-4333-8333-333333333333",
+                  "jurisdiction": {
+                    "key": "se",
+                    "kind": "country",
+                    "label": "Sweden"
+                  },
+                  "key": "fffs-2017-2",
+                  "shortName": "FFFS 2017:2"
+                },
+                "notApplicable": 1,
+                "offered": 4,
+                "through": {
+                  "lines": [
+                    "V\u00e4rdepappersbolag"
+                  ],
+                  "term": {
+                    "dimension": "regime",
+                    "key": "securities",
+                    "kind": null,
+                    "label": "Securities"
+                  }
+                },
+                "underAssessment": 1
+              }
+            ],
+            "total": 1
+          }
+        ],
+        "properties": {
+          "items": {
+            "description": "The regulations on this page, by the regulation's stable key.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterApplicabilityRegulation"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "description": "How many regulations match in total, not how many are on this page; use it to size a pager.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "RegisterApplicabilityRegulationPage",
+        "type": "object"
+      },
       "RegisterApplicabilityRow": {
         "additionalProperties": false,
         "description": "One row of a confirmed batch: the obligation it is about, then the same target and answer.",
@@ -21757,6 +22238,49 @@
           "obligationId"
         ],
         "title": "RegisterApplicabilityRow",
+        "type": "object"
+      },
+      "RegisterApplicabilityStatusCount": {
+        "description": "How many of a regulation's obligations that apply to the bank show one compliance status.",
+        "properties": {
+          "count": {
+            "description": "How many of the regulation's obligations that apply show this status in the inventory: the worst status of the legal entities it applies to, else the obligation's own. Always above 0; a status no obligation shows is left out.",
+            "title": "Count",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VocabRef",
+            "description": "The compliance status, as a row of the bank's own `compliance_status` vocabulary, which its admin may extend under the fixed categories; read `GET /vocab/compliance_status` for the live set, branch on `kind` and show the label."
+          }
+        },
+        "required": [
+          "status",
+          "count"
+        ],
+        "title": "RegisterApplicabilityStatusCount",
+        "type": "object"
+      },
+      "RegisterApplicabilityThrough": {
+        "description": "What brings a regulation into a legal entity's scope: the regulation's regime, and the\nlines of the entity's own public register entry that give the entity that regime. A fact\nabout scope, never an answer: whether an obligation applies stays a person's decision.",
+        "properties": {
+          "lines": {
+            "description": "The lines of this legal entity's public register entry that give it that regime, in the register's own words and order: a business name such as `Bankaktiebolag`, or a licence with its legal basis. Public register data, read from the supervisor and never typed by the bank. Empty when the entity has no register facts or its facts do not give it the regime: the regulation is then offered because nothing has taken the regime out of the entity's own scope, not because a licence names it.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "term": {
+            "$ref": "#/components/schemas/FootprintTermRef",
+            "description": "The regulation's regime, as a term of the shared library's taxonomy vocabulary with its dimension (`regime`), key and label. An administrator may extend the terms through an approved proposal, so read `GET /taxonomy/terms` for the live set. Every regulation has exactly one regime."
+          }
+        },
+        "required": [
+          "term",
+          "lines"
+        ],
+        "title": "RegisterApplicabilityThrough",
         "type": "object"
       },
       "RegisterApplyBody": {
@@ -24609,6 +25133,95 @@
         "title": "RegisterGapPatch",
         "type": "object"
       },
+      "RegisterInstrumentApplicability": {
+        "description": "A regulation rolled up for the bank: how many of its obligations are in the working\ninventory, how the bank answered them, how it complies where they apply, and how the\nanswers stand per legal entity. \"Applies\" and \"we comply\" stay separate facts.",
+        "examples": [
+          {
+            "applies": 2,
+            "companies": [
+              {
+                "applies": 9,
+                "notApplicable": 2,
+                "offered": 14,
+                "orgUnit": {
+                  "id": "55555555-5555-4555-8555-555555555555",
+                  "name": "Example Bank AB"
+                },
+                "underAssessment": 3
+              }
+            ],
+            "inScope": 4,
+            "notApplicable": 1,
+            "statuses": [
+              {
+                "count": 1,
+                "status": {
+                  "key": "partly_compliant",
+                  "kind": "partly",
+                  "label": "Partly compliant"
+                }
+              },
+              {
+                "count": 1,
+                "status": {
+                  "key": "gap",
+                  "kind": "gap",
+                  "label": "Gap"
+                }
+              }
+            ],
+            "underAssessment": 1
+          }
+        ],
+        "properties": {
+          "applies": {
+            "description": "How many of them apply to the bank: the bank answered `applies` for the obligation or for any legal entity, as `GET /obligations?applicability=applies` counts them. It says nothing about whether the bank complies.",
+            "title": "Applies",
+            "type": "integer"
+          },
+          "companies": {
+            "description": "The rows of `GET /applicability/companies` narrowed to this regulation, in the organisation's order, leaving out a legal entity the regulation offers nothing for.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterApplicabilityCompany"
+            },
+            "title": "Companies",
+            "type": "array"
+          },
+          "inScope": {
+            "description": "How many of the regulation's obligations are in the bank's working inventory, exactly as `GET /obligations?instrument=<key>` counts them. Always the sum of the three counts beside it.",
+            "title": "Inscope",
+            "type": "integer"
+          },
+          "notApplicable": {
+            "description": "How many of them the bank answered `not_applicable` for the obligation as a whole while it applies to no legal entity.",
+            "title": "Notapplicable",
+            "type": "integer"
+          },
+          "statuses": {
+            "description": "The obligations that apply, counted by the compliance status the inventory shows for each, in the order of the bank's scale; the counts add up to `applies`. Empty when none applies.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterApplicabilityStatusCount"
+            },
+            "title": "Statuses",
+            "type": "array"
+          },
+          "underAssessment": {
+            "description": "How many of them nobody has answered, an obligation with no register entry included.",
+            "title": "Underassessment",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "inScope",
+          "applies",
+          "notApplicable",
+          "underAssessment",
+          "statuses",
+          "companies"
+        ],
+        "title": "RegisterInstrumentApplicability",
+        "type": "object"
+      },
       "RegisterInternalItem": {
         "description": "One of the bank's own policies, procedures, controls, processes or systems, as the link\ndialog offers it to pick (REG-05). An item is created from a link's call; there is no\nother way in.",
         "examples": [
@@ -26653,7 +27266,7 @@
           },
           "instrument": {
             "$ref": "#/components/schemas/ObligationInstrumentRef",
-            "description": "Which instrument the related duty was broken out of, by key and short name."
+            "description": "Which instrument the related duty was broken out of, by id, key and short name."
           },
           "relation": {
             "$ref": "#/components/schemas/VocabRef",
@@ -30712,6 +31325,118 @@
                     ],
                     "registrationNumber": "556000-0001"
                   },
+                  "mapped": [
+                    {
+                      "line": "Bankaktiebolag",
+                      "terms": [
+                        {
+                          "dimension": "regime",
+                          "key": "banking",
+                          "kind": null,
+                          "label": "Banking"
+                        },
+                        {
+                          "dimension": "regime",
+                          "key": "payments",
+                          "kind": null,
+                          "label": "Payments"
+                        },
+                        {
+                          "dimension": "legal_entity",
+                          "key": "bank",
+                          "kind": null,
+                          "label": "Bank"
+                        },
+                        {
+                          "dimension": "service_type",
+                          "key": "custody",
+                          "kind": null,
+                          "label": "Custody"
+                        },
+                        {
+                          "dimension": "licensed_activity",
+                          "key": "card_issuing",
+                          "kind": null,
+                          "label": "Card issuing"
+                        },
+                        {
+                          "dimension": "licensed_activity",
+                          "key": "card_acquiring",
+                          "kind": null,
+                          "label": "Card acquiring"
+                        }
+                      ]
+                    },
+                    {
+                      "line": "V\u00e4rdepappersbolag",
+                      "terms": [
+                        {
+                          "dimension": "regime",
+                          "key": "securities",
+                          "kind": null,
+                          "label": "Securities"
+                        },
+                        {
+                          "dimension": "legal_entity",
+                          "key": "investment_firm",
+                          "kind": null,
+                          "label": "Investment firm"
+                        }
+                      ]
+                    },
+                    {
+                      "line": "F\u00f6rs\u00e4kringsdistribution",
+                      "terms": [
+                        {
+                          "dimension": "regime",
+                          "key": "insurance",
+                          "kind": null,
+                          "label": "Insurance"
+                        },
+                        {
+                          "dimension": "service_type",
+                          "key": "insurance_distribution",
+                          "kind": null,
+                          "label": "Insurance distribution"
+                        }
+                      ]
+                    },
+                    {
+                      "line": "Tillst\u00e5nd att driva bankr\u00f6relse, enligt lag 2004:297 om bank- och finansieringsr\u00f6relse",
+                      "terms": [
+                        {
+                          "dimension": "regime",
+                          "key": "banking",
+                          "kind": null,
+                          "label": "Banking"
+                        },
+                        {
+                          "dimension": "regime",
+                          "key": "payments",
+                          "kind": null,
+                          "label": "Payments"
+                        },
+                        {
+                          "dimension": "service_type",
+                          "key": "custody",
+                          "kind": null,
+                          "label": "Custody"
+                        },
+                        {
+                          "dimension": "licensed_activity",
+                          "key": "card_issuing",
+                          "kind": null,
+                          "label": "Card issuing"
+                        },
+                        {
+                          "dimension": "licensed_activity",
+                          "key": "card_acquiring",
+                          "kind": null,
+                          "label": "Card acquiring"
+                        }
+                      ]
+                    }
+                  ],
                   "readAt": "2026-10-05T03:17:00Z",
                   "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv",
                   "unmapped": [
@@ -30947,6 +31672,118 @@
                 ],
                 "registrationNumber": "556000-0001"
               },
+              "mapped": [
+                {
+                  "line": "Bankaktiebolag",
+                  "terms": [
+                    {
+                      "dimension": "regime",
+                      "key": "banking",
+                      "kind": null,
+                      "label": "Banking"
+                    },
+                    {
+                      "dimension": "regime",
+                      "key": "payments",
+                      "kind": null,
+                      "label": "Payments"
+                    },
+                    {
+                      "dimension": "legal_entity",
+                      "key": "bank",
+                      "kind": null,
+                      "label": "Bank"
+                    },
+                    {
+                      "dimension": "service_type",
+                      "key": "custody",
+                      "kind": null,
+                      "label": "Custody"
+                    },
+                    {
+                      "dimension": "licensed_activity",
+                      "key": "card_issuing",
+                      "kind": null,
+                      "label": "Card issuing"
+                    },
+                    {
+                      "dimension": "licensed_activity",
+                      "key": "card_acquiring",
+                      "kind": null,
+                      "label": "Card acquiring"
+                    }
+                  ]
+                },
+                {
+                  "line": "V\u00e4rdepappersbolag",
+                  "terms": [
+                    {
+                      "dimension": "regime",
+                      "key": "securities",
+                      "kind": null,
+                      "label": "Securities"
+                    },
+                    {
+                      "dimension": "legal_entity",
+                      "key": "investment_firm",
+                      "kind": null,
+                      "label": "Investment firm"
+                    }
+                  ]
+                },
+                {
+                  "line": "F\u00f6rs\u00e4kringsdistribution",
+                  "terms": [
+                    {
+                      "dimension": "regime",
+                      "key": "insurance",
+                      "kind": null,
+                      "label": "Insurance"
+                    },
+                    {
+                      "dimension": "service_type",
+                      "key": "insurance_distribution",
+                      "kind": null,
+                      "label": "Insurance distribution"
+                    }
+                  ]
+                },
+                {
+                  "line": "Tillst\u00e5nd att driva bankr\u00f6relse, enligt lag 2004:297 om bank- och finansieringsr\u00f6relse",
+                  "terms": [
+                    {
+                      "dimension": "regime",
+                      "key": "banking",
+                      "kind": null,
+                      "label": "Banking"
+                    },
+                    {
+                      "dimension": "regime",
+                      "key": "payments",
+                      "kind": null,
+                      "label": "Payments"
+                    },
+                    {
+                      "dimension": "service_type",
+                      "key": "custody",
+                      "kind": null,
+                      "label": "Custody"
+                    },
+                    {
+                      "dimension": "licensed_activity",
+                      "key": "card_issuing",
+                      "kind": null,
+                      "label": "Card issuing"
+                    },
+                    {
+                      "dimension": "licensed_activity",
+                      "key": "card_acquiring",
+                      "kind": null,
+                      "label": "Card acquiring"
+                    }
+                  ]
+                }
+              ],
               "readAt": "2026-10-05T03:17:00Z",
               "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv",
               "unmapped": [
@@ -31982,7 +32819,7 @@
         "type": "object"
       },
       "TenantRegisterEntry": {
-        "description": "What one supervisor's register says about one of the bank's legal entities (TEN-07,\nTEN-08), with where and when it was read. Written only by applying a lookup and by the\nnightly re-read, each write audited; never by a person.",
+        "description": "What one supervisor's register says about one of the bank's legal entities (TEN-07,\nTEN-08), with where and when it was read. Written only by applying a lookup and by the\nnightly re-read, each write audited; never by a person. What each line brings into scope\n(`mapped`, `unmapped`) is worked out when it is read and stored nowhere.",
         "examples": [
           {
             "authority": {
@@ -32019,6 +32856,118 @@
               ],
               "registrationNumber": "556000-0001"
             },
+            "mapped": [
+              {
+                "line": "Bankaktiebolag",
+                "terms": [
+                  {
+                    "dimension": "regime",
+                    "key": "banking",
+                    "kind": null,
+                    "label": "Banking"
+                  },
+                  {
+                    "dimension": "regime",
+                    "key": "payments",
+                    "kind": null,
+                    "label": "Payments"
+                  },
+                  {
+                    "dimension": "legal_entity",
+                    "key": "bank",
+                    "kind": null,
+                    "label": "Bank"
+                  },
+                  {
+                    "dimension": "service_type",
+                    "key": "custody",
+                    "kind": null,
+                    "label": "Custody"
+                  },
+                  {
+                    "dimension": "licensed_activity",
+                    "key": "card_issuing",
+                    "kind": null,
+                    "label": "Card issuing"
+                  },
+                  {
+                    "dimension": "licensed_activity",
+                    "key": "card_acquiring",
+                    "kind": null,
+                    "label": "Card acquiring"
+                  }
+                ]
+              },
+              {
+                "line": "V\u00e4rdepappersbolag",
+                "terms": [
+                  {
+                    "dimension": "regime",
+                    "key": "securities",
+                    "kind": null,
+                    "label": "Securities"
+                  },
+                  {
+                    "dimension": "legal_entity",
+                    "key": "investment_firm",
+                    "kind": null,
+                    "label": "Investment firm"
+                  }
+                ]
+              },
+              {
+                "line": "F\u00f6rs\u00e4kringsdistribution",
+                "terms": [
+                  {
+                    "dimension": "regime",
+                    "key": "insurance",
+                    "kind": null,
+                    "label": "Insurance"
+                  },
+                  {
+                    "dimension": "service_type",
+                    "key": "insurance_distribution",
+                    "kind": null,
+                    "label": "Insurance distribution"
+                  }
+                ]
+              },
+              {
+                "line": "Tillst\u00e5nd att driva bankr\u00f6relse, enligt lag 2004:297 om bank- och finansieringsr\u00f6relse",
+                "terms": [
+                  {
+                    "dimension": "regime",
+                    "key": "banking",
+                    "kind": null,
+                    "label": "Banking"
+                  },
+                  {
+                    "dimension": "regime",
+                    "key": "payments",
+                    "kind": null,
+                    "label": "Payments"
+                  },
+                  {
+                    "dimension": "service_type",
+                    "key": "custody",
+                    "kind": null,
+                    "label": "Custody"
+                  },
+                  {
+                    "dimension": "licensed_activity",
+                    "key": "card_issuing",
+                    "kind": null,
+                    "label": "Card issuing"
+                  },
+                  {
+                    "dimension": "licensed_activity",
+                    "key": "card_acquiring",
+                    "kind": null,
+                    "label": "Card acquiring"
+                  }
+                ]
+              }
+            ],
             "readAt": "2026-10-05T03:17:00Z",
             "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv",
             "unmapped": [
@@ -32041,6 +32990,14 @@
             "$ref": "#/components/schemas/RegisterFacts",
             "description": "The company's business, licences and branches as last read from the register."
           },
+          "mapped": {
+            "description": "What each line of the register facts brings into the regulatory scope: one entry per business name or licence line that gives at least one scope term, in the register's order (the main business, the other businesses, then the licences). The server works it out on every read from bleqq's own mapping of the supervisor's wording to scope terms, kept per authority; a bank never edits it. It is what the licence allows, not what the company chooses to do, and it changes nothing by itself: the bank's regulatory scope changes only through an approved regulatory scope request (`POST /tenant/footprint/requests`), which `GET /tenant/footprint/suggestions` proposes from these same lines. A line that gives no term is not here (see `unmapped`). An empty list when no line gives a term, and always for a company the register no longer lists.",
+            "items": {
+              "$ref": "#/components/schemas/TenantRegisterMappedLine"
+            },
+            "title": "Mapped",
+            "type": "array"
+          },
           "readAt": {
             "description": "When the register was last read for the company, as a UTC timestamp, whether or not anything had changed.",
             "format": "date-time",
@@ -32053,7 +33010,7 @@
             "type": "string"
           },
           "unmapped": {
-            "description": "The business names and licence lines bleqq's mapping does not turn into a scope term, in the register's order, shown as not used for the scope; an empty list when every line maps.",
+            "description": "The business names and licence lines bleqq's mapping does not turn into a scope term, in the register's order, shown as not used for the scope: wording the mapping does not know, and wording whose every term the taxonomy has retired or does not hold. Wording the mapping knows to add nothing, such as the size class `Medelstort institut` or a capital-method approval, is neither here nor in `mapped`. An empty list when there is no such line.",
             "items": {
               "type": "string"
             },
@@ -32067,9 +33024,77 @@
           "sourceUrl",
           "readAt",
           "changedAt",
+          "mapped",
           "unmapped"
         ],
         "title": "TenantRegisterEntry",
+        "type": "object"
+      },
+      "TenantRegisterMappedLine": {
+        "description": "One line of a company's register facts and the scope terms bleqq's mapping of the\nsupervisor's wording reads from it (TEN-07, FP-05): what the licence allows, shown and\nnever applied.",
+        "examples": [
+          {
+            "line": "Bankaktiebolag",
+            "terms": [
+              {
+                "dimension": "regime",
+                "key": "banking",
+                "kind": null,
+                "label": "Banking"
+              },
+              {
+                "dimension": "regime",
+                "key": "payments",
+                "kind": null,
+                "label": "Payments"
+              },
+              {
+                "dimension": "legal_entity",
+                "key": "bank",
+                "kind": null,
+                "label": "Bank"
+              },
+              {
+                "dimension": "service_type",
+                "key": "custody",
+                "kind": null,
+                "label": "Custody"
+              },
+              {
+                "dimension": "licensed_activity",
+                "key": "card_issuing",
+                "kind": null,
+                "label": "Card issuing"
+              },
+              {
+                "dimension": "licensed_activity",
+                "key": "card_acquiring",
+                "kind": null,
+                "label": "Card acquiring"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "line": {
+            "description": "The business name or licence text the terms come from, exactly as `facts` holds it: `facts.mainBusiness`, one of `facts.otherBusinesses` or the `text` of one of `facts.licences`, so a screen matches a line to its facts by comparing the two strings; public register data, read as the register published it and never edited by the bank.",
+            "title": "Line",
+            "type": "string"
+          },
+          "terms": {
+            "description": "The scope terms the line gives, at least one, in the order the regulatory scope page lists terms: by dimension, then by term. Each is a term of the shared library's taxonomy, the same terms obligations are scoped with, carrying its key, its label in the reader's language and the key of its dimension (`regime`, `legal_entity`, `service_type` or `licensed_activity` today): a vocabulary an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. A term the taxonomy has retired is left out. They say what the licence allows, not what the company chooses to do, and never that a rule applies to it.",
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermRef"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "line",
+          "terms"
+        ],
+        "title": "TenantRegisterMappedLine",
         "type": "object"
       },
       "TenantRemovalOwner": {
@@ -41516,6 +42541,290 @@
         ]
       }
     },
+    "/api/v1/applicability/companies": {
+      "get": {
+        "description": "Every active legal entity of the bank, by name, with how many obligations the register\noffers for it and how its answers to \"Does it apply to us?\" stand: how many apply, how many\ndo not, and how many nobody has answered. Call it to open the \"What applies\" page, then\nread one company's regulations and obligations with its id.\n\nAn obligation is offered for a legal entity when it is in the bank's working inventory,\nthe rows `GET /obligations` lists by default, and it spans the entity: it is scoped to\nthe entity's type or to no type, and an approved regulatory scope request has not taken\nevery term it carries in some dimension out of the entity's own scope. These are the\nentities `GET /obligations/{obligationId}/register/entities` names. Being offered\ndecides nothing, and nothing here suggests an answer: a person answers each obligation.\nThe answer counted for an entity is its own where the obligation spans two or more of\nthe bank's legal entities, and the obligation's own where it spans fewer, as the\nobligation page asks it.\n\nA person's session holding `register.read`, which every role of a bank carries. A read: it\nwrites nothing and no audit event. The list is the bank's legal entities, a handful, so it\nis not paged. A bank with no active legal entity gets an empty list with 200.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.",
+        "operationId": "listApplicabilityCompanies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "applies": 9,
+                    "notApplicable": 2,
+                    "offered": 14,
+                    "orgUnit": {
+                      "id": "55555555-5555-4555-8555-555555555555",
+                      "name": "Example Bank AB"
+                    },
+                    "underAssessment": 3
+                  }
+                ],
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RegisterApplicabilityCompany"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "See, company by company, how many obligations still await an answer",
+        "tags": [
+          "Register"
+        ]
+      }
+    },
+    "/api/v1/applicability/regulations": {
+      "get": {
+        "description": "The regulations with at least one obligation the register offers for one legal entity,\nby the regulation's stable key, each with how the entity's answers stand over its offered\nobligations. `answer` keeps the regulations with an obligation answered that way, and `q`\nthose whose name, short name or official reference holds a phrase, as the instruments\nlist matches it; a regulation kept carries its whole counts either way.\n\n`through` says what brings the regulation into the entity's scope: the regulation's regime,\nand the lines of the entity's own public register entry that give it that regime, such as\nits business or a licence. No line means no register fact gives it, not that it does not\nreach the entity. It is a fact about scope and never an answer.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nPages with `limit` and `offset`, 20 by default and 100 at most; an entity the register\noffers nothing for, or filters matching nothing, is a 200 with an empty page.\n\nErrors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal\nentities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or\none that is not a UUID, an `answer` outside the three values, a `q` longer than 200\ncharacters or holding a NUL character, or a page out of range.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.",
+        "operationId": "listApplicabilityRegulations",
+        "parameters": [
+          {
+            "description": "How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.",
+            "examples": [
+              20
+            ],
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.",
+              "examples": [
+                20
+              ],
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.",
+            "examples": [
+              0
+            ],
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.",
+              "examples": [
+                0
+              ],
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The legal entity to read for, by its UUID from `GET /applicability/companies`. Required. An id that is not one of the bank's active legal entities, another bank's included, answers 404 `not_found`.",
+            "in": "query",
+            "name": "orgUnitId",
+            "required": true,
+            "schema": {
+              "description": "The legal entity to read for, by its UUID from `GET /applicability/companies`. Required. An id that is not one of the bank's active legal entities, another bank's included, answers 404 `not_found`.",
+              "format": "uuid",
+              "title": "Orgunitid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the regulations with at least one offered obligation whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. A regulation kept still carries its whole counts. Absent keeps every regulation; any other value is refused with 422 `validation_error`.",
+            "in": "query",
+            "name": "answer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "applies",
+                    "not_applicable",
+                    "under_assessment"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the regulations with at least one offered obligation whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. A regulation kept still carries its whole counts. Absent keeps every regulation; any other value is refused with 422 `validation_error`.",
+              "title": "Answer"
+            }
+          },
+          {
+            "description": "Only the regulations whose name, short name or official reference contains these words, ignoring case, exactly as `GET /instruments?q` matches. At most 200 characters; a longer one, or one holding a NUL character, is refused with 422 `validation_error`.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the regulations whose name, short name or official reference contains these words, ignoring case, exactly as `GET /instruments?q` matches. At most 200 characters; a longer one, or one holding a NUL character, is refused with 422 `validation_error`.",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterApplicabilityRegulationPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "See the regulations that reach one of your companies",
+        "tags": [
+          "Register"
+        ]
+      }
+    },
+    "/api/v1/applicability/rows": {
+      "get": {
+        "description": "The obligations of one regulation the register offers for one legal entity, in the\ninventory's order, each with the answer so far, its reason, who set it and when. Call it\nto list what a person can decide for the company under that regulation.\n\nEach row says what an answer for it must name: `orgUnitId` is the entity where the\nobligation spans two or more of the bank's legal entities, and null, for the obligation as\na whole, where it spans fewer. Send it back with `obligationId` to\n`PUT /obligations/{obligationId}/applicability`, with the row's `version` as `If-Match`,\nor to `POST /applicability` for many rows at once. `matchedTerms` lists which of the\nobligation's own scope terms the entity carries, by its type or its register entry. No\nrow ever carries a suggested answer: whether an obligation applies is a person's decision.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nPages with `limit` and `offset`, 20 by default and 100 at most. A regulation that offers\nthe entity nothing, and a key no regulation the bank can see has, is a 200 with an empty\npage. The reason is tenant content that never leaves the bank.\n\nErrors: `not_found` (404) for an `orgUnitId` that is not one of the bank's active legal\nentities, another bank's included; `validation_error` (422) for a missing `orgUnitId` or\n`instrument`, an `orgUnitId` that is not a UUID, an `instrument` that is not a stable key\n(letters, digits, hyphens and underscores, at most 120 characters), an `answer` outside\nthe three values or a page out of range.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.",
+        "operationId": "listApplicabilityRows",
+        "parameters": [
+          {
+            "description": "How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.",
+            "examples": [
+              20
+            ],
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.",
+              "examples": [
+                20
+              ],
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.",
+            "examples": [
+              0
+            ],
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.",
+              "examples": [
+                0
+              ],
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The legal entity to read for, by its UUID from `GET /applicability/companies`. Required. An id that is not one of the bank's active legal entities, another bank's included, answers 404 `not_found`.",
+            "in": "query",
+            "name": "orgUnitId",
+            "required": true,
+            "schema": {
+              "description": "The legal entity to read for, by its UUID from `GET /applicability/companies`. Required. An id that is not one of the bank's active legal entities, another bank's included, answers 404 `not_found`.",
+              "format": "uuid",
+              "title": "Orgunitid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The regulation to read, by its stable key, such as `fffs-2017-2`: letters, digits, hyphens and underscores, at most 120 characters. Required; anything else is refused with 422 `validation_error`. A key no regulation the bank can see has is not an error: it answers 200 with an empty page, as `GET /obligations?instrument=` does.",
+            "in": "query",
+            "name": "instrument",
+            "required": true,
+            "schema": {
+              "description": "The regulation to read, by its stable key, such as `fffs-2017-2`: letters, digits, hyphens and underscores, at most 120 characters. Required; anything else is refused with 422 `validation_error`. A key no regulation the bank can see has is not an error: it answers 200 with an empty page, as `GET /obligations?instrument=` does.",
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Instrument",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the offered obligations whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. Absent keeps every one; any other value is refused with 422 `validation_error`.",
+            "in": "query",
+            "name": "answer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "applies",
+                    "not_applicable",
+                    "under_assessment"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the offered obligations whose answer for the entity is this: `applies`, `not_applicable`, or `under_assessment`, which an obligation nobody answered is too. Absent keeps every one; any other value is refused with 422 `validation_error`.",
+              "title": "Answer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterApplicabilityAnswerPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "See one regulation's obligations for one company, with the answer so far",
+        "tags": [
+          "Register"
+        ]
+      }
+    },
     "/api/v1/ask": {
       "post": {
         "description": "Answer a question in the reader's own words, grounded only in the shared library,\nevery sentence carrying a citation and a pending change flagged (SRC-03).\n\nWho may call it: a person with `search.use`, on their own session, in a bank that has\nnot switched its AI features off. An API key is refused: Ask is a reading aid for\npeople, and the question is tenant text.\n\nWhat comes back: an event stream (`text/event-stream`), not one body, because the\nbudget is a first token under 2 s (NFR-02) and an answer that waits for its last\nsentence cannot meet it. The events are `start` carrying the answer's id, one\n`statement` per cited sentence, and then either `answer` with the whole answer or\n`problem` with a `code` to branch on. A stream that has begun cannot change its\nstatus, so a failure found after the first byte arrives as a `problem` event; do not\nread the status line alone as success. The answer rests only on the obligations the\nreader's own search ranks first, inside the bank's regulatory scope and as they stood\non `asOf`; when none of them answers the question, the `answer` event says `noAnswer`\nand no model is asked to guess.\n\nLimits and budgets: the question is at most 2000 characters\n(`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens. Each\nreader may ask 10 questions a minute (`ASK_RATE_PER_USER_PER_MINUTE`), counted per\nperson, and may have at most 2 answers streaming at once (`ASK_STREAMS_PER_USER`); an\nanswer stops counting the moment its stream closes. The model is given at most 6 passages (`ASK_RETRIEVAL_DEPTH`) and may write at\nmost 1024 tokens (`ASK_MAX_TOKENS`). The first token arrives inside 2 s (NFR-02).\n\nShape of the call: a read of the library and a model call. It needs no idempotency\nkey, because asking twice costs two model calls and changes no record, and it writes\nno audit row, only the AI log row every model call writes (AUD-02), also when the\nreader leaves before the answer is finished. The question is the only text of the\nbank's own that ever reaches a model (D-07), and it reaches no log line, no Sentry\nevent and no URL.\n\nErrors, each a status with a problem body before any stream opens:\n`feature_off` (403) when the reader's bank has switched its AI features off, which is\nthe bank's decision and not a fault to retry; `rate_limited` (429) when that reader has\nasked more than the limit above in the last minute, or already has as many answers\nstreaming as the cap above allows, to wait out and retry;\n`unknown_key` (422) for a `lang` that is not one of the library's language rows;\n`validation_error` (422) for a question over the cap or a field the contract does not\nname; `not_found` (404) when the session belongs to no bank; `permission_denied`\n(403) without `search.use`; `unauthenticated` (401) without a session. After the first\nbyte, the one way a stream ends badly is a `problem` event with `model_unavailable`:\nthe model could not be reached, declined or ran out of time, and asking again may\nsucceed.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `search.use`, named in `requiredPermission`.",
@@ -46497,6 +47806,47 @@
         "summary": "Open one instrument and read its identity and lineage",
         "tags": [
           "Library"
+        ]
+      }
+    },
+    "/api/v1/instruments/{instrument_id}/applicability": {
+      "get": {
+        "description": "One regulation rolled up for the bank, for the regulation's own page: how many of its\nobligations are in the bank's working inventory, how many of those apply, do not apply\nand are still under assessment, and, for those that apply, how the bank complies, counted\nby compliance status in the order of the bank's scale.\n\nThe counts are the bank-level answers the inventory shows, so each equals the total of\n`GET /obligations` for the same regulation under the same applicability or compliance\nstatus filter: an obligation applies when the bank answered so for the obligation or for\nany legal entity, and its status is the worst of the entities it applies to. \"Applies\"\nand \"we comply\" stay separate facts. `companies` carries the rows of\n`GET /applicability/companies` narrowed to this regulation, leaving out a legal entity it\noffers nothing for.\n\nA person's session holding `register.read`. A read: it writes nothing and no audit event.\nA regulation with no obligation in the working inventory reads as zeros and empty lists.\n\nErrors: `not_found` (404) for a regulation the bank cannot see, another bank's own\nincluded; `validation_error` (422) for an id that is not a UUID.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.",
+        "operationId": "getInstrumentApplicability",
+        "parameters": [
+          {
+            "description": "The regulation to roll up, as its UUID in the library, the `id` the instruments list gives. A regulation the bank cannot see answers 404, never 403.",
+            "in": "path",
+            "name": "instrument_id",
+            "required": true,
+            "schema": {
+              "description": "The regulation to roll up, as its UUID in the library, the `id` the instruments list gives. A regulation the bank cannot see answers 404, never 403.",
+              "format": "uuid",
+              "title": "Instrument Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterInstrumentApplicability"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "See how a regulation stands for your bank and for each company",
+        "tags": [
+          "Register"
         ]
       }
     },
