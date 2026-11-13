@@ -147,8 +147,12 @@ linear.app the same day); ours is the app itself.
   writes, because its chips count per company and pressing one renames the rest; and when
   recording, every regulation's line on those first pages is opened, so that in the demo
   each of them shows its own obligations. A later page of its regulations and a search in
-  it are not recorded: like every list of the demo, they are answered by another recording
-  of the same list.
+  it are not recorded, as on every list of the demo (below, "Where nothing was recorded").
+- **Where nothing was recorded** (Alex, 2026-11-13). A list under a filter the walk never
+  pressed is answered by the first recording of that list, which shows the right kind of
+  rows. A later page (`offset` above 0) or a search (`q`, `query` or `search` with text) is
+  never answered that way, since the first page would read as its answer: like any read
+  with no recording, it fails with `demo_not_recorded`.
 - **How it stays current.** CI's `demo` job, on every push, boots the demo's stack and
   walks the app again and compares the answers with the committed
   recordings by API path template and field shape, never by value. A screen

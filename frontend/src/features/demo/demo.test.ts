@@ -101,6 +101,16 @@ describe('the demo replay', () => {
     expect((await api.get('/api/v1/changes', { params: { tab: 'new', limit: 20 } })).data).toEqual({ items: [{ id: ID }] });
     expect((await api.get('/api/v1/changes?tab=closed')).data).toEqual({ items: [{ id: ID }] });
     expect((await api.post('/api/v1/search', { query: 'research' })).data).toEqual({ results: 1 });
+    expect((await api.get('/api/v1/changes?limit=20&offset=0&tab=closed&q=')).data).toEqual({ items: [{ id: ID }] });
+  });
+
+  it('never answers a later page or a search with the first page of the list', async () => {
+    const api = client(recorded);
+    for (const asked of ['offset=20', 'tab=new&limit=20&offset=40', 'q=capital', 'query=capital', 'search=capital&offset=0']) {
+      const failure = (await api.get(`/api/v1/changes?${asked}`).catch((error: AxiosError) => error)) as AxiosError;
+      expect(failure.response?.status, asked).toBe(404);
+      expect(failure.response?.data, asked).toMatchObject({ code: DEMO_NOT_RECORDED_CODE, detail: 'The demo has no sample data for this page.' });
+    }
   });
 
   it('grants itself a session and ends it without a server', async () => {
