@@ -5,8 +5,9 @@ LEI, country and head, and the licences and certificates a legal entity holds. W
 audited with the fields they changed before and after. A unit is deactivated and a licence
 withdrawn; neither is ever deleted. TEN-S2 and TEN-S10 are in tests_scenarios.py.
 
-Operations exercised: listOrgUnits (each entity's licences ride on its row), createOrgUnit,
-updateOrgUnit, createLicence, updateLicence.
+Operations exercised: listOrgUnits (each entity's licences ride on its row, and what each
+line of its register facts brings into scope, TEN-S15), createOrgUnit, updateOrgUnit,
+createLicence, updateLicence.
 """
 
 from __future__ import annotations
@@ -18,17 +19,25 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
+from apps.identity.models import User
+from apps.library import testing as library_build
+from apps.library.models import Language
 from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories
 from apps.shared import permissions as perms
+from apps.shared.adapters.registers import MockRegisters
 from apps.shared.models import AuditEvent
+from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import TermDimensionKind
+from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
-from apps.tenants.models import Licence, OrgUnit
+from apps.tenants import registers_logic, schemas
+from apps.tenants.models import Licence, OrgUnit, RegisterEntry
+from apps.tenants.schemas import RegisterFacts, RegisterFactsLicence
 
 V1 = "/api/v1"
 UNITS = f"{V1}/tenant/org-units"
@@ -43,6 +52,10 @@ UNITS = f"{V1}/tenant/org-units"
 # for the whole page, one query whatever the page holds; and one more for the legal entities'
 # exclusions from their own scope (FP-05), again one query for the whole page.
 LIST_QUERIES = 11
+# One more on a page where a legal entity holds register facts (TEN-S15): the live terms its
+# register's mapping can give, read once for the whole page and labelled in the page's one
+# label read, whatever the number of companies and of their lines.
+REGISTER_LINES_QUERIES = LIST_QUERIES + 1
 
 
 class OrganisationCase(ScenarioTestCase):
@@ -278,6 +291,165 @@ class LicenceWrites(OrganisationCase):
         other_admin = self.other_admin()
         self.problem(self.patch(f"{V1}/tenant/licences/{created['id']}", {"reference": "x"}, headers=other_admin), 404, "not_found")
         self.problem(self.post(self.licences(unit), {"licenceType": "bank"}, headers=other_admin), 404, "not_found")
+
+
+CREDIT_INSTITUTION = ["regime:banking", "regime:payments", "service_type:custody", "licensed_activity:card_issuing", "licensed_activity:card_acquiring"]
+FUND_LICENCE = "Tillstånd att driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder"
+AIF_LICENCE = "Tillstånd att förvalta alternativa investeringsfonder"
+PORTFOLIO_LICENCE = "Diskretionär portföljförvaltning avseende finansiella instrument"
+
+
+class RegisterLines(OrganisationCase):
+    """TEN-07, FP-05 (TEN-S15 walks the same read after a lookup): what each line of a legal
+    entity's register facts brings into scope. A line with a live term is `mapped` under
+    its terms; wording the mapping does not know, and a line none of whose terms the
+    taxonomy holds live, is `unmapped`; wording the mapping knows to add nothing is in neither.
+    The facts are the mock register's Example Group, stored as a lookup stores them."""
+
+    authority: Any
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+        cls.authority = library_build.authority(key="fi", short_name="Finansinspektionen")
+
+    def holding(self, facts: RegisterFacts, tenant: Any = None) -> OrgUnit:
+        """A legal entity of `tenant`, the test's own bank unless given, holding these facts."""
+        tenant = tenant or self.tenant
+        unit = factories.seeded_legal_entity(tenant)
+        self.activate(tenant)
+        now = timezone.now()
+        RegisterEntry.objects.create(
+            tenant=tenant, org_unit=unit, authority=self.authority, facts=facts.model_dump(mode="json", by_alias=True), source_url="https://www.fi.se/", read_at=now, changed_at=now
+        )
+        return unit
+
+    def company(self, number: str = "556000-0001", *, tenant: Any = None, **changes: Any) -> OrgUnit:
+        """A legal entity holding the register's facts for `number`, changed as given."""
+        read = MockRegisters().licence_facts("fi", number)
+        assert read is not None
+        return self.holding(registers_logic.register_facts("fi", read).model_copy(update=changes), tenant)
+
+    def entry(self, unit: OrgUnit, headers: dict[str, Any] | None = None) -> dict[str, Any]:
+        response = self.client.get(UNITS, {"limit": settings.API_PAGE_SIZE_MAX}, **(headers or self.headers))
+        self.assertEqual(response.status_code, 200, response.content)
+        return dict(next(row for row in response.json()["items"] if row["id"] == str(unit.id))["registerEntry"])
+
+    @staticmethod
+    def brought(entry: dict[str, Any]) -> dict[str, list[str]]:
+        """Line -> the terms it brings as `dimension:key`, both in the order answered."""
+        return {row["line"]: [f"{term['dimension']}:{term['key']}" for term in row["terms"]] for row in entry["mapped"]}
+
+    def retire(self, dimension: str, key: str) -> None:
+        with library_write("a term retired by proposal"):
+            TaxonomyTerm.objects.filter(dimension__key=dimension, key=key).update(active=False)
+
+    def test_a_business_name_and_a_licence_line_each_name_the_terms_they_bring(self) -> None:
+        entry = self.entry(self.company())
+        facts = entry["facts"]
+        licences = [licence["text"] for licence in facts["licences"]]
+        brought = self.brought(entry)
+        # One entry per line that brings a term, in the register's order and worded as the
+        # facts hold it, so a screen matches a line to its facts by equality.
+        self.assertEqual(list(brought), [facts["mainBusiness"], *facts["otherBusinesses"][:2], *licences[:4]])
+        # Each line's terms in the order the scope page draws them: by dimension, then by term.
+        self.assertEqual(brought["Bankaktiebolag"], ["regime:banking", "regime:payments", "legal_entity:bank", *CREDIT_INSTITUTION[2:]])
+        self.assertEqual(brought["Värdepappersbolag"], ["regime:securities", "legal_entity:investment_firm"])
+        self.assertEqual(brought[licences[0]], CREDIT_INSTITUTION)
+        self.assertEqual(brought[licences[1]], ["regime:securities", "service_type:advice"])
+        # A term is its key, its label in the reader's language and its dimension's key.
+        self.assertEqual(entry["mapped"][0]["terms"][0], {"key": "banking", "kind": None, "label": "Banking", "dimension": "regime"})
+        # Wording the mapping does not know is not used for the scope; a size class it knows
+        # adds nothing, and is in neither list.
+        self.assertEqual(entry["unmapped"], ["IM_MR_SA"])
+        self.assertEqual(facts["otherBusinesses"][2], "Medelstort institut")
+        self.assertNotIn("Medelstort institut", [*brought, *entry["unmapped"]])
+
+    def test_the_published_example_is_what_the_read_answers_for_its_facts(self) -> None:
+        """The contract's example of a register entry is this read's own answer, so the manual
+        an integrator reads cannot drift from the mapping."""
+        example = schemas._EXAMPLE_REGISTER_ENTRY
+        entry = self.entry(self.holding(RegisterFacts.model_validate(example["facts"])))
+        self.assertEqual((entry["mapped"], entry["unmapped"]), (example["mapped"], example["unmapped"]))
+
+    def test_the_labels_are_in_the_readers_language(self) -> None:
+        unit = self.company()
+        self.activate(self.tenant)
+        User.objects.filter(pk=self.admin.pk).update(locale=Language.objects.get(key="sv"))
+        entry = self.entry(unit, sign_in(self.admin, tenant=self.tenant))
+        self.assertEqual([term["label"] for term in entry["mapped"][0]["terms"][:3]], ["Bankverksamhet", "Betalningar", "Bank"])
+
+    def test_a_code_brings_its_terms_only_as_the_whole_line(self) -> None:
+        licences = [RegisterFactsLicence(text=text, granted_on=None) for text in ("FÖFÖ", "FÖFÖ och annat", "IRK")]
+        entry = self.entry(self.company("516000-0002", licences=licences))
+        brought = self.brought(entry)
+        self.assertEqual(brought["FÖFÖ"], ["regime:insurance", "service_type:insurance_distribution"])
+        # The code inside a longer line is wording the mapping does not know; a capital-method
+        # approval is known and adds nothing.
+        self.assertEqual(entry["unmapped"], ["FÖFÖ och annat"])
+        self.assertNotIn("IRK", [*brought, *entry["unmapped"]])
+
+    def test_a_retired_term_is_left_out_and_a_line_left_with_none_is_not_used_for_the_scope(self) -> None:
+        unit = self.company("556000-0003", other_businesses=["Auktoriserad AIF-förvaltare", "Nytt slag"])
+        before = self.entry(unit)
+        self.assertEqual(self.brought(before)[FUND_LICENCE], ["regime:securities"])
+        self.assertEqual(before["unmapped"], ["Nytt slag"])
+        self.retire("regime", "securities")
+        after = self.entry(unit)
+        # The lines that also bring a live term keep it and lose the retired one.
+        self.assertEqual(
+            self.brought(after),
+            {"Fondbolag": ["legal_entity:fund_company"], "Auktoriserad AIF-förvaltare": ["legal_entity:fund_company"], PORTFOLIO_LICENCE: ["service_type:portfolio_management"]},
+        )
+        # The two licences that brought only the retired term bring nothing now: listed as
+        # not used for the scope, in the register's order, never dropped in silence.
+        self.assertEqual(after["unmapped"], ["Nytt slag", FUND_LICENCE, AIF_LICENCE])
+
+    def test_a_company_the_register_no_longer_lists_has_neither(self) -> None:
+        entry = self.entry(self.company(licences=[], branches=[], listed=False))
+        self.assertEqual((entry["facts"]["listed"], entry["facts"]["mainBusiness"]), (False, "Bankaktiebolag"))
+        self.assertEqual((entry["mapped"], entry["unmapped"]), ([], []))
+
+    def test_any_member_reads_the_lines_and_the_read_writes_nothing(self) -> None:
+        unit = self.company()
+        reader = self.reader()
+        as_admin = self.entry(unit)
+        self.activate(self.tenant)
+        events = AuditEvent.objects.count()
+        # A member holding no admin permission reads the lines as an administrator does.
+        entry = self.entry(unit, reader)
+        self.assertEqual(entry, as_admin)
+        self.assertEqual(len(entry["mapped"]), 7)
+        # What a licence allows is shown, never applied: reading it leaves no audit row, no
+        # licence row and no scope term.
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.count(), events)
+        self.assertFalse(Licence.objects.exists())
+        self.assertFalse(FootprintTerm.objects.exists())
+
+    def test_another_banks_lines_are_never_listed(self) -> None:
+        ours = self.company("556000-0003")
+        self.company(tenant=self.other)
+        rows = self.client.get(UNITS, **self.headers).json()["items"]
+        self.assertEqual([row["id"] for row in rows], [str(ours.id)])
+        self.assertEqual(rows[0]["registerEntry"]["mapped"][0]["line"], "Fondbolag")
+
+    def test_the_lines_cost_one_query_however_many_companies_the_page_holds(self) -> None:
+        self.company()
+        with self.assertNumQueries(REGISTER_LINES_QUERIES):
+            one = self.client.get(UNITS, **self.headers).json()["items"]
+        self.company("556000-0003")
+        self.company("516000-0002")
+        with self.assertNumQueries(REGISTER_LINES_QUERIES):
+            three = self.client.get(UNITS, **self.headers).json()["items"]
+        self.assertEqual([len(row["registerEntry"]["mapped"]) for row in one], [7])
+        self.assertEqual(sorted(len(row["registerEntry"]["mapped"]) for row in three), [4, 5, 7])
+        # Nor more on a page whose only terms are the ones its lines bring: the page's one
+        # label read, which had nothing to label there before, labels them.
+        self.activate(self.tenant)
+        OrgUnit.objects.filter(tenant=self.tenant).update(entity_term=None)
+        with self.assertNumQueries(REGISTER_LINES_QUERIES):
+            self.client.get(UNITS, **self.headers)
 
 
 class SeededTreeBudget(OrganisationCase):

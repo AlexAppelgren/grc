@@ -17,10 +17,11 @@ from django.test import SimpleTestCase, TestCase
 from apps.library import testing as library_build
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared.adapters.registers import MockRegisters
-from apps.taxonomy.models import TaxonomyTerm
+from apps.shared.tenancy import library_write
+from apps.taxonomy.models import TaxonomyTerm, TermDimension
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.tenants import registers_logic
-from apps.tenants.schemas import RegisterFacts
+from apps.tenants.schemas import RegisterFacts, RegisterFactsLicence
 from apps.tenants.testing import branch_jurisdictions, split_businesses
 
 FI = "fi"
@@ -76,6 +77,8 @@ class DerivedTerms(RegisterWorld):
     def test_a_company_gone_from_the_register_derives_nothing_and_knows_no_main_business(self) -> None:
         gone = self.facts("556000-0003").model_copy(update={"licences": [], "branches": [], "listed": False})
         self.assertEqual(registers_logic.derived_terms(FI, gone), {})
+        # Its business names are still read, and none gives a term.
+        self.assertEqual(registers_logic.line_terms(FI, gone), [("Fondbolag", []), ("Auktoriserad AIF-förvaltare", [])])
         self.assertFalse(registers_logic.knows_main_business(FI, gone))
         self.assertTrue(registers_logic.knows_main_business(FI, self.facts("556000-0003")))
 
@@ -96,6 +99,60 @@ class DerivedTerms(RegisterWorld):
         self.assertEqual(registers_logic.unmapped(FI, self.facts("556000-0003")), [])
         odd = self.facts("556000-0001").model_copy(update={"main_business": "Okänt bolag", "other_businesses": ["Värdepappersbolag", "Nytt slag"]})
         self.assertEqual(registers_logic.unmapped(FI, odd), ["Okänt bolag", "Nytt slag", "IM_MR_SA"])
+
+    def test_each_line_names_the_terms_it_gives_in_the_registers_order(self) -> None:
+        """TEN-S15's rule, `term_sources` read the other way round: every business name and
+        licence line with the terms the mapping gives it, each term once. Wording the mapping
+        does not know gives None; wording it knows that adds nothing gives no term."""
+        facts = self.facts("556000-0001")
+        lines = registers_logic.line_terms(FI, facts)
+        self.assertEqual([line for line, _ in lines], [facts.main_business, *facts.other_businesses, *(licence.text for licence in facts.licences)])
+        given = dict(lines)
+        credit_institution = [("regime", "banking"), ("regime", "payments"), ("service_type", "custody"), ("licensed_activity", "card_issuing"), ("licensed_activity", "card_acquiring")]
+        self.assertEqual(given["Bankaktiebolag"], [("legal_entity", "bank"), *credit_institution])
+        self.assertEqual(given["Värdepappersbolag"], [("legal_entity", "investment_firm"), ("regime", "securities")])
+        # The banking licence matches two phrases that give the same terms.
+        self.assertEqual(given["Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse"], credit_institution)
+        self.assertEqual(given["Medelstort institut"], [])
+        self.assertIsNone(given["IM_MR_SA"])
+
+    def test_a_code_gives_its_terms_only_as_the_whole_line(self) -> None:
+        coded = self.facts("556000-0003").model_copy(
+            update={"licences": [RegisterFactsLicence(text=text, granted_on=None) for text in ("FÖFÖ", "FÖFÖ och annat", "IRK")]}
+        )
+        self.assertEqual(
+            registers_logic.line_terms(FI, coded)[2:],
+            [("FÖFÖ", [("regime", "insurance"), ("service_type", "insurance_distribution")]), ("FÖFÖ och annat", None), ("IRK", [])],
+        )
+
+    def test_the_lines_give_what_the_company_derives_and_what_its_sources_name(self) -> None:
+        for number in ("556000-0001", "556000-0003", "516000-0002"):
+            with self.subTest(number=number):
+                facts = self.facts(number)
+                lines = registers_logic.line_terms(FI, facts)
+                derived = registers_logic.derived_terms(FI, facts)
+                self.assertEqual({pair for _, given in lines for pair in given or ()}, {(dimension, key) for dimension, keys in derived.items() for key in keys})
+                sources = registers_logic.term_sources(FI, facts)
+                self.assertEqual(
+                    {(pair, line) for line, given in lines for pair in given or ()},
+                    {(pair, line) for pair, named in sources.items() for line in named},
+                )
+
+    def test_live_terms_are_the_mappings_terms_the_taxonomy_holds_in_the_scope_pages_order(self) -> None:
+        with self.assertNumQueries(1):
+            live = registers_logic.live_terms({FI})
+        self.assertEqual(set(live), mapped_terms())
+        self.assertEqual(list(live), sorted(live, key=lambda pair: (live[pair].dimension.sort_order, live[pair].sort_order, live[pair].key)))
+        self.assertEqual((live["regime", "banking"].key, live["regime", "banking"].dimension.key), ("banking", "regime"))
+        with library_write("a term and a dimension retired by proposal"):
+            TaxonomyTerm.objects.filter(dimension__key="service_type", key="custody").update(active=False)
+            TermDimension.objects.filter(key="licensed_activity").update(active=False)
+        left = set(registers_logic.live_terms({FI}))
+        self.assertEqual(mapped_terms() - left, {("service_type", "custody"), ("licensed_activity", "card_issuing"), ("licensed_activity", "card_acquiring")})
+        # An authority without a mapping, or no authority at all, is no read.
+        with self.assertNumQueries(0):
+            self.assertEqual(registers_logic.live_terms({"eba"}), {})
+            self.assertEqual(registers_logic.live_terms(set()), {})
 
     def test_a_bare_code_matches_only_the_whole_line_and_the_registers_codes_are_read(self) -> None:
         """FI's full register is mapped from its own sources (D-126): a bare code such as IRK

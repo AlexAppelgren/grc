@@ -380,3 +380,30 @@ Then the stored facts carry the licence and the read date, with one audit event 
 And no organisation row, licence row or regulatory scope term changes
 And a register that cannot be reached leaves the stored facts as they were
 ```
+
+### TEN-S15 — Each line of a legal entity's register facts names the scope it brings `@integration` (TEN-07, FP-05)
+```gherkin
+Given Example Bank AB and Example Fonder AB were added from the public registers with their facts from Finansinspektionen
+When a member holding no admin permission reads the organisation
+Then "Bankaktiebolag" names Banking, Payments, Bank, Custody, Card issuing and Card acquiring, each term with its key, its dimension and its label in the reader's language
+And each licence line that gives a term names its terms, in the register's order and worded exactly as the facts hold the line
+And "IM_MR_SA", which the mapping does not know, is listed as not used for the scope
+And "Medelstort institut", which the mapping knows to add nothing, is in neither list
+And nothing is written: no audit event, no licence row and no regulatory scope term
+When the taxonomy retires the term "Securities"
+Then the lines that gave it no longer name it
+And a licence that gave nothing else is listed as not used for the scope, never dropped in silence
+When the register no longer lists Example Bank AB
+Then none of its lines names a term
+```
+
+> **Note — what a line brings (TEN-S15).** `GET /tenant/org-units` answers
+> `registerEntry.mapped` beside `unmapped`: one entry per business name or licence line that
+> gives a live scope term, `{line, terms}`, in the register's order, each term with its
+> dimension. It is bleqq's mapping of the supervisor's wording (`register_terms.json`, per
+> authority), worked out on every read and stored nowhere: what the licence allows, not what
+> the company chooses to do. It changes nothing; the scope moves only through an approved
+> request (FP-02). The scope suggestion reads the same mapping, so a line it gives as the
+> reason for a term lists that term here. A line none of whose terms the taxonomy holds live
+> is listed in `unmapped`, as wording the mapping does not know is; wording it knows to add
+> nothing is in neither list. A typed licence row still carries no scope term (ADR 0037).

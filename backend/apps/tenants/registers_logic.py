@@ -6,7 +6,8 @@ code (`equals`, so IRK never matches IRKA), case-insensitively. A company's term
 over its categories and licences. Unknown wording is listed as unmapped; nothing is guessed.
 
 Reads only: library models are read here and never written (apps/shared/tests_library_fence.py).
-A key the live taxonomy does not hold is dropped where a term is read (`entity_terms`).
+A key the live taxonomy does not hold is dropped where a term is read (`entity_terms`,
+`live_terms`).
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 import functools
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -160,12 +162,46 @@ def knows_main_business(authority_key: str, facts: RegisterFacts) -> bool:
     return facts.listed and facts.main_business in _mapping(authority_key).categories
 
 
+def line_terms(authority_key: str, facts: RegisterFacts) -> list[tuple[str, list[tuple[str, str]] | None]]:
+    """Every business name and licence line with the (dimension key, term key) pairs it gives,
+    each once, in the register's order: the main business, the other businesses, then the
+    licences. `term_sources` read the other way round. None for wording the mapping does not
+    know; no pair for wording it knows and maps to nothing, and for every known line of a
+    company the register no longer lists, which holds no licence."""
+    mapping = _mapping(authority_key)
+    lines: list[tuple[str, Iterable[tuple[str, str]] | None]] = [
+        (name, mapping.categories.get(name)) for name in (facts.main_business, *facts.other_businesses) if name
+    ]
+    lines.extend((licence.text, _licence_terms(mapping, licence.text)) for licence in facts.licences)
+    return [(line, None if terms is None else list(dict.fromkeys(terms if facts.listed else ()))) for line, terms in lines]
+
+
 def unmapped(authority_key: str, facts: RegisterFacts) -> list[str]:
     """The business names the mapping does not know and the licence lines that match no
     phrase, in the register's order: shown as not used for the scope."""
-    mapping = _mapping(authority_key)
-    names = [name for name in (facts.main_business, *facts.other_businesses) if name and name not in mapping.categories]
-    return names + [licence.text for licence in facts.licences if _licence_terms(mapping, licence.text) is None]
+    return [line for line, terms in line_terms(authority_key, facts) if terms is None]
+
+
+def live_terms(authority_keys: Iterable[str]) -> dict[tuple[str, str], TaxonomyTerm]:
+    """(dimension key, term key) -> each live term the mappings of these authorities can give,
+    in the order the scope page draws terms in, read in one query. A pair the taxonomy does
+    not hold, or holds retired, is left out, as the scope suggestion leaves it out (FP-05)."""
+    pairs = {
+        (dimension, key)
+        for authority_key in authority_keys
+        for dimension, keys in derivable_terms(authority_key).items()
+        for key in keys
+    }
+    if not pairs:
+        return {}
+    terms = (
+        TaxonomyTerm.objects.filter(
+            active=True, dimension__active=True, dimension__key__in={dimension for dimension, _ in pairs}, key__in={key for _, key in pairs}
+        )
+        .select_related("dimension")
+        .order_by("dimension__sort_order", "sort_order", "key")
+    )
+    return {pair: term for term in terms if (pair := (term.dimension.key, term.key)) in pairs}
 
 
 def entity_terms(keys: set[str], order: list[str]) -> dict[str, TermRef]:

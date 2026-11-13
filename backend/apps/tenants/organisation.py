@@ -20,7 +20,7 @@ from apps.shared.audit import Actor, record
 from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.models import EntityScopeExclusion
-from apps.taxonomy.schemas import PersonRef, TermRef
+from apps.taxonomy.schemas import FootprintTermRef, PersonRef, TermRef
 from apps.taxonomy.terms_logic import term_by_ref
 from apps.tenants import registers_logic
 from apps.tenants.models import Licence, LicenceServiceTerm, OrgUnit, OrgUnitKind, RegisterEntry
@@ -37,6 +37,7 @@ from apps.tenants.schemas import (
     TenantOrgUnitRow,
     TenantRegisterAuthority,
     TenantRegisterEntry,
+    TenantRegisterMappedLine,
 )
 from apps.tenants.terms import Term, scope_terms, term_refs
 
@@ -181,37 +182,54 @@ def _apply_unit_fields(tenant: Tenant, unit: OrgUnit, fields: dict[str, Any]) ->
         unit.active = fields["active"]
 
 
-def _register_entries(tenant: Tenant, entities: list[uuid.UUID]) -> dict[uuid.UUID, TenantRegisterEntry]:
+def _register_rows(tenant: Tenant, entities: list[uuid.UUID]) -> dict[uuid.UUID, RegisterEntry]:
     """Each legal entity's register facts, read for the whole page in one query (TEN-07). An
     entity has one row per authority; with one register read today, the first by authority."""
-    found: dict[uuid.UUID, TenantRegisterEntry] = {}
+    found: dict[uuid.UUID, RegisterEntry] = {}
     rows = RegisterEntry.objects.filter(tenant=tenant, org_unit_id__in=entities).select_related("authority")
     for row in rows.order_by("org_unit", "authority__key", "id"):
-        facts = RegisterFacts.model_validate(row.facts)
-        found.setdefault(
-            row.org_unit_id,
-            TenantRegisterEntry(
-                authority=TenantRegisterAuthority(key=row.authority.key, name=row.authority.name),
-                facts=facts,
-                source_url=row.source_url,
-                read_at=row.read_at,
-                changed_at=row.changed_at,
-                unmapped=registers_logic.unmapped(row.authority.key, facts),
-            ),
-        )
+        found.setdefault(row.org_unit_id, row)
     return found
+
+
+def _register_entry(row: RegisterEntry, gives: dict[tuple[str, str], FootprintTermRef]) -> TenantRegisterEntry:
+    """The facts with what each line brings into scope (TEN-07, FP-05), `gives` being every
+    live term the mapping can give, labelled, in the scope page's order. A line with a live
+    term is mapped under it. Wording the mapping does not know is not used for the scope,
+    and neither is a line none of whose terms is live, so it is never dropped in silence;
+    wording the mapping knows to add nothing is in neither list."""
+    facts = RegisterFacts.model_validate(row.facts)
+    mapped: list[TenantRegisterMappedLine] = []
+    unmapped: list[str] = []
+    for line, pairs in registers_logic.line_terms(row.authority.key, facts):
+        terms = [ref for pair, ref in gives.items() if pair in (pairs or ())]
+        if terms:
+            mapped.append(TenantRegisterMappedLine(line=line, terms=terms))
+        elif pairs is None or pairs:
+            unmapped.append(line)
+    return TenantRegisterEntry(
+        authority=TenantRegisterAuthority(key=row.authority.key, name=row.authority.name),
+        facts=facts,
+        source_url=row.source_url,
+        read_at=row.read_at,
+        changed_at=row.changed_at,
+        mapped=mapped,
+        unmapped=unmapped,
+    )
 
 
 def list_org_units(*, tenant: Tenant, order: list[str], limit: int, offset: int) -> TenantOrgUnitPage:
     """`GET /tenant/org-units`: a page of the bank's units by name, deactivated ones included,
     each legal entity with its licences and its register facts, so the organisation screen
-    never asks once per entity. The licences and their services, and the register facts, are
-    read for the whole page at once, and every term on the page is labelled in one query."""
+    never asks once per entity. The licences and their services, the register facts and the
+    terms their lines can bring are each read for the whole page at once, and every term on
+    the page is labelled in one query."""
     queryset = OrgUnit.objects.filter(tenant=tenant)
     units = list(queryset.select_related("entity_term", "head_user").order_by("name", "id")[offset : offset + limit])
     entities = [unit.id for unit in units if unit.kind == OrgUnitKind.LEGAL_ENTITY.value]
     licences = list(_licences(tenant).filter(org_unit_id__in=entities).order_by("granted_on", "id")) if entities else []
-    registered = _register_entries(tenant, entities) if entities else {}
+    registered = _register_rows(tenant, entities) if entities else {}
+    live = registers_logic.live_terms({row.authority.key for row in registered.values()})
     outside = (
         list(
             EntityScopeExclusion.objects.filter(tenant=tenant, org_unit_id__in=entities)
@@ -221,7 +239,8 @@ def list_org_units(*, tenant: Tenant, order: list[str], limit: int, offset: int)
         if entities
         else []
     )
-    refs = term_refs([*_unit_terms(units), *_licence_terms(licences), *(row.term for row in outside)], order)
+    refs = term_refs([*_unit_terms(units), *_licence_terms(licences), *(row.term for row in outside), *live.values()], order)
+    gives = {pair: FootprintTermRef(**refs[term.id].model_dump(), dimension=pair[0]) for pair, term in live.items()}
     held: dict[uuid.UUID, list[TenantLicence]] = {}
     for licence in _licences_out(licences, order, refs):
         held.setdefault(licence.org_unit_id, []).append(licence)
@@ -232,7 +251,7 @@ def list_org_units(*, tenant: Tenant, order: list[str], limit: int, offset: int)
         TenantOrgUnitRow(
             **unit.model_dump(),
             licences=held.get(unit.id, []),
-            register_entry=registered.get(unit.id),
+            register_entry=_register_entry(registered[unit.id], gives) if unit.id in registered else None,
             scope_exclusions=excluded.get(unit.id, []),
         )
         for unit in _units_out(units, order, refs)

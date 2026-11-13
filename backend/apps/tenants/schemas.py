@@ -23,8 +23,9 @@ from apps.shared.models import (
     LEAD_DAYS_MAX_ENTRIES,
     TRIAGE_TARGET_HOURS_MAX,
 )
-from apps.shared.schemas import CamelSchema, SingleLineName, WriteBody
+from apps.shared.schemas import CamelSchema, LibraryResponse, SingleLineName, WriteBody
 from apps.shared.schemas import NamedRef, VocabRef
+from apps.taxonomy.schemas import FootprintTermRef
 
 __all__ = ["CamelSchema"]
 
@@ -1059,12 +1060,43 @@ _EXAMPLE_LOOKUP: dict[str, JsonValue] = {
     "completedAt": "2026-10-05T08:00:04Z",
     "entities": [_EXAMPLE_LOOKUP_ENTITY],
 }
+
+
+def _example_terms(*terms: tuple[str, str, str]) -> list[JsonValue]:
+    """Scope terms as an example lists them, each given as (dimension, key, label)."""
+    return [{"key": key, "kind": None, "label": label, "dimension": dimension} for dimension, key, label in terms]
+
+
+# What a credit institution's licence allows (`register_terms.json`), in the scope page's order.
+_EXAMPLE_BANK_REGIMES = (("regime", "banking", "Banking"), ("regime", "payments", "Payments"))
+_EXAMPLE_BANK_SERVICES = (
+    ("service_type", "custody", "Custody"),
+    ("licensed_activity", "card_issuing", "Card issuing"),
+    ("licensed_activity", "card_acquiring", "Card acquiring"),
+)
+_EXAMPLE_MAPPED_LINE: dict[str, JsonValue] = {
+    "line": "Bankaktiebolag",
+    "terms": _example_terms(*_EXAMPLE_BANK_REGIMES, ("legal_entity", "bank", "Bank"), *_EXAMPLE_BANK_SERVICES),
+}
 _EXAMPLE_REGISTER_ENTRY: dict[str, JsonValue] = {
     "authority": {"key": "fi", "name": "Finansinspektionen"},
     "facts": _EXAMPLE_REGISTER_FACTS,
     "sourceUrl": _EXAMPLE_SOURCE_URL,
     "readAt": "2026-10-05T03:17:00Z",
     "changedAt": "2026-10-05T08:00:04Z",
+    # `Medelstort institut` is in neither list: a size class the mapping knows to add nothing.
+    "mapped": [
+        _EXAMPLE_MAPPED_LINE,
+        {"line": "Värdepappersbolag", "terms": _example_terms(("regime", "securities", "Securities"), ("legal_entity", "investment_firm", "Investment firm"))},
+        {
+            "line": "Försäkringsdistribution",
+            "terms": _example_terms(("regime", "insurance", "Insurance"), ("service_type", "insurance_distribution", "Insurance distribution")),
+        },
+        {
+            "line": "Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse",
+            "terms": _example_terms(*_EXAMPLE_BANK_REGIMES, *_EXAMPLE_BANK_SERVICES),
+        },
+    ],
     "unmapped": ["IM_MR_SA"],
 }
 
@@ -1314,10 +1346,39 @@ class TenantRegisterAuthority(CamelSchema):
     name: str = Field(description="The authority's name, such as `Finansinspektionen`, for display and for citing the source.")
 
 
+class TenantRegisterMappedLine(LibraryResponse):
+    """One line of a company's register facts and the scope terms bleqq's mapping of the
+    supervisor's wording reads from it (TEN-07, FP-05): what the licence allows, shown and
+    never applied."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_MAPPED_LINE]})
+
+    line: str = Field(
+        description=(
+            "The business name or licence text the terms come from, exactly as `facts` holds it: "
+            "`facts.mainBusiness`, one of `facts.otherBusinesses` or the `text` of one of "
+            f"`facts.licences`, so a screen matches a line to its facts by comparing the two strings; {_REGISTER_TEXT}."
+        )
+    )
+    terms: list[FootprintTermRef] = Field(
+        description=(
+            "The scope terms the line gives, at least one, in the order the regulatory scope page "
+            "lists terms: by dimension, then by term. Each is a term of the shared library's "
+            "taxonomy, the same terms obligations are scoped with, carrying its key, its label in "
+            "the reader's language and the key of its dimension (`regime`, `legal_entity`, "
+            "`service_type` or `licensed_activity` today): a vocabulary an administrator may extend "
+            "only through an approved proposal; read `GET /taxonomy/terms` for the live set. A term "
+            "the taxonomy has retired is left out. They say what the licence allows, not what the "
+            "company chooses to do, and never that a rule applies to it."
+        )
+    )
+
+
 class TenantRegisterEntry(CamelSchema):
     """What one supervisor's register says about one of the bank's legal entities (TEN-07,
     TEN-08), with where and when it was read. Written only by applying a lookup and by the
-    nightly re-read, each write audited; never by a person."""
+    nightly re-read, each write audited; never by a person. What each line brings into scope
+    (`mapped`, `unmapped`) is worked out when it is read and stored nowhere."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_REGISTER_ENTRY]})
 
@@ -1326,10 +1387,27 @@ class TenantRegisterEntry(CamelSchema):
     source_url: str = Field(description="The address the facts were read from, to cite with the date read.")
     read_at: datetime = Field(description="When the register was last read for the company, as a UTC timestamp, whether or not anything had changed.")
     changed_at: datetime = Field(description="When a read last found the facts different, as a UTC timestamp, or when they were first stored.")
+    mapped: list[TenantRegisterMappedLine] = Field(
+        description=(
+            "What each line of the register facts brings into the regulatory scope: one entry per "
+            "business name or licence line that gives at least one scope term, in the register's "
+            "order (the main business, the other businesses, then the licences). The server works "
+            "it out on every read from bleqq's own mapping of the supervisor's wording to scope "
+            "terms, kept per authority; a bank never edits it. It is what the licence allows, not "
+            "what the company chooses to do, and it changes nothing by itself: the bank's "
+            "regulatory scope changes only through an approved regulatory scope request (`POST "
+            "/tenant/footprint/requests`), which `GET /tenant/footprint/suggestions` proposes from "
+            "these same lines. A line that gives no term is not here (see `unmapped`). An empty "
+            "list when no line gives a term, and always for a company the register no longer lists."
+        )
+    )
     unmapped: list[str] = Field(
         description=(
             "The business names and licence lines bleqq's mapping does not turn into a scope term, in "
-            "the register's order, shown as not used for the scope; an empty list when every line maps."
+            "the register's order, shown as not used for the scope: wording the mapping does not "
+            "know, and wording whose every term the taxonomy has retired or does not hold. Wording "
+            "the mapping knows to add nothing, such as the size class `Medelstort institut` or a "
+            "capital-method approval, is neither here nor in `mapped`. An empty list when there is no such line."
         )
     )
 

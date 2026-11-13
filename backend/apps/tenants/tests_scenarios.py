@@ -44,6 +44,7 @@ from apps.shared.adapters.mailer import MockMailer
 from apps.shared.adapters.registers import MockRegisters, RegisterLicence, RegisterUnavailable
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent
+from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
@@ -917,3 +918,72 @@ class TenantsScenarioTests(ScenarioTestCase):
         recheck()
         self.assertEqual((entry().read_at, entry().facts, entry().version), (unchanged.read_at, unchanged.facts, 2))
         self.assertEqual(AuditEvent.objects.count(), events)
+
+    def test_ten_s15(self) -> None:
+        """TEN-S15
+
+        Each line of a legal entity's register facts names the scope it brings (TEN-07, FP-05).
+        A read on `listOrgUnits`: it writes nothing and changes no scope.
+        """
+        self._register_world()
+        admin = self._member_with(perms.VOCAB_MANAGE)
+        lookup = self._look_up(admin, "556000-0001")
+        self.assertEqual(self._apply(admin, lookup["id"], [self.BANK_LEI, self.FONDER_LEI]).status_code, 200)
+        reader = sign_in(factories.member(self.tenant, roles=("reader",)).user, tenant=self.tenant)
+
+        def entries() -> dict[str, dict[str, Any]]:
+            response = self.client.get("/api/v1/tenant/org-units", **reader)
+            self.assertEqual(response.status_code, 200, response.content)
+            return {row["name"]: row["registerEntry"] for row in response.json()["items"] if row["registerEntry"]}
+
+        def labels(entry: dict[str, Any]) -> dict[str, list[str]]:
+            return {row["line"]: [term["label"] for term in row["terms"]] for row in entry["mapped"]}
+
+        self.activate(self.tenant)
+        events = AuditEvent.objects.count()
+        read = entries()["Example Bank AB"]
+        facts = read["facts"]
+        licences = [licence["text"] for licence in facts["licences"]]
+        brought = labels(read)
+        # A member holding no admin permission reads what each line brings, in the register's
+        # order and worded exactly as the facts hold the line.
+        self.assertEqual(list(brought), ["Bankaktiebolag", "Värdepappersbolag", "Försäkringsdistribution", *licences[:4]])
+        self.assertEqual(facts["mainBusiness"], "Bankaktiebolag")
+        self.assertEqual(brought["Bankaktiebolag"], ["Banking", "Payments", "Bank", "Custody", "Card issuing", "Card acquiring"])
+        self.assertEqual(brought[licences[0]], ["Banking", "Payments", "Custody", "Card issuing", "Card acquiring"])
+        self.assertEqual(brought[licences[2]], ["Securities", "Portfolio management"])
+        # Each term with its key, its dimension and its label in the reader's language.
+        self.assertEqual(read["mapped"][0]["terms"][2], {"key": "bank", "kind": None, "label": "Bank", "dimension": "legal_entity"})
+        # Wording the mapping does not know is listed as not used for the scope; a size class
+        # it knows to add nothing is in neither list.
+        self.assertEqual((licences[4], read["unmapped"]), ("IM_MR_SA", ["IM_MR_SA"]))
+        self.assertIn("Medelstort institut", facts["otherBusinesses"])
+        self.assertNotIn("Medelstort institut", [*brought, *read["unmapped"]])
+        # Nothing is written: no audit event, no licence row and no regulatory scope term.
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.count(), events)
+        self.assertFalse(Licence.objects.exists())
+        self.assertFalse(FootprintTerm.objects.exists())
+
+        # The taxonomy retires a term the mapping names: the lines that gave it no longer
+        # name it, and a licence that gave nothing else is listed as not used for the scope.
+        fund = entries()["Example Fonder AB"]
+        self.assertEqual((labels(fund)["Fondbolag"], fund["unmapped"]), (["Securities", "Fund company"], []))
+        with library_write("a term retired by proposal"):
+            TaxonomyTerm.objects.filter(dimension__key="regime", key="securities").update(active=False)
+        fund = entries()["Example Fonder AB"]
+        self.assertEqual(
+            labels(fund),
+            {"Fondbolag": ["Fund company"], "Auktoriserad AIF-förvaltare": ["Fund company"], "Diskretionär portföljförvaltning avseende finansiella instrument": ["Portfolio management"]},
+        )
+        self.assertEqual(
+            fund["unmapped"],
+            ["Tillstånd att driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder", "Tillstånd att förvalta alternativa investeringsfonder"],
+        )
+        self.assertEqual(labels(entries()["Example Bank AB"])["Värdepappersbolag"], ["Investment firm"])
+
+        # The register no longer lists the bank: none of its lines names a term.
+        MockRegisters.override("556000-0001", None)
+        tasks.recheck_tenant_registers(str(self.tenant.id))
+        gone = entries()["Example Bank AB"]
+        self.assertEqual((gone["facts"]["listed"], gone["mapped"], gone["unmapped"]), (False, [], []))
