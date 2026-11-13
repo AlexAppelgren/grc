@@ -333,4 +333,14 @@ Then each names the instrument "BEK 330/2016", and the instrument's name still r
 And an instrument whose short name is three words or fewer, such as "FFFS 2017:2", keeps it
 And the short name the library holds is unchanged, so a proposal still carries and shows it
 ```
+### INV-S19 — A directive's national laws carry their duty counts, and a duty names its regulation by id `@integration` (INV-09, INV-01)
+```gherkin
+Given the EU directive "Directive 2013/36/EU", the Swedish act "SFS 2004:297" whose implementsNote names it and which holds two duties, one of them outside the reader's scope, and the Danish act "LBK 406" that names it and holds none
+When a reader opens the directive's card
+Then each law that implements it carries the duties the library holds under it and how many fall in the reader's scope: two and one for the Swedish act, none for the Danish
+And those are the totals GET /obligations answers for that law, with footprint all and by default
+And the directive's own counts stay zero, because its duties sit under the national laws
+When the reader lists the Swedish act's duties, opens one of them or reads an instrument's lineage
+Then each names the regulation by the id GET /instruments/{id} opens, and a lineage entry names the other instrument, never the card's own
+```
 

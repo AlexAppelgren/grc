@@ -178,7 +178,8 @@ class ObligationListTests(TestCase):
         self.assertEqual(row["refLabel"], "9 kap.")
         # The reader reads en; the title was written in sv, so en is a labelled machine translation.
         self.assertEqual(row["title"], {"text": "Assess appropriateness", "language": "en", "isOriginal": False, "isMachine": True})
-        self.assertEqual(row["instrument"], {"key": "lvm", "shortName": "LVM"})
+        lvm = Instrument.objects.get(stable_key="lvm")
+        self.assertEqual(row["instrument"], {"id": str(lvm.id), "key": "lvm", "shortName": "LVM"}, "the id GET /instruments/{id} takes")
         self.assertEqual((row["bindingLevel"]["key"], row["binding"]), ("act", True))
         self.assertEqual(row["dutyType"]["key"], "conduct")
         self.assertEqual([tag["key"] for tag in row["tags"]], ["appropriateness"])
@@ -527,6 +528,7 @@ class ObligationDetailTests(TestCase):
         self.assertEqual(
             card["instrument"],
             {
+                "id": str(self.appropriateness.instrument_id),
                 "key": "lvm",
                 "shortName": "LVM",
                 "name": {"text": "LVM", "language": "en", "isOriginal": True, "isMachine": False},
@@ -555,7 +557,7 @@ class ObligationDetailTests(TestCase):
                 {
                     "id": str(guidance.id),
                     "title": {"text": "Make warnings prominent", "language": "en", "isOriginal": True, "isMachine": False},
-                    "instrument": {"key": "esma", "shortName": "ESMA guidelines"},
+                    "instrument": {"id": str(guidance.instrument_id), "key": "esma", "shortName": "ESMA guidelines"},
                     "binding": False,
                     "relation": {"key": "related", "kind": None, "label": "Related"},
                 }
@@ -1076,6 +1078,13 @@ INSTRUMENT_LIST_QUERIES = 2 + 2 + 2 + 3 + 2 + 3 + 2 + 1
 # in scope and waiting for review (3); and the implementation links (1, none when neither
 # its reference nor its note carries an official number, as for an FFFS).
 INSTRUMENT_DETAIL_QUERIES = 2 + 2 + 1 + 1 + 3 + 3 + 1 + 3
+# What a card adds when it links to instruments by implementation, however many it links to:
+# the implementation links (1, as above), the labels of the linked instruments'
+# jurisdictions (1) and, since INV-S19 (measured 2026-11-13), the duties each linked
+# instrument holds and how many fall in the caller's scope, counted for all of them at once
+# (2). A card that names both what it implements and what implements it reads the labels
+# once per list (1 more) and still counts in two.
+INSTRUMENT_LINK_QUERIES = 1 + 1 + 2
 
 
 def seed_instruments() -> tuple[Instrument, Instrument, Instrument]:
@@ -1303,6 +1312,10 @@ class InstrumentDetailTests(TestCase):
             [("amends", "incoming", "fffs-amendment-instruments")],
         )
         self.assertEqual(incoming["lineage"][0]["note"], "Amends FFFS 2017:2, in force 1 October 2026.")
+        # Each entry names the other instrument by the id its own card is read by, never this one's.
+        self.assertEqual(
+            (outgoing["lineage"][0]["instrument"]["id"], incoming["lineage"][0]["instrument"]["id"]), (str(self.fffs.id), str(self.amendment.id))
+        )
         # `fromRef` and `toRef` mean the same on both cards, as the designed relation has
         # them: the part of the amendment that amends, and the place in FFFS 2017:2 it
         # reaches. Neither swaps with the direction, so the amended instrument's own card
@@ -1351,6 +1364,75 @@ class InstrumentDetailTests(TestCase):
         listed = self.client.get(f"/api/v1/obligations?instrument={self.fffs.stable_key}&footprint=all", **sign_in(self.reader, tenant=self.tenant)).json()
         in_scope = self.client.get(f"/api/v1/obligations?instrument={self.fffs.stable_key}", **sign_in(self.reader, tenant=self.tenant)).json()
         self.assertEqual((held["inLibrary"], held["inScope"]), (listed["total"], in_scope["total"]))
+
+    def listed(self, params: dict[str, Any]) -> int:
+        """How many duties `GET /obligations` answers under these filters."""
+        response = self.client.get("/api/v1/obligations", params, **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        return int(response.json()["total"])
+
+    def test_a_linked_instrument_carries_the_duties_it_holds_and_how_many_are_in_scope(self) -> None:
+        """INV-09: a directive's card says which of the national laws that implement it hold
+        duties and how many of them fall in this bank's scope, with the numbers the law's own
+        card and `GET /obligations` answer; the directive's own counts stay zero."""
+        directive = build.instrument(key="dir-2013-36", official_ref="Directive 2013/36/EU", jurisdiction="eu", level="eu_directive", regime="regime:securities")
+        note = "CRD IV, Directive 2013/36/EU"
+        swedish = build.instrument(key="se-banking-act", official_ref="SFS 2004:297", regime="regime:securities", implements_note=note)
+        build.instrument(key="dk-banking-act", official_ref="LBK 406", jurisdiction="dk", regime="regime:securities", implements_note=note)
+        build.obligation(swedish, key="obl-se-banking-inside", terms=("service_type:non_advised",))
+        build.obligation(swedish, key="obl-se-banking-unscoped")
+        build.obligation(swedish, key="obl-se-banking-outside", terms=("service_type:advice",))
+
+        card = self.card(directive)
+        self.assertEqual(
+            {link["key"]: link["obligationCounts"] for link in card["implementedBy"]},
+            {"se-banking-act": {"inLibrary": 3, "inScope": 2}, "dk-banking-act": {"inLibrary": 0, "inScope": 0}},
+        )
+        for link in card["implementedBy"]:
+            with self.subTest(law=link["key"]):
+                totals = {"inLibrary": self.listed({"instrument": link["key"], "footprint": "all"}), "inScope": self.listed({"instrument": link["key"]})}
+                self.assertEqual(link["obligationCounts"], totals, "what GET /obligations lists under that law")
+                own = self.client.get(f"/api/v1/instruments/{link['id']}", **sign_in(self.reader, tenant=self.tenant)).json()["obligationCounts"]
+                self.assertEqual(link["obligationCounts"], {key: own[key] for key in totals}, "what the law's own card answers")
+        self.assertEqual(card["obligationCounts"], {"inLibrary": 0, "inScope": 0, "waitingForReview": 0}, "a directive holds no duties of its own")
+
+        # The same counts sit on what an instrument implements, read the other way.
+        regulation = build.instrument(key="eu-575-2013", official_ref="Regulation (EU) No 575/2013", jurisdiction="eu", level="eu_regulation", regime="regime:securities")
+        build.obligation(regulation, key="obl-eu-575-inside", terms=("service_type:non_advised",))
+        build.obligation(regulation, key="obl-eu-575-outside", terms=("service_type:advice",))
+        supplement = build.instrument(key="se-575-supplement", official_ref="SFS 2014:968", regime="regime:securities", implements_note="Supplements Regulation (EU) No 575/2013")
+        self.assertEqual(
+            [(link["key"], link["obligationCounts"]) for link in self.card(supplement)["implements"]], [("eu-575-2013", {"inLibrary": 2, "inScope": 1})]
+        )
+
+    def test_the_query_count_does_not_grow_with_the_instruments_a_card_links_to(self) -> None:
+        # Two queries count the duties of every linked instrument at once, never two per law.
+        for number, laws in (("2013/36", 1), ("2014/59", 3)):
+            directive = build.instrument(key=f"dir-with-{laws}", official_ref=f"Directive {number}/EU", jurisdiction="eu", level="eu_directive", regime="regime:securities")
+            for index in range(laws):
+                law = build.instrument(key=f"law-{laws}-{index}", official_ref=f"SFS 2004:{laws}{index}", regime="regime:securities", implements_note=f"Directive {number}/EU")
+                build.obligation(law, key=f"obl-law-{laws}-{index}", terms=("service_type:non_advised",))
+            # One lineage row, as the instruments INSTRUMENT_DETAIL_QUERIES was measured on carry.
+            build.relate_instruments(law, directive, relation="implements")
+            headers = sign_in(self.reader, tenant=self.tenant)
+            with self.subTest(laws=laws), self.assertNumQueries(INSTRUMENT_DETAIL_QUERIES + INSTRUMENT_LINK_QUERIES):
+                response = self.get(directive, headers)
+            self.assertEqual([link["obligationCounts"] for link in response.json()["implementedBy"]], [{"inLibrary": 1, "inScope": 1}] * laws)
+        # Linked both ways: the jurisdictions are labelled once per list, the duties still counted in two.
+        delegated = build.instrument(
+            key="eu-2015-35",
+            official_ref="Delegated Regulation (EU) 2015/35",
+            jurisdiction="eu",
+            level="eu_regulation",
+            regime="regime:securities",
+            implements_note="Directive 2013/36/EU",
+        )
+        build.instrument(key="se-2015-35", official_ref="FFFS 2015:8", regime="regime:securities", implements_note="Delegated Regulation (EU) 2015/35")
+        build.relate_instruments(delegated, Instrument.objects.get(stable_key="dir-with-1"), relation="implements")
+        headers = sign_in(self.reader, tenant=self.tenant)
+        with self.assertNumQueries(INSTRUMENT_DETAIL_QUERIES + INSTRUMENT_LINK_QUERIES + 1):
+            card = self.get(delegated, headers).json()
+        self.assertEqual(([link["key"] for link in card["implements"]], [link["key"] for link in card["implementedBy"]]), (["dir-with-1"], ["se-2015-35"]))
 
     def test_a_person_needs_library_read_and_a_key_needs_library_read_scope(self) -> None:
         no_scope = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))

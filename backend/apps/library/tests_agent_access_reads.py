@@ -243,6 +243,40 @@ class InstrumentsInScope(AgentReadCase):
         lineage = self.get(w.trading_key, f"{INSTRUMENTS}/{w.psd.id}").json()["lineage"]
         self.assertEqual([row["instrument"]["key"] for row in lineage], [w.mifid.stable_key])
 
+    def test_a_law_a_directive_links_to_counts_only_the_duties_the_reader_could_open(self) -> None:
+        """INV-09: the counts on a linked law are the ones that law's own card answers the
+        same reader. An entry without the bank's layer counts the shared duties in the
+        footprint and in its own scope, and never one it could not open."""
+        w = self.world
+        w.reach(False, w.trading, w.general)
+        directive = build.instrument(key="acc-reads-psd2", official_ref="Directive (EU) 2015/2366", jurisdiction="eu", level="eu_directive", regime="regime:payments")
+        law = build.instrument(key="acc-reads-payments-act", official_ref="SFS 2010:751", regime="regime:payments", implements_note="PSD2, Directive (EU) 2015/2366")
+        term("product_type", "funds")  # a product type the bank's footprint does not name
+        build.obligation(law, key="acc-reads-act-untagged")
+        build.obligation(law, key="acc-reads-act-cards", terms=["product_type:cards"])
+        build.obligation(law, key="acc-reads-act-funds", terms=["product_type:funds"])
+        readers = {
+            "trading": {"HTTP_X_API_KEY": w.trading_key},
+            "general": {"HTTP_X_API_KEY": w.general_key},
+            "person": sign_in(w.officer, tenant=w.tenant),
+        }
+        counted = {}
+        for name, headers in readers.items():
+            with self.subTest(reader=name):
+                links = self.client.get(f"{INSTRUMENTS}/{directive.id}", **headers).json()["implementedBy"]
+                self.assertEqual([link["id"] for link in links], [str(law.id)])
+                own = self.client.get(f"{INSTRUMENTS}/{law.id}", **headers).json()["obligationCounts"]
+                self.assertEqual(links[0]["obligationCounts"], {"inLibrary": own["inLibrary"], "inScope": own["inScope"]})
+                counted[name] = links[0]["obligationCounts"]
+        self.assertEqual(
+            counted,
+            {
+                "trading": {"inLibrary": 1, "inScope": 1},
+                "general": {"inLibrary": 2, "inScope": 2},
+                "person": {"inLibrary": 3, "inScope": 2},
+            },
+        )
+
     def test_the_provision_tree_names_no_citing_duty_outside_the_scope(self) -> None:
         w = self.world
         tree = self.get(w.trading_key, f"{INSTRUMENTS}/{w.psd.id}/provisions").json()

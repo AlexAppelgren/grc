@@ -73,6 +73,7 @@ from apps.library.schemas import (
     InstrumentAuthorityRef,
     InstrumentDetail,
     InstrumentLineageRef,
+    InstrumentLinkObligationCounts,
     InstrumentLinkRef,
     InstrumentObligationCounts,
     InstrumentProvisionsQuery,
@@ -998,7 +999,7 @@ def obligation_page(
                 stable_key=obligation.stable_key,
                 ref_label=obligation.ref_label,
                 title=localized(obligation.titles.all(), order),
-                instrument=ObligationInstrumentRef(key=instrument.stable_key, short_name=instrument.shown_short_name),
+                instrument=ObligationInstrumentRef(id=instrument.id, key=instrument.stable_key, short_name=instrument.shown_short_name),
                 binding_level=level_refs[instrument.level_id],
                 binding=instrument.binding,
                 duty_type=duty_refs[obligation.duty_type_id],
@@ -1103,7 +1104,9 @@ def _related_obligations(obligation: Obligation, order: list[str], reader: Reade
             id=relation.to_obligation_id,
             title=localized(titles.get(relation.to_obligation_id, []), order),
             instrument=ObligationInstrumentRef(
-                key=relation.to_obligation.instrument.stable_key, short_name=relation.to_obligation.instrument.shown_short_name
+                id=relation.to_obligation.instrument.id,
+                key=relation.to_obligation.instrument.stable_key,
+                short_name=relation.to_obligation.instrument.shown_short_name,
             ),
             binding=relation.to_obligation.instrument.binding,
             relation=relation_refs[relation.relation_type_id],
@@ -1151,6 +1154,7 @@ def obligation_detail(
         ref_label=obligation.ref_label,
         title=localized(obligation.titles.all(), order),
         instrument=ObligationInstrumentSummary(
+            id=instrument.id,
             key=instrument.stable_key,
             short_name=instrument.shown_short_name,
             name=localized(instrument.titles.all(), order),
@@ -1326,7 +1330,9 @@ def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[I
         InstrumentLineageRef(
             relation=relation_refs[relation.relation_type_id],
             direction="outgoing",
-            instrument=ObligationInstrumentRef(key=relation.to_instrument.stable_key, short_name=relation.to_instrument.shown_short_name),
+            instrument=ObligationInstrumentRef(
+                id=relation.to_instrument.id, key=relation.to_instrument.stable_key, short_name=relation.to_instrument.shown_short_name
+            ),
             note=relation.note,
             from_ref=relation.from_ref,
             to_ref=relation.to_ref,
@@ -1337,7 +1343,9 @@ def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[I
         InstrumentLineageRef(
             relation=relation_refs[relation.relation_type_id],
             direction="incoming",
-            instrument=ObligationInstrumentRef(key=relation.from_instrument.stable_key, short_name=relation.from_instrument.shown_short_name),
+            instrument=ObligationInstrumentRef(
+                id=relation.from_instrument.id, key=relation.from_instrument.stable_key, short_name=relation.from_instrument.shown_short_name
+            ),
             note=relation.note,
             from_ref=relation.from_ref,
             to_ref=relation.to_ref,
@@ -1356,17 +1364,30 @@ def _numbers(text: str) -> set[str]:
     return set(_OFFICIAL_NUMBER.findall(text))
 
 
-def _links(instruments: Iterable[Instrument], order: list[str]) -> list[InstrumentLinkRef]:
+def _links(
+    instruments: Iterable[Instrument], order: list[str], counts: Mapping[uuid.UUID, InstrumentLinkObligationCounts]
+) -> list[InstrumentLinkRef]:
     rows = sorted(instruments, key=lambda row: (row.jurisdiction.sort_order, row.short_name.lower()))
     refs = vocabulary_refs(JurisdictionLabel, [row.jurisdiction for row in rows], order)
-    return [InstrumentLinkRef(id=row.id, key=row.stable_key, short_name=row.shown_short_name, jurisdiction=refs[row.jurisdiction_id]) for row in rows]
+    return [
+        InstrumentLinkRef(
+            id=row.id, key=row.stable_key, short_name=row.shown_short_name, jurisdiction=refs[row.jurisdiction_id], obligation_counts=counts[row.id]
+        )
+        for row in rows
+    ]
 
 
-def _implementation(instrument: Instrument, order: list[str], reader: Reader) -> tuple[list[InstrumentLinkRef], list[InstrumentLinkRef]]:
+def _implementation(
+    instrument: Instrument, tenant: Tenant, order: list[str], reader: Reader
+) -> tuple[list[InstrumentLinkRef], list[InstrumentLinkRef]]:
     """What this instrument implements and what implements it (INV-09), read from the
     `implementsNote` free text by official number, both ways, among the instruments this
     reader may open: one query, narrowed by the numbers before the exact match, and none
-    when neither the reference nor the note carries a number."""
+    when neither the reference nor the note carries a number.
+
+    Each one carries the duties under it, held and in the caller's scope, as its own card
+    counts them (`_counts`): two queries for all of them at once, and none when there is
+    nothing to link to, since an empty `IN` reads nothing."""
     own = _numbers(instrument.official_ref)
     named = _numbers(instrument.implements_note)
     if not own and not named:
@@ -1377,7 +1398,11 @@ def _implementation(instrument: Instrument, order: list[str], reader: Reader) ->
     )
     implements = [row for row in candidates if _numbers(row.official_ref) & named]
     implemented_by = [row for row in candidates if _numbers(row.implements_note) & own]
-    return _links(implements, order), _links(implemented_by, order)
+    linked = {row.id for row in (*implements, *implemented_by)}
+    held = _obligation_counts(linked, tenant, "all", reader)
+    in_scope = _obligation_counts(linked, tenant, "in", reader)
+    counts = {key: InstrumentLinkObligationCounts(in_library=held.get(key, 0), in_scope=in_scope.get(key, 0)) for key in linked}
+    return _links(implements, order, counts), _links(implemented_by, order, counts)
 
 
 def _counts(instrument: Instrument, tenant: Tenant, reader: Reader) -> InstrumentObligationCounts:
@@ -1413,7 +1438,7 @@ def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID
     level_refs = vocabulary_refs(InstrumentLevelLabel, [instrument.level], order)
     jurisdiction_refs = vocabulary_refs(JurisdictionLabel, [instrument.jurisdiction], order)
     verifier = instrument.verified_by
-    implements, implemented_by = _implementation(instrument, order, reader)
+    implements, implemented_by = _implementation(instrument, tenant, order, reader)
     return InstrumentDetail(
         id=instrument.id,
         stable_key=instrument.stable_key,

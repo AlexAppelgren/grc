@@ -198,6 +198,7 @@ class TheFullList(TestCase):
         body = self.bank.ask(self.client, self.bank.trading_key).json()
         row = next(item for item in body["items"] if item["stableKey"] == self.bank.execution.stable_key)
         self.assertEqual(row["instrument"]["key"], "what-applies-act")
+        self.assertEqual(row["instrument"]["id"], str(self.bank.execution.instrument_id), "the id GET /instruments/{id} takes")
         self.assertEqual(row["refLabel"], self.bank.execution.ref_label)
         self.assertEqual(row["title"]["text"], "Best execution of client orders")
         self.assertEqual(row["version"]["versionNumber"], 1)

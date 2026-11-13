@@ -73,6 +73,7 @@ from apps.shared.models import AuditEvent, OutboxEvent, Tenant
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.tests_library_fence import LibraryWriteCalls, _is_allowed
 from apps.shared.tests_support_session import grant
+from apps.taxonomy.models import FootprintTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 
 V1 = "/api/v1"
@@ -1045,6 +1046,45 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(self.read(f"{V1}/instruments/{self.instrument.id}")["shortName"], "FFFS 2017:2", "three words or fewer stay")
         instrument.refresh_from_db()
         self.assertEqual(instrument.short_name, long_name, "nothing is stored")
+
+    def test_inv_s19(self) -> None:
+        """INV-S19
+
+        A directive's national laws carry their duty counts, and a duty names its regulation by id (INV-09, INV-01).
+        """
+        self.activate(self.tenant)
+        # The reader's bank offers one service, so a duty about another falls outside its scope.
+        FootprintTerm.objects.create(tenant=self.tenant, term=build.term("service_type:non_advised"))
+        directive = build.instrument(key="celex-32013l0036", official_ref="Directive 2013/36/EU", jurisdiction="eu", level="eu_directive", regime="regime:banking")
+        note = "Capital Requirements Directive, Directive 2013/36/EU"
+        swedish = build.instrument(key="sfs-2004-297", official_ref="SFS 2004:297", regime="regime:banking", implements_note=note)
+        danish = build.instrument(key="lbk-2024-406", official_ref="LBK 406", jurisdiction="dk", regime="regime:banking", implements_note=note)
+        inside = build.obligation(swedish, key="obl-inv-s19-inside", terms=("service_type:non_advised",))
+        build.obligation(swedish, key="obl-inv-s19-outside", terms=("service_type:advice",))
+
+        # The directive's card names each law that implements it with the duties the library
+        # holds under it and how many fall in the reader's scope: the totals GET /obligations
+        # answers for that law. Its own counts stay zero, since its duties sit under the laws.
+        card = self.read(f"{V1}/instruments/{directive.id}")
+        laws = {link["id"]: link["obligationCounts"] for link in card["implementedBy"]}
+        self.assertEqual(laws, {str(swedish.id): {"inLibrary": 2, "inScope": 1}, str(danish.id): {"inLibrary": 0, "inScope": 0}})
+        for law in (swedish, danish):
+            held = self.read(URL, {"instrument": law.stable_key, "footprint": "all"})["total"]
+            in_scope = self.read(URL, {"instrument": law.stable_key})["total"]
+            self.assertEqual(laws[str(law.id)], {"inLibrary": held, "inScope": in_scope})
+        self.assertEqual(card["obligationCounts"], {"inLibrary": 0, "inScope": 0, "waitingForReview": 0})
+
+        # A duty names its regulation by the id GET /instruments/{id} opens: on its row, on
+        # its own card, and on a lineage entry, which names the other regulation.
+        row = self.read(URL, {"instrument": swedish.stable_key})["items"][0]
+        self.assertEqual((row["id"], row["instrument"]["id"]), (str(inside.id), str(swedish.id)))
+        named = self.card(inside.stable_key)["instrument"]["id"]
+        self.assertEqual(named, str(swedish.id))
+        self.assertEqual(self.read(f"{V1}/instruments/{named}")["stableKey"], "sfs-2004-297")
+        amending = Instrument.objects.get(stable_key="fffs-2026-11")
+        for card_of, other in ((self.instrument, amending), (amending, self.instrument)):
+            lineage = self.read(f"{V1}/instruments/{card_of.id}")["lineage"]
+            self.assertIn((other.stable_key, str(other.id)), [(link["instrument"]["key"], link["instrument"]["id"]) for link in lineage])
 
     def _found_and_approved(self, filing: dict[str, Any], approver: User) -> Any:
         """`filing` found by the bank's own agent in the worker, then approved in the bank's

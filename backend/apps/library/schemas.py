@@ -267,10 +267,20 @@ class OutsideReason(LibraryResponse):
     )
 
 
+_INSTRUMENT_REF_ID = (
+    "The instrument's identifier in the shared library, as a UUID: the value "
+    "`GET /instruments/{instrumentId}` takes, so a record that names the instrument can "
+    "link to its card. It names the instrument and promises nothing more: that read "
+    "applies its own rules to the caller, and answers 404 for an instrument the caller may "
+    f"not open. {LIBRARY_FACT}"
+)
+
+
 class ObligationInstrumentRef(LibraryResponse):
     """The instrument a duty was broken out of, as a row or a related record names it: the
-    key to filter on and the short name to print."""
+    id to open it by, the key to filter on and the short name to print."""
 
+    id: UUID = Field(description=_INSTRUMENT_REF_ID, examples=["3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f"])
     key: str = Field(
         description=(
             "The instrument's stable key, the value to store and to send back as "
@@ -469,9 +479,9 @@ class ObligationRow(LibraryResponse):
     title: LocalizedText | None = Field(description=_OBLIGATION_TITLE)
     instrument: ObligationInstrumentRef = Field(
         description=(
-            "The instrument this duty was broken out of, by key and short name. The card "
+            "The instrument this duty was broken out of, by id, key and short name. The card "
             "adds the instrument's official reference and what it implements; this row "
-            "carries only what a column shows."
+            "carries only what a column shows and links to."
         )
     )
     binding_level: VocabRef = Field(description=_BINDING_LEVEL)
@@ -617,12 +627,15 @@ _SAMPLE_BY_AGENTS: dict[str, Any] = {
     "proposedByAgent": {"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"},
 }
 
+# FFFS 2017:2 as a duty names it: the id is the one the instrument's own card example carries.
+_SAMPLE_INSTRUMENT_REF: dict[str, Any] = {"id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f", "key": "fffs-2017-2", "shortName": "FFFS 2017:2"}
+
 _SAMPLE_ROW: dict[str, Any] = {
     "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
     "stableKey": "obl-research-payments",
     "refLabel": "Third-party payments",
     "title": _SAMPLE_TITLE,
-    "instrument": {"key": "fffs-2017-2", "shortName": "FFFS 2017:2"},
+    "instrument": _SAMPLE_INSTRUMENT_REF,
     "bindingLevel": {"key": "authority_regulation", "kind": None, "label": "Supervisory regulation"},
     "binding": True,
     "dutyType": {"key": "governance", "kind": None, "label": "Governance"},
@@ -719,8 +732,9 @@ class ObligationVersionRow(VersionConfirmation):
 
 class ObligationInstrumentSummary(LibraryResponse):
     """The instrument an obligation belongs to, as "Where it comes from" reads it (INV-01).
-    Its provisions and lineage live on the instrument's own read."""
+    Its provisions and lineage live on the instrument's own read, which `id` opens."""
 
+    id: UUID = Field(description=_INSTRUMENT_REF_ID, examples=["3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f"])
     key: str = Field(
         description=(
             "The instrument's stable key, the value to store and to send back as "
@@ -805,7 +819,7 @@ class RelatedObligation(LibraryResponse):
     id: UUID = Field(description=_OBLIGATION_ID, examples=["1d8c5a09-6b47-4e21-8f3a-0c7e2b4d9a63"])
     title: LocalizedText | None = Field(description=_OBLIGATION_TITLE)
     instrument: ObligationInstrumentRef = Field(
-        description="Which instrument the related duty was broken out of, by key and short name."
+        description="Which instrument the related duty was broken out of, by id, key and short name."
     )
     binding: bool = Field(description=_BINDING, examples=[True])
     relation: VocabRef = Field(
@@ -945,8 +959,7 @@ _SAMPLE_SUMMARY_EN = (
 _SAMPLE_DETAIL: dict[str, Any] = {
     **{key: _SAMPLE_ROW[key] for key in ("id", "stableKey", "refLabel", "title")},
     "instrument": {
-        "key": "fffs-2017-2",
-        "shortName": "FFFS 2017:2",
+        **_SAMPLE_INSTRUMENT_REF,
         "name": {
             "text": "FFFS 2017:2 om värdepappersrörelse",
             "language": "sv",
@@ -1014,7 +1027,7 @@ _SAMPLE_DETAIL: dict[str, Any] = {
                 "isOriginal": True,
                 "isMachine": False,
             },
-            "instrument": {"key": "fffs-2017-2", "shortName": "FFFS 2017:2"},
+            "instrument": _SAMPLE_INSTRUMENT_REF,
             "binding": True,
             "relation": {"key": "related", "kind": None, "label": "Related"},
         }
@@ -1050,7 +1063,7 @@ class ObligationDetail(LibraryResponse):
             "Where the duty comes from: the instrument it was broken out of, with the "
             "reference the authority publishes it under and what it implements. Its "
             "provision tree and its lineage to other instruments live on the instrument's "
-            "own read."
+            "own read, which its `id` opens."
         )
     )
     regime: VocabRef = Field(
@@ -2054,7 +2067,9 @@ class InstrumentLineageRef(LibraryResponse):
         ),
         examples=["incoming"],
     )
-    instrument: ObligationInstrumentRef = Field(description="The other instrument in the relation, by key and short name.")
+    instrument: ObligationInstrumentRef = Field(
+        description="The other instrument in the relation, by id, key and short name: never the instrument whose card this is."
+    )
     note: str = Field(
         description="What the relation is, in the library's own words. An empty string when nothing was recorded, never null.",
         examples=["Amends FFFS 2017:2, in force 1 October 2026."],
@@ -2113,22 +2128,68 @@ _SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
         {
             "relation": {"key": "amends", "kind": None, "label": "Amends"},
             "direction": "incoming",
-            "instrument": {"key": "fffs-2026-11", "shortName": "FFFS 2026:11"},
+            "instrument": {"id": "9b2d4c70-1e5f-4a86-b3c9-7d0e2f6a8b14", "key": "fffs-2026-11", "shortName": "FFFS 2026:11"},
             "note": "Amends FFFS 2017:2, in force 1 October 2026.",
             "fromRef": "",
             "toRef": "",
         }
     ],
+    "summary": {"text": "Finansinspektionen's rules for investment firms on how they conduct securities business.", "language": "en", "isOriginal": True, "isMachine": False},
+    # The directive it implements holds no duties of its own: they sit under laws such as this one.
+    "implements": [
+        {
+            "id": "c4a81e36-7f20-4d95-8b1a-52e9d0f3a6c7",
+            "key": "celex-32017l0593",
+            "shortName": "EU 2017/593",
+            "jurisdiction": {"key": "eu", "kind": "supranational", "label": "European Union"},
+            "obligationCounts": {"inLibrary": 0, "inScope": 0},
+        }
+    ],
+    "implementedBy": [],
+    "obligationCounts": {"inLibrary": 4, "inScope": 3, "waitingForReview": 0},
 }
 
 
+class InstrumentLinkObligationCounts(LibraryResponse):
+    """How many duties sit under an instrument that another instrument's card links to
+    (INV-09): the two numbers that instrument's own card answers, held and in the caller's
+    scope. The duties still waiting for review are on its own card only."""
+
+    in_library: int = Field(
+        description=(
+            "How many obligations the library holds under the other instrument that this caller "
+            "may read, inside the caller's regulatory scope or outside it: the number that "
+            "instrument's own card answers as `obligationCounts.inLibrary`. 0 or more."
+        ),
+        examples=[12],
+    )
+    in_scope: int = Field(
+        description=(
+            "How many of those fall inside the caller's regulatory scope, counted exactly as "
+            "`GET /obligations?instrument=<key>` lists them with the default `footprint=in`: the "
+            "number the other instrument's own card answers as `obligationCounts.inScope`. In "
+            "scope is a filter and not the decision that a duty applies to this bank. 0 or more."
+        ),
+        examples=[9],
+    )
+
+
 class InstrumentLinkRef(LibraryResponse):
-    """Another instrument this one is tied to by implementation, as the card links to it."""
+    """Another instrument this one is tied to by implementation, as the card links to it,
+    with how many duties sit under it."""
 
     id: UUID = Field(description="The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.")
     key: str = Field(description="The other instrument's stable key, issued once and never changed.", examples=["se-sfs-2004-297"])
     short_name: str = Field(description=f"The other instrument's short name, to print. {SHOWN_NAME}", examples=["LBF"])
     jurisdiction: VocabRef = Field(description=_INSTRUMENT_JURISDICTION)
+    obligation_counts: InstrumentLinkObligationCounts = Field(
+        description=(
+            "How many duties sit under the other instrument: held in the library, and in the "
+            "caller's scope. On a directive's `implementedBy` it says which national laws hold "
+            "duties and how many of them fall in this bank's scope, while the directive's own "
+            "`obligationCounts` stay at zero, since it holds no duties of its own."
+        )
+    )
 
 
 class InstrumentObligationCounts(LibraryResponse):
@@ -2241,15 +2302,17 @@ class InstrumentDetail(LibraryResponse):
         description=(
             "The instruments this one implements, read from its `implementsNote`: each library "
             "instrument whose official number (such as 2014/59 in Directive 2014/59/EU) the note "
-            "names. Empty when the note names none the library holds or this caller may read."
+            "names, with how many duties sit under it. Empty when the note names none the "
+            "library holds or this caller may read."
         )
     )
     implemented_by: list[InstrumentLinkRef] = Field(
         description=(
             "The instruments that implement this one, read the other way: each library "
             "instrument whose `implementsNote` names this instrument's official number. For an "
-            "EU directive these are the national laws that carry its duties. Empty when the "
-            "library holds none this caller may read."
+            "EU directive these are the national laws that carry its duties, and each says how "
+            "many it holds and how many fall in the caller's scope. Empty when the library "
+            "holds none this caller may read."
         )
     )
     obligation_counts: InstrumentObligationCounts = Field(
