@@ -7,6 +7,8 @@ import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 
 const nav = vi.hoisted(() => ({ pathname: '/admin/members', replace: vi.fn() }));
+const framed = vi.hoisted(() => ({ value: false }));
+vi.mock('@/features/demo/frame', async (importOriginal) => ({ ...(await importOriginal<object>()), useDemoFrame: () => framed.value }));
 vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
   useRouter: () => ({ replace: nav.replace, push: vi.fn() }),
@@ -27,6 +29,14 @@ describe("Admin's tab bar (D-137)", () => {
   beforeEach(() => {
     nav.pathname = '/admin/members';
     nav.replace.mockReset();
+    framed.value = false;
+  });
+
+  it('shows no tab bar in the public demo, whose recordings open no page of Admin a tab leads to', () => {
+    framed.value = true;
+    nav.pathname = '/admin/licences';
+    const { container } = open(['members.manage', 'roles.manage', 'audit.read', 'ai_log.read']);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('offers the groups the permissions unlock, each opening its first page, and the pages of the current group', () => {

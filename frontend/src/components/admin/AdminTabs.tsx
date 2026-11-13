@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useDemoFrame } from '@/features/demo/frame';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { adminGroups, currentAdminPage } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -10,12 +11,14 @@ import { cn } from '@/shared/utils/cn';
 
 // Admin's tab bar (D-137, design/system/navigation.md "Admin"): the groups this
 // person's permissions unlock, then the pages of the group they are in. A group
-// tab opens its first page. Nothing here checks a role name.
+// tab opens its first page. Nothing here checks a role name. The public page's
+// demo shows none: its recordings hold no page of Admin a tab would open.
 export function AdminTabs() {
   const t = useT();
   const pathname = usePathname() ?? '';
   const groups = adminGroups(usePermissions() ?? []);
-  if (groups.length === 0) return null;
+  const demo = useDemoFrame();
+  if (demo || groups.length === 0) return null;
   const current = currentAdminPage(
     groups.flatMap((g) => g.pages),
     pathname,

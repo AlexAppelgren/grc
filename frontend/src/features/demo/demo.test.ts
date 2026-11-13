@@ -1,8 +1,9 @@
+import { renderHook } from '@testing-library/react';
 import axios, { type AxiosError } from 'axios';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { installDemoClock } from './clock';
-import { DEMO_FRAME_NAME, isDemoFrame, isDemoFrameWindow } from './frame';
+import { DEMO_FRAME_NAME, isDemoFrame, isDemoFrameWindow, useDemoFrame } from './frame';
 import committed from './recordings.json';
 import { type DemoRecordings, patternOf, requestKey, shapeDifference, shapeOf, staleness } from './recordings';
 import { createReplayAdapter, DEMO_ACCESS_TOKEN, DEMO_NOT_RECORDED_CODE, DEMO_READ_ONLY_CODE } from './replay';
@@ -159,6 +160,7 @@ describe('demo mode', () => {
 
   it('is off in a window that is not the demo frame', () => {
     expect(isDemoFrame()).toBe(false);
+    expect(renderHook(() => useDemoFrame()).result.current).toBe(false);
   });
 
   it('is on only in a frame of that name whose parent is this same origin', () => {

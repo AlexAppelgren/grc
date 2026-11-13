@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { useDemoFrame } from '@/features/demo/frame';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
 import { humaniseKey } from '@/shared/utils/format';
@@ -25,13 +26,18 @@ export function LoadingState({ rows = 2 }: { rows?: number }) {
   );
 }
 
+// In the public page's demo every read is answered from its recordings, so a read
+// that fails is one the demo has no recording for: no connection is at fault and a
+// retry cannot change it. The not-found and error states say so in the demo's words.
+
 export function ErrorState({ title, onRetry }: { title: string; onRetry?: () => void }) {
   const t = useT();
+  const demo = useDemoFrame();
   return (
     <div role="alert" className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-error-state="">
       <h2 className="text-fg">{title}</h2>
-      <p className="mx-auto mt-2 max-w-[60ch]">{t('common.errorBody')}</p>
-      {onRetry !== undefined ? (
+      <p className="mx-auto mt-2 max-w-[60ch]">{demo ? t('public.demo.notRecorded') : t('common.errorBody')}</p>
+      {onRetry !== undefined && !demo ? (
         <Button variant="outline" size="small" className="mt-4" onClick={onRetry}>
           {t('common.tryAgain')}
         </Button>
@@ -55,6 +61,17 @@ export function QueryState<T>({ query, rows, errorTitle, children }: { query: Us
 // tenant's record (playbook 4.4): never the Restricted screen.
 export function NotFoundScreen({ body, backHref = '/', backLabel }: { body?: string; backHref?: string; backLabel?: string }) {
   const t = useT();
+  const demo = useDemoFrame();
+  if (demo) {
+    return (
+      <section className="mx-auto max-w-[60ch] py-16 text-center" data-not-found="">
+        <h1>{t('public.demo.notRecorded')}</h1>
+        <Link href="/" className="mt-4 inline-block font-medium underline">
+          {t('notFound.back')}
+        </Link>
+      </section>
+    );
+  }
   return (
     <section className="mx-auto max-w-[60ch] py-16 text-center" data-not-found="">
       <h1>{t('notFound.title')}</h1>

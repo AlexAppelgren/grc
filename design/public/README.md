@@ -152,7 +152,15 @@ linear.app the same day); ours is the app itself.
   pressed is answered by the first recording of that list, which shows the right kind of
   rows. A later page (`offset` above 0) or a search (`q`, `query` or `search` with text) is
   never answered that way, since the first page would read as its answer: like any read
-  with no recording, it fails with `demo_not_recorded`.
+  with no recording, it fails with `demo_not_recorded`. In the demo frame the app's
+  not-found screen and every error state read the demo's own line, "The demo has no
+  sample data for this page.", the first with a link back to Today and the second with no
+  Try again, since no connection is at fault (`NotFoundScreen` and `ErrorState` in
+  `States.tsx`, through `useDemoFrame`). So a record the walk never reached, a later page,
+  a search and an address the app does not have all say that, never "Not found" or "Check
+  your connection". The recorded week before the first briefing reads it too. Admin's tab
+  bar is not drawn: Licences, which What applies links to and the demo answers, stands
+  alone, with no tab to Admin pages the demo holds nothing for.
 - **How it stays current.** CI's `demo` job, on every push, boots the demo's stack and
   walks the app again and compares the answers with the committed
   recordings by API path template and field shape, never by value. A screen
