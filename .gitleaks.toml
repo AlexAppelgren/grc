@@ -43,10 +43,10 @@ description = "CELEX numbers: the EU Publications Office's public identifier of 
 regexes = ['''^celex-3[0-9]{4}[a-z][0-9]{4}$''']
 
 [[allowlists]]
-description = "Stable keys of the library baseline's records in backend/apps/library/baseline/*.json and their summaries in baseline/summaries/*.json: lowercase slugs built from public citations (e.g. dk-lov-2013-597, esma-gl-2016-1477, obl-eu-mifid2-dr-execution-policy), never credentials. Bound to those data files and to the slug shape, so the same shape anywhere else is still reported."
+description = "Stable keys of the library baseline's records in backend/apps/library/baseline/*.json, their summaries in baseline/summaries/*.json and the corrections of their duties in baseline/corrections/*.json (D-144, 2026-11-13): lowercase slugs built from public citations (e.g. dk-lov-2013-597, esma-gl-2016-1477, obl-eu-mifid2-dr-execution-policy), never credentials. Bound to those data files and to the slug shape, so the same shape anywhere else is still reported."
 condition = "AND"
 regexes = ['''^[a-z0-9]+(?:-[a-z0-9]+){2,}$''']
-paths = ['''^backend/apps/library/baseline/(summaries/)?[a-z0-9-]+\.json$''']
+paths = ['''^backend/apps/library/baseline/(summaries/|corrections/)?[a-z0-9-]+\.json$''']
 
 [[allowlists]]
 description = "The same stable keys in the public demo's recordings (frontend/src/features/demo/recordings.json), which since Alex's decision of 2026-10-03 are answers of the real library baseline: lowercase slugs built from public citations, never credentials. Bound to that one file and to the slug shape, so the same shape anywhere else, and anything else in the file, is still reported."
