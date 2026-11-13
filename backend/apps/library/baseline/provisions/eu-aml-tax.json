@@ -1,0 +1,1001 @@
+{
+  "tranche": "eu-aml-tax",
+  "researchedOn": "2026-11-13",
+  "provisions": [
+    {
+      "key": "celex-32019r0758/002",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "General obligations for each third country",
+      "texts": {
+        "en": "For each third country where they have established a branch or they are a majority owner of a subsidiary, credit institutions and financial institutions shall at least:\n(a) assess the money laundering and terrorist financing risk to their group, record that assessment, keep it up to date and retain it in order to be able to share it with their competent authority;\n(b) ensure that the risk referred to in point (a) is reflected appropriately in their group-wide anti-money laundering and countering the financing of terrorism policies and procedures;\n(c) obtain senior management approval at group-level for the risk assessment referred to in point (a) and for the group-wide anti-money laundering and countering the financing of terrorism policies and procedures referred to in point (b);\n(d) provide targeted training to relevant staff members in the third country to enable them to identify money laundering and terrorist financing risk indicators, and ensure that the training is effective."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-third-country-risk"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r0758/003",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Individual risk assessments",
+      "texts": {
+        "en": "1. Where the third country's law prohibits or restricts the application of policies and procedures that are necessary to identify and assess adequately the money laundering and terrorist financing risk associated with a business relationship or occasional transaction due to restrictions on access to relevant customer and beneficial ownership information or restrictions on the use of such information for customer due diligence purposes, credit institutions or financial institutions shall at least:\n(a) inform the competent authority of the home Member State without undue delay and in any case no later than 28 calendar days after identifying the third country of the following:\n(i) the name of the third country concerned;\n(ii) how the implementation of the third country's law prohibits or restricts the application of policies and procedures that are necessary to identify and assess the money laundering and terrorist financing risk associated with a customer;\n(b) ensure that their branches or majority-owned subsidiaries that are established in the third country determine whether consent from their customers and, where applicable, their customers' beneficial owners, can be used to legally overcome restrictions or prohibitions referred to in point (a)(ii);\n(c) ensure that their branches or majority-owned subsidiaries that are established in the third country require their customers and, where applicable, their customers' beneficial owners, to give consent to overcome restrictions or prohibitions referred to in point (a)(ii) to the extent that this is compatible with the third country's law.\n\n2. Where the consent referred to in point (c) of paragraph 1 is not feasible, credit institutions and financial institutions shall take additional measures as well as their standard anti-money laundering and countering the financing of terrorism measures, to manage the money laundering and terrorist financing.\n\nThose additional measures shall include the additional measure set out in point (c) of Article 8 and one or more of the measures set out in points (a), (b), (d), (e) and (f) of that Article.\n\nWhere a credit institution or financial institution cannot effectively manage the money laundering and terrorist financing risk by applying the measures referred to in paragraphs 1 and 2, it shall:\n(a) ensure that the branch or majority-owned subsidiary terminates the business relationship;\n(b) ensure that the branch or majority-owned subsidiary not carry out the occasional transaction;\n(c) close down some or all of the operations provided by their branch and majority- owned subsidiary established in the third country.\n\n3. Credit institutions and financial institutions shall determine the extent of the additional measures referred to in paragraphs 2 and 3 on a risk-sensitive basis and be able to demonstrate to their competent authority that the extent of additional measures is appropriate in view of the money laundering and terrorist financing risk."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-notify-legal-obstacles",
+        "obl-eu-2019-758-additional-measures"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_3",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r0758/004",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Customer data sharing and processing",
+      "texts": {
+        "en": "1. Where a third country's law prohibits or restricts the sharing or processing of customer data for anti-money laundering and countering the financing of terrorism purposes within the group, credit institutions and financial institution shall at least:\n(a) inform the competent authority of the home Member State without undue delay and in any case no later than 28 days after identifying the third country of the following:\n(i) the name of the third country concerned;\n(ii) how the implementation of the third country's law prohibits or restricts the sharing or processing of customer data for anti-money laundering and countering the financing of terrorism purposes;\n(b) ensure that their branches or majority-owned subsidiaries that are established in the third country determine whether consent from their customers and, where applicable, their customers' beneficial owners, can be used to legally overcome restrictions or prohibitions referred to in point (a)(ii);\n(c) ensure that their branches or majority-owned subsidiaries that are established in the third country require their customers and, where applicable, their customers' beneficial owners, to provide consent to overcome restrictions or prohibitions referred to in point (a)(ii) to the extent that this is compatible with the third country's law.\n\n2. In cases where consent referred to in point (c) of paragraph 1 is not feasible, credit institutions and financial institutions shall take additional measures as well as their standard anti-money laundering and countering the financing of terrorism measures to manage risk. These additional measures shall include the additional measure set out in point (a) of Article 8 or the additional measure set out in point (c) of that Article. Where the money laundering and terrorist financing risk is sufficient to require further additional measures, credit and financial institutions shall apply one or more of the remaining additional measures set out in points (a) to (c) of Article 8.\n\n3. Where a credit institution or financial institution cannot effectively manage the money laundering and terrorist financing risk by applying the measures referred to in paragraphs 1 and 2, it shall close down some or all of the operations provided by their branch and majority-owned subsidiary established in the third country.\n\n4. Credit institutions and financial institutions shall determine the extent of the additional measures referred to in paragraphs 2 and 3 on a risk-sensitive basis and be able to demonstrate to their competent authority that the extent of additional measures is appropriate in view of the risk of money laundering and terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-notify-legal-obstacles",
+        "obl-eu-2019-758-additional-measures"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_4",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r0758/005",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Disclosure of information related to suspicious transactions",
+      "texts": {
+        "en": "1. Where the third country's law prohibits or restricts the sharing of information referred to in Article 33(1) of Directive (EU) 2015/849 by branches and majority-owned subsidiaries established in the third country with other entities in their group, credit institutions and financial institutions shall at least:\n(a) inform the competent authority of the home Member State without undue delay and in any case no later than 28 days after identifying the third country of the following:\n(i) the name of the third country concerned;\n(ii) how the implementation of the third country's law prohibits or restricts the sharing or processing of the content of information referred to in Article 33(1) of Directive (EU) 2015/849 identified by a branch and majority-owned subsidiary established in a third country with other entities in their group;\n(b) require the branch or majority-owned subsidiary to provide relevant information to the credit institution's or financial institution's senior management so that it is able to assess the money laundering and terrorist financing risk associated with the operation of such a branch or majority-owned subsidiary and the impact this has on the group, such as:\n(i) the number of suspicious transactions reported within a set period;\n(ii) aggregated statistical data providing an overview of the circumstances that gave rise to suspicion.\n\n2. Credit institutions and financial institutions shall take additional measures as well as their standard anti-money laundering and countering the financing of terrorism measures and the measures referred to in paragraph 1 to manage risk.\n\nThose additional measures shall include one or more of the additional measures set out in points (a) to (c) and (g) to (i) of Article 8.\n\n3. Where credit institutions and financial institutions cannot effectively manage the money laundering and terrorist financing risk by applying the measures referred to in paragraphs 1 and 2, they shall close down some or all of the operations provided by their branch and majority-owned subsidiary established in the third country.\n\n4. Credit institutions and financial institutions shall determine the extent of the additional measures referred to in paragraphs 2 and 3 on a risk-sensitive basis and be able to demonstrate to their competent authority that the extent of additional measures is appropriate in view of the risk of money laundering and terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-notify-legal-obstacles",
+        "obl-eu-2019-758-additional-measures"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_5",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 5, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r0758/006",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Transfer of customer data to Member States",
+      "texts": {
+        "en": "Where the third country's law prohibits or restricts the transfer of data related to customers of a branch and majority-owned subsidiary established in a third country to a Member State for the purpose of supervision for anti-money laundering and countering the financing of terrorism, credit institutions and financial institutions shall at least:\n(a) inform the competent authority of the home Member State without undue delay and in any case no later than 28 calendar days after identifying the third country of the following:\n(i) the name of the third country concerned;\n(ii) how the implementation of the third country's law prohibits or restricts the transfer of data related to customers for the purpose of supervision for anti-money laundering and countering the financing of terrorism;\n(b) carry out enhanced reviews, including, where this is commensurate with the money laundering and terrorist financing risk associated with the operation of the branch or majority-owned subsidiary established in the third country, onsite checks or independent audits, to be satisfied that the branch or majority-owned subsidiary effectively implements group-wide policies and procedures and that it adequately identifies, assesses and manages the money laundering and terrorist financing risks;\n(c) provide the findings of the reviews referred to in point (b) to the competent authority of the home Member State upon request;\n(d) require the branch or majority-owned subsidiary established in the third country regularly to provide relevant information to the credit institution's or financial institution's senior management, including at least the following:\n(i) the number of high risk customers and aggregated statistical data providing an overview of the reasons why customers have been classified as high risk, such as politically exposed person status;\n(ii) the number of suspicious transactions identified and reported and aggregated statistical data providing an overview of the circumstances that gave rise to suspicion;\n(e) make the information referred to in point (d) available to the competent authority of the home Member State upon request."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-notify-legal-obstacles"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_6",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 6, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r0758/007",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 7",
+      "path": "007",
+      "heading": "Record-keeping",
+      "texts": {
+        "en": "1. Where the third country's law prohibits or restricts the application of record-keeping measures equivalent to those specified in Chapter V of Directive (EU) 2015/849, credit institutions and financial institutions shall at least:\n(a) inform the competent authority of the home Member State without undue delay and in any case no later than 28 days after identifying the third country of the following:\n(i) the name of the third country concerned;\n(ii) how the implementation of the third country's law prohibits or restricts the application of record-keeping measures equivalent to those laid down in Directive (EU) 2015/849;\n(b) establish whether consent from the customer and, where applicable, their beneficial owner, can be used to legally overcome restrictions or prohibitions referred to in point (a)(ii);\n(c) ensure that their branches or majority-owned subsidiaries that are established in the third country require customers and, where applicable, their customers' beneficial owners, to provide consent to overcome restrictions or prohibitions referred to in point (a)(ii) to the extent that this is compatible with the third country's law.\n\n2. In cases where consent referred to in point (c) of paragraph 1 is not feasible, credit institutions and financial institutions shall take additional measures as well as their standard anti-money laundering and countering the financing of terrorism measures and the measures referred to in paragraph 1 to manage risk. These additional measures shall include one or more of the additional measures set out in points (a) to (c) and (j) of Article 8.\n\n3. Credit and financial institutions shall determine the extent of the additional measures referred to in paragraph 2 on a risk-sensitive basis and be able to demonstrate to their competent authority that the extent of additional measures is appropriate in view of the risk of money laundering and terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-notify-legal-obstacles",
+        "obl-eu-2019-758-additional-measures"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_7",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 7, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r0758/008",
+      "instrument": "celex-32019r0758",
+      "provisionKind": "article",
+      "refLabel": "Article 8",
+      "path": "008",
+      "heading": "Additional measures",
+      "texts": {
+        "en": "Credit institutions and financial institutions shall take the following additional measures pursuant to Article 3(2), Article 4(2), Article 5(2) and Article 7(2) respectively:\n(a) ensuring that their branches or majority-owned subsidiaries that are established in the third country restrict the nature and type of financial products and services provided by the branch of majority-owned subsidiary in the third country to those that present a low money laundering and terrorist financing risk and have a low impact on the group's risk exposure;\n(b) ensuring that other entities of the same group do not rely on customer due diligence measures carried out by a branch or majority-owned subsidiary established in the third country, but instead carry out customer due diligence on any customer of a branch or majority-owned subsidiary established in third country who wishes to be provided with products or services by those other entities of the same group even if the conditions in Article 28 of Directive (EU) 2015/849 are met;\n(c) carrying out enhanced reviews, including, where this is commensurate with the money laundering and terrorist financing risk associated with the operation of the branch or majority-owned subsidiary established in the third country, onsite checks or independent audits, to be satisfied that the branch or majority-owned subsidiary effectively identifies, assesses and manages the money laundering and terrorist financing risks;\n(d) ensuring that their branches or majority-owned subsidiaries that are established in the third country seek the approval of the credit institution's or financial institution's senior management for the establishment and maintenance of higher-risk business relationships, or for carrying out a higher risk occasional transaction;\n(e) ensuring that their branches or majority-owned subsidiaries that are established in the third country determine the source and, where applicable, the destination of funds to be used in the business relationship or occasional transaction;\n(f) ensuring that their branches or majority-owned subsidiaries that are established in the third country carry out enhanced ongoing monitoring of the business relationship including enhanced transaction monitoring, until the branches or majority-owned subsidiaries are reasonably satisfied that they understand the money laundering and terrorist financing risk associated with the business relationship;\n(g) ensuring that their branches or majority-owned subsidiaries that are established in the third country share with the credit institution or financial institution underlying suspicious transaction report information that gave rise to the knowledge, suspicion or reasonable grounds to suspect that money laundering and terrorist financing was being attempted or had occurred, such as facts, transactions, circumstances and documents upon which suspicions are based, including personal information to the extent that this is possible under the third country's law;\n(h) carrying out enhanced ongoing monitoring on any customer and, where applicable, beneficial owner of a customer of a branch or majority-owned subsidiary established in the third country who is known to have been the subject of suspicious transaction reports by other entities of the same group;\n(i) ensuring that their branches or majority-owned subsidiaries that are established in the third country has effective systems and controls in place to identify and report suspicious transactions;\n(j) ensuring that their branches or majority-owned subsidiaries that are established in the third country keep the risk profile and due diligence information related to a customer of a branch or majority-owned subsidiary established in the third country up to date and secure as long as legally possible, and in any case for at least the duration of the business relationship."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-2019-758-additional-measures"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_8",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 8, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/004",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Information accompanying transfers of funds",
+      "texts": {
+        "en": "1. The payment service provider of the payer shall ensure that transfers of funds are accompanied by the following information on the payer:\n(a) the name of the payer;\n(b) the payer’s payment account number;\n(c) the payer’s address including the name of the country, official personal document number and customer identification number, or, alternatively, the payer’s date and place of birth; and\n(d) subject to the existence of the necessary field in the relevant payments message format, and where provided by the payer to its payment service provider, the current LEI of the payer or, in its absence, any available equivalent official identifier.\n\n2. The payment service provider of the payer shall ensure that transfers of funds are accompanied by the following information on the payee:\n(a) the name of the payee;\n(b) the payee’s payment account number; and\n(c) subject to the existence of the necessary field in the relevant payments message format, and where provided by the payer to its payment service provider, the current LEI of the payee or, in its absence, any available equivalent official identifier.\n\n3. By way of derogation from paragraph 1, point (b), and paragraph 2, point (b), in the case of a transfer not made to or from a payment account, the payment service provider of the payer shall ensure that the transfer of funds is accompanied by a unique transaction identifier rather than the payment account number.\n\n4. Before transferring funds, the payment service provider of the payer shall verify the accuracy of the information referred to in paragraph 1 and, where applicable, in paragraph 3, on the basis of documents, data or information obtained from a reliable and independent source.\n\n5. Verification as referred to in paragraph 4 of this Article shall be deemed to have taken place where one of the following applies:\n(a) the identity of the payer has been verified in accordance with Article 13 of Directive (EU) 2015/849 and the information obtained pursuant to that verification has been retained in accordance with Article 40 of that Directive;\n(b) Article 14(5) of Directive (EU) 2015/849 applies to the payer.\n\n6. Without prejudice to the derogations provided for in Articles 5 and 6, the payment service provider of the payer shall not execute any transfer of funds before ensuring full compliance with this Article."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-payer-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_4",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/005",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Transfers of funds within the Union",
+      "texts": {
+        "en": "1. By way of derogation from Article 4(1) and (2), where all payment service providers involved in the payment chain are established in the Union, transfers of funds shall be accompanied by at least the payment account number of both the payer and the payee or, where Article 4(3) applies, the unique transaction identifier, without prejudice to the information requirements laid down in Regulation (EU) No 260/2012, where applicable.\n\n2. Notwithstanding paragraph 1, the payment service provider of the payer shall, within three working days of receiving a request for information from the payment service provider of the payee or from the intermediary payment service provider, make available the following:\n(a) for transfers of funds exceeding EUR 1 000, whether such transfers are carried out in a single transaction or in several transactions which appear to be linked, the information on the payer or the payee in accordance with Article 4;\n(b) for transfers of funds not exceeding EUR 1 000 that do not appear to be linked to other transfers of funds which, together with the transfer in question, exceed EUR 1 000, at least:\n(i) the names of the payer and of the payee; and\n(ii) the payment account numbers of the payer and of the payee or, where Article 4(3) applies, the unique transaction identifier.\n\n3. By way of derogation from Article 4(4), in the case of transfers of funds referred to in paragraph 2, point (b), of this Article, the payment service provider of the payer need not verify the information on the payer unless the payment service provider of the payer:\n(a) has received the funds to be transferred in cash or in anonymous electronic money; or\n(b) has reasonable grounds for suspecting money laundering or terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-payer-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_5",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 5, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/006",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Transfers of funds to outside the Union",
+      "texts": {
+        "en": "1. In the case of a batch file transfer from a single payer where the payment service providers of the payees are established outside the Union, Article 4(1) shall not apply to the individual transfers bundled together therein, provided that the batch file contains the information referred to in Article 4(1), (2) and (3), that that information has been verified in accordance with Article 4(4) and (5), and that the individual transfers carry the payment account number of the payer or, where Article 4(3) applies, the unique transaction identifier.\n\n2. By way of derogation from Article 4(1), and, where applicable, without prejudice to the information required in accordance with Regulation (EU) No 260/2012, where the payment service provider of the payee is established outside the Union, transfers of funds not exceeding EUR 1 000 that do not appear to be linked to other transfers of funds which, together with the transfer in question, exceed EUR 1 000, shall be accompanied by at least:\n(a) the names of the payer and of the payee; and\n(b) the payment account numbers of the payer and of the payee or, where Article 4(3) applies, the unique transaction identifier.\n\nBy way of derogation from Article 4(4), the payment service provider of the payer need not verify the information on the payer referred to in this paragraph unless the payment service provider of the payer:\n(a) has received the funds to be transferred in cash or in anonymous electronic money; or\n(b) has reasonable grounds for suspecting money laundering or terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-payer-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_6",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 6, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/007",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 7",
+      "path": "007",
+      "heading": "Detection of missing information on the payer or the payee",
+      "texts": {
+        "en": "1. The payment service provider of the payee shall implement effective procedures to detect whether the fields relating to the information on the payer and the payee in the messaging or payment and settlement system used to effect the transfer of funds have been filled in using characters or inputs admissible in accordance with the conventions of that system.\n\n2. The payment service provider of the payee shall implement effective procedures, including, where appropriate, monitoring after or during the transfers, in order to detect whether the following information on the payer or the payee is missing:\n(a) for transfers of funds where the payment service provider of the payer is established in the Union, the information referred to in Article 5;\n(b) for transfers of funds where the payment service provider of the payer is established outside the Union, the information referred to in Article 4(1), points (a), (b) and (c), and Article 4(2), points (a) and (b);\n(c) for batch file transfers where the payment service provider of the payer is established outside the Union, the information referred to in Article 4(1), points (a), (b) and (c), and Article 4(2), points (a) and (b), in respect of that batch file transfer.\n\n3. In the case of transfers of funds exceeding EUR 1 000, whether those transfers are carried out in a single transaction or in several transactions which appear to be linked, before crediting the payee’s payment account or making the funds available to the payee, the payment service provider of the payee shall verify the accuracy of the information on the payee referred to in paragraph 2 of this Article on the basis of documents, data or information obtained from a reliable and independent source, without prejudice to the requirements laid down in Articles 83 and 84 of Directive (EU) 2015/2366.\n\n4. In the case of transfers of funds not exceeding EUR 1 000 that do not appear to be linked to other transfers of funds which, together with the transfer in question, exceed EUR 1 000, the payment service provider of the payee need not verify the accuracy of the information on the payee, unless the payment service provider of the payee:\n(a) effects the pay-out of the funds in cash or in anonymous electronic money; or\n(b) has reasonable grounds for suspecting money laundering or terrorist financing.\n\n5. Verification as referred to in paragraphs 3 and 4 of this Article shall be deemed to have taken place where one of the following applies:\n(a) the identity of the payee has been verified in accordance with Article 13 of Directive (EU) 2015/849 and the information obtained pursuant to that verification has been retained in accordance with Article 40 of that Directive;\n(b) Article 14(5) of Directive (EU) 2015/849 applies to the payee."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-payee-missing-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_7",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 7, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/008",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 8",
+      "path": "008",
+      "heading": "Transfers of funds with missing or incomplete information on the payer or the payee",
+      "texts": {
+        "en": "1. The payment service provider of the payee shall implement effective risk-based procedures, including procedures based on the risk-sensitive basis referred to in Article 13 of Directive (EU) 2015/849 for determining whether to execute, reject or suspend a transfer of funds lacking the required complete payer and payee information and for taking the appropriate follow-up action.\n\nWhere the payment service provider of the payee becomes aware, when receiving a transfer of funds, that the information referred to in Article 4(1), points (a), (b) and (c), Article 4(2), points (a) and (b), Article 5(1), or Article 6, is missing or incomplete or has not been filled in using characters or inputs admissible in accordance with the conventions of the messaging or payment and settlement system as referred to in Article 7(1), the payment service provider of the payee shall, on a risk-sensitive basis:\n(a) reject the transfer; or\n(b) request the required information on the payer and the payee before or after crediting the payee’s payment account or making the funds available to the payee.\n\n2. Where a payment service provider repeatedly fails to provide the required information on the payer or the payee, the payment service provider of the payee shall:\n(a) take steps, which may initially include the issuing of warnings and setting of deadlines, before proceeding to a rejection, restriction or termination in accordance with point (b) if the required information is still not provided; or\n(b) directly reject any future transfers of funds from that payment service provider, or restrict or terminate its business relationship with that payment service provider.\n\nThe payment service provider of the payee shall report that failure, and the steps taken, to the competent authority responsible for monitoring compliance with anti-money laundering and counter-terrorist financing provisions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-payee-missing-information",
+        "obl-eu-tfr-repeatedly-failing-providers"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_8",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 8, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/009",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Assessment and reporting",
+      "texts": {
+        "en": "The payment service provider of the payee shall take into account missing or incomplete information on the payer or the payee as a factor when assessing whether a transfer of funds, or any related transaction, is suspicious and whether it is to be reported to the Financial Intelligence Unit (FIU) in accordance with Directive (EU) 2015/849."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-payee-missing-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_9",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 9, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/010",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 10",
+      "path": "010",
+      "heading": "Retention of information on the payer and the payee accompanying the transfer",
+      "texts": {
+        "en": "Intermediary payment service providers shall ensure that all the information received on the payer and the payee that accompanies a transfer of funds is retained with the transfer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-intermediary-provider"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_10",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 10, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/011",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 11",
+      "path": "011",
+      "heading": "Detection of missing information on the payer or the payee",
+      "texts": {
+        "en": "1. The intermediary payment service provider shall implement effective procedures to detect whether the fields relating to the information on the payer and the payee in the messaging or payment and settlement system used to effect the transfer of funds have been filled in using characters or inputs admissible in accordance with the conventions of that system.\n\n2. The intermediary payment service provider shall implement effective procedures, including, where appropriate, monitoring after or during the transfers, in order to detect whether the following information on the payer or the payee is missing:\n(a) for transfers of funds where the payment service providers of the payer and the payee are established in the Union, the information referred to in Article 5;\n(b) for transfers of funds where the payment service provider of the payer or of the payee is established outside the Union, the information referred to in Article 4(1), points (a), (b) and (c), and Article 4(2), points (a) and (b);\n(c) for batch file transfers where the payment service provider of the payer or of the payee is established outside the Union, the information referred to in Article 4(1), points (a), (b) and (c), and Article 4(2), points (a) and (b), in respect of that batch file transfer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-intermediary-provider"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_11",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/012",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 12",
+      "path": "012",
+      "heading": "Transfers of funds with missing information on the payer or the payee",
+      "texts": {
+        "en": "1. The intermediary payment service provider shall establish effective risk-based procedures for determining whether to execute, reject or suspend a transfer of funds lacking the required payer and payee information and for taking the appropriate follow-up action.\n\nWhere the intermediary payment service provider becomes aware, when receiving a transfer of funds, that the information referred to in Article 4(1), points (a), (b) and (c), Article 4(2), points (a) and (b), Article 5(1), or Article 6, is missing or has not been filled in using characters or inputs admissible in accordance with the conventions of the messaging or payment and settlement system as referred to in Article 7(1), that intermediary payment service provider shall on a risk-sensitive basis:\n(a) reject the transfer; or\n(b) request the required information on the payer and the payee before or after the transmission of the transfer of funds.\n\n2. Where a payment service provider repeatedly fails to provide the required information on the payer or the payee, the intermediary payment service provider shall:\n(a) take steps, which may initially include the issuing of warnings and setting of deadlines, before proceeding to a rejection, restriction or termination in accordance with point (b) if the required information is still not provided; or\n(b) directly reject any future transfers of funds from that payment service provider or restrict or terminate its business relationship with that payment service provider.\n\nThe intermediary payment service provider shall report that failure, and the steps taken, to the competent authority responsible for monitoring compliance with anti-money laundering and counter-terrorist financing provisions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-intermediary-provider",
+        "obl-eu-tfr-repeatedly-failing-providers"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_12",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 12, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/014",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 14",
+      "path": "014",
+      "heading": "Information accompanying transfers of crypto-assets",
+      "texts": {
+        "en": "1. The crypto-asset service provider of the originator shall ensure that transfers of crypto-assets are accompanied by the following information on the originator:\n(a) the name of the originator;\n(b) the originator’s distributed ledger address, in cases where a transfer of crypto-assets is registered on a network using DLT or similar technology, and the crypto-asset account number of the originator, where such an account exists and is used to process the transaction;\n(c) the originator’s crypto-asset account number, in cases where a transfer of crypto-assets is not registered on a network using DLT or similar technology;\n(d) the originator’s address, including the name of the country, official personal document number and customer identification number, or, alternatively, the originator’s date and place of birth; and\n(e) subject to the existence of the necessary field in the relevant message format, and where provided by the originator to its crypto-asset service provider, the current LEI or, in its absence, any other available equivalent official identifier of the originator.\n\n2. The crypto-asset service provider of the originator shall ensure that transfers of crypto-assets are accompanied by the following information on the beneficiary:\n(a) the name of the beneficiary;\n(b) the beneficiary’s distributed ledger address, in cases where a transfer of crypto-assets is registered on a network using DLT or similar technology, and the beneficiary’s crypto-asset account number, where such an account exists and is used to process the transaction;\n(c) the beneficiary’s crypto-asset account number, in cases where a transfer of crypto-assets is not registered on a network using DLT or similar technology; and\n(d) subject to the existence of the necessary field in the relevant message format, and where provided by the originator to its crypto-asset service provider, the current LEI or, in its absence, any other available equivalent official identifier of the beneficiary.\n\n3. By way of derogation from paragraph 1, point (c), and paragraph 2, point (c), in the case of a transfer of crypto-assets not registered on a network using DLT or similar technology and not made to or from a crypto-asset account, the crypto-asset service provider of the originator shall ensure that the transfer of crypto-assets is accompanied by a unique transaction identifier.\n\n4. The information referred to in paragraphs 1 and 2 shall be submitted in advance of, or simultaneously or concurrently with, the transfer of crypto-assets and in a secure manner and in accordance with Regulation (EU) 2016/679.\n\nThe information referred to in paragraphs 1 and 2 shall not be required to be attached directly to, or be included in, the transfer of crypto-assets.\n\n5. In the case of a transfer of crypto-assets made to a self-hosted address, the crypto-asset service provider of the originator shall obtain and hold the information referred to in paragraphs 1 and 2 and shall ensure that the transfer of crypto-assets can be individually identified.\n\nWithout prejudice to specific risk mitigating measures taken in accordance with Article 19b of Directive (EU) 2015/849, in the case of a transfer of an amount exceeding EUR 1 000 to a self-hosted address, the crypto-asset service provider of the originator shall take adequate measures to assess whether that address is owned or controlled by the originator.\n\n6. Before transferring crypto-assets, the crypto-asset service provider of the originator shall verify the accuracy of the information referred to in paragraph 1 on the basis of documents, data or information obtained from a reliable and independent source.\n\n7. Verification as referred to in paragraph 6 of this Article shall be deemed to have taken place where one of the following applies:\n(a) the identity of the originator has been verified in accordance with Article 13 of Directive (EU) 2015/849 and the information obtained pursuant to that verification has been retained in accordance with Article 40 of that Directive;\n(b) Article 14(5) of Directive (EU) 2015/849 applies to the originator.\n\n8. The crypto-asset service provider of the originator shall not allow for the initiation, or execute any transfer, of crypto-assets before ensuring full compliance with this Article."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-crypto-originator-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_14",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 14, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/016",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 16",
+      "path": "016",
+      "heading": "Detection of missing information on the originator or the beneficiary",
+      "texts": {
+        "en": "1. The crypto-asset service provider of the beneficiary shall implement effective procedures, including, where appropriate, monitoring after or during the transfers, in order to detect whether the information referred to in Article 14(1) and (2) on the originator and the beneficiary is included in, or follows, the transfer or batch file transfer of crypto-assets.\n\n2. In the case of a transfer of crypto-assets made from a self-hosted address, the crypto-asset service provider of the beneficiary shall obtain and hold the information referred to in Article 14(1) and (2) and shall ensure that the transfer of crypto-assets can be individually identified.\n\nWithout prejudice to specific risk mitigating measures taken in accordance with Article 19b of Directive (EU) 2015/849, in the case of a transfer of an amount exceeding EUR 1 000 from a self-hosted address, the crypto-asset service provider of the beneficiary shall take adequate measures to assess whether that address is owned or controlled by the beneficiary.\n\n3. Before making the crypto-assets available to the beneficiary, the crypto-asset service provider of the beneficiary shall verify the accuracy of the information on the beneficiary referred to in Article 14(2) on the basis of documents, data or information obtained from a reliable and independent source.\n\n4. Verification as referred to in paragraphs 2 and 3 of this Article shall be deemed to have taken place where one of the following applies:\n(a) the identity of the beneficiary has been verified in accordance with Article 13 of Directive (EU) 2015/849 and the information obtained pursuant to that verification has been retained in accordance with Article 40 of that Directive;\n(b) Article 14(5) of Directive (EU) 2015/849 applies to the beneficiary."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-crypto-beneficiary-checks"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_16",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 16, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/017",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 17",
+      "path": "017",
+      "heading": "Transfers of crypto-assets with missing or incomplete information on the originator or the beneficiary",
+      "texts": {
+        "en": "1. The crypto-asset service provider of the beneficiary shall implement effective risk-based procedures, including procedures based on the risk-sensitive basis referred to in Article 13 of Directive (EU) 2015/849, for determining whether to execute, reject, return or suspend a transfer of crypto-assets lacking the required complete information on the originator and the beneficiary and for taking the appropriate follow-up action.\n\nWhere the crypto-asset service provider of the beneficiary becomes aware that the information referred to in Article 14(1) or (2), or in Article 15, is missing or incomplete, that crypto-asset service provider shall, on a risk-sensitive basis and without undue delay:\n(a) reject the transfer or return the transferred crypto-assets to the originator’s crypto-asset account; or\n(b) request the required information on the originator and the beneficiary before making the crypto-assets available to the beneficiary.\n\n2. Where a crypto-asset service provider repeatedly fails to provide the required information on the originator or the beneficiary, the crypto-asset service provider of the beneficiary shall:\n(a) take steps, which may initially include the issuing of warnings and setting of deadlines, before proceeding to a rejection, restriction or termination in accordance with point (b) if the required information is still not provided; or\n(b) directly reject any future transfers of crypto-assets to or from, or restrict or terminate its business relationship with, that crypto-asset service provider.\n\nThe crypto-asset service provider of the beneficiary shall report that failure, and the steps taken, to the competent authority responsible for monitoring compliance with anti-money laundering and counter-terrorist financing provisions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-repeatedly-failing-providers",
+        "obl-eu-tfr-crypto-beneficiary-checks"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_17",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 17, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/023",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 23",
+      "path": "023",
+      "heading": "Internal policies, procedures and controls to ensure implementation of restrictive measures",
+      "texts": {
+        "en": "Payment service providers and crypto-asset service providers shall have in place internal policies, procedures and controls to ensure the implementation of Union and national restrictive measures when performing transfers of funds and crypto-assets under this Regulation.\n\nThe European Banking Authority (EBA) shall issue guidelines by 30 December 2024 specifying the measures referred to in this Article."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-restrictive-measures-controls"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_23",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 23, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/024",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 24",
+      "path": "024",
+      "heading": "Provision of information",
+      "texts": {
+        "en": "Payment service providers and crypto-asset service providers shall respond fully and without delay, including by means of a central contact point in accordance with Article 45(9) of Directive (EU) 2015/849, where such a contact point has been appointed, and in accordance with the procedural requirements laid down in the national law of the Member State in which they are established or have their registered office, as applicable, to enquiries exclusively from the authorities responsible for preventing and combating money laundering or terrorist financing of that Member State concerning the information required under this Regulation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-authority-enquiries"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_24",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 24, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r1113/026",
+      "instrument": "celex-32023r1113",
+      "provisionKind": "article",
+      "refLabel": "Article 26",
+      "path": "026",
+      "heading": "Record retention",
+      "texts": {
+        "en": "1. Information on the payer and the payee or on the originator and beneficiary shall not be retained for longer than strictly necessary. Payment service providers of the payer and of the payee shall retain records of the information referred to in Articles 4 to 7, and crypto-asset service providers of the originator and beneficiary shall retain records of the information referred to in Articles 14 to 16, for a period of five years.\n\n2. Upon expiry of the retention period referred to in paragraph 1, payment service providers and crypto-asset service providers shall ensure that the personal data is deleted, unless otherwise provided for by national law which determines under which circumstances payment service providers and crypto-asset service providers may or shall further retain such data. Member States may allow or require further retention only after they have carried out a thorough assessment of the necessity and proportionality of such further retention, and where they consider it to be justified as necessary for the prevention, detection or investigation of money laundering or terrorist financing. That further retention period shall not exceed five years.\n\n3. Where, on 25 June 2015, legal proceedings concerned with the prevention, detection, investigation or prosecution of suspected money laundering or terrorist financing are pending in a Member State, and a payment service provider holds information or documents relating to those pending proceedings, the payment service provider may retain that information or those documents in accordance with national law for a period of five years from 25 June 2015. Member States may, without prejudice to national criminal law on evidence applicable to ongoing criminal investigations and legal proceedings, allow or require the retention of such information or documents for a further period of five years where the necessity and proportionality of such further retention has been established for the prevention, detection, investigation or prosecution of suspected money laundering or terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-tfr-record-retention"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_26",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 26, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1620/017",
+      "instrument": "celex-32024r1620",
+      "provisionKind": "article",
+      "refLabel": "Article 17",
+      "path": "017",
+      "heading": "Requests for information",
+      "texts": {
+        "en": "1. The Authority may require selected obliged entities and natural persons employed by them or legal persons belonging to them, and third parties to whom the selected obliged entities have outsourced operational functions or activities and natural or legal persons affiliated to them, to provide it with all information it needs in order to carry out the tasks conferred on it by this Regulation and other applicable Union law.\n\n2. The persons referred to in paragraph 1 or their representatives and, in the case of legal persons or associations having no legal personality, the persons authorised to represent them by law or by their constitution, shall supply the requested information without undue delay, ensuring that it is clear, accurate and complete. Lawyers duly authorised to act may supply the information on behalf of their clients. Those clients shall remain fully responsible where the information supplied is incomplete, incorrect or misleading.\n\n3. Where the Authority obtains the information requested pursuant to paragraph 1, it shall make that information available to the financial supervisor concerned."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amla-direct-supervision-cooperation"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1620/2025-11-10/eng#art_17",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1620, Article 17, consolidated text of 2025-11-10 (CELEX 02024R1620-20251110). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1620/018",
+      "instrument": "celex-32024r1620",
+      "provisionKind": "article",
+      "refLabel": "Article 18",
+      "path": "018",
+      "heading": "General investigations",
+      "texts": {
+        "en": "1. In order to carry out the tasks conferred on it by this Regulation, the Authority may conduct all necessary investigations of any selected obliged entity or any natural person employed by it or any legal person belonging to it, established or located in a Member State.\n\nTo that end, the Authority may:\n(a) require the submission of documents;\n(b) examine the books and records of the persons concerned and take copies or extracts from the books and records;\n(c) obtain access to internal audit reports, certification of accounts, and any software, databases, IT tools or other electronic means of recording information;\n(d) obtain access to documents and information relating to decision-making processes, including those developed by algorithms or other digital processes;\n(e) obtain written or oral explanations from any person referred to in Article 17 or their representatives or staff;\n(f) interview any other person who consents to being interviewed for the purpose of collecting information relating to the subject matter of an investigation.\n\n2. The persons referred to in Article 17 shall be subject to investigations launched on the basis of a decision of the Authority. When a person obstructs the conduct of the investigation, the financial supervisor of the Member State where the relevant premises are located shall provide, in compliance with national law, the necessary assistance, including facilitating the access by the Authority to the business premises of the natural and legal persons referred to in Article 17, so that the powers listed in paragraph 1 of this Article can be exercised."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amla-direct-supervision-cooperation"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1620/2025-11-10/eng#art_18",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1620, Article 18, consolidated text of 2025-11-10 (CELEX 02024R1620-20251110). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1620/019",
+      "instrument": "celex-32024r1620",
+      "provisionKind": "article",
+      "refLabel": "Article 19",
+      "path": "019",
+      "heading": "On-site inspections",
+      "texts": {
+        "en": "1. In order to carry out the tasks conferred on it by this Regulation, the Authority may, subject to prior notification of the financial supervisor concerned, conduct all necessary on-site inspections at the business premises of the natural and legal persons referred to in Article 17. With respect to natural persons whose business premises are the same as their private residence, the Authority shall seek and obtain judicial authorisation for an on-site inspection. Where the proper conduct and efficiency of the inspection so require, the Authority may carry out the on-site inspection without prior announcement to those natural and legal persons.\n\n2. The Authority may decide to entrust the performance of on-site inspections to a joint supervisory team in accordance with Article 16 or to a dedicated team, which could include joint supervisory team members where applicable. The Authority shall be responsible for the establishment and composition of the on-site inspection teams, which shall be done in cooperation with the financial supervisors.\n\n3. The staff of the Authority and other persons authorised by the Authority to conduct an on-site inspection may enter any business premises and land of the natural or legal persons subject to a decision on investigation adopted by the Authority and, as regards natural persons whose business premises are the same as their private residence, upon obtaining a judicial authorisation for an on-site inspection pursuant to paragraph 1 of this Article. The staff of the Authority and other persons authorised by the Authority shall have the powers provided for in Article 21.\n\n4. The natural and legal persons referred to in Article 17 shall be subject to on-site inspections on the basis of a decision of the Authority.\n\n5. Staff and other accompanying persons authorised or appointed by the financial supervisor of the Member State where the inspection is to be conducted shall, under the supervision and coordination of the Authority, actively assist the staff of and other persons authorised by the Authority. To that end, they shall enjoy the powers set out in paragraph 3. Staff of financial supervisors of the Member State concerned shall also have the right to participate in the on-site inspections.\n\n6. Where a person opposes the conduct of an on-site inspection ordered pursuant to this Article, the financial supervisor of the Member State concerned shall provide the necessary assistance in accordance with national law. To the extent necessary for the inspection, such assistance shall include the sealing of any business premises and books or records. Where that power is not available to the financial supervisor concerned, it shall use its powers to request the necessary assistance of other national authorities."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amla-direct-supervision-cooperation"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1620/2025-11-10/eng#art_19",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1620, Article 19, consolidated text of 2025-11-10 (CELEX 02024R1620-20251110). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/009",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Scope of internal policies, procedures and controls",
+      "texts": {
+        "en": "1. Obliged entities shall have in place internal policies, procedures and controls in order to ensure compliance with this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor and in particular to:\n(a) mitigate and manage effectively the risks of money laundering and terrorist financing identified at the level of the Union, the Member State and the obliged entity;\n(b) in addition to the obligation to apply targeted financial sanctions, mitigate and manage the risks of non-implementation and evasion of targeted financial sanctions.\n\nThe policies, procedures and controls referred to in the first subparagraph shall be proportionate to the nature of the business, including its risks and complexity, and the size of the obliged entity and shall cover all the activities of the obliged entity that fall under the scope of this Regulation.\n\n2. The policies, procedures and controls referred to in paragraph 1 shall include:\n(a) internal policies and procedures, including in particular:\n(i) the carrying out and updating of the business-wide risk assessment;\n(ii) the obliged entity’s risk management framework;\n(iii) customer due diligence to implement Chapter III of this Regulation, including procedures to determine whether the customer, the beneficial owner, or the person on whose behalf or for the benefit of whom a transaction or activity is being conducted, is a politically exposed person or a family member or person known to be a close associate;\n(iv) reporting of suspicious transactions;\n(v) outsourcing and reliance on customer due diligence performed by other obliged entities;\n(vi) record retention and policies in relation to the processing of personal data pursuant to Articles 76 and 77;\n(vii) the monitoring and management of compliance with such internal policies and procedures in accordance with point (b) of this paragraph, the identification and management of deficiencies and the implementation of remedial actions;\n(viii) the verification, proportionate to the risks associated with the tasks and functions to be performed, when recruiting and assigning staff to certain tasks and functions and when appointing agents and distributors, that those persons are of good repute;\n(ix) the internal communication of the obliged entity’s internal policies, procedures and controls, including to its agents, distributors and service providers involved in the implementation of its AML/CFT policies;\n(x) a policy on the training of employees and, where relevant, agents and distributors with regard to measures in place in the obliged entity to comply with the requirements of this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor;\n(b) internal controls and an independent audit function to test the internal policies and procedures referred to in point (a) of this paragraph and the controls in place in the obliged entity; in the absence of an independent audit function, obliged entities may have this test carried out by an external expert.\n\nThe internal policies, procedures and controls set out in the first subparagraph shall be recorded in writing. Internal policies shall be approved by the management body in its management function. Internal procedures and controls shall be approved at least at the level of the compliance manager.\n\n3. The obliged entities shall keep the internal policies, procedures and controls up-to-date, and enhance them where weaknesses are identified.\n\n4. By 10 July 2026, AMLA shall issue guidelines on the elements that obliged entities should take into account, based on the nature of their business, including its risks and complexity, and their size, when deciding on the extent of their internal policies, procedures and controls, in particular as regards the staff allocated to the compliance functions. Those guidelines shall also identify situations where, due to the nature and size of the obliged entity:\n(i) internal controls are to be organised at the level of the commercial function, of the compliance function and of the audit function;\n(ii) the independent audit function can be carried out by an external expert."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-internal-policies"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_9",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 9, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/010",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 10",
+      "path": "010",
+      "heading": "Business-wide risk assessment",
+      "texts": {
+        "en": "1. Obliged entities shall take appropriate measures, proportionate to the nature of their business, including its risks and complexity, and their size, to identify and assess the risks of money laundering and terrorist financing to which they are exposed, as well as the risks of non-implementation and evasion of targeted financial sanctions, taking into account at least:\n(a) the risk variables set out in Annex I and the risk factors set out in Annexes II and III;\n(b) the findings of the risk assessment at Union level conducted by the Commission pursuant to Article 7 of Directive (EU) 2024/1640;\n(c) the findings of the national risk assessments carried out by the Member States pursuant to Article 8 of Directive (EU) 2024/1640, as well as of any relevant sector-specific risk assessment carried out by the Member States;\n(d) relevant information published by international standard setters in the AML/CFT area or, at the level of the Union, relevant publications by the Commission or by AMLA;\n(e) information on money laundering and terrorist financing risks provided by competent authorities;\n(f) information on the customer base.\n\nPrior to the launch of new products, services or business practices, including the use of new delivery channels and new or developing technologies, in conjunction with new or pre-existing products and services or before starting to provide an existing service or product to a new customer segment or in a new geographical area, obliged entities shall identify and assess, in particular, the related money laundering and terrorist financing risks and take appropriate measures to manage and mitigate those risks.\n\n2. The business-wide risk assessment drawn up by the obliged entity pursuant to paragraph 1 shall be documented, kept up-to-date and regularly reviewed, including where any internal or external events significantly affect the money laundering and terrorist financing risks associated with the activities, products, transactions, delivery channels, customers or geographical zones of activities of the obliged entity. It shall be made available to supervisors upon request.\n\nThe business-wide risk assessment shall be drawn up by the compliance officer and approved by the management body in its management function and, where such body exists, communicated to the management body in its supervisory function.\n\n3. With the exception of credit institutions, financial institutions, crowdfunding service providers and crowdfunding intermediaries, supervisors may decide that individual documented business-wide risk assessments are not required where the specific risks inherent in the sector are clear and understood.\n\n4. By 10 July 2026, AMLA shall issue guidelines on the minimum requirements for the content of the business-wide risk assessment drawn up by the obliged entity pursuant to paragraph 1, and on the additional sources of information to be taken into account when carrying out the business-wide risk assessment."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-business-wide-risk-assessment"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_10",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 10, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/011",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 11",
+      "path": "011",
+      "heading": "Compliance functions",
+      "texts": {
+        "en": "1. Obliged entities shall appoint one member of the management body in its management function who shall be responsible for ensuring compliance with this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor (‘compliance manager’).\n\nThe compliance manager shall ensure that the obliged entity’s internal policies, procedures and controls are consistent with the obliged entity’s risk exposure and that they are implemented. The compliance manager shall also ensure that sufficient human and material resources are allocated to that end. The compliance manager shall be responsible for receiving information on significant or material weaknesses in such policies, procedures and controls.\n\nWhere the management body in its management function is a body collectively responsible for its decisions, the compliance manager shall be responsible for assisting and advising it and for preparing the decisions referred to in this Article.\n\n2. Obliged entities shall have a compliance officer, to be appointed by the management body in its management function and with sufficiently high hierarchical standing, who shall be responsible for the policies, procedures and controls in the day-to-day operation of the obliged entity’s AML/CFT requirements, including in relation to the implementation of targeted financial sanctions, and shall be a contact point for competent authorities. The compliance officer shall also be responsible for reporting suspicious transactions to the FIU in accordance with Article 69(6).\n\nIn the case of obliged entities subject to checks on their senior management or beneficial owners pursuant to Article 6 of Directive (EU) 2024/1640 or under other Union legal acts, compliance officers shall be subject to verification that they comply with those requirements.\n\nWhere justified by the size of the obliged entity and the low risk of its activities, an obliged entity that is part of a group may appoint as its compliance officer an individual who performs that function in another entity within that group.\n\nThe compliance officer may only be removed following prior notification to the management body in its management function. The obliged entity shall notify the supervisor of the removal of the compliance officer, specifying whether the decision relates to the carrying out of the tasks assigned under this Regulation. The compliance officer may, on his or her own initiative or upon request, provide information to the supervisor concerning the removal. The supervisor may use that information to perform its tasks under the second subparagraph of this paragraph and under Article 37(4) of Directive (EU) 2024/1640.\n\n3. Obliged entities shall provide the compliance functions with adequate resources, including staff and technology, in proportion to the size, nature and risks of the obliged entity for effective performance of their tasks, and shall ensure that the persons responsible for those functions are granted the powers to propose any measures necessary to ensure the effectiveness of the obliged entity’s internal policies, procedures and controls.\n\n4. Obliged entities shall take measures to ensure that the compliance officer is protected against retaliation, discrimination and any other unfair treatment, and that decisions of the compliance officer are not undermined or unduly influenced by commercial interests of the obliged entity.\n\n5. Obliged entities shall ensure that the compliance officer and the person responsible for the audit function referred to in Article 9(2), point (b), can report directly to the management body in its management function and, where such a body exists, to the management body in its supervisory function independently, and can raise concerns and warn the management body, where specific risk developments affect or may affect the obliged entity.\n\nObliged entities shall ensure that the persons directly or indirectly participating in implementation of this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor, have access to all information and data necessary to perform their tasks.\n\n6. The compliance manager shall regularly report on the implementation of the obliged entity’s internal policies, procedures and controls to the management body. In particular, the compliance manager shall submit once a year, or, where appropriate, more frequently, to the management body a report on the implementation of the obliged entity’s internal policies, procedures and controls drawn up by the compliance officer, and shall keep that body informed of the outcome of any reviews. The compliance manager shall take the necessary actions to remedy in a timely manner any deficiencies identified.\n\n7. Where the nature of the business of the obliged entity, including its risks and complexity, and its size justify it, the functions of the compliance manager and the compliance officer may be performed by the same natural person. Those functions may be cumulated with other functions.\n\nWhere the obliged entity is a natural person or a legal person whose activities are performed by one natural person only, that person shall be responsible for performing the tasks under this Article."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-compliance-functions"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_11",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/012",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 12",
+      "path": "012",
+      "heading": "Awareness of requirements",
+      "texts": {
+        "en": "Obliged entities shall take measures to ensure that their employees or persons in comparable positions whose function so requires, including their agents and distributors are aware of the requirements arising from this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor, and of the business-wide risk assessment, internal policies, procedures and controls in place in the obliged entity, including in relation to the processing of personal data for the purposes of this Regulation.\n\nThe measures referred to in the first paragraph shall include the participation of employees or persons in comparable positions, including agents and distributors, in specific, ongoing training programmes to help them recognise operations which may be related to money laundering or terrorist financing and to instruct them as to how to proceed in such cases. Such training programmes shall be appropriate to their functions or activities and to the risks of money laundering and terrorist financing to which the obliged entity is exposed, and shall be duly documented."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-staff-awareness-integrity"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_12",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 12, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/013",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 13",
+      "path": "013",
+      "heading": "Integrity of employees",
+      "texts": {
+        "en": "1. Any employee, or person in a comparable position, including agents and distributors, directly participating in the obliged entity’s compliance with this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor, shall undergo an assessment commensurate with the risks associated with the tasks performed and whose content is approved by the compliance officer of:\n(a) individual skills, knowledge and expertise to carry out their functions effectively;\n(b) good repute, honesty and integrity.\n\nThe assessment referred to in the first subparagraph shall be performed prior to taking up of activities by the employee or person in a comparable position, including agents and distributors, and shall be regularly repeated. The intensity of the subsequent assessments shall be determined on the basis of the tasks entrusted to the person and risks associated with the function they perform.\n\n2. Employees, or persons in comparable positions, including agents and distributors, entrusted with tasks related to the obliged entity’s compliance with this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor, shall inform the compliance officer of any close private or professional relationship established with the obliged entity’s customers or prospective customers and shall be prevented from undertaking any tasks related to the obliged entity’s compliance in relation to those customers.\n\n3. Obliged entities shall have in place procedures to prevent and manage conflicts of interest that may affect the carrying out of tasks related to the obliged entity’s compliance with this Regulation, Regulation (EU) 2023/1113 and any administrative act issued by any supervisor.\n\n4. This Article shall not apply where the obliged entity is a natural person or a legal person whose activities are performed by one natural person only."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-staff-awareness-integrity"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_13",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 13, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/016",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 16",
+      "path": "016",
+      "heading": "Group-wide requirements",
+      "texts": {
+        "en": "1. A parent undertaking shall ensure that the requirements on internal procedures, risk assessment and staff referred to in Section 1 of this Chapter apply in all branches and subsidiaries of the group in the Member States and, for groups whose head office is located in the Union, in third countries. To this end, a parent undertaking shall perform a group-wide risk assessment, taking into account the business-wide risk assessment performed by all branches and subsidiaries of the group, and establish and implement group-wide policies, procedures and controls, including on data protection and on information sharing within the group for AML/CFT purposes and to ensure that employees within the group are aware of the requirements arising from this Regulation. Obliged entities within the group shall implement those group-wide policies, procedures and controls, taking into account their specificities and the risks to which they are exposed.\n\nThe group-wide policies, procedures and controls and the group-wide risk assessments referred to in the first subparagraph shall include all the elements listed in Articles 9 and 10, respectively.\n\nFor the purposes of the first subparagraph, where a group has establishments in more than one Member State and, for groups whose head office is located in the Union, in third countries, parent undertakings shall take into account the information published by the authorities of all the Member States or third countries where the group’s establishments are located.\n\n2. Compliance functions shall be established at the level of the group. Those functions shall include a compliance manager at the level of the group and, where justified by the activities carried out at group level, a compliance officer. The decision on the extent of the compliance functions shall be documented.\n\nThe compliance manager referred to in the first subparagraph shall regularly report to the management body in its management function of the parent undertaking on the implementation of the group-wide policies, procedures and controls. At a minimum, the compliance manager shall submit once a year a report on the implementation of the obliged entity’s internal policies, procedures and controls and shall take the necessary actions to remedy in a timely manner any deficiencies identified. Where the management body in its management function is a body collectively responsible for its decisions, the compliance manager shall assist and advise it, and shall prepare the decisions necessary for the implementation of this Article.\n\n3. The policies, procedures and controls pertaining to the sharing of information referred to in paragraph 1 shall require obliged entities within the group to exchange information when such sharing is relevant for the purposes of customer due diligence and money laundering and terrorist financing risk management. The sharing of information within the group shall cover in particular the identity and characteristics of the customer, its beneficial owners or the person on behalf of whom the customer acts, the nature and purpose of the business relationship and of the occasional transactions and the suspicions, accompanied by the underlying analyses, that funds are the proceeds of criminal activity or are related to terrorist financing reported to FIU pursuant to Article 69, unless otherwise instructed by the FIU.\n\nThe group-wide policies, procedures and controls shall not prevent entities within a group which are not obliged entities to provide information to obliged entities within the same group where such sharing is relevant for those obliged entities to comply with requirements set out in this Regulation.\n\nParent undertakings shall put in place group-wide policies, procedures and controls to ensure that the information exchanged pursuant to the first and second subparagraphs is subject to sufficient guarantees in terms of confidentiality, data protection and use of the information, including to prevent its disclosure.\n\n4. By 10 July 2026, AMLA shall develop draft regulatory technical standards and submit them to the Commission for adoption. Those draft regulatory technical standards shall specify the minimum requirements of group-wide policies, procedures and controls, including minimum standards for information sharing within the group, the criteria for identifying the parent undertaking in the cases covered by Article 2(1), point (42)(b), and the conditions under which the provisions of this Article apply to entities that are part of structures which share common ownership, management or compliance control, including networks or partnerships, as well as the criteria for identifying the parent undertaking in the Union in those cases.\n\n5. Power is delegated to the Commission to supplement this Regulation by adopting the regulatory technical standards referred to in paragraph 4 of this Article in accordance with Articles 49 to 52 of Regulation (EU) 2024/1620."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-group-wide-requirements"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_16",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 16, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/017",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 17",
+      "path": "017",
+      "heading": "Branches and subsidiaries in third countries",
+      "texts": {
+        "en": "1. Where branches or subsidiaries of obliged entities are located in third countries where the minimum AML/CFT requirements are less strict than those set out in this Regulation, the parent undertaking shall ensure that those branches or subsidiaries comply with the requirements laid down in this Regulation, including requirements concerning data protection, or equivalent.\n\n2. Where the law of a third country does not permit compliance with this Regulation, the parent undertaking shall take additional measures to ensure that branches and subsidiaries in that third country effectively handle the risk of money laundering or terrorist financing, and shall inform the supervisors of its home Member State of those additional measures. Where the supervisors of the home Member State consider that the additional measures are not sufficient, they shall exercise additional supervisory actions, including requiring the group not to enter into any business relationship, to terminate existing ones or not to undertake transactions, or to close down its operations in the third country.\n\n3. By 10 July 2026, AMLA shall develop draft regulatory technical standards and submit them to the Commission for adoption. Those draft regulatory technical standards shall specify the type of additional measures referred to in paragraph 2 of this Article, including the minimum action to be taken by obliged entities where the law of a third country does not permit the implementation of the measures required under Article 16 and the additional supervisory actions required in such cases.\n\n4. Power is delegated to the Commission to supplement this Regulation by adopting the regulatory technical standards referred to in paragraph 3 of this Article in accordance with Articles 49 to 52 of Regulation (EU) 2024/1620."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-group-wide-requirements"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_17",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 17, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/018",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 18",
+      "path": "018",
+      "heading": "Outsourcing",
+      "texts": {
+        "en": "1. Obliged entities may outsource tasks resulting from this Regulation to service providers. The obliged entity shall notify the supervisor of the outsourcing before the service provider starts to carry out the outsourced task.\n\n2. When performing tasks under this Article, service providers shall be regarded as part of the obliged entity, including where they are required to consult the central registers referred to in Article 10 of Directive (EU) 2024/1640 (‘central registers’) for the purposes of carrying out customer due diligence on behalf of the obliged entity.\n\nThe obliged entity shall remain fully liable for any action, whether an act of commission or omission, connected to the outsourced tasks that are carried out by service providers.\n\nFor each outsourced task, the obliged entity shall be able to demonstrate to the supervisor that it understands the rationale behind the activities carried out by the service provider and the approach followed in their implementation, and that such activities mitigate the specific risks to which the obliged entity is exposed.\n\n3. The tasks outsourced pursuant to paragraph 1 of this Article shall not be undertaken in such a way as to impair materially the quality of the obliged entity’s policies and procedures to comply with the requirements of this Regulation and of Regulation (EU) 2023/1113, and of the controls in place to test those policies and procedures. The following tasks shall not be outsourced under any circumstances:\n(a) the proposal and approval of the obliged entity’s business-wide risk assessment pursuant to Article 10(2);\n(b) the approval of the obliged entity’s internal policies, procedures and controls pursuant to Article 9;\n(c) decision on the risk profile to be attributed to the customer;\n(d) the decision to enter into a business relationship or carry out an occasional transaction with a client;\n(e) the reporting to FIU of suspicious activities pursuant to Article 69 or threshold-based reports pursuant to Article 74 and 80, except where such activities are outsourced to another obliged entity belonging to the same group and established in the same Member State;\n(f) the approval of the criteria for the detection of suspicious or unusual transactions and activities.\n\n4. Before an obliged entity outsources a task pursuant to paragraph 1, it shall assure itself that the service provider is sufficiently qualified to carry out the tasks to be outsourced.\n\nWhere an obliged entity outsources a task pursuant to paragraph 1, it shall ensure that the service provider, as well as any subsequent sub-outsourcing service provider, applies the policies and procedures adopted by the obliged entity. The conditions for the performance of such tasks shall be laid down in a written agreement between the obliged entity and the service provider. The obliged entity shall perform regular controls to ascertain the effective implementation of such policies and procedures by the service provider. The frequency of such controls shall be determined on the basis of the critical nature of the tasks outsourced.\n\n5. Obliged entities shall ensure that outsourcing is not undertaken in such way as to impair materially the ability of the supervisory authorities to monitor and retrace the obliged entity’s compliance with this Regulation and Regulation (EU) 2023/1113.\n\n6. By way of derogation from paragraph 1, obliged entities shall not outsource tasks deriving from the requirements under this Regulation to service providers residing or established in third countries identified pursuant to Section 2 of Chapter III, unless all of the following conditions are met:\n(a) the obliged entity outsources tasks solely to a service provider that is part of the same group;\n(b) the group applies AML/CFT policies and procedures, customer due diligence measures and rules on record-keeping that are fully in compliance with this Regulation, or with equivalent rules in third countries;\n(c) the effective implementation of the requirements referred to in point (b) of this paragraph is supervised at group level by the supervisory authority of the home Member State in accordance with Chapter IV of Directive (EU) 2024/1640.\n\n7. By way of derogation from paragraph 3, where a collective investment undertaking has no legal personality, or has only a board of directors and has delegated the processing of subscriptions and the collection of funds as defined in Article 4, point (25), of Directive (EU) 2015/2366 from investors to another entity, it may outsource the task referred to in paragraph 3, points (c), (d) and (e) to one of its service providers.\n\nThe outsourcing referred to in the first subparagraph of this paragraph may only take place after the collective investment undertaking has notified its intention to outsource the task to the supervisor pursuant to paragraph 1, and the supervisor has approved such outsourcing taking into consideration:\n(a) the resources, experience and knowledge of the service provider in relation to the prevention of money laundering and terrorist financing;\n(b) the knowledge of the service provider of the type of activities or transactions carried out by the collective investment undertaking.\n\n8. By 10 July 2027, AMLA shall issue guidelines addressed to obliged entities on:\n(a) the establishment of outsourcing relationships, including any subsequent outsourcing relationship, in accordance with this Article, their governance and procedures for monitoring the implementation of functions by the service provider and in particular those functions that are to be regarded as critical;\n(b) the roles and responsibility of the obliged entity and the service provider within an outsourcing agreement;\n(c) supervisory approaches to outsourcing as well as supervisory expectations regarding the outsourcing of critical functions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-outsourcing-limits"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_18",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 18, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/019",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 19",
+      "path": "019",
+      "heading": "Application of customer due diligence measures",
+      "texts": {
+        "en": "1. Obliged entities shall apply customer due diligence measures in any of the following circumstances:\n(a) when establishing a business relationship;\n(b) when carrying out an occasional transaction of a value of at least EUR 10 000, or the equivalent in national currency, whether that transaction is carried out in a single operation or through linked transactions, or a lower value laid down pursuant to paragraph 9;\n(c) when participating in the creation of a legal entity, the setting up of a legal arrangement or, for the obliged entities referred to in Article 3, points (3) (a), (b) or (c), in the transfer of ownership of a legal entity, irrespective of the value of the transaction;\n(d) when there is a suspicion of money laundering or terrorist financing, regardless of any derogation, exemption or threshold;\n(e) when there are doubts about the veracity or adequacy of previously obtained customer identification data;\n(f) when there are doubts as to whether the person they interact with is the customer or person authorised to act on behalf of the customer.\n\n2. In addition to the circumstances referred to in paragraph 1, credit institutions and financial institutions, with the exception of crypto-asset service providers, shall apply customer due diligence measures when initiating or executing an occasional transaction that constitutes a transfer of funds as defined in Article 3, point (9), of Regulation (EU) 2023/1113, that amounts to a value of at least EUR 1 000, or the equivalent in national currency, whether that transaction is carried out in a single operation or through linked transactions.\n\n3. By way of derogation from paragraph 1, point (b), crypto-asset service providers shall:\n(a) apply customer due diligence measures when carrying out an occasional transaction that amounts to a value of at least EUR 1 000, or the equivalent in national currency, whether the transaction is carried out in a single operation or through linked transactions;\n(b) apply at least customer due diligence measures referred to in Article 20(1), point (a), when carrying out an occasional transaction where the value is below EUR 1 000, or the equivalent in national currency, whether the transaction is carried out in a single operation or through linked transactions.\n\n4. By way of derogation from paragraph 1, point (b), obliged entities shall apply at least customer due diligence measures referred to in Article 20(1), point (a), when carrying out an occasional transaction in cash amounting to a value of at least EUR 3 000, or the equivalent in national currency, whether the transaction is carried out in a single operation or through linked transactions.\n\nThe first subparagraph of this paragraph shall not apply where Member States have in place, pursuant to Article 80(2) and (3), a limit to large cash payments of EUR 3 000 or less, or the equivalent in national currency, except in the cases covered by paragraph 4, point (b) of that Article.\n\n5. In addition to the circumstances referred to in paragraph 1, providers of gambling services shall apply customer due diligence measures upon the collection of winnings, the wagering of a stake, or both, when carrying out transactions amounting to at least EUR 2 000 or the equivalent in national currency, whether the transaction is carried out in a single operation or through linked transactions.\n\n6. For the purposes of this Chapter, obliged entities shall consider as their customers the following persons:\n(a) in the case of obliged entities as referred to in Article 3, points (3) (e), (f) and (i) and persons trading in high value goods as referred to in Article 3, point (3) (j), in addition to their direct customer, the supplier of goods;\n(b) in the case of notaries, lawyers and other independent legal professionals intermediating a transaction and to the extent that they are the only notary or lawyer or other independent legal professional intermediating that transaction, both parties to the transaction;\n(c) in the case of real estate agents, both parties to the transaction;\n(d) in relation to payment initiation services carried out by payment initiation service providers, the merchant;\n(e) in relation to crowdfunding service providers and crowdfunding intermediaries, the natural or legal person both seeking funding and providing funding through the crowdfunding platform.\n\n7. Supervisors may, directly or in cooperation with other authorities in that Member State, exempt obliged entities from applying, in full or in part, the customer due diligence measures referred to in Article 20(1), points (a), (b) and (c), with respect to electronic money on the basis of the proven low risk posed by the nature of the product, where all of the following risk-mitigating conditions are met:\n(a) the payment instrument is not reloadable, and the amount stored electronically does not exceed EUR 150 or the equivalent in national currency;\n(b) the payment instrument is used exclusively to purchase goods or services provided by the issuer, or within a network of service providers;\n(c) the payment instrument is not linked to a payment account and it does not permit any stored amount to be exchanged for cash or for crypto-assets;\n(d) the issuer carries out sufficient monitoring of the transactions or business relationship to enable the detection of unusual or suspicious transactions.\n\n8. Providers of gambling services may fulfil their obligation to apply customer due diligence measures referred to in Article 20(1), point (a), by identifying the customer and verifying the customer’s identity upon entry to the casino or other physical gambling premises, provided that they have systems in place that enable them to attribute transactions to specific customers.\n\n9. By 10 July 2026, AMLA shall develop draft regulatory technical standards and submit them to the Commission for adoption. Those draft regulatory technical standards shall specify:\n(a) the obliged entities, sectors or transactions that are associated with higher money laundering and terrorist financing risk and to which a value lower than the value set out in paragraph 1, point (b), applies;\n(b) the related occasional transaction values;\n(c) the criteria to be taken into account for identifying occasional transactions and business relationships;\n(d) the criteria to identify linked transactions.\n\nWhen developing the draft regulatory technical standards referred to in the first subparagraph, AMLA shall take due account of the inherent levels of risks of the business models of the different types of obliged entities and of the risk assessment at Union level conducted by the Commission pursuant to Article 7 of Directive (EU) 2024/1640.\n\n10. Power is delegated to the Commission to supplement this Regulation by adopting the regulatory technical standards referred to in paragraph 9 of this Article in accordance with Articles 49 to 52 of Regulation (EU) 2024/1620."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-customer-due-diligence"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_19",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 19, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/020",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 20",
+      "path": "020",
+      "heading": "Customer due diligence measures",
+      "texts": {
+        "en": "1. For the purpose of conducting customer due diligence, obliged entities shall apply all of the following measures:\n(a) identifying the customer and verifying the customer’s identity;\n(b) identifying the beneficial owners and taking reasonable measures to verify their identity so that the obliged entity is satisfied that it knows who the beneficial owner is and that it understands the ownership and control structure of the customer;\n(c) assessing and, as appropriate, obtaining information on and understanding the purpose and intended nature of the business relationship or the occasional transactions;\n(d) verifying whether the customer or the beneficial owners are subject to targeted financial sanctions, and, in the case of a customer or party to a legal arrangement who is a legal entity, whether natural or legal persons subject to targeted financial sanctions control the legal entity or have more than 50 % of the proprietary rights of that legal entity or majority interest in it, whether individually or collectively;\n(e) assessing and, as appropriate, obtaining information on the nature of the customers’ business, including, in the case of undertakings, whether they carry out activities, or of their employment or occupation;\n(f) conducting ongoing monitoring of the business relationship including scrutiny of transactions undertaken throughout the course of the business relationship to ensure that the transactions being conducted are consistent with the obliged entity’s knowledge of the customer, the business and risk profile, including where necessary the source of funds;\n(g) determining whether the customer, the beneficial owner of the customer and, where relevant, the person on whose behalf or for the benefit of whom a transaction or activity is being carried out is a politically exposed person, a family member or person known to be a close associate;\n(h) where a transaction or activity is being conducted on behalf of or for the benefit of natural persons other than the customer, identifying and verifying the identity of those natural persons;\n(i) verifying that any person purporting to act on behalf of the customer is so authorised and identify and verify their identity.\n\n2. Obliged entities shall determine the extent of the measures referred to in paragraph 1 on the basis of an individual analysis of the risks of money laundering and terrorist financing having regard to the specific characteristics of the client and of the business relationship or occasional transaction, and taking into account the business-wide risk assessment by the obliged entity pursuant to Article 10 and the money laundering and terrorist financing variables set out in Annex I as well as the risk factors set out in Annexes II and III.\n\nWhere obliged entities identify an increased risk of money laundering or terrorist financing they shall apply enhanced due diligence measures pursuant to Section 4 of this Chapter. Where situations of lower risk are identified, obliged entities may apply simplified due diligence measures pursuant to Section 3 of this Chapter.\n\n3. By 10 July 2026, AMLA shall issue guidelines on the risk variables and risk factors to be taken into account by obliged entities when entering into business relationships or carrying out occasional transactions.\n\n4. Obliged entities shall at all times be able to demonstrate to their supervisors that the measures taken are appropriate in view of the risks of money laundering and terrorist financing that have been identified."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-customer-due-diligence",
+        "obl-eu-amlr-beneficial-ownership"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_20",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 20, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/021",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 21",
+      "path": "021",
+      "heading": "Inability to comply with the requirement to apply customer due diligence measures",
+      "texts": {
+        "en": "1. Where an obliged entity is unable to comply with the requirement to apply customer due diligence measures laid down in Article 20(1), it shall refrain from carrying out a transaction or establishing a business relationship, and shall terminate the business relationship and consider reporting a suspicious transaction to the FIU in relation to the customer in accordance with Article 69.\n\nThe termination of a business relationship pursuant to the first subparagraph of this paragraph shall not prohibit the receipt of funds as defined in Article 4, point (25), of Directive (EU) 2015/2366 due to the obliged entity.\n\nWhere an obliged entity has a duty to protect its customer’s assets, the termination of the business relationship shall not be understood as requiring the disposal of the assets of the customer.\n\nIn the case of life insurance contracts, obliged entities shall, where necessary as an alternative measure to terminating the business relationship, refrain from performing transactions for the customer, including payouts to beneficiaries, until the customer due diligence measures laid down in Article 20(1) are complied with.\n\n2. Paragraph 1 shall not apply to notaries, lawyers, other independent legal professionals, auditors, external accountants and tax advisors, to the extent that those persons ascertain the legal position of their client, or perform the task of defending or representing that client in, or concerning, judicial proceedings, including providing advice on instituting or avoiding such proceedings.\n\nThe first subparagraph shall not apply when the obliged entities referred to therein:\n(a) take part in money laundering, its predicate offences or terrorist financing;\n(b) provide legal advice for the purposes of money laundering, its predicate offences or terrorist financing; or\n(c) know that the client is seeking legal advice for the purposes of money laundering, its predicate offences or terrorist financing; knowledge or purpose may be inferred from objective factual circumstances.\n\n3. Obliged entities shall keep record of the actions taken in order to comply with the requirement to apply customer due diligence measures, including records of the decisions taken and the relevant supporting documents and justifications. Documents, data or information held by the obliged entity shall be updated whenever the customer due diligence is reviewed pursuant to Article 26.\n\nThe obligation to keep records provided for in the first subparagraph of this paragraph shall also apply to situations where obliged entities refuse to enter into a business relationship, terminate a business relationship or apply alternative measures pursuant to paragraph 1.\n\n4. By 10 July 2027, AMLA shall issue joint guidelines with the European Banking Authority on the measures that may be taken by credit institutions and financial institutions to ensure compliance with AML/CFT rules when implementing the requirements of Directive 2014/92/EU, including in relation to business relationships that are most affected by de-risking practices."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-due-diligence-failure"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_21",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 21, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/022",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 22",
+      "path": "022",
+      "heading": "Identification and verification of the identity of customers and beneficial owners",
+      "texts": {
+        "en": "1. With the exception of cases of lower risk to which measures under Section 3 apply and irrespective of the application of additional measures in cases of higher risk under Section 4 obliged entities shall obtain at least the following information in order to identify the customer, any person purporting to act on behalf of the customer, and the natural persons on whose behalf or for the benefit of whom a transaction or activity is being conducted:\n(a) for a natural person:\n(i) all names and surnames;\n(ii) place and full date of birth;\n(iii) nationalities, or statelessness and refugee or subsidiary protection status where applicable, and the national identification number, where applicable;\n(iv) the usual place of residence or, if there is no fixed residential address with legitimate residence in the Union, the postal address at which the natural person can be reached and, where available the tax identification number;\n(b) for a legal entity:\n(i) legal form and name of the legal entity;\n(ii) address of the registered or official office and, if different, the principal place of business, and the country of creation;\n(iii) the names of the legal representatives of the legal entity as well as, where available, the registration number, the tax identification number and the Legal Entity Identifier;\n(iv) the names of persons holding shares or a directorship position in nominee form, including reference to their status as nominee shareholders or directors.\n(c) for a trustee of an express trust or a person holding an equivalent position in a similar legal arrangement:\n(i) basic information on the legal arrangement; however, with regard to the assets held in the legal arrangement or managed through it, only the assets that are to be managed in the context of the business relationship or occasional transaction shall be identified;\n(ii) the address of residence of the trustees or persons holding an equivalent position in a similar legal arrangement and, if different, the place from where the express trust or similar legal arrangement is administered, the powers that regulate and bind the legal arrangement, as well as, where available, the tax identification number and the Legal Entity Identifier;\n(d) for other organisations that have legal capacity under national law:\n(i) name, address of the registered office or equivalent;\n(ii) names of the persons empowered to represent the organisation as well as, where applicable, legal form, tax identification number, registration number, Legal Entity Identifier and deeds of association or equivalent.\n\n2. For the purposes of identifying the beneficial owner of a legal entity or of a legal arrangement, obliged entities shall collect the information referred to in Article 62(1), second subparagraph, point (a).\n\nWhere, after having exhausted all possible means of identification, no natural persons are identified as beneficial owners, or where there are doubts that the persons identified are the beneficial owners, obliged entities shall record that no beneficial owner was identified and identify all the natural persons holding the positions of senior managing officials in the legal entity and shall verify their identity.\n\nWhere the performance of identity verification referred to in the second subparagraph may tip off the customer that the obliged entity has doubts regarding the beneficial ownership of the legal entity, the obliged entity shall abstain from verifying the senior managing officials’ identity, and shall instead record the steps taken to ascertain the identity of the beneficial owners and senior managing officials. Obliged entities shall keep records of the actions taken as well as of the difficulties encountered during the identification process, which led to resorting to the identification of a senior managing official.\n\n3. Credit institutions and financial institutions shall obtain information to identify and verify the identity of the natural or legal persons using any virtual IBAN they issue, and the associated bank or payment account.\n\nThe credit institution or financial institution servicing the bank or payment account to which a virtual IBAN issued by another credit institution or financial institution redirects payments, shall ensure that it can obtain from the institution issuing the virtual IBAN the information identifying and verifying the identity of the natural person using that virtual IBAN without delay and in any case within 5 working days of it requesting that information.\n\n4. In the case of beneficiaries of trusts or similar legal entities or arrangements that are designated by particular characteristics or class, an obliged entity shall obtain sufficient information concerning the beneficiary so that it will be able to establish the identity of the beneficiary at the time of the payout or at the time of the exercise by the beneficiary of its vested rights.\n\n5. In the case of discretionary trusts, an obliged entity shall obtain sufficient information concerning the objects of a power and default takers to enable it to establish the identity of the beneficiary at the time of the exercise by the trustees of their power of discretion, or at the time that the default takers become the beneficiaries due to the trustees’ failure to exercise their power of discretion.\n\n6. Obliged entities shall obtain the information, documents and data necessary for the verification of the identity of the customer and of any person purporting to act on their behalf through either of the following means:\n(a) the submission of an identity document, passport or equivalent and, where relevant, the acquisition of information from reliable and independent sources, whether accessed directly or provided by the customer;\n(b) the use of electronic identification means which meet the requirements of Regulation (EU) No 910/2014 with regard to the assurance levels ‘substantial’ or ‘high’ and relevant qualified trust services as set out in that Regulation.\n\n7. Obliged entities shall verify the identity of the beneficial owner and, where relevant, the persons on whose behalf or for the benefit of whom a transaction or activity is being carried out in either of the following ways:\n(a) in accordance with paragraph 6;\n(b) by taking reasonable measures to obtain the necessary information, documents and data from the customer or other reliable sources, including public registers other than the central registers.\n\nObliged entities shall determine the extent of the information to be consulted, having regard to the risks posed by the occasional transaction or the business relationship and the beneficial owner, including risks relating to the ownership structure.\n\nIn addition to the means of verification set out in the first subparagraph of this paragraph, obliged entities shall verify the information on the beneficial owners by consulting the central registers."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-customer-due-diligence",
+        "obl-eu-amlr-beneficial-ownership"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_22",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 22, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/024",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 24",
+      "path": "024",
+      "heading": "Reporting of discrepancies with information contained in beneficial ownership registers",
+      "texts": {
+        "en": "1. Obliged entities shall report to the central registers any discrepancies they find between the information available in the central registers and the information they collect pursuant to Article 20(1), point (b), and Article 22(7).\n\nThe discrepancies referred to in the first subparagraph shall be reported without undue delay and, in any case, within 14 calendar days of their detection. When reporting such discrepancies, obliged entities shall accompany their reports with information they have obtained indicating the discrepancy and whom they consider to be the beneficial owners and, where applicable, the nominee shareholders and nominee directors to be and why.\n\n2. By way of derogation from paragraph 1, obliged entities may refrain from reporting discrepancies to the central register and may instead request additional information from the customers where the discrepancies identified:\n(a) are limited to typographical errors, different ways of transliteration, or minor inaccuracies that do not affect the identification of the beneficial owners or their position; or\n(b) are a result of outdated data, but the beneficial owners are known to the obliged entity from another reliable source and there are no grounds for suspicion that there is an intention to conceal any information.\n\nWhere an obliged entity concludes that the beneficial ownership information in the central register is incorrect, it shall invite the customer to submit the correct information to the central register pursuant to Articles 63, 64 and 67 without undue delay, and, in any case, within 14 calendar days.\n\nThis paragraph shall not apply to cases of higher risk to which measures under Section 4 of this Chapter apply.\n\n3. Where a customer has not submitted the correct information within the deadline referred to in paragraph 2, second subparagraph, the obliged entity shall report the discrepancy to the central register in accordance with paragraph 1, second subparagraph.\n\n4. This Article shall not apply to notaries, lawyers, other independent legal professionals, auditors, external accountants and tax advisors in relation to information they receive from, or obtain on, a client, in the course of ascertaining the legal position of that client, or performing their task of defending or representing that client in, or concerning, judicial proceedings, including providing advice on instituting or avoiding such proceedings, regardless of whether such information is received or obtained before, during or after such proceedings.\n\nHowever, the requirements of this Article shall apply when the obliged entities referred to in the first subparagraph of this paragraph provide legal advice in any of the situations covered by Article 21(2), second subparagraph."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-beneficial-ownership"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_24",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 24, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/026",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 26",
+      "path": "026",
+      "heading": "Ongoing monitoring of the business relationship and monitoring of transactions performed by customers",
+      "texts": {
+        "en": "1. Obliged entities shall conduct ongoing monitoring of business relationships, including transactions undertaken by the customer throughout the course of a business relationship, to ensure that those transactions are consistent with the obliged entity’s knowledge of the customer, the customer’s business activity and risk profile, and where necessary, with the information about the origin and destination of the funds and to detect those transactions that shall be made subject to a more thorough assessment pursuant to Article 69(2).\n\nWhere business relationships cover more than one product or service, obliged entities shall ensure that the customer due diligence measures cover all those products and services.\n\nWhere obliged entities belonging to a group have business relationships with customers that are also the customers of other entities within that group, whether obliged entities or undertakings not subject to AML/CFT requirements, they shall take into account information relating to those other business relationships for the purposes of monitoring the business relationship with their customers.\n\n2. In the context of the ongoing monitoring referred to in paragraph 1, obliged entities shall ensure that the relevant documents, data or information of the customer are kept up to date.\n\nThe period between updates of customer information pursuant to the first subparagraph shall be dependent on the risk posed by the business relationship and shall not in any case exceed:\n(a) for higher risk customers to which measures under Section 4 of this Chapter apply, 1 year;\n(b) for all other customers, 5 years.\n\n3. In addition to the requirements set out in paragraph 2, obliged entities shall review and, where relevant, update the customer information where:\n(a) there is a change in the relevant circumstances of a customer;\n(b) the obliged entity has a legal obligation in the course of the relevant calendar year to contact the customer for the purpose of reviewing any relevant information relating to the beneficial owners or to comply with Council Directive 2011/16/EU (⁴²);\n(c) they become aware of a relevant fact which pertains to the customer.\n\n4. In addition to the ongoing monitoring referred to in paragraph 1 of this Article, obliged entities shall regularly verify whether the conditions laid down in Article 20(1), point (d), are met. The frequency of that verification shall be commensurate with the exposure of the obliged entity and the business relationship to risks of non-implementation and evasion of targeted financial sanctions.\n\nFor credit institutions and financial institutions, the verification referred to in the first subparagraph shall also be carried out upon any new designation in relation to targeted financial sanctions.\n\nThe requirements of this paragraph shall not replace the obligation to apply targeted financial sanctions or stricter requirements under other Union legal acts or under national law on the verification of the client base against lists of targeted financial sanctions.\n\n5. By 10 July 2026, AMLA shall issue guidelines on ongoing monitoring of a business relationship and on the monitoring of the transactions carried out in the context of such relationship.\n\n(⁴²) Council Directive 2011/16/EU of 15 February 2011 on administrative cooperation in the field of taxation and repealing Directive 77/799/EEC (OJ L 64, 11.3.2011, p. 1)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-ongoing-monitoring"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_26",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 26, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/029",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 29",
+      "path": "029",
+      "heading": "Identification of third countries with significant strategic deficiencies in their national AML/CFT regimes",
+      "texts": {
+        "en": "1. Third countries with significant strategic deficiencies in their national AML/CFT regimes shall be identified by the Commission and designated as ‘high-risk third countries’.\n\n2. In order to identify third countries as referred to in paragraph 1 of this Article, the Commission is empowered to adopt delegated acts in accordance with Article 85 to supplement this Regulation, where:\n(a) significant strategic deficiencies in the legal and institutional AML/CFT framework of the third country have been identified;\n(b) significant strategic deficiencies in the effectiveness of the third country’s AML/CFT system in addressing money laundering and terrorist financing risks or in its system to assess and mitigate risks of non-implementation or evasion of UN financial sanctions relating to proliferation financing have been identified;\n(c) the significant strategic deficiencies identified under points (a) and (b) are of a persistent nature and no measures to mitigate them have been taken or are being taken.\n\nThose delegated acts shall be adopted within 20 calendar days of the Commission ascertaining that the criteria in point (a), (b) or (c) of the first subparagraph are met.\n\n3. For the purposes of paragraph 2, the Commission shall take into account calls for the application of enhanced due diligence measures and additional mitigating measures (‘countermeasures’) by international organisations and standard setters with competence in the field of preventing money laundering and combating terrorist financing, as well as relevant evaluations, assessments, reports or public statements drawn up by them.\n\n4. Where a third country is identified in accordance with the criteria referred to in paragraph 2, obliged entities shall apply enhanced due diligence measures listed in Article 34(4) with respect to the business relationships or occasional transactions involving natural or legal persons from that third country.\n\n5. The delegated act referred to in paragraph 2 shall identify among the countermeasures listed in Article 35 the specific countermeasures mitigating specific risks stemming from each high-risk third country.\n\n6. Where a Member State identifies a specific money laundering or terrorist financing risk posed by a third country that the Commission has identified in accordance with the criteria referred to in paragraph 2 which is not addressed by the countermeasures referred to in paragraph 5, it may require obliged entities established in its territory to apply specific additional countermeasures to mitigate the specific risks stemming from that third country. The risk identified and the corresponding countermeasures shall be notified to the Commission within 5 days of the countermeasures being applied.\n\n7. The Commission shall review the delegated acts referred to in paragraph 2 on a regular basis to ensure that the specific countermeasures identified pursuant to paragraph 5 take account of the changes in the AML/CFT framework of the third country and are proportionate and adequate to the risks.\n\nUpon receiving a notification pursuant to paragraph 6, the Commission shall assess the information received to determine whether country-specific risks affect the integrity of the Union’s internal market. Where appropriate, the Commission shall review the delegated acts referred to in paragraph 2, by adding the necessary countermeasures to mitigate those additional risks. Where the Commission considers that the specific additional measures applied by a Member State under paragraph 6 are not necessary to mitigate specific risks stemming from that third country, it may decide, by means of an implementing act, that the Member State shall put an end to the specific additional countermeasure."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-enhanced-due-diligence"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_29",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 29, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/034",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 34",
+      "path": "034",
+      "heading": "Scope of application of enhanced due diligence measures",
+      "texts": {
+        "en": "1. In the cases referred to in Articles 29, 30, 31 and 36 to 46, as well as in other cases of higher risk that are identified by obliged entities pursuant to Article 20(2), second subparagraph, obliged entities shall apply enhanced due diligence measures to manage and mitigate such risks appropriately.\n\n2. Obliged entities shall examine the origin and destination of funds involved in, and the purpose of, all transactions that fulfil at least one of the following conditions:\n(a) the transaction is of a complex nature;\n(b) the transaction is unusually large;\n(c) the transaction is conducted in an unusual pattern;\n(d) the transaction does not have an apparent economic or lawful purpose.\n\n3. With the exception of the cases covered by Section 2 of this Chapter, when assessing the risks of money laundering and terrorist financing posed by a business relationship or occasional transaction, obliged entities shall take into account at least the factors of potential higher risk set out in Annex III and the guidelines adopted by AMLA pursuant to Article 32, as well as any other indicators of higher risk such as notifications issued by the FIU and findings of the business-wide risk assessment under Article 10.\n\n4. With the exception of the cases covered by Section 2 of this Chapter, in cases of higher risk as referred to in paragraph 1 of this Article, obliged entities shall apply enhanced due diligence measures, proportionate to the higher risks identified, which may include the following measures:\n(a) obtaining additional information on the customer and the beneficial owners;\n(b) obtaining additional information on the intended nature of the business relationship;\n(c) obtaining additional information on the source of funds, and source of wealth of the customer and of the beneficial owners;\n(d) obtaining information on the reasons for the intended or performed transactions and their consistency with the business relationship;\n(e) obtaining the approval of senior management for establishing or continuing the business relationship;\n(f) conducting enhanced monitoring of the business relationship by increasing the number and timing of controls applied, and selecting patterns of transactions that need further examination;\n(g) requiring the first payment to be carried out through an account in the customer’s name with a credit institution subject to customer due diligence standards that are not less robust than those laid down in this Regulation.\n\n5. Where a business relationship that is identified as having a higher risk involves the handling of assets with a value of at least EUR 5 000 000, or the equivalent in national or foreign currency, through personalised services for a customer holding total assets with a value of at least EUR 50 000 000, or the equivalent in national or foreign currency, whether in financial, investable or real estate assets, or a combination thereof, excluding that customer’s private residence, credit institutions, financial institutions and trust or company service providers shall apply the following enhanced due diligence measures, in addition to any enhanced due diligence measure applied pursuant to paragraph 4:\n(a) specific measures including procedures to mitigate risks associated with personalised services and products offered to that customer;\n(b) obtaining additional information on that customer’s source of funds;\n(c) preventing and managing conflicts of interest between the customer and senior management or employees of the obliged entity that undertake tasks related to that obliged entity’s compliance in relation to that customer.\n\nBy 10 July 2027, AMLA shall issue guidelines on the measures to be taken by credit institutions, financial institutions and trust or company service providers to establish whether a customer holds total assets with a value of at least EUR 50 000 000, or the equivalent in national or foreign currency, in financial, investable or real estate assets and how to determine that value.\n\n6. With the exception of the cases covered by Section 2 of this Chapter, where Member States identify cases of higher risks pursuant to Article 8 of Directive (EU) 2024/1640, including as a result of sectoral risk assessments carried out by the Member States, they may require obliged entities to apply enhanced due diligence measures and, where appropriate, specify those measures. Member States shall notify to the Commission and AMLA their decisions imposing enhanced due diligence requirements upon obliged entities established in their territory within 1 month of their adoption, accompanied by a justification of the money laundering and terrorist financing risks underpinning such decision.\n\nWhere the risks identified by Member States pursuant to the first subparagraph are likely to stem from outside the Union and may affect the Union’s financial system, AMLA shall, upon a request from the Commission or on its own initiative, consider updating the guidelines adopted pursuant to Article 32.\n\n7. The Commission is empowered to adopt delegated acts in accordance with Article 85 to supplement this Regulation where it identifies additional cases of higher risk as referred to in paragraph 1 of this Article that affect the Union as a whole and enhanced due diligence measures that obliged entities are to apply in those cases, taking into account the notifications by Member States pursuant to paragraph 6, first subparagraph, of this Article.\n\n8. Enhanced due diligence measures shall not be invoked automatically with respect to branches or subsidiaries of obliged entities established in the Union which are located in third countries referred to in Articles 29, 30 and 31 where those branches or subsidiaries fully comply with the group-wide policies, procedures and controls in accordance with Article 17."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-enhanced-due-diligence"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_34",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 34, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/036",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 36",
+      "path": "036",
+      "heading": "Specific enhanced due diligence measures for cross-border correspondent relationships",
+      "texts": {
+        "en": "With respect to cross-border correspondent relationships, including relationships established for securities transactions or fund transfers, involving the execution of payments with a third-country respondent institution, in addition to the customer due diligence measures laid down in Article 20, credit institutions and financial institutions shall, when entering into a business relationship, be required to:\n(a) gather sufficient information about the respondent institution to understand fully the nature of the respondent’s business and to determine from publicly available information the reputation of the institution and the quality of supervision;\n(b) assess the respondent institution’s AML/CFT controls;\n(c) obtain approval from senior management before establishing new correspondent relationships;\n(d) document the respective responsibilities of each institution;\n(e) with respect to payable-through accounts, be satisfied that the respondent institution has verified the identity of, and performed ongoing due diligence on, the customers having direct access to accounts of the correspondent institution, and that it is able to provide relevant customer due diligence data to the correspondent institution, upon request.\n\nWhere credit institutions and financial institutions decide to terminate cross-border correspondent relationships for reasons relating to AML/CFT policy, they shall document their decision."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-correspondent-relationships"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_36",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 36, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/039",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 39",
+      "path": "039",
+      "heading": "Prohibition of correspondent relationships with shell institutions",
+      "texts": {
+        "en": "1. Credit institutions and financial institutions shall not enter into, or continue, a correspondent relationship with a shell institution. Credit institutions and financial institutions shall take appropriate measures to ensure that they do not engage in or continue correspondent relationships with a credit institution or financial institution that is known to allow its accounts to be used by a shell institution.\n\n2. In addition to the requirement laid down in paragraph 1, crypto-asset service providers shall ensure that their accounts are not used by shell institutions to provide crypto-asset services. To that end, crypto-asset service providers shall have in place internal policies, procedures and controls to detect any attempt to use their accounts for the provision of unregulated crypto-asset services."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-correspondent-relationships"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_39",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 39, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/042",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 42",
+      "path": "042",
+      "heading": "Specific provisions regarding politically exposed persons",
+      "texts": {
+        "en": "1. In addition to the customer due diligence measures laid down in Article 20, obliged entities shall apply the following measures with respect to occasional transactions or business relationships with politically exposed persons:\n(a) obtain senior management approval for carrying out occasional transactions or for establishing or continuing business relationships with politically exposed persons;\n(b) take adequate measures to establish the source of wealth and source of funds that are involved in business relationships or occasional transactions with politically exposed persons;\n(c) conduct enhanced, ongoing monitoring of those business relationships.\n\n2. By 10 July 2027, AMLA shall issue guidelines on the following matters:\n(a) the criteria for the identification of persons known to be close associates;\n(b) the level of risk associated with a particular category of politically exposed person, family member or person known to be a close associate, including guidance on how such risks are to be assessed where the person is no longer entrusted with a prominent public function for the purposes of Article 45."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-politically-exposed-persons"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_42",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 42, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/045",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 45",
+      "path": "045",
+      "heading": "Measures for persons who cease to be politically exposed persons",
+      "texts": {
+        "en": "1. Where a politically exposed person is no longer entrusted with a prominent public function by the Union, a Member State, third country or an international organisation, obliged entities shall take into account the continuing risk posed by that person, as a result of his or her former function, in their assessment of money laundering and terrorist financing risks in accordance with Article 20.\n\n2. Obliged entities shall apply one or more of the measures referred to in Article 34(4) to mitigate the risks posed by the politically exposed person until such time as the risks referred to in paragraph 1 of this Article no longer exist, but in any case for not less than 12 months following the time when the individual ceased to be entrusted with a prominent public function.\n\n3. The obligation referred to in paragraph 2 shall apply accordingly where an obliged entity carries out an occasional transaction or enters into a business relationship with a person who in the past was entrusted with a prominent public function by the Union, a Member State, third country or an international organisation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-politically-exposed-persons"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_45",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 45, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/046",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 46",
+      "path": "046",
+      "heading": "Family members and persons known to be close associates of politically exposed persons",
+      "texts": {
+        "en": "The measures referred to in Articles 42, 44 and 45 shall also apply to family members or persons known to be close associates of politically exposed persons."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-politically-exposed-persons"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_46",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 46, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/069",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 69",
+      "path": "069",
+      "heading": "Reporting of suspicions",
+      "texts": {
+        "en": "1. Obliged entities, and, where applicable, their directors and employees, shall cooperate fully with the FIU by promptly:\n(a) reporting to the FIU, on their own initiative, where the obliged entity knows, suspects or has reasonable grounds to suspect that funds or activities, regardless of the amount involved, are the proceeds of criminal activity or are related to terrorist financing or criminal activity and by responding to requests by the FIU for additional information in such cases;\n(b) providing the FIU, at its request, with all necessary information, including information on transaction records, within the deadlines imposed.\n\nAll suspicious transactions, including attempted transactions and suspicions arising from the inability to conduct customer due diligence shall be reported in accordance with the first subparagraph.\n\nFor the purposes of the first subparagraph, obliged entities shall reply to requests for information by the FIU within 5 working days. In justified and urgent cases, FIUs may shorten that deadline, including to less than 24 hours.\n\nBy way of derogation from the third subparagraph, the FIU may extend the deadline for a response beyond the 5 working days where it considers it justified and provided that the extension does not undermine the FIU’s analysis.\n\n2. For the purposes of paragraph 1, obliged entities shall assess transactions or activities carried out by their customers on the basis of and against any relevant fact and information known to them or which they are in possession of. Where necessary, obliged entities shall prioritise their assessment taking into consideration the urgency of the transaction or activity and the risks affecting the Member State in which they are established.\n\nA suspicion pursuant to paragraph 1, point (a), shall be based on the characteristics of the customer and their counterparts, the size and nature of the transaction or activity or the methods and patterns thereof, the link between several transactions or activities, the origin, destination or use of funds, or any other circumstance known to the obliged entity, including the consistency of the transaction or activity with the information obtained pursuant to Chapter III including the risk profile of the client.\n\n3. By 10 July 2026, AMLA shall develop draft implementing technical standards and submit them to the Commission for adoption. Those draft implementing technical standards shall specify the format to be used for the reporting of suspicions pursuant to paragraph 1, point (a), and for the provision of transaction records pursuant to paragraph 1, point (b).\n\n4. Power is conferred on the Commission to adopt the implementing technical standards referred to in paragraph 3 of this Article in accordance with Article 53 of Regulation (EU) 2024/1620.\n\n5. By 10 July 2027, AMLA shall issue guidelines on indicators of suspicious activity or behaviours. Those guidelines shall be periodically updated.\n\n6. The compliance officer appointed in accordance with Article 11(2) shall transmit the information referred to in paragraph 1 of this Article to the FIU of the Member State in whose territory the obliged entity transmitting the information is established.\n\n7. Obliged entities shall ensure that the compliance officer appointed in accordance with Article 11(2), as well as any employee or person in a comparable position, including agents and distributors, involved in the performance of the tasks covered by this Article are protected against retaliation, discrimination and any other unfair treatment for carrying out those tasks.\n\nThis paragraph shall not affect the protection that the persons referred to in the first subparagraph may be entitled to under Directive (EU) 2019/1937.\n\n8. Where the activities of a partnership for information sharing result in the knowledge, suspicion or reasonable grounds to suspect that funds, regardless of the amount involved, are the proceeds of criminal activity or are related to terrorist financing, obliged entities which identified suspicions in relation to the activities of their customers may designate one among them which shall be tasked with the submission of a report to the FIU pursuant to paragraph 1, point (a). Such submission shall include at least the name and contact details of all the obliged entities that participated in the activities giving rise to the report.\n\nWhere the obliged entities referred to in the first subparagraph are established in several Member States, the information shall be reported to each relevant FIU. To that end, obliged entities shall ensure that the report is submitted by an obliged entity within the territory of the Member States where the FIU is located.\n\nWhere the obliged entities decide not to avail themselves of the possibility to submit a single report with the FIU pursuant to the first subparagraph, they shall include a reference in their reports to the fact that the suspicion is the result of the activities of a partnership for information sharing.\n\n9. The obliged entities referred to in paragraph 8 of this Article shall retain a copy of any reports submitted pursuant to that paragraph in accordance with Article 77."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-suspicious-transaction-reporting"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_69",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 69, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/071",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 71",
+      "path": "071",
+      "heading": "Refraining from carrying out transactions",
+      "texts": {
+        "en": "1. Obliged entities shall refrain from carrying out transactions which they know or suspect to be related to proceeds of criminal activity or to terrorist financing until they have submitted a report in accordance with Article 69(1), first subparagraph, point (a), and have complied with any further specific instructions from the FIU or other competent authority in accordance with the applicable law. Obliged entities may carry out the transaction concerned after having assessed the risks of proceeding with the transaction if they have not received instructions to the contrary from the FIU within 3 working days of submitting the report.\n\n2. Where it is not possible for an obliged entity to refrain from carrying out a transaction as referred to in paragraph 1or where refraining would be likely to frustrate efforts to pursue the beneficiaries of a suspected transaction, the obliged entity shall inform the FIU immediately after carrying out the transaction."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-suspicious-transaction-reporting"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_71",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 71, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/073",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 73",
+      "path": "073",
+      "heading": "Prohibition of disclosure",
+      "texts": {
+        "en": "1. Obliged entities and their directors, employees, or persons in comparable positions, including agents and distributors, shall not disclose to the customer concerned or to other third persons the fact that transactions or activities are being or have been assessed in accordance with Article 69, that information is being, will be or has been transmitted in accordance with Article 69 or 70 or that a money laundering or terrorist financing analysis is being, or may be, carried out.\n\n2. Paragraph 1 shall not apply to disclosures to competent authorities and to self-regulatory bodies where they perform supervisory functions, or to disclosure for the purposes of investigating and prosecuting money laundering, terrorist financing and other criminal activity.\n\n3. By way of derogation from paragraph 1 of this Article, disclosure may take place between obliged entities that belong to the same group, or between such entities and their branches and subsidiaries established in third countries, provided that those branches and subsidiaries fully comply with the group-wide policies and procedures, including procedures for sharing information within the group, in accordance with Article 16, and that the group-wide policies and procedures comply with the requirements set out in this Regulation.\n\n4. By way of derogation from paragraph 1 of this Article, disclosure may take place between obliged entities as referred to in Article 3, point (3)(a) and (b), or entities from third countries which impose requirements equivalent to those laid down in this Regulation, who perform their professional activities, whether as employees or not, within the same legal person or a larger structure to which the person belongs and which shares common ownership, management or compliance control, including networks or partnerships.\n\n5. For obliged entities referred to in Article 3, points (1), (2), (3)(a) and (b), in cases relating to the same transaction involving two or more obliged entities, and by way of derogation from paragraph 1 of this Article, disclosure may take place between the relevant obliged entities provided that they are located in the Union, or with entities in a third country which imposes requirements equivalent to those laid down in this Regulation, and that they are subject to professional secrecy and personal data protection requirements.\n\n6. Where the obliged entities referred to in Article 3, point (3)(a) and (b), seek to dissuade a client from engaging in illegal activity, that shall not constitute disclosure within the meaning of paragraph 1 of this Article."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-no-tipping-off"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_73",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 73, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1624/077",
+      "instrument": "celex-32024r1624",
+      "provisionKind": "article",
+      "refLabel": "Article 77",
+      "path": "077",
+      "heading": "Record retention",
+      "texts": {
+        "en": "1. Obliged entities shall retain the following documents and information:\n(a) a copy of the documents and information obtained in the performance of customer due diligence pursuant to Chapter III, including information obtained through electronic identification means;\n(b) a record of the assessment undertaken pursuant to Article 69(2), including the information and circumstances considered and the results of such assessment, whether or not such assessment results in a suspicious transaction report being made to the FIU, and a copy of the suspicion transaction report, if any;\n(c) the supporting evidence and records of transactions, consisting of the original documents or copies admissible in judicial proceedings under the applicable national law, which are necessary to identify transactions;\n(d) when they participate in partnerships for information sharing pursuant to Chapter VI, copies of the documents and information obtained in the framework of those partnerships, and records of all instances of information sharing.\n\nObliged entities shall ensure that documents, information and records kept pursuant to this Article are not redacted.\n\n2. By way of derogation from paragraph 1, obliged entities may decide to replace the retention of copies of the information by a retention of the references to such information, provided that the nature and method of retention of such information ensure that the obliged entities can provide immediately to competent authorities the information and that the information cannot be modified or altered.\n\nObliged entities making use of the derogation referred to in the first subparagraph shall define in their internal procedures drawn up pursuant to Article 9, the categories of information for which they will retain a reference instead of a copy or original, as well as the procedures for retrieving the information so that it can be provided to competent authorities upon request.\n\n3. The information referred to in paragraphs 1 and 2 shall be retained for a period of 5 years commencing on the date of the termination of the business relationship or on the date of the carrying out of the occasional transaction, or on the date of refusal to enter into a business relationship or carry out an occasional transaction. Without prejudice to retention periods for data collected for the purposes of other Union legal acts or national law complying with Regulation (EU) 2016/679, obliged entities shall delete personal data upon expiry of the five-year period.\n\nCompetent authorities may require further retention of the information referred to in the first subparagraph on a case-by-case basis, provided that such retention is necessary for the prevention, detection, investigation or prosecution of money laundering or terrorist financing. That further retention period shall not exceed 5 years.\n\n4. Where, on 10 July 2027, legal proceedings concerned with the prevention, detection, investigation or prosecution of suspected money laundering or terrorist financing are pending in a Member State, and an obliged entity holds information or documents relating to those pending proceedings, the obliged entity may retain that information or those documents for a period of 5 years from 10 July 2027.\n\nMember States may, without prejudice to national criminal law on evidence applicable to ongoing criminal investigations and legal proceedings, allow or require the retention of such information or documents for a further period of 5 years where the necessity and proportionality of such further retention have been established for the prevention, detection, investigation or prosecution of suspected money laundering or terrorist financing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-amlr-record-retention"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_77",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 77, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    }
+  ],
+  "withoutProvision": [
+    {
+      "obligation": "obl-eu-eba-access-basic-payment-accounts",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-access-document-refusals",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-access-mitigate-before-refusal",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-access-no-blanket-refusal",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-co-activity-report",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-co-appointment",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-co-group-structure",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-co-management-body-member",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rco-identity-verification",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rco-policies",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rco-pre-implementation",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rco-third-parties",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rfgl-enhanced-due-diligence",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rfgl-monitoring",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rfgl-npo-customers",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rfgl-risk-assessments",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-rfgl-risk-based-cdd",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-trgl-messaging-systems",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-trgl-missing-information-decisions",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-trgl-monitoring-criteria",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-trgl-repeatedly-failing",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    }
+  ]
+}

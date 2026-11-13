@@ -1,0 +1,1132 @@
+{
+  "tranche": "se-forordningar",
+  "researchedOn": "2026-11-13",
+  "provisions": [
+    {
+      "key": "sfs-1971-49/002",
+      "instrument": "sfs-1971-49",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": null,
+      "texts": {
+        "sv": "En värdepapperscentral ska hos Skatteverket kontrollera uppgifter som lämnats enligt 7 § andra stycket kupongskattelagen (1970:624) och som är av betydelse för bedömning av frågan om skattskyldighet enligt lagen. Sådan kontroll ska avse utdelningsberättigad som inte är juridisk person och ska göras på tid och sätt som Skatteverket bestämmer.\n\nBestämmelserna i första stycket om värdepapperscentral gäller i stället förvaltaren vid förvaltarregistrering enligt\n- 5 kap. 14 § aktiebolagslagen (2005:551) såvitt avser förvaltare som av en värdepapperscentral som hör hemma i Sverige har fått medgivande till registrering som förvaltare,\n- 4 kap. 12 § lagen (2004:46) om värdepappersfonder,\n- 12 kap. 5 § lagen (2013:561) om förvaltare av alternativa investeringsfonder, eller\n- 3 kap. 7 § lagen (1998:1479) om värdepapperscentraler och kontoföring av finansiella instrument. Förordning (2016:70).",
+        "en": "A central securities depository must check with Skatteverket (the Swedish Tax Agency) the information provided under Section 7, second paragraph of the Coupon Tax Act (1970:624) that is relevant to assessing whether there is tax liability under that Act. Such checks must cover persons entitled to the dividend who are not legal persons, and must be carried out at the time and in the manner Skatteverket determines.\n\nThe provisions of the first paragraph on central securities depositories apply instead to the nominee in the case of nominee registration under\n- Chapter 5, Section 14 of the Companies Act (2005:551), as regards nominees that have been granted permission by a central securities depository domiciled in Sweden to be registered as nominees,\n- Chapter 4, Section 12 of the Swedish UCITS Act (2004:46),\n- Chapter 12, Section 5 of the Alternative Investment Fund Managers Act (2013:561), or\n- Chapter 3, Section 7 of the Central Securities Depositories and Financial Instruments Accounts Act (1998:1479). Ordinance (2016:70)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-kupongskatteforordning-nominee-recipient-check"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/kupongskatteforordning-197149_sfs-1971-49/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1971:49, 2 §, consolidated text as amended up to SFS 2016:70. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-1971-49/008",
+      "instrument": "sfs-1971-49",
+      "provisionKind": "section",
+      "refLabel": "8 §",
+      "path": "008",
+      "heading": null,
+      "texts": {
+        "sv": "Den som begär registrering hos en värdepapperscentral av värdepapper som avses berättiga till utdelning från en utländsk juridisk person, ska samtidigt lämna uppgift om namn och hemvist på den för vars räkning utdelningen eller räntan ska lyftas. Om namn eller hemvist ändras, ska den som har lämnat uppgiften utan dröjsmål anmäla detta skriftligen till värdepapperscentralen. Bank eller värdepappersinstitut som av en värdepapperscentral medgetts rätt att registreras som förvaltare av aktier enligt lagen (1998:1479) om värdepapperscentraler och kontoföring av finansiella instrument, är skyldig att lämna sådan uppgift som rör ränta efter uppmaning från värdepapperscentralen. Sådan uppmaning får inte göras senare än fem år efter det att räntan betalats ut. Förordning (2016:70).",
+        "en": "A person who requests registration with a central securities depository of securities intended to carry an entitlement to a dividend from a foreign legal person must at the same time provide information on the name and residence of the person on whose behalf the dividend or interest is to be collected. If the name or residence changes, the person who provided the information must notify the central securities depository of the change in writing without delay. A bank or securities institution that a central securities depository has allowed to be registered as a nominee of shares under the Central Securities Depositories and Financial Instruments Accounts Act (1998:1479) is required to provide such information as relates to interest when the central securities depository requests it. Such a request must not be made later than five years after the interest was paid. Ordinance (2016:70)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-kupongskatteforordning-nominee-interest-information"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/kupongskatteforordning-197149_sfs-1971-49/#P8",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1971:49, 8 §, consolidated text as amended up to SFS 2016:70. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2004-329/001-008",
+      "instrument": "sfs-2004-329",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 8 §",
+      "path": "001-008",
+      "heading": "Frivillig likvidation av kreditinstitut",
+      "texts": {
+        "sv": "Om ett kreditinstitut avser att besluta om likvidation, skall institutet i så god tid som möjligt före beslutet samråda med Finansinspektionen om detta. Förordning (2007:339).",
+        "en": "If a credit institution intends to decide on liquidation, it must consult Finansinspektionen (the Swedish Financial Supervisory Authority) on the matter as early as possible before the decision is taken. Ordinance (2007:339)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-bankforordning-liquidation-consultation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2004329-om-bank-och_sfs-2004-329/#K1P8",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:329, 1 kap. 8 §, consolidated text as amended up to SFS 2026:1092. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2004-329/002-004",
+      "instrument": "sfs-2004-329",
+      "provisionKind": "section",
+      "refLabel": "2 kap. 4 §",
+      "path": "002-004",
+      "heading": null,
+      "texts": {
+        "sv": "Ett bankaktiebolag, en medlemsbank eller ett kreditmarknadsföretag ska underrätta Finansinspektionen när företaget avser att börja driva bank- eller finansieringsrörelse.\n\nInnan företaget börjar att driva bank- eller finansieringsrörelse ska det till Finansinspektionen ge in ett intyg om att företaget har ett så stort startkapital som anges i 3 kap. 5 eller 7 § lagen (2004:297) om bank- och finansieringsrörelse. Intyget ska ha utfärdats av en godkänd eller auktoriserad revisor. Förordning (2020:678).",
+        "en": "A banking company, a members' bank or a credit market undertaking must notify Finansinspektionen (the Swedish Financial Supervisory Authority) when it intends to start carrying on banking or financing business.\n\nBefore the undertaking starts to carry on banking or financing business, it must submit to Finansinspektionen a certificate stating that the undertaking has initial capital of the amount set out in Chapter 3, Section 5 or 7 of the Banking and Financing Business Act (2004:297). The certificate must have been issued by an approved or authorised public accountant. Ordinance (2020:678)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-bankforordning-start-of-business-notice"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2004329-om-bank-och_sfs-2004-329/#K2P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:329, 2 kap. 4 §, consolidated text as amended up to SFS 2026:1092. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-1135/005",
+      "instrument": "sfs-2007-1135",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": null,
+      "texts": {
+        "sv": "För varje avgiftsgrupp som anges i 6-9 a §§ ska Finansinspektionen beräkna ett sammanlagt avgiftsbelopp som baseras på dels gruppens andel av inspektionens och Statistiska centralbyråns kostnader det närmast föregående kalenderåret, dels de kostnader som inspektionen och Statistiska centralbyrån har beräknat för det aktuella kalenderåret.\n\nFinansinspektionen ska fördela det sammanlagda avgiftsbeloppet för respektive avgiftsgrupp 1, 2 och 4 på de företag som ingår i gruppen. Balansomslutningen vid utgången av det närmast föregående räkenskapsåret ska utgöra grund för fördelningen. Varje företag i gruppen ska betala en avgift som är proportionell i förhållande till företagets storlek.\n\nOm det sker en väsentlig ändring i ett företags balansomslutning i förhållande till närmast föregående räkenskapsår, får Finansinspektionen ta förändringen i beaktande vid fördelningen av avgiftsbeloppet.\n\nFinansinspektionen ska fördela det sammanlagda avgiftsbeloppet för avgiftsgrupp 3 på de företag som ingår i gruppen. Varje företags andel av den tid Finansinspektionen lagt på gruppen närmast föregående kalenderår ska utgöra grund för fördelningen. Den kostnad som inte kan hänföras till ett enskilt företag ska fördelas på de företag som ingår i gruppen utifrån samma fördelningsgrund och med beaktande av typ av verksamhet enligt 8 §.\n\nFinansinspektionen ska fördela det sammanlagda avgiftsbeloppet för avgiftsgrupp 5 på de företag som ingår i gruppen. Varje företags andel av den tid Finansinspektionen lagt på gruppen närmast föregående kalenderår ska utgöra grund för fördelningen. Den kostnad som inte kan hänföras till ett enskilt företag ska fördelas på de företag som ingår i gruppen utifrån samma fördelningsgrund.\n\nDen lägsta avgiften är 150 000 kronor, om inte något annat anges i denna förordning. Förordning (2024:1241).",
+        "en": "For each fee group set out in Sections 6 to 9a, Finansinspektionen (the Swedish Financial Supervisory Authority) must calculate a total fee amount based both on the group's share of the costs incurred by Finansinspektionen and Statistiska centralbyrån (Statistics Sweden) in the preceding calendar year and on the costs that Finansinspektionen and Statistiska centralbyrån have estimated for the current calendar year.\n\nFinansinspektionen must allocate the total fee amount for each of fee groups 1, 2 and 4 among the undertakings that belong to the group. The allocation must be based on the balance sheet total at the end of the preceding financial year. Each undertaking in the group must pay a fee proportionate to its size.\n\nIf there is a material change in an undertaking's balance sheet total compared with the preceding financial year, Finansinspektionen may take that change into account when allocating the fee amount.\n\nFinansinspektionen must allocate the total fee amount for fee group 3 among the undertakings that belong to the group. The allocation must be based on each undertaking's share of the time Finansinspektionen spent on the group in the preceding calendar year. Costs that cannot be attributed to an individual undertaking must be allocated among the undertakings in the group on the same basis, taking into account the type of activities under Section 8.\n\nFinansinspektionen must allocate the total fee amount for fee group 5 among the undertakings that belong to the group. The allocation must be based on each undertaking's share of the time Finansinspektionen spent on the group in the preceding calendar year. Costs that cannot be attributed to an individual undertaking must be allocated among the undertakings in the group on the same basis.\n\nThe minimum fee is SEK 150,000, unless otherwise provided in this Ordinance. Ordinance (2024:1241)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fi-avgiftsforordning-annual-fee"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20071135-om-arliga-avgifter-for_sfs-2007-1135/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:1135, 5 §, consolidated text as amended up to SFS 2026:981. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-1135/006",
+      "instrument": "sfs-2007-1135",
+      "provisionKind": "section",
+      "refLabel": "6 §",
+      "path": "006",
+      "heading": "Avgiftsgrupp 1",
+      "texts": {
+        "sv": "Avgift beräknad enligt 5 § ska betalas av svenska företag, om de\n1. har tillstånd att driva bank- eller finansieringsrörelse enligt lagen (2004:297) om bank- och finansieringsrörelse,\n2. har tillstånd att driva värdepappersrörelse enligt lagen (2007:528) om värdepappersmarknaden och är värdepappersbolag,\n3. har tillstånd att driva verksamhet enligt lagen (1980:1097) om Svenska skeppshypotekskassan,\n4. enbart har tillstånd att tillhandahålla datarapporteringstjänster enligt Europaparlamentets och rådets förordning (EU) nr 600/2014 av den 15 maj 2014 om marknader för finansiella instrument och om ändring av förordning (EU) nr 648/2012,\n5. har tillstånd som leverantör av kryptotillgångstjänster eller utgivare av tillgångsanknutna kryptotillgångar eller kryptotillgångar som inte är tillgångsanknutna utan hänvisar till en officiell valuta enligt Europaparlamentets och rådets förordning (EU) 2023/1114 av den 31 maj 2023 om marknader för kryptotillgångar och om ändring av förordningarna (EU) nr 1093/2010 och (EU) nr 1095/2010,\n6. har tillstånd att tillhandahålla betaltjänster enligt lagen (2010:751) om betaltjänster, eller\n7. har tillstånd att ge ut elektroniska pengar enligt lagen (2011:755) om elektroniska pengar.\n\nAvgift beräknad enligt 5 § ska också betalas av utländska kreditinstitut som hör hemma inom EES och som driver verksamhet genom filial i Sverige, om filialen är en betydande filial enligt 1 kap. 5 § lagen om bank- och finansieringsrörelse. I stället för hela balansomslutningen ska 35 procent av filialens balansomslutning vid utgången av det närmast föregående räkenskapsåret utgöra grund för fördelningen enligt 5 § andra stycket.\n\nFör sådana företag som avses i första stycket 2 som har tillstånd för drift av MTF-plattformar enligt 2 kap. 1 § 8 lagen om värdepappersmarknaden är den lägsta avgiften 750 000 kronor.\n\nSvenska skeppshypotekskassan och företag som enbart tillhandahåller datarapporteringstjänster enligt Europaparlamentets och rådets förordning (EU) nr 600/2014 ska betala den lägsta avgiften.\n\nRegistrerade betaltjänstleverantörer enligt lagen om betaltjänster ska betala en avgift på 30 000 kronor för fysiska personer och 50 000 kronor för juridiska personer.\n\nRegistrerade utgivare enligt lagen om elektroniska pengar ska betala en avgift på 50 000 kronor.\n\nFysiska och juridiska personer som är registrerade enligt lagen (1996:1006) om viss finansiell verksamhet ska betala en avgift på 15 000 kronor för fysiska personer och 30 000 kronor för juridiska personer, om de inte ska betala avgift enligt någon annan bestämmelse i denna förordning. Förordning (2025:556).",
+        "en": "The fee calculated under Section 5 must be paid by Swedish undertakings that\n1. are authorised to carry on banking or financing business under the Banking and Financing Business Act (2004:297),\n2. are authorised to carry on securities business under the Securities Market Act (2007:528) and are investment firms,\n3. are authorised to carry on activities under the Act (1980:1097) on the Swedish Ships' Mortgage Bank,\n4. are authorised only to provide data reporting services under Regulation (EU) No 600/2014 of the European Parliament and of the Council of 15 May 2014 on markets in financial instruments and amending Regulation (EU) No 648/2012,\n5. are authorised as crypto-asset service providers, or as issuers of asset-referenced tokens or of crypto-assets that are not asset-referenced but instead reference an official currency, under Regulation (EU) 2023/1114 of the European Parliament and of the Council of 31 May 2023 on markets in crypto-assets, and amending Regulations (EU) No 1093/2010 and (EU) No 1095/2010,\n6. are authorised to provide payment services under the Payment Services Act (2010:751), or\n7. are authorised to issue electronic money under the Electronic Money Act (2011:755).\n\nThe fee calculated under Section 5 must also be paid by foreign credit institutions domiciled in the EEA that carry on activities through a branch in Sweden, if the branch is a significant branch under Chapter 1, Section 5 of the Banking and Financing Business Act. Instead of the whole balance sheet total, 35 per cent of the branch's balance sheet total at the end of the preceding financial year must form the basis for the allocation under Section 5, second paragraph.\n\nFor undertakings referred to in the first paragraph, point 2, that are authorised to operate multilateral trading facilities (MTFs) under Chapter 2, Section 1, point 8 of the Securities Market Act, the minimum fee is SEK 750,000.\n\nSvenska skeppshypotekskassan (the Swedish Ships' Mortgage Bank) and undertakings that provide only data reporting services under Regulation (EU) No 600/2014 of the European Parliament and of the Council must pay the minimum fee.\n\nRegistered payment service providers under the Payment Services Act must pay a fee of SEK 30,000 in the case of natural persons and SEK 50,000 in the case of legal persons.\n\nRegistered electronic money issuers under the Electronic Money Act must pay a fee of SEK 50,000.\n\nNatural and legal persons registered under the Act (1996:1006) on Certain Financial Operations must pay a fee of SEK 15,000 in the case of natural persons and SEK 30,000 in the case of legal persons, unless they must pay a fee under another provision of this Ordinance. Ordinance (2025:556)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fi-avgiftsforordning-annual-fee"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20071135-om-arliga-avgifter-for_sfs-2007-1135/#P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:1135, 6 §, consolidated text as amended up to SFS 2026:981. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-1135/024",
+      "instrument": "sfs-2007-1135",
+      "provisionKind": "section",
+      "refLabel": "24 §",
+      "path": "024",
+      "heading": "Betalning och slutavräkning",
+      "texts": {
+        "sv": "Finansinspektionen ska varje år besluta avgiftens storlek och senast den 30 november till varje fysisk person, företag och myndighet som ska betala avgift skicka en faktura på det belopp som ska betalas samt ange när avgiften senast ska vara betald.\n\nAvgiften ska betalas genom insättning på det konto som Finansinspektionen anger på fakturan.\n\nDröjsmålsränta tas ut på avgifter som inte betalas i rätt tid, om det inte finns särskilda skäl mot det. Dröjsmålsränta ska beräknas för år enligt en räntefot som motsvarar den av Sveriges riksbank fastställda vid varje tid gällande referensräntan enligt 9 § räntelagen (1975:635) med ett tillägg av åtta procentenheter.\n\nFinansinspektionen ska i slutet av varje år göra en jämförelse mellan inbetalda avgifter under året och slutliga kostnader för varje avgiftsgrupp. Resultatet av denna jämförelse ska beaktas när avgift för nästföljande år beräknas för avgiftsgruppen. Förordning (2012:383).",
+        "en": "Each year Finansinspektionen (the Swedish Financial Supervisory Authority) must decide the amount of the fee and, no later than 30 November, send every natural person, undertaking and authority that must pay a fee an invoice for the amount payable, stating the date by which the fee must be paid.\n\nThe fee must be paid by deposit into the account that Finansinspektionen states on the invoice.\n\nDefault interest is charged on fees that are not paid on time, unless there are special grounds against it. Default interest must be calculated on an annual basis at a rate corresponding to the reference rate under Section 9 of the Interest Act (1975:635), as set by Sveriges Riksbank and applicable from time to time, plus eight percentage points.\n\nAt the end of each year, Finansinspektionen must compare the fees paid in during the year with the final costs for each fee group. The result of this comparison must be taken into account when the fee for the following year is calculated for that fee group. Ordinance (2012:383)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fi-avgiftsforordning-annual-fee"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20071135-om-arliga-avgifter-for_sfs-2007-1135/#P24",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:1135, 24 §, consolidated text as amended up to SFS 2026:981. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-572/003-001",
+      "instrument": "sfs-2007-572",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 1 §",
+      "path": "003-001",
+      "heading": "Anmälan för registrering hos Bolagsverket",
+      "texts": {
+        "sv": "En anmälan för registrering enligt 6 kap. 1 § lagen (2007:528) om värdepappersmarknaden av ett anknutet ombud som är en fysisk person ska innehålla uppgift om\n1. företagsnamn och organisationsnummer eller motsvarande identitetsuppgift samt postadress och telefonnummer för det svenska värdepappersinstitut eller utländska värdepappersföretag som har ingått avtal med det anknutna ombudet,\n2. den fysiska personens fullständiga namn och personnummer eller, om sådant saknas, födelsedatum, samt driftställets postadress och telefonnummer, samt\n3. vilka tjänster och finansiella instrument som det anknutna ombudets verksamhet ska omfatta.\n\nOm den som anmäls för registrering inte är folkbokförd i Sverige, ska en kopia av passhandling eller annan identitetshandling som avser den anmäldes identitet följa med anmälan.\n\nOm ett utländskt värdepappersföretag driver verksamhet från filial i Sverige, ska de uppgifter som anges i första stycket 1 även avse den filial från vilken verksamheten ska drivas.\n\nEtt utländskt värdepappersföretag ska tillsammans med anmälan lämna en bestyrkt kopia av registreringsbevis eller motsvarande handling för värdepappersföretaget.\nFörordning (2018:1832).",
+        "en": "A notification for registration under Chapter 6, Section 1 of the Securities Market Act (2007:528) of a tied agent who is a natural person must contain information on\n1. the business name and corporate identity number or equivalent identification details, and the postal address and telephone number, of the Swedish securities institution or foreign investment firm that has entered into an agreement with the tied agent,\n2. the natural person's full name and personal identity number or, if there is none, date of birth, and the postal address and telephone number of the place of business, and\n3. the services and financial instruments that the tied agent's activities are to cover.\n\nIf the person notified for registration is not registered in the Swedish population register, a copy of a passport or other identity document relating to that person's identity must accompany the notification.\n\nIf a foreign investment firm carries on activities from a branch in Sweden, the information set out in the first paragraph, point 1 must also cover the branch from which the activities are to be carried on.\n\nA foreign investment firm must submit, together with the notification, a certified copy of a certificate of registration or an equivalent document for the investment firm.\nOrdinance (2018:1832)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-vpmforordning-tied-agent-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/#K3P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, 3 kap. 1 §, consolidated text as amended up to SFS 2026:1836. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-572/003-002",
+      "instrument": "sfs-2007-572",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 2 §",
+      "path": "003-002",
+      "heading": null,
+      "texts": {
+        "sv": "En anmälan för registrering enligt 6 kap. 1 § lagen (2007:528) om värdepappersmarknaden av ett anknutet ombud som är en juridisk person ska innehålla uppgift om\n1. företagsnamn och organisationsnummer eller motsvarande identitetsuppgift samt postadress och telefonnummer för det svenska värdepappersinstitut eller utländska värdepappersföretag som har ingått avtal med det anknutna ombudet,\n2. den juridiska personens företagsnamn, organisationsnummer eller motsvarande identitetsuppgift, postadress och telefonnummer, samt\n3. vilka tjänster och finansiella instrument som det anknutna ombudets verksamhet ska omfatta.\n\nOm den som anmäls för registrering är en utländsk juridisk person med driftställe i Sverige, ska\n1. de uppgifter som anges i första stycket 2 även avse den filial från vilken verksamheten ska drivas, och\n2. en bestyrkt kopia av registreringsbevis eller motsvarande handling som avser den anmälde följa med anmälan.\n\nOm ett utländskt värdepappersföretag driver verksamhet från filial i Sverige, ska de uppgifter som anges i första stycket 1 även avse den filial från vilken verksamheten ska drivas.\n\nEtt utländskt värdepappersföretag ska tillsammans med anmälan lämna en bestyrkt kopia av registreringsbevis eller motsvarande handling för värdepappersföretaget.\nFörordning (2018:1832).",
+        "en": "A notification for registration under Chapter 6, Section 1 of the Securities Market Act (2007:528) of a tied agent that is a legal person must contain information on\n1. the business name and corporate identity number or equivalent identification details, and the postal address and telephone number, of the Swedish securities institution or foreign investment firm that has entered into an agreement with the tied agent,\n2. the legal person's business name, corporate identity number or equivalent identification details, postal address and telephone number, and\n3. the services and financial instruments that the tied agent's activities are to cover.\n\nIf the person notified for registration is a foreign legal person with a place of business in Sweden,\n1. the information set out in the first paragraph, point 2 must also cover the branch from which the activities are to be carried on, and\n2. a certified copy of a certificate of registration or an equivalent document relating to the person notified must accompany the notification.\n\nIf a foreign investment firm carries on activities from a branch in Sweden, the information set out in the first paragraph, point 1 must also cover the branch from which the activities are to be carried on.\n\nA foreign investment firm must submit, together with the notification, a certified copy of a certificate of registration or an equivalent document for the investment firm.\nOrdinance (2018:1832)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-vpmforordning-tied-agent-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/#K3P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, 3 kap. 2 §, consolidated text as amended up to SFS 2026:1836. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-572/003-004",
+      "instrument": "sfs-2007-572",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 4 §",
+      "path": "003-004",
+      "heading": null,
+      "texts": {
+        "sv": "En anmälan för registrering enligt 6 kap. 1 § lagen (2007:528) om värdepappersmarknaden eller avregistrering enligt 6 kap. 9 § 1 samma lag ska undertecknas av en styrelseledamot eller verkställande direktören för det svenska värdepappersinstitut eller utländska värdepappersföretag som har ingått avtal med det anknutna ombudet. Förordning (2017:712).",
+        "en": "A notification for registration under Chapter 6, Section 1 of the Securities Market Act (2007:528), or for deregistration under Chapter 6, Section 9, point 1 of the same Act, must be signed by a board member or the managing director of the Swedish securities institution or foreign investment firm that has entered into an agreement with the tied agent. Ordinance (2017:712)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-vpmforordning-tied-agent-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/#K3P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, 3 kap. 4 §, consolidated text as amended up to SFS 2026:1836. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2007-572/003-005",
+      "instrument": "sfs-2007-572",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 5 §",
+      "path": "003-005",
+      "heading": null,
+      "texts": {
+        "sv": "Om de uppgifter som ett svenskt värdepappersinstitut eller utländskt värdepappersföretag har lämnat till Bolagsverket har ändrats, skall institutet respektive företaget snarast anmäla det för registrering hos Bolagsverket.",
+        "en": "If the information that a Swedish securities institution or foreign investment firm has provided to Bolagsverket (the Swedish Companies Registration Office) has changed, the institution or the undertaking, as the case may be, must notify the change for registration with Bolagsverket as soon as possible."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-vpmforordning-tied-agent-changes"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/#K3P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, 3 kap. 5 §, consolidated text as amended up to SFS 2026:1836. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2010-1008/013",
+      "instrument": "sfs-2010-1008",
+      "provisionKind": "section",
+      "refLabel": "13 §",
+      "path": "013",
+      "heading": "Skyldighet för kreditinstitut att tillhandahålla kontanttjänster",
+      "texts": {
+        "sv": "Vid tillämpningen av 9 kap. 1 § lagen (2010:751) om betaltjänster får\n1. högst 0,3 procent av befolkningen ha ett längre vägavstånd än 25 kilometer mellan folkbokföringsadressen och den närmaste platsen för kontantuttag, och\n2. högst 1,22 procent av befolkningen ha ett längre vägavstånd än 25 kilometer mellan folkbokföringsadressen och den närmaste platsen för kontantinsättning respektive dagskasseinsättning.\n\nBefolkningens storlek och folkbokföringsadresser ska bestämmas med ledning av uppgifter som tillhandahålls från Statistiska centralbyrån. Uppgifterna ska uppdateras varje år.\nFörordning (2026:771).",
+        "en": "For the purposes of Chapter 9, Section 1 of the Payment Services Act (2010:751),\n1. at most 0.3 per cent of the population may have a road distance of more than 25 kilometres between their address in the population register and the nearest cash withdrawal point, and\n2. at most 1.22 per cent of the population may have a road distance of more than 25 kilometres between their address in the population register and the nearest point for cash deposits or for deposits of daily takings, as the case may be.\n\nThe size of the population and the addresses in the population register must be determined on the basis of information provided by Statistiska centralbyrån (Statistics Sweden). The information must be updated each year.\nOrdinance (2026:771)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-betaltjanstforordning-cash-service-coverage"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101008-om-betaltjanster_sfs-2010-1008/#P13",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1008, 13 §, consolidated text as amended up to SFS 2026:1087. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2010-1855/002",
+      "instrument": "sfs-2010-1855",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": null,
+      "texts": {
+        "sv": "Den effektiva räntan enligt konsumentkreditlagen (2010:1846) ska beräknas i enlighet med den matematiska formel som anges i del I av bilaga I till Europaparlamentets och rådets direktiv 2008/48/EG av den 23 april 2008 om konsumentkreditavtal och om upphävande av rådets direktiv 87/102/EG. Förordning (2016:1039).",
+        "en": "The annual percentage rate of charge under the Consumer Credit Act (2010:1846) must be calculated in accordance with the mathematical formula set out in Part I of Annex I to Directive 2008/48/EC of the European Parliament and of the Council of 23 April 2008 on credit agreements for consumers and repealing Council Directive 87/102/EC. Ordinance (2016:1039)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-effektivrantaforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, 2 §, consolidated text as amended up to SFS 2026:1031. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2010-1855/003",
+      "instrument": "sfs-2010-1855",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "sv": "För beräkningen av den effektiva räntan ska kreditkostnaden bestämmas. När kreditkostnaden bestäms enligt denna paragraf ska inte sådana avgifter tas med som ska betalas av konsumenten på grund av att en skyldighet enligt kreditavtalet inte har fullgjorts. Vid kreditköp ska inte heller sådana avgifter tas med som skulle ha tagits ut även om varan eller tjänsten hade betalats kontant. Som en del av kreditkostnaden ska anses kostnader för hantering av ett konto för registrering av utnyttjade krediter och gjorda betalningar, kostnader för användning av ett betalningsmedel anknutet till kontot samt andra kostnader för betalningar över kontot, om det inte är frivilligt att öppna kontot och kostnaderna tydligt och separat anges i kreditavtalet eller i något annat avtal som ingås med konsumenten.\nFörordning (2016:1039).",
+        "en": "For the calculation of the annual percentage rate of charge, the total cost of the credit must be determined. When the total cost of the credit is determined under this Section, charges payable by the consumer because an obligation under the credit agreement has not been fulfilled must not be included. In the case of a credit purchase, charges that would have been levied even if the goods or service had been paid for in cash must not be included either. Costs of maintaining an account recording both payment transactions and drawdowns, costs of using a means of payment linked to that account and other costs relating to payments made through the account are deemed part of the total cost of the credit, unless opening the account is optional and the costs are clearly and separately stated in the credit agreement or in any other agreement concluded with the consumer.\nOrdinance (2016:1039)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-effektivrantaforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/#P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, 3 §, consolidated text as amended up to SFS 2026:1031. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2010-1855/004",
+      "instrument": "sfs-2010-1855",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "sv": "Vid beräkningen av den effektiva räntan ska det antas att kreditavtalet gäller under den tid som har avtalats och att avtalsparterna fullgör sina skyldigheter enligt de villkor och vid de tidpunkter som anges i kreditavtalet.\n\nOm kreditavtalet innehåller villkor som tillåter ändringar av krediträntan eller avgifter, som inte kan förutses när den effektiva räntan beräknas, ska krediträntan och avgifterna antas vara fasta och gälla tills kreditavtalet löper ut.\n\nHärutöver ska de antaganden beaktas som anges i del II av bilaga I till Europaparlamentets och rådets direktiv 2008/48/EG av den 23 april 2008 om konsumentkreditavtal och om upphävande av rådets direktiv 87/102/EEG, ändrat genom kommissionens direktiv 2011/90/EU. Vid beaktandet av antagandena avses med kontokredit endast en kontokredit i form av ett uttryckligt kreditavtal genom vilket en kreditgivare ger en konsument tillgång till medel som överskrider det aktuella saldot på konsumentens konto. Förordning (2016:1039).",
+        "en": "For the calculation of the annual percentage rate of charge, it must be assumed that the credit agreement remains valid for the agreed period and that the parties fulfil their obligations under the terms and by the dates set out in the credit agreement.\n\nIf the credit agreement contains terms allowing changes to the borrowing rate or charges, which cannot be foreseen when the annual percentage rate of charge is calculated, the borrowing rate and the charges must be assumed to be fixed and to apply until the end of the credit agreement.\n\nIn addition, the assumptions set out in Part II of Annex I to Directive 2008/48/EC of the European Parliament and of the Council of 23 April 2008 on credit agreements for consumers and repealing Council Directive 87/102/EEC, as amended by Commission Directive 2011/90/EU, must be taken into account. When those assumptions are taken into account, revolving credit means only revolving credit in the form of an explicit credit agreement whereby a creditor makes available to a consumer funds that exceed the current balance in the consumer's account. Ordinance (2016:1039)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-effektivrantaforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/#P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, 4 §, consolidated text as amended up to SFS 2026:1031. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2010-1856/001",
+      "instrument": "sfs-2010-1856",
+      "provisionKind": "section",
+      "refLabel": "1 §",
+      "path": "001",
+      "heading": null,
+      "texts": {
+        "sv": "Det formulär som det hänvisas till i 8 § andra stycket konsumentkreditlagen (2010:1846) har den utformning som framgår av bilaga II till Europaparlamentets och rådets direktiv 2008/48/EG av den 23 april 2008 om konsumentkreditavtal och om upphävande av rådets direktiv 87/102/EG.",
+        "en": "The form referred to in Section 8, second paragraph of the Consumer Credit Act (2010:1846) is laid out as shown in Annex II to Directive 2008/48/EC of the European Parliament and of the Council of 23 April 2008 on credit agreements for consumers and repealing Council Directive 87/102/EC."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forhandsinformationsforordning-secci-form"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101856-om-formular-for_sfs-2010-1856/#P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1856, 1 §, consolidated text as amended up to SFS 2026:1032. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1261/005-008a",
+      "instrument": "sfs-2011-1261",
+      "provisionKind": "section",
+      "refLabel": "5 kap. 8 a §",
+      "path": "005-008a",
+      "heading": null,
+      "texts": {
+        "sv": "När en kontrolluppgift enligt 22 b kap. 5 § skatteförfarandelagen (2011:1244) ska innehålla uppgift om typ av finansiellt konto, ska uppgift lämnas om att kontot är ett\n1. inlåningskonto,\n2. depåkonto,\n3. försäkringsavtal med kontantvärde eller livränteavtal, eller\n4. en andel i eget kapital i en investeringsenhet.\nFörordning (2025:1392).",
+        "en": "Where an income statement under Chapter 22b, Section 5 of the Tax Procedures Act (2011:1244) must contain information on the type of financial account, information must be provided that the account is\n1. a depository account,\n2. a custodial account,\n3. a cash value insurance contract or annuity contract, or\n4. an equity interest in an investment entity.\nOrdinance (2025:1392)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sff-crs-account-type"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P8a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 8 a §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1261/005-011",
+      "instrument": "sfs-2011-1261",
+      "provisionKind": "section",
+      "refLabel": "5 kap. 11 §",
+      "path": "005-011",
+      "heading": "Identifikationsuppgifter som kontrolluppgifter ska innehålla",
+      "texts": {
+        "sv": "En kontrolluppgift ska innehålla följande identifikationsuppgifter för den uppgiftsskyldige och den som kontrolluppgiften lämnas för:\n1. namn,\n2. personnummer, samordningsnummer eller organisationsnummer, och\n3. postadress.\n\nOm personnummer eller samordningsnummer saknas för den som kontrolluppgift ska lämnas för enligt 17 kap. skatteförfarandelagen (2011:1244), ska kontrolluppgiften i stället innehålla uppgifter om födelsedatum och födelseort.\nFörordning (2017:854).",
+        "en": "An income statement must contain the following identification information for the party required to provide the information and for the person for whom the income statement is submitted:\n1. name,\n2. personal identity number, coordination number or corporate identity number, and\n3. postal address.\n\nIf the person for whom an income statement must be submitted under Chapter 17 of the Tax Procedures Act (2011:1244) has no personal identity number or coordination number, the income statement must instead contain information on the date and place of birth.\nOrdinance (2017:854)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sff-control-statement-identifiers"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P11",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 11 §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1261/005-011a",
+      "instrument": "sfs-2011-1261",
+      "provisionKind": "section",
+      "refLabel": "5 kap. 11 a §",
+      "path": "005-011a",
+      "heading": null,
+      "texts": {
+        "sv": "En kontrolluppgift enligt 22 a kap. skatteförfarandelagen (2011:1244) ska även innehålla uppgift om amerikanskt skatteregistreringsnummer eller motsvarande för den som kontrolluppgiften lämnas för. Om amerikanskt skatteregistreringsnummer eller motsvarande saknas avseende ett befintligt konto, ska kontrolluppgiften i stället innehålla uppgift om födelsedatum. En sådan kontrolluppgift ska även innehålla uppgift om det Global Intermediary Identification Number (GIIN) som den uppgiftsskyldige fått vid registrering hos den amerikanska federala skattemyndigheten.\n\nOm amerikanskt skatteregistreringsnummer eller motsvarande enligt första stycket saknas, ska i kontrolluppgiften i stället anges orsaken till avsaknad av sådant nummer.\n\nEn kontrolluppgift enligt 22 b kap. skatteförfarandelagen ska även innehålla uppgifter om utländskt skatteregistreringsnummer eller motsvarande, födelsedatum och födelseort för den som kontrolluppgiften lämnas för. Uppgift om födelseort behöver bara lämnas om den uppgiften finns i den kontrolluppgiftsskyldiges elektroniskt sökbara databaser.\n\nSkatteverket får meddela ytterligare föreskrifter om inhämtande och lämnande av uppgifter om utländskt skatteregistreringsnummer, födelseort och födelsedatum som behövs för att fullgöra Sveriges åtaganden inom det internationella utbytet av information. Förordning (2025:1392).",
+        "en": "An income statement under Chapter 22a of the Tax Procedures Act (2011:1244) must also contain information on the US tax identification number or equivalent of the person for whom the income statement is submitted. If there is no US tax identification number or equivalent in respect of a pre-existing account, the income statement must instead contain information on the date of birth. Such an income statement must also contain information on the Global Intermediary Identification Number (GIIN) that the party required to provide the information received on registration with the United States Internal Revenue Service.\n\nIf there is no US tax identification number or equivalent under the first paragraph, the income statement must instead state the reason why there is no such number.\n\nAn income statement under Chapter 22b of the Tax Procedures Act must also contain information on the foreign tax identification number or equivalent, the date of birth and the place of birth of the person for whom the income statement is submitted. Information on the place of birth need be provided only if that information is held in the electronically searchable databases of the party required to submit the income statement.\n\nSkatteverket (the Swedish Tax Agency) may issue further regulations on obtaining and providing information on foreign tax identification numbers, place of birth and date of birth that is needed to fulfil Sweden's commitments in the international exchange of information. Ordinance (2025:1392)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sff-fatca-crs-identifiers"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P11a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 11 a §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1261/005-011c",
+      "instrument": "sfs-2011-1261",
+      "provisionKind": "section",
+      "refLabel": "5 kap. 11 c §",
+      "path": "005-011c",
+      "heading": null,
+      "texts": {
+        "sv": "En kontrolluppgift enligt 15 kap., 16 kap. 1 § om ersättning som avses i 16 kap. 3 § 2, 17 och 19-21 kap. samt 22 kap. 2, 3, 9-11 §§ skatteförfarandelagen (2011:1244) ska även innehålla uppgift om utländskt skatteregistreringsnummer eller motsvarande för den som kontrolluppgiften lämnas för om denne är obegränsat skattskyldig i Sverige och har hemvist i en annan stat eller jurisdiktion.\n\nEn kontrolluppgift som avses i 23 kap. 2-3 b §§ skatteförfarandelagen ska även innehålla uppgift om utländskt skatteregistreringsnummer eller motsvarande för den som kontrolluppgiften lämnas för om denne är begränsat skattskyldig. Om kontrolluppgiften avser intäkt i inkomstslaget tjänst, ska den även innehålla uppgift om medborgarskap. Förordning (2025:1392).",
+        "en": "An income statement under Chapter 15; Chapter 16, Section 1 on payments referred to in Chapter 16, Section 3, point 2; Chapters 17 and 19 to 21; and Chapter 22, Sections 2, 3 and 9 to 11 of the Tax Procedures Act (2011:1244) must also contain information on the foreign tax identification number or equivalent of the person for whom the income statement is submitted, if that person has unlimited tax liability in Sweden and is resident in another State or jurisdiction.\n\nAn income statement referred to in Chapter 23, Sections 2 to 3b of the Tax Procedures Act must also contain information on the foreign tax identification number or equivalent of the person for whom the income statement is submitted, if that person has limited tax liability. If the income statement relates to income in the income category employment, it must also contain information on citizenship. Ordinance (2025:1392)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sff-foreign-tin-income-statements"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P11c",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 11 c §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1261/006-012",
+      "instrument": "sfs-2011-1261",
+      "provisionKind": "section",
+      "refLabel": "6 kap. 12 §",
+      "path": "006-012",
+      "heading": null,
+      "texts": {
+        "sv": "Företag som omfattas av lagen (1995:1559) om årsredovisning i kreditinstitut och värdepappersbolag eller lagen (1995:1560) om årsredovisning i försäkringsföretag ska, i stället för att lämna sådana uppgifter som anges i 9 och 10 §§, tillsammans med inkomstdeklarationen ge in sin årsredovisning.\n\nEtt svenskt skadeförsäkringsföretag ska tillsammans med inkomstdeklarationen ge in en bestyrkt kopia av protokoll eller annan handling, som visar hur resultaträkningen och balansräkningen för beskattningsåret slutligt har fastställts samt hur vinsten för samma år har disponerats.",
+        "en": "Undertakings subject to the Annual Accounts Act for Credit Institutions and Securities Companies (1995:1559) or the Annual Accounts Act for Insurance Undertakings (1995:1560) must, instead of providing the information set out in Sections 9 and 10, submit their annual accounts together with their income tax return.\n\nA Swedish non-life insurance undertaking must, together with its income tax return, submit a certified copy of the minutes or other document showing how the profit and loss account and the balance sheet for the tax year were finally adopted and how the profit for that year was appropriated."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sff-annual-report-with-tax-return"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K6P12",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 6 kap. 12 §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-257/003-023a",
+      "instrument": "sfs-2011-257",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 23 a §",
+      "path": "003-023a",
+      "heading": "Ändrade förhållanden",
+      "texts": {
+        "sv": "Om en uppgift som ett försäkringsföretag har lämnat till Bolagsverket har ändrats, ska företaget snarast skriftligen underrätta Bolagsverket om detta.\nFörordning (2019:820).",
+        "en": "If information that an insurance undertaking has provided to Bolagsverket (the Swedish Companies Registration Office) has changed, the undertaking must notify Bolagsverket of the change in writing as soon as possible.\nOrdinance (2019:820)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsrorelseforordning-bolagsverket-changes"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forsakringsrorelseforordning-2011257_sfs-2011-257/#K3P23a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:257, 3 kap. 23 a §, consolidated text as amended up to SFS 2026:654. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-834/002",
+      "instrument": "sfs-2011-834",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": null,
+      "texts": {
+        "sv": "Ett institut som ansöker om prövning av villkoren för ett kontoslag enligt 3 b § lagen (1995:1571) om insättningsgaranti ska betala en avgift på 2 000 kronor. Detsamma ska gälla för prövning av ändrade villkor för ett kontoslag. Avgiften ska betalas till garantimyndigheten när ansökan ges in. Förordning (2016:631).",
+        "en": "An institution that applies for a review of the terms of a type of account under Section 3b of the Act (1995:1571) on Deposit Guarantee must pay a fee of SEK 2,000. The same applies to a review of amended terms of a type of account. The fee must be paid to the guarantee authority when the application is submitted. Ordinance (2016:631)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-insattningsgarantiforordning-account-review-fee"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2011834-om-insattningsgaranti_sfs-2011-834/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:834, 2 §, consolidated text as amended up to SFS 2020:179. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2014-993/008a",
+      "instrument": "sfs-2014-993",
+      "provisionKind": "section",
+      "refLabel": "8 a §",
+      "path": "008a",
+      "heading": "Beräkning av det totala riskvägda exponeringsbeloppet",
+      "texts": {
+        "sv": "Det totala riskvägda exponeringsbeloppet enligt artikel 92 i tillsynsförordningen ska beräknas utan golv, om\n1. institutet är ett kreditinstitut som avses i 1 kap. 2 § första stycket 7 a eller g lagen (2014:968) om särskild tillsyn över kreditinstitut och värdepappersbolag, och\n2. moderinstitutet är etablerat i Sverige och beräknar beloppet på gruppnivå. Förordning (2024:674).",
+        "en": "The total risk exposure amount under Article 92 of the Capital Requirements Regulation must be calculated without a floor if\n1. the institution is a credit institution referred to in Chapter 1, Section 2, first paragraph, point 7(a) or (g) of the Special Supervision of Credit Institutions and Investment Firms Act (2014:968), and\n2. the parent institution is established in Sweden and calculates the amount on a consolidated basis. Ordinance (2024:674)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sarskild-tillsyn-forordning-output-floor-solo"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2014993-om-sarskild-tillsyn-och_sfs-2014-993/#P8a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2014:993, 8 a §, consolidated text as amended up to SFS 2026:1093. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-70/002",
+      "instrument": "sfs-2015-70",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": "Tidsfrister för granskning av befintliga finansiella konton som innehas av fysiska personer",
+      "texts": {
+        "sv": "Befintliga konton som innehas av fysiska personer och vars saldo eller värde uppgick till 1 000 000 US-dollar eller mindre den 30 juni 2014 men vars saldo eller värde vid utgången av 2015 eller ett senare kalenderår överstiger 1 000 000 US-dollar, ska granskas i enlighet med 4 kap. 3-9 §§ lagen (2015:62) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet inom sex månader från utgången av 2015 eller det senare kalenderåret.",
+        "en": "Pre-existing accounts held by natural persons whose balance or value was USD 1,000,000 or less on 30 June 2014 but exceeds USD 1,000,000 at the end of 2015 or of a later calendar year must be reviewed in accordance with Chapter 4, Sections 3 to 9 of the Act (2015:62) on the Identification of Reportable Accounts in Connection with the FATCA Agreement within six months of the end of 2015 or of that later calendar year."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fatca-forordning-high-value-review-deadline"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, 2 §, consolidated text as amended up to . Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-70/003",
+      "instrument": "sfs-2015-70",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": "Beräkning av gränsvärden",
+      "texts": {
+        "sv": "Vid beräkning av ett saldo eller värde enligt 4-8 kap.\nlagen (2015:62) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet ska samtliga konton som en person innehar hos det rapporteringsskyldiga finansiella institutet eller hos en till det rapporteringsskyldiga finansiella institutet närstående enhet räknas samman. Detta gäller dock endast om det rapporteringsskyldiga finansiella institutets datasystem möjliggör en sådan sammanräkning.\n\nVarje fysisk person som innehar ett konto gemensamt med någon annan ska vid sammanräkningen enligt första stycket anses som innehavare av hela det gemensamma kontots saldo eller värde.",
+        "en": "When a balance or value is calculated under Chapters 4 to 8\nof the Act (2015:62) on the Identification of Reportable Accounts in Connection with the FATCA Agreement, all accounts that a person holds with the reporting financial institution or with an entity related to that institution must be aggregated. This applies, however, only if the reporting financial institution's computer systems allow such aggregation.\n\nEach natural person who holds an account jointly with another person is deemed, for the purposes of the aggregation under the first paragraph, to hold the entire balance or value of the joint account."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fatca-forordning-account-aggregation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/#P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, 3 §, consolidated text as amended up to . Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-70/004",
+      "instrument": "sfs-2015-70",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "sv": "Om det finns en tjänsteman hos det rapporteringsskyldiga finansiella institutet som har särskilt ansvar för kontakterna med en kontohavare och den tjänstemannen har skäl att anta att kontohavaren direkt eller indirekt innehar eller kontrollerar ett eller flera andra konton, ska samtliga dessa konton räknas samman vid beräkning av saldo eller värde enligt 4-8 kap. lagen (2015:62) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet.\n\nFörsta stycket gäller dock inte sådana konton som en kontohavare kontrollerar eller har öppnat för någon annans räkning i egenskap av förvaltare.",
+        "en": "If an officer of the reporting financial institution has special responsibility for the contacts with an account holder, and that officer has reason to believe that the account holder directly or indirectly holds or controls one or more other accounts, all of those accounts must be aggregated when a balance or value is calculated under Chapters 4 to 8 of the Act (2015:62) on the Identification of Reportable Accounts in Connection with the FATCA Agreement.\n\nThe first paragraph does not, however, apply to accounts that an account holder controls or has opened on behalf of another in a fiduciary capacity."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fatca-forordning-account-aggregation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/#P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, 4 §, consolidated text as amended up to . Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-70/005",
+      "instrument": "sfs-2015-70",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": null,
+      "texts": {
+        "sv": "När ett belopp anges i US-dollar i 4-8 kap. lagen (2015:62) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, avses även motsvarande belopp i en annan valuta.\n\nVid fastställande av om ett saldo eller värde i en annan valuta än US-dollar uppgår till eller överskrider ett belopp som anges i US-dollar i 4-8 kap. lagen om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, ska det rapporteringsskyldiga finansiella institutet använda en publicerad avistakurs för den sista dagen av det kalenderår som föregick den tidpunkt då granskningen enligt 4-8 kap. görs.",
+        "en": "Where an amount is stated in US dollars in Chapters 4 to 8 of the Act (2015:62) on the Identification of Reportable Accounts in Connection with the FATCA Agreement, it also covers the equivalent amount in another currency.\n\nIn determining whether a balance or value in a currency other than US dollars reaches or exceeds an amount stated in US dollars in Chapters 4 to 8 of the Act on the Identification of Reportable Accounts in Connection with the FATCA Agreement, the reporting financial institution must use a published spot rate for the last day of the calendar year preceding the time at which the review under Chapters 4 to 8 is carried out."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fatca-forordning-account-aggregation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, 5 §, consolidated text as amended up to . Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-921/002",
+      "instrument": "sfs-2015-921",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": "Beräkning av gränsvärden",
+      "texts": {
+        "sv": "Vid beräkning av ett saldo eller värde enligt 3-8 kap. lagen (2015:911) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton ska samtliga konton som en person innehar hos det rapporteringsskyldiga finansiella institutet eller hos en till det rapporteringsskyldiga finansiella institutet närstående enhet räknas samman. Detta gäller dock endast om det rapporteringsskyldiga finansiella institutets datorsystem möjliggör en sådan sammanräkning.\n\nVarje fysisk person som innehar ett konto gemensamt med någon annan ska vid sammanräkningen enligt första stycket anses som innehavare av hela det gemensamma kontots saldo eller värde. Förordning (2017:856).",
+        "en": "When a balance or value is calculated under Chapters 3 to 8 of the Act (2015:911) on the Identification of Reportable Accounts for the Automatic Exchange of Financial Account Information, all accounts that a person holds with the reporting financial institution or with a related entity of the reporting financial institution must be aggregated. This applies, however, only if the reporting financial institution's computer systems make such aggregation possible.\n\nFor the purposes of the aggregation under the first paragraph, each natural person who holds an account jointly with another person is deemed to hold the entire balance or value of the joint account. Ordinance (2017:856)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-forordning-account-aggregation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, 2 §, consolidated text as amended up to SFS 2025:1394. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-921/003",
+      "instrument": "sfs-2015-921",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "sv": "Om det finns en tjänsteman hos det rapporteringsskyldiga finansiella institutet som har särskilt ansvar för kontakterna med en kontohavare och den tjänstemannen har skäl att anta att kontohavaren direkt eller indirekt innehar, kontrollerar eller har öppnat ett eller flera andra konton, ska samtliga dessa konton räknas samman vid beräkning av saldo eller värde enligt 3-8 kap. lagen (2015:911) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton.\n\nFörsta stycket gäller dock inte sådana konton som en kontohavare innehar, kontrollerar eller har öppnat för någon annans räkning i egenskap av förvaltare. Förordning (2017:856).",
+        "en": "If an officer of the reporting financial institution has special responsibility for the contacts with an account holder and that officer has reason to believe that the account holder directly or indirectly holds, controls or has opened one or more other accounts, all of those accounts must be aggregated when a balance or value is calculated under Chapters 3 to 8 of the Act (2015:911) on the Identification of Reportable Accounts for the Automatic Exchange of Financial Account Information.\n\nThe first paragraph does not, however, apply to accounts that an account holder holds, controls or has opened on behalf of another in a fiduciary capacity. Ordinance (2017:856)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-forordning-account-aggregation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/#P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, 3 §, consolidated text as amended up to SFS 2025:1394. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-921/004",
+      "instrument": "sfs-2015-921",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "sv": "När ett belopp anges i US-dollar i 3-8 kap. lagen (2015:911) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, avses även motsvarande belopp i en annan valuta.\n\nVid fastställande av om ett saldo eller värde i en annan valuta än US-dollar uppgår till eller överskrider ett belopp som anges i US-dollar i 3-8 kap. lagen om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, ska det rapporteringsskyldiga finansiella institutet använda en publicerad avistakurs för den sista dagen av det kalenderår som föregick den tidpunkt då bedömningen av om ett villkor i 3 kap. är uppfyllt eller granskningen enligt 4-8 kap. görs.\nFörordning (2017:856).",
+        "en": "Where Chapters 3 to 8 of the Act (2015:911) on the Identification of Reportable Accounts for the Automatic Exchange of Financial Account Information state an amount in US dollars, the reference also covers the equivalent amount in another currency.\n\nIn determining whether a balance or value in a currency other than US dollars amounts to or exceeds an amount stated in US dollars in Chapters 3 to 8 of the Act on the Identification of Reportable Accounts for the Automatic Exchange of Financial Account Information, the reporting financial institution must use a published spot rate for the last day of the calendar year preceding the time at which the assessment of whether a condition in Chapter 3 is met, or the review under Chapters 4 to 8, is carried out.\nOrdinance (2017:856)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-forordning-account-aggregation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/#P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, 4 §, consolidated text as amended up to SFS 2025:1394. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-921/005",
+      "instrument": "sfs-2015-921",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": "Intyganden",
+      "texts": {
+        "sv": "Ett intygande för identifiering av rapporteringspliktiga konton enligt lagen (2015:911) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton ska vara undertecknat eller på annat sätt bekräftat och ha lämnats på annat sätt än muntligen. Intygandet ska vidare vara daterat och innehålla kontohavarens namn, adress, hemvist, skatteregistreringsnummer och land eller länder för skatteregistreringsnummer.\n\nIntygandet ska lämnas på heder och samvete.",
+        "en": "A self-certification for the identification of reportable accounts under the Act (2015:911) on the Identification of Reportable Accounts for the Automatic Exchange of Financial Account Information must be signed or otherwise confirmed and must have been provided otherwise than orally. The self-certification must also be dated and contain the account holder's name, address, residence, tax identification number and the country or countries of the tax identification number.\n\nThe self-certification must be provided on honour and conscience."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-forordning-self-certification-form"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, 5 §, consolidated text as amended up to SFS 2025:1394. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-921/005a",
+      "instrument": "sfs-2015-921",
+      "provisionKind": "section",
+      "refLabel": "5 a §",
+      "path": "005a",
+      "heading": "Inhämtande av uppgifter om skatteregistreringsnummer och födelsedatum avseende befintliga konton",
+      "texts": {
+        "sv": "Ett rapporteringsskyldigt finansiellt institut ska göra rimliga ansträngningar för att inhämta uppgifter om utländskt skatteregistreringsnummer och födelsedatum i fråga om befintliga konton som är rapporteringspliktiga senast före utgången av det andra kalenderåret efter det kalenderår då kontot identifierades som rapporteringspliktigt och varje gång som det rapporteringsskyldiga finansiella institutet är skyldigt att uppdatera information om kontot i enlighet med bestämmelserna i lagen (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism. Förordning (2025:1394).",
+        "en": "For pre-existing accounts that are reportable, a reporting financial institution must make reasonable efforts to obtain information on the foreign tax identification number and the date of birth no later than the end of the second calendar year following the calendar year in which the account was identified as reportable, and each time the reporting financial institution is required to update information on the account in accordance with the provisions of the Act (2017:630) on Measures against Money Laundering and Terrorist Financing. Ordinance (2025:1394)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-forordning-tin-and-birth-date-efforts"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/#P5a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, 5 a §, consolidated text as amended up to SFS 2025:1394. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2016-1034/001",
+      "instrument": "sfs-2016-1034",
+      "provisionKind": "section",
+      "refLabel": "1 §",
+      "path": "001",
+      "heading": "Standardiserat EU-faktablad",
+      "texts": {
+        "sv": "Det standardiserade EU-faktablad som det hänvisas till i 9 a § konsumentkreditlagen (2010:1846) har den utformning som framgår av bilaga II till Europaparlamentets och rådets direktiv 2014/17/EU av den 4 februari 2014 om konsumentkreditavtal som avser bostadsfastighet och om ändring av direktiven 2008/48/EG och 2013/36/EU och förordning (EU) nr 1093/2010, i den ursprungliga lydelsen (bolånedirektivet).\n\nI det standardiserade EU-faktabladet avses med ansvarsförbindelse eller garanti ett kreditavtal som tjänar som garanti för en annan separat men anknuten transaktion, där det kapital som säkrats med fast egendom endast utnyttjas när det inträffar en händelse eller händelser som särskilt anges i avtalet.\n\nFinansinspektionen är den myndighet som får utforma en jämförelseränta enligt avsnitten 4.2 och 6.4 i del B i det standardiserade EU-faktabladet.",
+        "en": "The European Standardised Information Sheet (ESIS) referred to in Section 9a of the Consumer Credit Act (2010:1846) takes the form set out in Annex II to Directive 2014/17/EU of the European Parliament and of the Council of 4 February 2014 on credit agreements for consumers relating to residential immovable property and amending Directives 2008/48/EC and 2013/36/EU and Regulation (EU) No 1093/2010, in its original wording (the Mortgage Credit Directive).\n\nIn the ESIS, contingent liability or guarantee means a credit agreement that acts as a guarantee to another separate but ancillary transaction, where the capital secured against real property is drawn down only on the occurrence of an event or events specified in the agreement.\n\nFinansinspektionen (the Swedish Financial Supervisory Authority) is the authority that may specify a benchmark rate under sections 4.2 and 6.4 of Part B of the ESIS."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-faktabladsforordning-esis-format"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/#P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, 1 §, consolidated text as amended up to SFS 2026:1035. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2016-1034/002",
+      "instrument": "sfs-2016-1034",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": "Beräkning av effektiv ränta",
+      "texts": {
+        "sv": "Den effektiva räntan vid bostadskrediter enligt konsumentkreditlagen (2010:1846) ska beräknas i enlighet med den matematiska formel som anges i del I av bilaga I till bolånedirektivet.",
+        "en": "The annual percentage rate of charge for residential mortgage credit under the Consumer Credit Act (2010:1846) must be calculated in accordance with the mathematical formula set out in Part I of Annex I to the Mortgage Credit Directive."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-faktabladsforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, 2 §, consolidated text as amended up to SFS 2026:1035. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2016-1034/003",
+      "instrument": "sfs-2016-1034",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "sv": "För beräkningen av den effektiva räntan ska kreditkostnaden bestäm-mas. När kreditkostnaden bestäms enligt denna paragraf ska inte sådana avgifter tas med som ska betalas av konsumenten på grund av att en skyldighet enligt bostadskreditavtalet inte har fullgjorts. Som en del av kreditkostnaden ska anses kostnader för öppnande och hantering av ett konto för registrering av utnyttjade krediter och gjorda betalningar, kostnader för användning av ett betalningsmedel anknutet till kontot samt andra kostnader för betalningar över kontot, om öppnande eller hantering av ett konto är obligatoriskt för att få bostadskrediten eller för att få den på de villkor som angetts i marknadsföring.",
+        "en": "For the calculation of the annual percentage rate of charge, the total cost of the credit must be determined. When the total cost of the credit is determined under this Section, charges payable by the consumer for failure to fulfil an obligation under the residential mortgage credit agreement must not be included. The costs of opening and maintaining an account recording both payment transactions and drawdowns, the costs of using a means of payment linked to that account and other costs relating to payments through the account are deemed part of the total cost of the credit if opening or maintaining an account is mandatory in order to obtain the residential mortgage credit or to obtain it on the terms stated in the marketing."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-faktabladsforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/#P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, 3 §, consolidated text as amended up to SFS 2026:1035. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2016-1034/004",
+      "instrument": "sfs-2016-1034",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "sv": "Vid beräkningen av den effektiva räntan ska det antas att bostadskrediten gäller under den tid som har avtalats och att avtalsparterna fullgör sina skyldigheter enligt de villkor och vid de tidpunkter som anges i kreditavtalet.\n\nOm kreditavtalet innehåller villkor som tillåter ändringar av krediträntan eller avgifter, som inte kan förutses när den effektiva räntan beräknas, ska krediträntan och avgifterna antas vara fasta och gälla tills bostadskrediten löper ut.\n\nHärutöver ska de antaganden beaktas som anges i del II av bilaga I till bolånedirektivet.",
+        "en": "For the calculation of the annual percentage rate of charge, it must be assumed that the residential mortgage credit remains in force for the agreed period and that the parties fulfil their obligations under the terms and by the dates specified in the credit agreement.\n\nWhere the credit agreement contains terms allowing variations in the borrowing rate or charges that cannot be foreseen at the time the annual percentage rate of charge is calculated, the borrowing rate and the charges must be assumed to be fixed and to apply until the residential mortgage credit expires.\n\nIn addition, the assumptions set out in Part II of Annex I to the Mortgage Credit Directive must be taken into account."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-faktabladsforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/#P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, 4 §, consolidated text as amended up to SFS 2026:1035. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2016-1034/005",
+      "instrument": "sfs-2016-1034",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": null,
+      "texts": {
+        "sv": "För en bostadskredit där en bunden kreditränta bestäms för en inledande period av minst fem år, vid vars utgång förhandlingar sker om krediträntan för att fastställa en ny bunden ränta för ytterligare en period, ska beräkningen av den ytterligare effektiva ränta som ges som exempel i det standardiserade EU-faktabladet endast avse den inledande perioden med bunden ränta och baseras på antagandet att det utestående kapitalet återbetalas vid utgången av perioden med bunden kreditränta.",
+        "en": "For residential mortgage credit where a fixed borrowing rate is set for an initial period of at least five years, at the end of which the borrowing rate is negotiated in order to set a new fixed rate for a further period, the calculation of the additional, illustrative annual percentage rate of charge given in the European Standardised Information Sheet (ESIS) must cover only the initial fixed-rate period and must be based on the assumption that the outstanding capital is repaid at the end of the fixed borrowing rate period."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-faktabladsforordning-additional-apr"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, 5 §, consolidated text as amended up to SFS 2026:1035. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2016-1034/006",
+      "instrument": "sfs-2016-1034",
+      "provisionKind": "section",
+      "refLabel": "6 §",
+      "path": "006",
+      "heading": null,
+      "texts": {
+        "sv": "Om det enligt bostadskrediten tillåts variationer i krediträntan, ska konsumenten genom det standardiserade EU-faktabladet informeras om den påverkan som variationerna kan ha på vilka belopp som ska betalas och på den effektiva räntan. Detta ska ske genom att konsumenten lämnas uppgift om ytterligare en effektiv ränta som exemplifierar de risker som en väsentlig ökning av krediträntan kan medföra. Om det inte finns något tak för krediträntan, ska denna information åtföljas av en varning som betonar att den totala kreditkostnaden för konsumenten, som framgår av den effektiva räntan, kan komma att ändras.\n\nFörsta stycket gäller inte kreditavtal som avses i 5 §.",
+        "en": "Where variations in the borrowing rate are permitted under the residential mortgage credit, the consumer must be informed, by means of the European Standardised Information Sheet (ESIS), of the impact that such variations may have on the amounts payable and on the annual percentage rate of charge. This must be done by providing the consumer with an additional annual percentage rate of charge that illustrates the risks that a material increase in the borrowing rate may entail. Where the borrowing rate is not capped, this information must be accompanied by a warning stressing that the total cost of the credit to the consumer, as shown by the annual percentage rate of charge, may change.\n\nThe first paragraph does not apply to credit agreements referred to in Section 5."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-faktabladsforordning-additional-apr"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/#P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, 6 §, consolidated text as amended up to SFS 2026:1035. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/002-006",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "2 kap. 6 §",
+      "path": "002-006",
+      "heading": null,
+      "texts": {
+        "sv": "En anmälan för registrering enligt 2 kap. 4 § lagen (2018:1219) om försäkringsdistribution av en försäkringsförmedlare som är en fysisk person ska innehålla uppgift om\n1. företagsnamn och organisationsnummer för det försäkringsföretag eller den försäkringsförmedlare som förmedlaren har ingått avtal med,\n2. den fysiska personens för- och efternamn, personnummer eller, om sådant saknas, födelsedatum, postadress och telefonnummer, samt\n3. för vilket eller vilka slag av försäkringar och vilken eller vilka försäkringsklasser eller grupper av försäkringar som registrering söks.\n\nOm försäkringsföretaget eller försäkringsförmedlaren är ett utländskt företag, ska det samtidigt lämna en bestyrkt kopia av registreringsbevis eller motsvarande handling för företaget. Förordning (2018:1852).",
+        "en": "A notification for registration of an insurance intermediary who is a natural person under Chapter 2, Section 4 of the Insurance Distribution Act (2018:1219) must contain information on\n1. the business name and corporate identity number of the insurance undertaking or insurance intermediary with which the intermediary has entered into an agreement,\n2. the natural person's first name and surname, personal identity number or, where there is none, date of birth, postal address and telephone number, and\n3. the type or types of insurance and the class or classes of insurance or groups of insurance for which registration is sought.\n\nIf the insurance undertaking or the insurance intermediary is a foreign undertaking, it must at the same time submit a certified copy of a certificate of registration or an equivalent document for the undertaking. Ordinance (2018:1852)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-tied-intermediary-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K2P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 2 kap. 6 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/002-007",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "2 kap. 7 §",
+      "path": "002-007",
+      "heading": null,
+      "texts": {
+        "sv": "En anmälan för registrering enligt 2 kap. 4 § lagen (2018:1219) om försäkringsdistribution av en försäkringsförmedlare som är en juridisk person ska innehålla uppgift om\n1. företagsnamn och organisationsnummer för det försäkringsföretag eller den försäkringsförmedlare som förmedlaren har ingått avtal med,\n2. den juridiska personens företagsnamn, organisationsnummer, postadress och telefonnummer, samt\n3. för vilket eller vilka slag av försäkringar och vilken eller vilka försäkringsklasser eller grupper av försäkringar som registrering söks.\n\nOm försäkringsföretaget eller försäkringsförmedlaren är ett utländskt företag, ska det samtidigt lämna en bestyrkt kopia av registreringsbevis eller motsvarande handling för företaget. Förordning (2018:1852).",
+        "en": "A notification for registration of an insurance intermediary that is a legal person under Chapter 2, Section 4 of the Insurance Distribution Act (2018:1219) must contain information on\n1. the business name and corporate identity number of the insurance undertaking or insurance intermediary with which the intermediary has entered into an agreement,\n2. the legal person's business name, corporate identity number, postal address and telephone number, and\n3. the type or types of insurance and the class or classes of insurance or groups of insurance for which registration is sought.\n\nIf the insurance undertaking or the insurance intermediary is a foreign undertaking, it must at the same time submit a certified copy of a certificate of registration or an equivalent document for the undertaking. Ordinance (2018:1852)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-tied-intermediary-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K2P7",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 2 kap. 7 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/002-009",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "2 kap. 9 §",
+      "path": "002-009",
+      "heading": "Undertecknande av anmälan och underrättelse om ändrade förhållanden",
+      "texts": {
+        "sv": "En anmälan för registrering enligt 2 kap. 3 § lagen (2018:1219) om försäkringsdistribution ska för en fysisk person undertecknas av den som anmälan gäller och för en juridisk person av behörig firmatecknare.\n\nAnmälan för registrering enligt 2 kap. 4 § lagen om försäkringsdistribution ska undertecknas av behörig firmatecknare för det försäkringsföretag eller den försäkringsförmedlare som förmedlaren har ingått avtal med.\n\nAnmälan för registrering enligt 3 kap. 5 § lagen om försäkringsdistribution ska undertecknas av den utländska försäkringsförmedlaren. Om den utländska försäkringsförmedlaren är en juridisk person, ska anmälan undertecknas av behörig firmatecknare. Tillsammans med anmälan ska försäkringsförmedlaren lämna registreringsbevis eller motsvarande handling.\n\nAnmälan om återkallelse av registrering av anknuten sidoverksam försäkringsförmedlare eller anknuten försäkringsförmedlare enligt 9 kap. 7 § första stycket 2 och 9 § lagen om försäkringsdistribution ska undertecknas av behörig firmatecknare för det försäkringsföretag eller den försäkringsförmedlare som förmedlaren har ingått avtal med.",
+        "en": "A notification for registration under Chapter 2, Section 3 of the Insurance Distribution Act (2018:1219) must be signed, in the case of a natural person, by the person to whom the notification relates and, in the case of a legal person, by an authorised signatory.\n\nA notification for registration under Chapter 2, Section 4 of the Insurance Distribution Act must be signed by an authorised signatory of the insurance undertaking or insurance intermediary with which the intermediary has entered into an agreement.\n\nA notification for registration under Chapter 3, Section 5 of the Insurance Distribution Act must be signed by the foreign insurance intermediary. If the foreign insurance intermediary is a legal person, the notification must be signed by an authorised signatory. The insurance intermediary must submit a certificate of registration or an equivalent document together with the notification.\n\nA notification of the revocation of the registration of a tied ancillary insurance intermediary or a tied insurance intermediary under Chapter 9, Section 7, first paragraph, point 2 and Section 9 of the Insurance Distribution Act must be signed by an authorised signatory of the insurance undertaking or insurance intermediary with which the intermediary has entered into an agreement."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-tied-intermediary-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K2P9",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 2 kap. 9 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/002-010",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "2 kap. 10 §",
+      "path": "002-010",
+      "heading": null,
+      "texts": {
+        "sv": "Om en uppgift som ett försäkringsföretag eller en försäkringsförmedlare har lämnat till Bolagsverket har ändrats, ska försäkringsföretaget respektive försäkringsförmedlaren snarast skriftligen underrätta Bolagsverket om detta.",
+        "en": "If any information that an insurance undertaking or an insurance intermediary has provided to Bolagsverket (the Swedish Companies Registration Office) has changed, the insurance undertaking or the insurance intermediary, as the case may be, must notify Bolagsverket of this in writing as soon as possible."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-bolagsverket-changes"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K2P10",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 2 kap. 10 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/003-003",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 3 §",
+      "path": "003-003",
+      "heading": null,
+      "texts": {
+        "sv": "Vid den kontroll av förekomst i belastningsregistret som enligt 2 kap. 4 § andra stycket lagen (2018:1219) om försäkringsdistribution ska utföras beträffande anknutna försäkringsförmedlare som är fysiska personer ska anmälaren begära att den fysiska personen visar upp ett sådant registerutdrag som avses i 22 a § förordningen (1999:1134) om belastningsregister. Det registerutdrag som visas upp får inte vara äldre än tre månader.\n\nAnmälaren får inte dokumentera den utförda kontrollen på annat sätt än genom en anteckning om att registerutdraget har visats upp. En fysisk person som förekommer i belastningsregistret för brott eller medhjälp till brott som avses i 1 §, får inte anmälas för registrering hos Bolagsverket.",
+        "en": "When carrying out the check against the criminal records register that Chapter 2, Section 4, second paragraph of the Insurance Distribution Act (2018:1219) requires in respect of tied insurance intermediaries who are natural persons, the notifying party must ask the natural person to produce an extract from the register of the kind referred to in Section 22a of the Ordinance (1999:1134) on Criminal Records. The extract produced must not be more than three months old.\n\nThe notifying party must not document the check carried out in any way other than by a note that the extract from the register has been produced. A natural person who appears in the criminal records register for an offence or complicity in an offence referred to in Section 1 must not be notified for registration with Bolagsverket (the Swedish Companies Registration Office)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-tied-intermediary-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K3P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 3 kap. 3 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/003-004",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 4 §",
+      "path": "003-004",
+      "heading": null,
+      "texts": {
+        "sv": "Vid den kontroll av förekomst i belastningsregistret som enligt 2 kap. 4 § andra stycket lagen (2018:1219) om försäkringsdistribution ska utföras beträffande anknutna försäkringsförmedlare som är juridiska personer ska anmälaren begära att den som ska ingå i den juridiska personens ledning eller vara ersättare för denne visar upp ett sådant registerutdrag som avses i 22 a § förordningen (1999:1134) om belastningsregister. Det registerutdrag som visas upp får inte vara äldre än tre månader.\n\nAnmälaren får inte dokumentera den utförda kontrollen på annat sätt än genom en anteckning om att registerutdraget har visats upp.\n\nOm en person som avses i första stycket förekommer i belastningsregistret för brott eller medhjälp till brott som avses i 1 §, får den juridiska personen inte anmälas för registrering hos Bolagsverket.",
+        "en": "When carrying out the check against the criminal records register that Chapter 2, Section 4, second paragraph of the Insurance Distribution Act (2018:1219) requires in respect of tied insurance intermediaries that are legal persons, the notifying party must ask any person who is to be part of the legal person's management, or to be that person's deputy, to produce an extract from the register of the kind referred to in Section 22a of the Ordinance (1999:1134) on Criminal Records. The extract produced must not be more than three months old.\n\nThe notifying party must not document the check carried out in any way other than by a note that the extract from the register has been produced.\n\nIf a person referred to in the first paragraph appears in the criminal records register for an offence or complicity in an offence referred to in Section 1, the legal person must not be notified for registration with Bolagsverket (the Swedish Companies Registration Office)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-tied-intermediary-registration"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K3P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 3 kap. 4 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/003-005",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 5 §",
+      "path": "003-005",
+      "heading": null,
+      "texts": {
+        "sv": "Vid den kontroll av förekomst i belastningsregistret som ska utföras enligt 2 kap. 8 § andra stycket lagen (2018:1219) om försäkringsdistribution ska den juridiska personen begära att en anställd som ska distribuera försäkringar för den juridiska personens räkning visar upp ett sådant registerutdrag som avses i 22 a § förordningen (1999:1134) om belastningsregister. Det registerutdrag som visas upp får inte vara äldre än tre månader.\n\nDen juridiska personen får inte dokumentera den utförda kontrollen på annat sätt än genom en anteckning om att registerutdraget har visats upp.\n\nEndast uppgifter om anställda som inte förekommer i belastningsregistret för brott eller medhjälp till brott som avses i 1 § får ligga till grund för ansökan om tillstånd enligt 2 kap. 1 § lagen om försäkringsdistribution eller anmälan om registrering enligt 2 kap. 3 § samma lag.",
+        "en": "When carrying out the check for entries in the criminal records register required under Chapter 2, Section 8, second paragraph of the Insurance Distribution Act (2018:1219), the legal person must ask each employee who is to distribute insurance on behalf of the legal person to produce an extract from a register of the kind referred to in Section 22a of the Ordinance (1999:1134) on Criminal Records. The extract produced must not be more than three months old.\n\nThe legal person must not document the check carried out in any way other than by a note that the extract from the register has been produced.\n\nOnly information on employees who do not appear in the criminal records register for an offence, or for complicity in an offence, referred to in Section 1 may form the basis of an application for authorisation under Chapter 2, Section 1 of the Insurance Distribution Act or of a notification for registration under Chapter 2, Section 3 of the same Act."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-employee-record-check"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K3P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 3 kap. 5 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-1231/008-002",
+      "instrument": "sfs-2018-1231",
+      "provisionKind": "section",
+      "refLabel": "8 kap. 2 §",
+      "path": "008-002",
+      "heading": null,
+      "texts": {
+        "sv": "Det försäkringsföretag eller den försäkringsförmedlare som anmält en juridisk person för registrering enligt 2 kap. 4 § lagen (2018:1219) om försäkringsdistribution ska på begäran upplysa kunder och andra om följande:\n1. om en anställd hos den juridiska personen har rätt att distribuera försäkringar, och\n2. om denna rätt är begränsad till ett visst slag av försäkring eller någon eller några försäkringsklasser eller grupper av försäkringar.\n\nFörsäkringsföretaget eller försäkringsförmedlaren ska underrätta Finansinspektionen om hur kunder och andra kan få del av de upplysningar som försäkringsföretaget eller försäkringsförmedlaren är skyldig att lämna.",
+        "en": "An insurance undertaking or insurance intermediary that has notified a legal person for registration under Chapter 2, Section 4 of the Insurance Distribution Act (2018:1219) must, on request, inform customers and others of the following:\n1. whether an employee of the legal person is entitled to distribute insurance, and\n2. whether that entitlement is limited to a particular type of insurance or to one or more classes of insurance or groups of insurance.\n\nThe insurance undertaking or insurance intermediary must notify Finansinspektionen (the Swedish Financial Supervisory Authority) of how customers and others can obtain the information that the insurance undertaking or insurance intermediary is required to provide."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-forsakringsdistributionsforordning-employee-authority-information"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/#K8P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, 8 kap. 2 §, consolidated text as amended up to SFS 2025:353. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-219/005",
+      "instrument": "sfs-2018-219",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": "Personuppgifter som rör lagöverträdelser",
+      "texts": {
+        "sv": "Personuppgifter som avses i artikel 10 i EU:s dataskyddsförordning får behandlas av andra än myndigheter om behandlingen är nödvändig för att\n1. rättsliga anspråk ska kunna fastställas, göras gällande eller försvaras, eller\n2. en rättslig förpliktelse enligt lag eller förordning ska kunna fullgöras.",
+        "en": "Personal data referred to in Article 10 of the EU General Data Protection Regulation may be processed by parties other than public authorities if the processing is necessary\n1. for legal claims to be established, exercised or defended, or\n2. for a legal obligation under an Act or an Ordinance to be fulfilled."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-dataskydd-kompl-forordning-criminal-offence-data"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018219-med-kompletterande_sfs-2018-219/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:219, 5 §, consolidated text as amended up to SFS 2020:1140. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-219/006",
+      "instrument": "sfs-2018-219",
+      "provisionKind": "section",
+      "refLabel": "6 §",
+      "path": "006",
+      "heading": null,
+      "texts": {
+        "sv": "Integritetsskyddsmyndigheten får meddela ytterligare föreskrifter om i vilka fall andra än myndigheter får behandla personuppgifter som avses i artikel 10 i EU:s dataskyddsförordning.\n\nIntegritetsskyddsmyndigheten får även i enskilda fall besluta att andra än myndigheter får behandla sådana personuppgifter.\nFörordning (2020:1140).",
+        "en": "Integritetsskyddsmyndigheten (the Swedish Authority for Privacy Protection) may issue further regulations on the cases in which parties other than public authorities may process personal data referred to in Article 10 of the EU General Data Protection Regulation.\n\nIntegritetsskyddsmyndigheten may also decide in individual cases that parties other than public authorities may process such personal data.\nOrdinance (2020:1140)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-dataskydd-kompl-forordning-criminal-offence-data"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018219-med-kompletterande_sfs-2018-219/#P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:219, 6 §, consolidated text as amended up to SFS 2020:1140. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-479/002",
+      "instrument": "sfs-2018-479",
+      "provisionKind": "section",
+      "refLabel": "2 §",
+      "path": "002",
+      "heading": null,
+      "texts": {
+        "sv": "Upplysningen ska innehålla följande information: Att låna kostar pengar. Förordning (2024:1239).",
+        "en": "The notice must contain the following information: Borrowing costs money. Ordinance (2024:1239)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-kreditmarknadsforingsforordning-borrowing-cost-statement"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018479-om-naringsidkares_sfs-2018-479/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:479, 2 §, consolidated text as amended up to SFS 2026:1036. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2018-479/003",
+      "instrument": "sfs-2018-479",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "sv": "Konsumentverket får meddela ytterligare föreskrifter om\n1. innehållet i upplysningen i fråga om riskerna med skuldsättning och om vart konsumenten kan vända sig för att få stöd i budget- och skuldfrågor, och\n2. hur upplysningen ska lämnas i marknadsföringen.",
+        "en": "Konsumentverket (the Swedish Consumer Agency) may issue further regulations on\n1. the content of the notice as regards the risks of indebtedness and where the consumer can turn for support on budget and debt matters, and\n2. how the notice must be provided in the marketing."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-kreditmarknadsforingsforordning-borrowing-cost-statement"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018479-om-naringsidkares_sfs-2018-479/#P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:479, 3 §, consolidated text as amended up to SFS 2026:1036. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2019-809/001-006",
+      "instrument": "sfs-2019-809",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 6 §",
+      "path": "001-006",
+      "heading": "Kapitalkrav för ränterisk",
+      "texts": {
+        "sv": "Vid beräkningen av kapitalkravet för ränterisk enligt 8 kap. 3 § 1 lagen (2019:742) om tjänstepensionsföretag ska risken för negativa marknadsräntor inte beaktas. Om en sänkning av nivån för en viss marknadsränta som ett tjänstepensionsföretag använder vid värderingen av sina räntekänsliga exponeringar innebär att räntenivån blir negativ, ska sänkningen anses vara till marknadsräntan noll.",
+        "en": "When the capital requirement for interest rate risk is calculated under Chapter 8, Section 3, point 1 of the Occupational Pension Undertakings Act (2019:742), the risk of negative market interest rates must not be taken into account. If a reduction in the level of a particular market interest rate that an occupational pension undertaking uses to value its interest-rate-sensitive exposures would make that interest rate negative, the reduction is deemed to be a reduction to a market interest rate of zero."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-tjanstepensionsforordning-negative-rates"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2019809-om-tjanstepensionsforetag_sfs-2019-809/#K1P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:809, 1 kap. 6 §, consolidated text as amended up to SFS 2026:662. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2019-809/003-023",
+      "instrument": "sfs-2019-809",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 23 §",
+      "path": "003-023",
+      "heading": "Ändrade förhållanden",
+      "texts": {
+        "sv": "Om en uppgift som ett tjänstepensionsföretag har lämnat till Bolagsverket har ändrats, ska företaget snarast skriftligen underrätta Bolagsverket om detta.",
+        "en": "If any information that an occupational pension undertaking has provided to Bolagsverket (the Swedish Companies Registration Office) has changed, the undertaking must notify Bolagsverket of this in writing as soon as possible."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-tjanstepensionsforordning-bolagsverket-changes"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2019809-om-tjanstepensionsforetag_sfs-2019-809/#K3P23",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:809, 3 kap. 23 §, consolidated text as amended up to SFS 2026:662. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2025-1390/004",
+      "instrument": "sfs-2025-1390",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "sv": "Ett intygande enligt 7 kap. lagen (2025:1377) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar ska tillhandahållas elektroniskt eller i annan form och lämnas på annat sätt än muntligen.\n\nOm intygandet tillhandahålls elektroniskt ska det elektroniska systemet säkerställa att den mottagna informationen är den information som skickats och dokumentera alla tillfällen av användares åtkomst för inlämning, förnyelse eller ändring av intygandet.\n\nUtformningen och driften av det elektroniska systemet, inklusive procedur för åtkomst, måste säkerställa att den person som har tillgång till systemet och lämnar intygandet antingen är den person som anges i intygandet eller en person som har rätt att företräda den person som anges i intygandet. Det måste vara möjligt att på begäran lämna papperskopia av alla intyganden som lämnats elektroniskt.",
+        "en": "A self-certification under Chapter 7 of the Act (2025:1377) on the Collection of Certain Information on Crypto-Assets in the Field of Taxation must be provided electronically or in some other form, and must be submitted otherwise than orally.\n\nIf the self-certification is provided electronically, the electronic system must ensure that the information received is the information that was sent, and must document every instance in which a user accesses the system to submit, renew or amend the self-certification.\n\nThe design and operation of the electronic system, including the access procedure, must ensure that the person who accesses the system and submits the self-certification is either the person identified in the self-certification or a person entitled to represent the person identified in it. It must be possible to provide, on request, a paper copy of every self-certification submitted electronically."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-dac8-forordning-self-certification-system"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20251390-om-inhamtande-av-vissa_sfs-2025-1390/#P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1390, 4 §, consolidated text as amended up to . Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2025-1507/005",
+      "instrument": "sfs-2025-1507",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": "Anmälningsskyldighet och incidentrapportering",
+      "texts": {
+        "sv": "En anmälan enligt 2 kap. 2 § cybersäkerhetslagen (2025:1506) ska göras till den gemensamma kontaktpunkten enligt 23 §.",
+        "en": "A notification under Chapter 2, Section 2 of the Cybersecurity Act (2025:1506) must be made to the single point of contact under Section 23."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-cybersakerhetsforordning-registration-to-fra"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetsforordning-20251507_sfs-2025-1507/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1507, 5 §, consolidated text as amended up to SFS 2026:623. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2025-1507/023",
+      "instrument": "sfs-2025-1507",
+      "provisionKind": "section",
+      "refLabel": "23 §",
+      "path": "023",
+      "heading": "Gemensam kontaktpunkt",
+      "texts": {
+        "sv": "Försvarets radioanstalt ska vara gemensam kontaktpunkt enligt artikel 8.3 i NIS 2-direktivet, i den ursprungliga lydelsen. Förordning (2026:623).",
+        "en": "Försvarets radioanstalt (the National Defence Radio Establishment) must be the single point of contact under Article 8(3) of the NIS 2 Directive, in its original wording. Ordinance (2026:623)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-cybersakerhetsforordning-registration-to-fra"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetsforordning-20251507_sfs-2025-1507/#P23",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1507, 23 §, consolidated text as amended up to SFS 2026:623. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    }
+  ],
+  "withoutProvision": [
+    {
+      "obligation": "obl-se-sff-crs-controlling-person-role",
+      "reason": "The cited provision holds a formula or table that the source does not publish as plain text, so it cannot be given whole and unchanged."
+    }
+  ]
+}

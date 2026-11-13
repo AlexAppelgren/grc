@@ -161,6 +161,8 @@ Approval adds the provision with its first text and ties it to the duties that c
 
 Rules. `check_baseline.py` holds a file to everything below that a file can show: the
 language of the original, the translations beside it, their marks and the limits.
+How each text was read, and every check it went through, is recorded in
+`docs/reviews/LAW_TEXT_REVIEW_2026-11-13.md`.
 
 - **Produced by script, never retyped.** The text is what the official source publishes,
   fetched and cut to its section by script. Nobody types it, tidies it or shortens it; a

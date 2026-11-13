@@ -1,0 +1,790 @@
+{
+  "tranche": "eu-payments",
+  "researchedOn": "2026-11-13",
+  "provisions": [
+    {
+      "key": "celex-32001r1338/006",
+      "instrument": "celex-32001r1338",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Obligations relating to credit institutions engaged in the processing and distribution to the public of notes and coins",
+      "texts": {
+        "en": "1. Credit institutions, and, within the limits of their payment activity, other payment service providers, and any other institutions engaged in the processing and distribution to the public of notes and coins, including:\n— establishments whose activity consists in exchanging notes and coins of different currencies, such as bureaux de change,\n— transporters of funds,\n— other economic agents such as traders and casinos engaged on a secondary basis in the processing and distribution to the public of notes via automated teller machines (cash dispensers), within the limit of these secondary activities,\n\nshall be obliged to ensure that euro notes and coins which they have received and which they intend to put back into circulation are checked for authenticity and that counterfeits are detected.\n\nFor euro notes, this check shall be carried out in line with procedures defined by the ECB ( ¹³ ).\n\nThe institutions and economic agents referred to in the first subparagraph shall be obliged to withdraw from circulation all euro notes and coins received by them which they know or have sufficient reason to believe to be counterfeit. They shall immediately hand them over to the competent national authorities.\n\n1a By way of derogation from the second subparagraph of paragraph 1, in Member States that do not have the euro as their single currency, checks on the authenticity of euro notes and coins shall be carried out:\n— either by trained personnel,\n— or by a machine for handling banknotes and coins that is on the list published by the European Central Bank, for banknotes ( ¹⁴ ) , or by the Commission, in the case of coins ( ¹⁵ ).\n\n2. Member States shall take the necessary measures to ensure that the establishments referred to in paragraph 1 which fail to discharge their obligations under the said paragraph are subject to effective, proportionate and deterrent sanctions.\n\n3. Without prejudice to the dates fixed by the ECB for the implementation of the procedures it defines, Member States shall adopt the laws, regulations and administrative provisions for applying the first subparagraph of paragraph 1 of this Article by 31 December 2011 at the latest. They shall forthwith inform the Commission and the ECB thereof.\n\n( ¹³ ) See the framework for the detection of counterfeits and fitness sorting by credit institutions and other professional cash handlers, available on the ECB website at the following address: http://www.ecb.europa.eu/euro/cashprof/html/index.en.html\n\n( ¹⁴ ) The list published by the ECB is available at the following address: http://www.ecb.europa.eu/euro/cashprof/html/index.en.html\n\n( ¹⁵ ) The list published by the Commission is available at the following address: http://ec.europa.eu/anti_fraud/pages_euro/euro-coins/machines.pdf"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-euro-counterfeit-authenticity-check",
+        "obl-eu-euro-counterfeit-withdraw-hand-over"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2001/1338/2009-01-23/eng#art_6",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 1338/2001, Article 6, consolidated text of 2009-01-23 (CELEX 02001R1338-20090123). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/003",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Reachability",
+      "texts": {
+        "en": "1. A payee’s PSP which is reachable for a national credit transfer under a payment scheme shall be reachable, in accordance with the rules of a Union-wide payment scheme, for credit transfers initiated by a payer through a PSP located in any Member State.\n\n2. A payer’s PSP which is reachable for a national direct debit under a payment scheme shall be reachable, in accordance with the rules of a Union-wide payment scheme, for direct debits initiated by a payee through a PSP located in any Member State.\n\n3. Paragraph 2 shall apply only to direct debits which are available to consumers as payers under the payment scheme."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-reachability"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#art_3",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 3, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/005",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Requirements for credit transfer and direct debit transactions",
+      "texts": {
+        "en": "1. PSPs shall carry out credit transfer and direct debit transactions in accordance with the following requirements:\n(a) they must use the payment account identifier specified in point (1)(a) of the Annex for the identification of payment accounts regardless of the location of the PSPs concerned;\n(b) they must use the message formats specified in point (1)(b) of the Annex, when transmitting payment transactions to another PSP or via a retail payment system;\n(c) they must ensure that PSUs use the payment account identifier specified in point (1)(a) of the Annex for the identification of payment accounts, whether the payer’s PSP and the payee’s PSP or the sole PSP in the payment transaction are located in the same Member State or in different Member States;\n(d) they must ensure that where a PSU that is not a consumer or a microenterprise, initiates or receives individual credit transfers or individual direct debits which are not transmitted individually, but are bundled together for transmission, the message formats specified in point (1)(b) of the Annex are used.\n\nWithout prejudice to point (b) of the first subparagraph, PSPs shall, upon the specific request of a PSU, use the message formats specified in point (1)(b) of the Annex in relation to that PSU.\n\n2. PSPs shall carry out credit transfers in accordance with the following requirements, subject to any obligation laid down in the national law implementing Directive 95/46/EC:\n(a) the payer’s PSP must ensure that the payer provides the data elements specified in point (2)(a) of the Annex;\n(b) the payer’s PSP must provide the data elements specified in point (2)(b) of the Annex to the payee’s PSP;\n(c) the payee’s PSP must provide or make available to the payee the data elements specified in point (2)(d) of the Annex.\n\n3. PSPs shall carry out direct debits in accordance with the following requirements, subject to any obligation laid down in national law implementing Directive 95/46/EC:\n(a) the payee’s PSP must ensure that:\n(i) the payee provides the data elements specified in point (3)(a) of the Annex with the first direct debit and one-off direct debit and with each subsequent payment transaction,\n(ii) the payer gives consent both to the payee and to the payer’s PSP (directly or indirectly via the payee), the mandates, together with later modifications or cancellation, are stored by the payee or by a third party on behalf of the payee and the payee is informed of this obligation by the PSP in accordance with Articles 41 and 42 of Directive 2007/64/EC;\n(b) the payee’s PSP must provide the payer’s PSP with the data elements specified in point (3)(b) of the Annex;\n(c) the payer’s PSP must provide or make available to the payer the data elements specified in point (3)(c) of the Annex;\n(d) the payer must have the right to instruct its PSP:\n(i) to limit a direct debit collection to a certain amount or periodicity or both,\n(ii) where a mandate under a payment scheme does not provide for the right to a refund, to verify each direct debit transaction, and to check whether the amount and periodicity of the submitted direct debit transaction is equal to the amount and periodicity agreed in the mandate, before debiting their payment account, based on the mandate-related information,\n(iii) to block any direct debits to the payer’s payment account or to block any direct debits initiated by one or more specified payees or to authorise direct debits only initiated by one or more specified payees;\n\nWhere neither the payer nor the payee is a consumer, PSPs shall not be required to comply with point (d)(i), (ii) or (iii).\n\nThe payer’s PSP shall inform the payer of the rights referred to in point (d) in accordance with Articles 41 and 42 of Directive 2007/64/EC.\n\nUpon the first direct debit transaction or a one-off direct debit transaction and upon each subsequent direct debit transaction, the payee shall send the mandate-related information to his or her PSP and the payee’s PSP shall transmit that mandate-related information to the payer’s PSP with each direct debit transaction.\n\n4. In addition to the requirements referred to in paragraph 1, the payee accepting credit transfers shall communicate its payment account identifier specified in point (1)(a) of the Annex and, until 1 February 2014 for national payment transactions and until 1 February 2016 for cross-border payment transactions, but only where necessary, its PSP’s BIC to its payers, when a credit transfer is requested.\n\n5. Before the first direct debit transaction, a payer shall communicate its payment account identifier specified in point (1)(a) of the Annex. The BIC of a payer’s PSP shall be communicated until 1 February 2014 for national payment transactions and until 1 February 2016 for cross-border payment transactions by the payer but only where necessary.\n\n6. Where the framework agreement between the payer and the payer’s PSP does not provide for the right to a refund, the payer’s PSP shall, without prejudice to paragraph (3)(a)(ii), verify each direct debit transaction to check whether the amount of the submitted direct debit transaction is equal to the amount and periodicity agreed in the mandate before debiting the payer’s payment account, based on the mandate-related information.\n\n7. After 1 February 2014 for national payment transactions and after 1 February 2016 for cross-border payment transactions PSPs shall not require PSUs to indicate the BIC of the PSP of a payer or of the PSP of a payee.\n\n8. The payer’s PSP and the payee’s PSP shall not levy additional charges or other fees on the read-out process to automatically generate a mandate for those payment transactions initiated through or by means of a payment card at the point of sale, which result in direct debit."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-iban-iso20022",
+        "obl-eu-sepa-direct-debit-payer-rights"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#art_5",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 5, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/006",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "End-dates",
+      "texts": {
+        "en": "1. By 1 February 2014, credit transfers shall be carried out in accordance with the technical requirements set out in Article 5(1), (2) and (4) and points 1 and 2 of the Annex.\n\n2. By 1 February 2014, direct debits shall be carried out in accordance with Article 8(2) and (3) and with the requirements set out in Article 5(1), (3), (5), (6) and (8) and points 1 and 3 of the Annex.\n\n3. Without prejudice to Article 3, direct debits shall be carried out in accordance with the requirements set out in Article 8(1) by 1 February 2017 for national payments and by 1 November 2012 for cross-border payments.\n\n4. For national payment transactions a Member State or, with the approval of the Member State concerned, the PSPs of a Member State may, after taking into account and evaluating the state of preparedness and readiness of their citizens, set earlier dates than those referred to in paragraphs 1 and 2."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-iban-iso20022",
+        "obl-eu-sepa-no-direct-debit-mif"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#art_6",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 6, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/008",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "article",
+      "refLabel": "Article 8",
+      "path": "008",
+      "heading": "Interchange fees for direct debit transactions",
+      "texts": {
+        "en": "1. Without prejudice to paragraph 2, no MIF per direct debit transaction or other agreed remuneration with an equivalent object or effect shall apply to direct debit transactions.\n\n2. For R-transactions a MIF may be applied provided that the following conditions are complied with:\n(a) the arrangement aims at efficiently allocating costs to the PSP which, or the PSU of which, has caused the R-transaction, as appropriate, while taking into account the existence of transaction costs and ensures that the payer is not automatically charged and the PSP is prohibited from charging PSUs in respect of a given type of R-transaction fees that exceed the cost borne by the PSP for such transactions;\n(b) the fees are strictly cost based;\n(c) the level of the fees does not exceed the actual costs of handling an R-transaction by the most cost-efficient comparable PSP that is a representative party to the arrangement in terms of volume of transactions and nature of services;\n(d) the application of the fees in accordance with points (a), (b) and (c) prevent the PSP from charging additional fees relating to the costs covered by those interchange fees to their respective PSUs;\n(e) there is no practical and economically viable alternative to the arrangement which would lead to an equally or more efficient handling of R-transactions at equal or lower cost to consumers.\n\nFor the purposes of the first subparagraph, only cost categories directly and unequivocally relevant to the handling of the R-transaction shall be considered in the calculation of the R-transaction fees. Those costs shall be precisely determined. The breakdown of the amount of the costs, including separate identification of each of its components, shall be part of the arrangement to allow for easy verification and monitoring.\n\n3. Paragraphs 1 and 2 shall apply mutatis mutandis to unilateral arrangements by a PSP and to bilateral arrangements between PSPs that have an object or effect equivalent to that of a multilateral arrangement."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-no-direct-debit-mif"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#art_8",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 8, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/009",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Payment accessibility",
+      "texts": {
+        "en": "1. A payer making a credit transfer to a payee holding a payment account located within the Union shall not specify the Member State in which that payment account is to be located, provided that the payment account is reachable in accordance with Article 3.\n\n2. A payee accepting a credit transfer or using a direct debit to collect funds from a payer holding a payment account located within the Union shall not specify the Member State in which that payment account is to be located, provided that the payment account is reachable in accordance with Article 3."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-payment-accessibility"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#art_9",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 9, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/016",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "article",
+      "refLabel": "Article 16",
+      "path": "016",
+      "heading": "Transitional provisions",
+      "texts": {
+        "en": "1. By way of derogation from Article 6(1) and (2), PSPs may continue, until 1 August 2014, to process payment transactions in euro in formats that are different from those required for credit transfers and direct debits pursuant to this Regulation.\n\nMember States shall apply the rules on the penalties applicable to infringements of Article 6(1) and (2), laid down in accordance with Article 11, from 2 August 2014.\n\nBy way of derogation from Article 6(1) and (2), Member States may allow PSPs to provide PSUs, until 1 February 2016, with conversion services for national payment transactions enabling PSUs that are consumers to continue using BBAN instead of the payment account identifier specified in point (1)(a) of the Annex on condition that interoperability is ensured by converting the payer’s and the payee’s BBAN technically and securely into the respective payment account identifier specified in point (1)(a) of the Annex. That payment account identifier shall be delivered to the initiating PSU, where appropriate before the payment is executed. In such a case PSPs shall not levy any charges or other fees on the PSU directly or indirectly linked to those conversion services.\n\n2. PSPs that offer payment services denominated in euro and that are located in a Member State which does not have the euro as its currency shall comply with Article 3 when offering payment services denominated in euro by 31 October 2016. If, however, the euro is introduced as the currency of any such Member State before 31 October 2015, the PSP located in that Member State shall comply with Article 3 within 1 year of the date on which the Member State concerned joined the euro area.\n\n3. Member States may allow their competent authorities to waive all or some of the requirements referred to in Article 6(1) and (2) for those credit transfer or direct debit transactions with a cumulative market share, based on the official payment statistics published annually by the ECB, of less than 10 % of the total number of credit transfers or direct debit transactions respectively, in that Member State until 1 February 2016.\n\n4. Member States may allow their competent authorities to waive all or some of the requirements referred to in Article 6(1) and (2) for those payment transactions generated using a payment card at the point of sale which result in direct debit to and from a payment account identified by BBAN or IBAN until 1 February 2016.\n\n5. By way of derogation from Article 6(1) and (2), Member States may allow their competent authorities, until 1 February 2016, to waive the specific requirement to use the message formats specified in point (1)(b) of the Annex set out in Article 5(1)(d) for PSUs which initiate or receive individual credit transfers or direct debits that are bundled together for transmission. Notwithstanding a possible waiver, PSPs shall fulfil the requirements set out in Article 5(1)(d) where a PSU requests such a service.\n\n6. By way of derogation from Article 6(1) and (2), Member States may defer the requirements relating to provision of BIC for national payment transactions in Article 5(4), (5) and (7) until 1 February 2016.\n\n7. Where a Member State intends to make use of a derogation as provided for in paragraph 1, 3, 4, 5 or 6, that Member State shall notify the Commission accordingly by 1 February 2013, and shall subsequently allow its competent authority to waive, as relevant, some or all of the requirements set out in Article 5, Article 6(1) or (2) and the Annex, for the relevant payment transactions as referred to in the respective paragraphs or subparagraphs and for a period not exceeding that of the derogation. Member States shall notify the Commission of the payment transactions subject to the derogation and of any subsequent change.\n\n8. PSPs located in, and PSUs making use of a payment service in a Member State which does not have the euro as its currency shall comply with the requirements of Articles 4 and 5 by 31 October 2016. Operators of retail payment systems for a Member State which does not have the euro as its currency shall comply with the requirements of Article 4(2) by 31 October 2016.\n\nIf, however, the euro is introduced as the currency of any such Member State before 31 October 2015, the PSPs or where relevant operators of retail payment systems located and PSUs making use of a payment service, in that Member State shall comply with the respective provisions within 1 year of the date on which the Member State concerned joined the euro area, but not earlier than the respective dates specified for the Member States having the euro as their own currency on 31 March 2012.\n\n9. If the euro is introduced as the currency of a Member State before 9 April 2027, the PSPs in that Member State shall comply with Articles 5a, 5b and 5c within one year of the date on which the euro has been introduced as the currency of that Member State and not later than the respective dates specified in those Articles for PSPs in Member States whose currency is not the euro. However, such PSPs shall not be required to comply with Articles 5a, 5b and 5c earlier than the respective dates specified in those Articles for PSPs in the Member States whose currency is the euro."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-reachability",
+        "obl-eu-sepa-iban-iso20022"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#art_16",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 16, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32012r0260/annex",
+      "instrument": "celex-32012r0260",
+      "provisionKind": "annex",
+      "refLabel": "ANNEX",
+      "path": "annex",
+      "heading": null,
+      "texts": {
+        "en": "TECHNICAL REQUIREMENTS (ARTICLE 5)\n\n(1) In addition to the essential requirements set out in Article 5, the following technical requirements shall apply to credit transfers and direct debit transactions:\n(a) The payment account identifier referred to in Article 5(1)(a) and (c) must be IBAN.\n(b) The standard for message format referred to in Article 5(1)(b) and (d) must be the ISO 20022 XML standard.\n(c) The remittance data field must allow for 140 characters. Payment schemes may allow for a higher number of characters, except if the device used to remit information has technical limitations relating to the number of characters, in which case the technical limit of the device applies.\n(d) Remittance reference information and all the other data elements provided in accordance with points (2) and (3) of this Annex must be passed in full and without alteration between PSPs in the payment chain.\n(e) Once the required data is available in electronic form payment transactions must allow for a fully automated, electronic processing in all process stages throughout the payment chain (end-to-end straight through processing), enabling the entire payment process to be conducted electronically without the need for re-keying or manual intervention. This must also apply to exceptional handling of credit transfers and direct debit transactions, whenever possible.\n(f) Payment schemes must set no minimum threshold for the amount of the payment transaction allowing for credit transfers and direct debits but are not required to process payment transactions with zero amount.\n(g) Payment schemes are not obliged to carry out credit transfers and direct debits exceeding the amount of EUR 999 999 999,99 .\n\n(2) In addition to the requirements referred to in point (1), the following requirements shall apply to credit transfer transactions:\n(a) The data elements referred to in Article 5(2)(a) are the following:\n(i) the payer’s name and/or the IBAN of the payer’s payment account,\n(ii) the amount of the credit transfer,\n(iii) the IBAN of the payee’s payment account,\n(iv) where available, the payee’s name,\n(v) any remittance information.\n(b) The data elements referred to in Article 5(2)(b) are the following:\n(i) the payer’s name,\n(ii) the IBAN of the payer’s payment account,\n(iii) the amount of the credit transfer,\n(iv) the IBAN of the payee’s payment account,\n(v) any remittance information,\n(vi) any payee identification code,\n(vii) the name of any payee reference party,\n(viii) any purpose of the credit transfer,\n(ix) any category of the purpose of the credit transfer.\n(c) In addition, the following mandatory data elements are to be provided by the payer’s PSP to the payee’s PSP:\n(i) the BIC of the payer’s PSP (if not agreed otherwise by the PSPs involved in the payment transaction),\n(ii) the BIC of the payee’s PSP (if not agreed otherwise by the PSPs involved in the payment transaction),\n(iii) the identification code of the payment scheme,\n(iv) the settlement date of the credit transfer,\n(v) the reference number of the credit transfer message of the payer’s PSP,\n(d) The data elements referred to in Article 5(2)(c) are the following:\n(i) the payer’s name,\n(ii) the amount of the credit transfer,\n(iii) any remittance information.\n\n(3) In addition to the requirements referred to in point (1), the following requirements shall apply to direct debit transactions:\n(a) The data elements referred to in Article 5(3)(a)(i) are the following:\n(i) the type of direct debit (recurrent, one-off, first, last or reversal),\n(ii) the payee’s name,\n(iii) the IBAN of the payee’s payment account to be credited for the collection,\n(iv) where available, the payer’s name,\n(v) the IBAN of the payer’s payment account to be debited for the collection,\n(vi) the unique mandate reference,\n(vii) where the payer’s mandate is given after 31 March 2012, the date on which it was signed,\n(viii) the amount of the collection,\n(ix) where the mandate has been taken over by a payee other than the payee who issued the mandate, the unique mandate reference as given by the original payee who issued the mandate,\n(x) the payee’s identifier,\n(xi) where the mandate has been taken over by a payee other than the payee who issued the mandate, the identifier of the original payee who issued the mandate,\n(xii) any remittance information from the payee to the payer,\n(xiii) any purpose of the collection,\n(xiv) any category of the purpose of the collection.\n(b) The data elements referred to in Article 5(3)(b) are the following:\n(i) the BIC of the payee’s PSP (if not agreed otherwise by the PSPs involved in the payment transaction),\n(ii) the BIC of the payer’s PSP (if not agreed otherwise by the PSPs involved in the payment transaction),\n(iii) the payer reference party’s name (if present in dematerialised mandate),\n(iv) the payer reference party’s identification code (if present in dematerialised mandate),\n(v) the payee reference party’s name (if present in the dematerialised mandate),\n(vi) the payee reference party’s identification code (if present in dematerialised mandate),\n(vii) the identification code of the payment scheme,\n(viii) the settlement date of the collection,\n(ix) the payee’s PSP’s reference for the collection,\n(x) the type of mandate,\n(xi) the type of direct debit (recurrent, one-off, first, last or reversal),\n(xii) the payee’s name,\n(xiii) the IBAN of the payee’s payment account to be credited for the collection,\n(xiv) where available, the payer’s name,\n(xv) the IBAN of the payer’s payment account to be debited for the collection,\n(xvi) the unique mandate reference,\n(xvii) the date of signing of the mandate if the mandate is given by the payer after 31 March 2012,\n(xviii) the amount of the collection,\n(xix) the unique mandate reference as given by the original payee who issued the mandate (if the mandate has been taken over by another payee than the payee who issued the mandate),\n(xx) the payee’s identifier,\n(xxi) the identifier of the original payee who issued the mandate (if the mandate has been taken over by a payee other than the payee who issued the mandate),\n(xxii) any remittance information from the payee to the payer.\n(c) The data elements referred to in Article 5(3)(c) are the following:\n(i) the unique mandate reference,\n(ii) the payee’s identifier,\n(iii) the payee’s name,\n(iv) the amount of the collection,\n(v) any remittance information,\n(vi) the identification code of the payment scheme."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-iban-iso20022"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/2024-04-08/eng#anx_1",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, ANNEX, consolidated text of 2024-04-08 (CELEX 02012R0260-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/001",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Scope",
+      "texts": {
+        "en": "1. This Regulation lays down uniform technical and business requirements for card-based payment transactions carried out within the Union, where both the payer's payment service provider and the payee's payment service provider are located therein.\n\n2. This Regulation does not apply to services based on specific payment instruments that can be used only in a limited way, that meet one of the following conditions:\n(a) instruments allowing the holder to acquire goods or services only in the premises of the issuer or within a limited network of service providers under direct commercial agreement with a professional issuer;\n(b) instruments which can be used only to acquire a very limited range of goods or services;\n(c) instruments valid only in a single Member State provided at the request of an undertaking or a public sector entity and regulated by a national or regional public authority for specific social or tax purposes to acquire specific goods or services from suppliers having a commercial agreement with the issuer.\n\n3. Chapter II does not apply to the following:\n(a) transactions with commercial cards;\n(b) cash withdrawals at automatic teller machines or at the counter of a payment service provider; and\n(c) transactions with payment cards issued by three party payment card schemes.\n\n4. Article 7 does not apply to three party payment card schemes.\n\n5. When a three party payment card scheme licenses other payment service providers for the issuance of card-based payment instruments or the acquiring of card-based payment transactions, or both, or issues card-based payment instruments with a co-branding partner or through an agent, it is considered to be a four party payment card scheme. However, until 9 December 2018 in relation to domestic payment transactions, such a three party payment card scheme may be exempted from the obligations under Chapter II, provided that the card-based payment transactions made in a Member State under such a three party payment card scheme do not exceed on a yearly basis 3 % of the value of all card-based payment transactions made in that Member State."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-interchange-caps"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_1",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 1, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/003",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Interchange fees for consumer debit card transactions",
+      "texts": {
+        "en": "1. Payment service providers shall not offer or request a per transaction interchange fee of more than 0,2 % of the value of the transaction for any debit card transaction.\n\n2. For domestic debit card transactions Member States may either:\n(a) define a per transaction percentage interchange fee cap lower than the one provided for in paragraph 1 and may impose a fixed maximum fee amount as a limit on the fee amount resulting from the applicable percentage rate; or\n(b) allow payment service providers to apply a per transaction interchange fee of no more than EUR 0,05, or, in the Member States whose currency is not the euro, the corresponding value in the national currency on 8 June 2015, which shall be revised every five years or whenever there is a significant variation in exchange rates. This per transaction interchange fee may also be combined with a maximum percentage rate of no more than 0,2 %, provided always that the sum of interchange fees of the payment card scheme does not exceed 0,2 % of the total annual transaction value of the domestic debit card transactions within each payment card scheme.\n\n3. Until 9 December 2020, in relation to domestic debit card transactions, Member States may allow payment service providers to apply a weighted average interchange fee of no more than the equivalent of 0,2 % of the annual average transaction value of all domestic debit card transactions within each payment card scheme. Member States may define a lower weighted average interchange fee cap applicable to all domestic debit card transactions.\n\n4. The annual transaction values referred to in paragraphs 2 and 3 shall be calculated on a yearly basis, commencing on 1 January and ending on 31 December and shall be applied starting from 1 April of the following year. The reference period for the first calculation of such value shall commence 15 calendar months before the date of application of paragraphs 2 and 3 and shall end three calendar months before that date.\n\n5. The competent authorities referred to in Article 13 shall, upon their written request, require payment card schemes and/or payment service providers to provide all information necessary to verify the correct application of paragraphs 3 and 4 of this Article. Such information shall be sent to the competent authority before 1 March of the year following the reference period referred to in the first sentence of paragraph 4. Any other information enabling the competent authorities to verify compliance with the provisions of this Chapter shall be sent to the competent authorities upon their written request and within the deadline set by them. The competent authorities may require that such information is certified by an independent auditor."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-interchange-caps"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_3",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/004",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Interchange fees for consumer credit card transactions",
+      "texts": {
+        "en": "Payment service providers shall not offer or request a per transaction interchange fee of more than 0,3 % of the value of the transaction for any credit card transaction. For domestic credit card transactions Member States may define a lower per transaction interchange fee cap."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-interchange-caps"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_4",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/005",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Prohibition of circumvention",
+      "texts": {
+        "en": "For the purposes of the application of the caps referred to in Articles 3 and 4, any agreed remuneration, including net compensation, with an equivalent object or effect of the interchange fee, received by an issuer from the payment card scheme, acquirer or any other intermediary in relation to payment transactions or related activities shall be treated as part of the interchange fee."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-no-circumvention"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_5",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 5, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/008",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 8",
+      "path": "008",
+      "heading": "Co-badging and choice of payment brand or payment application",
+      "texts": {
+        "en": "1. Any payment card scheme rules and rules in licensing agreements or measures of equivalent effect that hinder or prevent an issuer from co-badging two or more different payment brands or payment applications on a card-based payment instrument shall be prohibited.\n\n2. When entering into a contractual agreement with a payment service provider, the consumer may require two or more different payment brands on a card-based payment instrument provided that such a service is offered by the payment service provider. In good time before the contract is signed, the payment service provider shall provide the consumer with clear and objective information on all the payment brands available and their characteristics, including their functionality, cost and security.\n\n3. Any difference in treatment of issuers or acquirers in scheme rules and rules in licensing agreements concerning co-badging of different payment brands or payment applications on a card-based payment instrument shall be objectively justified and non-discriminatory.\n\n4. Payment card schemes shall not impose reporting requirements, obligations to pay fees or similar obligations with the same object or effect on card issuing and acquiring payment service providers for transactions carried out with any device on which their payment brand is present in relation to transactions for which their scheme is not used.\n\n5. Any routing principles or equivalent measures aimed at directing transactions through a specific channel or process and other technical and security standards and requirements with respect to the handling of two or more different payment brands and payment applications on a card-based payment instrument shall be non-discriminatory and shall be applied in a non-discriminatory manner.\n\n6. Payment card schemes, issuers, acquirers, processing entities and other technical service providers shall not insert automatic mechanisms, software or devices on the payment instrument or at equipment applied at the point of sale which limit the choice of payment brand or payment application, or both, by the payer or the payee when using a co-badged payment instrument.\n\nPayees shall retain the option of installing automatic mechanisms in the equipment used at the point of sale which make a priority selection of a particular payment brand or payment application but payees shall not prevent the payer from overriding such an automatic priority selection made by the payee in its equipment for the categories of cards or related payment instruments accepted by the payee."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-cobadging-information",
+        "obl-eu-ifr-brand-choice"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_8",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 8, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/009",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Unblending",
+      "texts": {
+        "en": "1. Each acquirer shall offer and charge its payee merchant service charges individually specified for different categories and different brands of payment cards with different interchange fee levels unless payees request the acquirer, in writing, to charge blended merchant service charges.\n\n2. Acquirers shall include in their agreements with payees individually specified information on the amount of the merchant service charges, interchange fees and scheme fees applicable with respect to each category and brand of payment cards, unless the payee subsequently makes a different request in writing."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-unblending"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_9",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 9, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/010",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 10",
+      "path": "010",
+      "heading": "‘Honour All Cards’ rule",
+      "texts": {
+        "en": "1. Payment card schemes and payment service providers shall not apply any rule that obliges payees accepting a card-based payment instrument issued by one issuer also to accept other card-based payment instruments issued within the framework of the same payment card scheme.\n\n2. Paragraph 1 shall not apply to consumer card-based payment instruments of the same brand and of the same category of prepaid card, debit card or credit card subject to interchange fees under Chapter II of this Regulation.\n\n3. Paragraph 1 is without prejudice to the possibility for payment card schemes and payment service providers to provide that cards may not be refused on the basis of the identity of the issuer or of the cardholder.\n\n4. Payees that decide not to accept all cards or other payment instruments of a payment card scheme shall inform consumers of this, in a clear and unequivocal manner, at the same time as they inform consumers of the acceptance of other cards and payment instruments of the payment card scheme. Such information shall be displayed prominently at the entrance of the shop and at the till.\n\nIn the case of distance sales, this information shall be displayed on the payee's website or other applicable electronic or mobile medium. The information shall be provided to the payer in good time before the payer enters into a purchase agreement with the payee.\n\n5. Issuers shall ensure that their payment instruments are electronically identifiable and, in the case of newly issued card-based payment instruments, also visibly identifiable, enabling payees and payers to unequivocally identify which brands and categories of prepaid cards, debit cards, credit cards or commercial cards are chosen by the payer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-card-identification"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_10",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 10, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/011",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 11",
+      "path": "011",
+      "heading": "Steering rules",
+      "texts": {
+        "en": "1. Any rule in licensing agreements, in scheme rules applied by payment card schemes and in agreements entered into between card acquirers and payees preventing payees from steering consumers to the use of any payment instrument preferred by the payee shall be prohibited. This prohibition shall also cover any rule prohibiting payees from treating card-based payment instruments of a given payment card scheme more or less favourably than others.\n\n2. Any rule in licensing agreements, in scheme rules applied by payment card schemes and in agreements entered into between card acquirers and payees preventing payees from informing payers about interchange fees and merchant service charges shall be prohibited.\n\n3. Paragraphs 1 and 2 of this Article are without prejudice to the rules on charges, reductions or other steering mechanisms set out in Directive 2007/64/EC and Directive 2011/83/EU."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-no-anti-steering"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_11",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32015r0751/012",
+      "instrument": "celex-32015r0751",
+      "provisionKind": "article",
+      "refLabel": "Article 12",
+      "path": "012",
+      "heading": "Information to the payee on individual card-based payment transactions",
+      "texts": {
+        "en": "1. After the execution of an individual card-based payment transaction, the payee's payment service provider shall provide the payee with the following information:\n(a) the reference enabling the payee to identify the card-based payment transaction;\n(b) the amount of the payment transaction in the currency in which the payee's payment account is credited;\n(c) the amount of any charges for the card-based payment transaction, indicating separately the merchant service charge and the amount of the interchange fee.\n\nWith the payee's prior and explicit consent, the information referred to in the first subparagraph may be aggregated by brand, application, payment instrument categories and rates of interchange fees applicable to the transaction.\n\n2. Contracts between acquirers and payees may include a provision that the information referred to in the first subparagraph of paragraph 1 shall be provided or made available periodically, at least once a month, and in an agreed manner which allows payees to store and reproduce information unchanged."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-ifr-merchant-transaction-information"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_12",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 12, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0033/001",
+      "instrument": "celex-32018r0033",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Template for the statement of fees and its common symbol",
+      "texts": {
+        "en": "1. Payment service providers shall use the template as laid down in the Annex and complete it as set out in Articles 2 to 18.\n\n2. Payment service providers shall not modify the template for the statement of fees in completing it other than provided for in this Regulation. In particular, payment service providers shall follow the order of information, headings and sub-headings laid down in the template.\n\n3. The statement of fees shall:\n(a) be presented in A4 portrait format;\n(b) contain the title ‘Statement of Fees’ at the top of the first page, with the title centred and positioned in the middle between the logo of the payment service provider at the top left-hand side of the document and the common symbol at the top right-hand side of the document;\n(c) contain the common symbol of the size not larger than 2,5 cm × 2,5 cm and displayed as shown in the template laid down in the Annex;\n(d) use font type Arial or another font type similar to Arial and font size 11, with exceptions for the title ‘Statement of Fees’, which uses font size 16 in bold type; font size 14 in bold type for the headings, and font size 12 in bold for the sub-headings, unless an increase in the font size or use of braille font type for visually impaired persons is either required under national law or agreed between the consumer and the payment service provider;\n(e) be produced in black and white, with exception of the logo of the payment service provider and the common symbol which may be presented in colour, as laid down in Article 2;\n(f) contain the headings in semi-dark grey using the colour pattern with reference number 166,166,166 of the RGB colour model and the sub-headings in light-grey colour using the colour pattern with reference number 191,191,191 of the RGB colour model;\n(g) have its pages numbered."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-pad-statement-of-fees-format"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/33/2018-01-11/eng#art_1",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/33, Article 1, consolidated text of 2018-01-11 (CELEX 02018R0033-20180111). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0034/001",
+      "instrument": "celex-32018r0034",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Template for the fee information document and its common symbol",
+      "texts": {
+        "en": "1. Payment service providers shall use the template as laid down in the Annex and complete it as set out in Articles 2 to 13.\n\n2. Payment service providers shall not modify the template for the fee information document in completing it other than provided for in this Regulation. In particular, payment service providers shall follow the order of information, headings and sub-headings laid down in the template. The fee information document shall:\n(a) be presented in A4 portrait format;\n(b) contain the title ‘Fee Information Document’ at the top of the first page, with the title centred and positioned between the logo of the payment service provider at the top left-hand side of the document and the common symbol at the top right-hand side of the document;\n(c) contain the common symbol of the size 2,5 cm × 2,5 cm and displayed as shown in the template laid down in the Annex;\n(d) use font type Arial or another font type similar to Arial and font size 11, with exceptions for the title ‘Fee Information Document’, which uses font size 16 in bold type; font size 14 in bold type for the headings, and font size 12 in bold for the sub-headings, unless an increase in the font size or use of braille font type for visually impaired persons is either required under national law or agreed between the consumer and the payment service provider;\n(e) be produced in black and white, with exception of the logo of the payment service provider and the common symbol which may be presented in colour, as laid down in Article 2;\n(f) contain the headings in semi-dark grey using the colour pattern with reference number 166,166,166 of the RGB colour model and the sub-headings in light-grey colour using the colour pattern with reference number 191,191,191 of the RGB colour model;\n(g) have its pages numbered.\n\n3. A payment service provider shall provide a separate fee information document in respect of each of the payment accounts it offers to consumers.\n\n4. Notwithstanding the provision of a payment account with basic features referred to in Chapter IV of Directive 2014/92/EU, where a payment service provider offers only one payment account to consumers that can be combined with different packages of services referred to in Article 4(3) of Directive 2014/92/EU, the payment service provider may produce more than one fee information document in respect of that account, provided that each fee information document contains at least one package."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-pad-fid-format"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/34/2018-01-11/eng#art_1",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/34, Article 1, consolidated text of 2018-01-11 (CELEX 02018R0034-20180111). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/002",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "General authentication requirements",
+      "texts": {
+        "en": "1. Payment service providers shall have transaction monitoring mechanisms in place that enable them to detect unauthorised or fraudulent payment transactions for the purpose of the implementation of the security measures referred to in points (a) and (b) of Article 1.\n\nThose mechanisms shall be based on the analysis of payment transactions taking into account elements which are typical of the payment service user in the circumstances of a normal use of the personalised security credentials.\n\n2. Payment service providers shall ensure that the transaction monitoring mechanisms take into account, at a minimum, each of the following risk-based factors:\n(a) lists of compromised or stolen authentication elements;\n(b) the amount of each payment transaction;\n(c) known fraud scenarios in the provision of payment services;\n(d) signs of malware infection in any sessions of the authentication procedure;\n(e) in case the access device or the software is provided by the payment service provider, a log of the use of the access device or the software provided to the payment service user and the abnormal use of the access device or the software."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-transaction-monitoring"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 2, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/003",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Review of the security measures",
+      "texts": {
+        "en": "1. The implementation of the security measures referred to in Article 1 shall be documented, periodically tested, evaluated and audited in accordance with the applicable legal framework of the payment service provider by auditors with expertise in IT security and payments and operationally independent within or from the payment service provider.\n\n2. The period between the audits referred to in paragraph 1 shall be determined taking into account the relevant accounting and statutory audit framework applicable to the payment service provider.\n\nHowever, payment service providers that make use of the exemption referred to in Article 18 shall be subject to an audit of the methodology, the model and the reported fraud rates at a minimum on a yearly basis. The auditor performing this audit shall have expertise in IT security and payments and be operationally independent within or from the payment service provider. During the first year of making use of the exemption under Article 18 and at least every 3 years thereafter, or more frequently at the competent authority's request, this audit shall be carried out by an independent and qualified external auditor.\n\n3. This audit shall present an evaluation and report on the compliance of the payment service provider's security measures with the requirements set out in this Regulation.\n\nThe entire report shall be made available to competent authorities upon their request."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-security-audit"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_3",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 3, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/004",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Authentication code",
+      "texts": {
+        "en": "1. Where payment service providers apply strong customer authentication in accordance with Article 97(1) of Directive (EU) 2015/2366, the authentication shall be based on two or more elements which are categorised as knowledge, possession and inherence and shall result in the generation of an authentication code.\n\nThe authentication code shall be only accepted once by the payment service provider when the payer uses the authentication code to access its payment account online, to initiate an electronic payment transaction or to carry out any action through a remote channel which may imply a risk of payment fraud or other abuses.\n\n2. For the purpose of paragraph 1, payment service providers shall adopt security measures ensuring that each of the following requirements is met:\n(a) no information on any of the elements referred to in paragraph 1 can be derived from the disclosure of the authentication code;\n(b) it is not possible to generate a new authentication code based on the knowledge of any other authentication code previously generated;\n(c) the authentication code cannot be forged.\n\n3. Payment service providers shall ensure that the authentication by means of generating an authentication code includes each of the following measures:\n(a) where the authentication for remote access, remote electronic payments and any other actions through a remote channel which may imply a risk of payment fraud or other abuses has failed to generate an authentication code for the purposes of paragraph 1, it shall not be possible to identify which of the elements referred to in that paragraph was incorrect;\n(b) the number of failed authentication attempts that can take place consecutively, after which the actions referred to in Article 97(1) of Directive (EU) 2015/2366 shall be temporarily or permanently blocked, shall not exceed five within a given period of time;\n(c) the communication sessions are protected against the capture of authentication data transmitted during the authentication and against manipulation by unauthorised parties in accordance with the requirements in Chapter V;\n(d) the maximum time without activity by the payer after being authenticated for accessing its payment account online shall not exceed 5 minutes.\n\n4. Where the block referred to in paragraph 3(b) is temporary, the duration of that block and the number of retries shall be established based on the characteristics of the service provided to the payer and all the relevant risks involved, taking into account, at a minimum, the factors referred to in Article 2(2).\n\nThe payer shall be alerted before the block is made permanent.\n\nWhere the block has been made permanent, a secure procedure shall be established allowing the payer to regain use of the blocked electronic payment instruments."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-authentication-code"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_4",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 4, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/005",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Dynamic linking",
+      "texts": {
+        "en": "1. Where payment service providers apply strong customer authentication in accordance with Article 97(2) of Directive (EU) 2015/2366, in addition to the requirements of Article 4 of this Regulation, they shall also adopt security measures that meet each of the following requirements:\n(a) the payer is made aware of the amount of the payment transaction and of the payee;\n(b) the authentication code generated is specific to the amount of the payment transaction and the payee agreed to by the payer when initiating the transaction;\n(c) the authentication code accepted by the payment service provider corresponds to the original specific amount of the payment transaction and to the identity of the payee agreed to by the payer;\n(d) any change to the amount or the payee results in the invalidation of the authentication code generated.\n\n2. For the purpose of paragraph 1, payment service providers shall adopt security measures which ensure the confidentiality, authenticity and integrity of each of the following:\n(a) the amount of the transaction and the payee throughout all of the phases of the authentication;\n(b) the information displayed to the payer throughout all of the phases of the authentication including the generation, transmission and use of the authentication code.\n\n3. For the purpose of paragraph 1(b) and where payment service providers apply strong customer authentication in accordance with Article 97(2) of Directive (EU) 2015/2366 the following requirements for the authentication code shall apply:\n(a) in relation to a card-based payment transaction for which the payer has given consent to the exact amount of the funds to be blocked pursuant to Article 75(1) of that Directive, the authentication code shall be specific to the amount that the payer has given consent to be blocked and agreed to by the payer when initiating the transaction;\n(b) in relation to payment transactions for which the payer has given consent to execute a batch of remote electronic payment transactions to one or several payees, the authentication code shall be specific to the total amount of the batch of payment transactions and to the specified payees."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-authentication-code"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_5",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 5, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/009",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Independence of the elements",
+      "texts": {
+        "en": "1. Payment service providers shall ensure that the use of the elements of strong customer authentication referred to in Articles 6, 7 and 8 is subject to measures which ensure that, in terms of technology, algorithms and parameters, the breach of one of the elements does not compromise the reliability of the other elements.\n\n2. Payment service providers shall adopt security measures, where any of the elements of strong customer authentication or the authentication code itself is used through a multi-purpose device, to mitigate the risk which would result from that multi-purpose device being compromised.\n\n3. For the purposes of paragraph 2, the mitigating measures shall include each of the following:\n(a) the use of separated secure execution environments through the software installed inside the multi-purpose device;\n(b) mechanisms to ensure that the software or device has not been altered by the payer or by a third party;\n(c) where alterations have taken place, mechanisms to mitigate the consequences thereof."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-authentication-code"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_9",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 9, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/010a",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 10a",
+      "path": "010a",
+      "heading": "Access to the payment account information through an account information service provider",
+      "texts": {
+        "en": "1. Payment service providers shall not apply strong customer authentication where a payment service user is accessing its payment account online through an account information service provider, provided that access is limited to one of the following items online without disclosure of sensitive payment data:\n(a) the balance of one or more designated payment accounts;\n(b) the payment transactions executed in the last 90 days through one or more designated payment accounts.\n\n2. By way of derogation from paragraph 1, payment service providers shall apply strong customer authentication where one of the following conditions is met:\n(a) the payment service user is accessing online the information specified in paragraph 1 for the first time through the account information service provider;\n(b) more than 180 days have elapsed since the last time the payment service user accessed online the information specified in paragraph 1 through the account information service provider and strong customer authentication was applied.\n\n3. By way of derogation from paragraph 1, payment service providers shall be allowed to apply strong customer authentication where a payment service user is accessing its payment account online through an account information service provider and the payment service provider has objectively justified and duly evidenced reasons relating to unauthorised or fraudulent access to the payment account. In such a case, the payment service provider shall document and duly justify to its competent national authority, upon request, the reasons for applying strong customer authentication.\n\n4. Account servicing payment service providers that offer a dedicated interface as referred to in Article 31 shall not be required to implement the exemption laid down in paragraph 1 of this Article for the purpose of the contingency mechanism referred to in Article 33(4), where they do not apply the exemption laid down in Article 10 in the direct interface used for authentication and communication with their payment service users."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-ais-180-day-access"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_10a",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 10a, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/020",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 20",
+      "path": "020",
+      "heading": "Cessation of exemptions based on transaction risk analysis",
+      "texts": {
+        "en": "1. Payment service providers that make use of the exemption referred to in Article 18 shall immediately report to the competent authorities where one of their monitored fraud rates, for any type of payment transactions indicated in the table set out in the Annex, exceeds the applicable reference fraud rate and shall provide to the competent authorities a description of the measures that they intend to adopt to restore compliance of their monitored fraud rate with the applicable reference fraud rates.\n\n2. Payment service providers shall immediately cease to make use of the exemption referred to in Article 18 for any type of payment transactions indicated in the table set out in the Annex in the specific exemption threshold range where their monitored fraud rate exceeds for two consecutive quarters the reference fraud rate applicable for that payment instrument or type of payment transaction in that exemption threshold range.\n\n3. Following the cessation of the exemption referred to in Article 18 in accordance with paragraph 2 of this Article, payment service providers shall not use that exemption again, until their calculated fraud rate equals to, or is below, the reference fraud rates applicable for that type of payment transaction in that exemption threshold range for one quarter.\n\n4. Where payment service providers intend to make use again of the exemption referred to in Article 18, they shall notify the competent authorities in a reasonable timeframe and shall before making use again of the exemption, provide evidence of the restoration of compliance of their monitored fraud rate with the applicable reference fraud rate for that exemption threshold range in accordance with paragraph 3 of this Article."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-exemption-fraud-monitoring"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_20",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 20, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/021",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 21",
+      "path": "021",
+      "heading": "Monitoring",
+      "texts": {
+        "en": "1. In order to make use of the exemptions set out in Articles 10 to 18, payment service providers shall record and monitor the following data for each type of payment transactions, with a breakdown for both remote and non-remote payment transactions, at least on a quarterly basis:\n(a) the total value of unauthorised or fraudulent payment transactions in accordance with Article 64(2) of Directive (EU) 2015/2366, the total value of all payment transactions and the resulting fraud rate, including a breakdown of payment transactions initiated through strong customer authentication and under each of the exemptions;\n(b) the average transaction value, including a breakdown of payment transactions initiated through strong customer authentication and under each of the exemptions;\n(c) the number of payment transactions where each of the exemptions was applied and their percentage in respect of the total number of payment transactions.\n\n2. Payment service providers shall make the results of the monitoring in accordance with paragraph 1 available to competent authorities and to EBA, with prior notification to the relevant competent authority(ies), upon their request."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-exemption-fraud-monitoring"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_21",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 21, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/022",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 22",
+      "path": "022",
+      "heading": "General requirements",
+      "texts": {
+        "en": "1. Payment service providers shall ensure the confidentiality and integrity of the personalised security credentials of the payment service user, including authentication codes, during all phases of the authentication.\n\n2. For the purpose of paragraph 1, payment service providers shall ensure that each of the following requirements is met:\n(a) personalised security credentials are masked when displayed and are not readable in their full extent when input by the payment service user during the authentication;\n(b) personalised security credentials in data format, as well as cryptographic materials related to the encryption of the personalised security credentials are not stored in plain text;\n(c) secret cryptographic material is protected from unauthorised disclosure.\n\n3. Payment service providers shall fully document the process related to the management of cryptographic material used to encrypt or otherwise render unreadable the personalised security credentials.\n\n4. Payment service providers shall ensure that the processing and routing of personalised security credentials and of the authentication codes generated in accordance with Chapter II take place in secure environments in accordance with strong and widely recognised industry standards."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-credential-confidentiality"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_22",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 22, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/030",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 30",
+      "path": "030",
+      "heading": "General obligations for access interfaces",
+      "texts": {
+        "en": "1. Account servicing payment service providers that offer to a payer a payment account that is accessible online shall have in place at least one interface which meets each of the following requirements:\n(a) account information service providers, payment initiation service providers and payment service providers issuing card-based payment instruments are able to identify themselves towards the account servicing payment service provider;\n(b) account information service providers are able to communicate securely to request and receive information on one or more designated payment accounts and associated payment transactions;\n(c) payment initiation service providers are able to communicate securely to initiate a payment order from the payer's payment account and receive all information on the initiation of the payment transaction and all information accessible to the account servicing payment service providers regarding the execution of the payment transaction.\n\n2. For the purposes of authentication of the payment service user, the interface referred to in paragraph 1 shall allow account information service providers and payment initiation service providers to rely on all the authentication procedures provided by the account servicing payment service provider to the payment service user.\n\nThe interface shall at least meet all of the following requirements:\n(a) a payment initiation service provider or an account information service provider shall be able to instruct the account servicing payment service provider to start the authentication based on the consent of the payment service user;\n(b) communication sessions between the account servicing payment service provider, the account information service provider, the payment initiation service provider and any payment service user concerned shall be established and maintained throughout the authentication;\n(c) the integrity and confidentiality of the personalised security credentials and of authentication codes transmitted by or through the payment initiation service provider or the account information service provider shall be ensured.\n\n3. Account servicing payment service providers shall ensure that their interfaces follow standards of communication which are issued by international or European standardisation organisations.\n\nAccount servicing payment service providers shall also ensure that the technical specification of any of the interfaces is documented specifying a set of routines, protocols, and tools needed by payment initiation service providers, account information service providers and payment service providers issuing card-based payment instruments for allowing their software and applications to interoperate with the systems of the account servicing payment service providers.\n\nAccount servicing payment service providers shall at a minimum, and no less than 6 months before the application date referred to in Article 38(2), or before the target date for the market launch of the access interface when the launch takes place after the date referred to in Article 38(2), make the documentation available, at no charge, upon request by authorised payment initiation service providers, account information service providers and payment service providers issuing card-based payment instruments or payment service providers that have applied to their competent authorities for the relevant authorisation, and shall make a summary of the documentation publicly available on their website.\n\n4. In addition to paragraph 3, account servicing payment service providers shall ensure that, except for emergency situations, any change to the technical specification of their interface is made available to authorised payment initiation service providers, account information service providers and payment service providers issuing card-based payment instruments, or payment service providers that have applied to their competent authorities for the relevant authorisation, in advance as soon as possible and not less than 3 months before the change is implemented.\n\nPayment service providers shall document emergency situations where changes were implemented and make the documentation available to competent authorities on request.\n\n4a. By way of derogation from paragraph 4, account servicing payment service providers shall make available to the payment service providers referred to in this Article the changes made to the technical specifications of their interfaces in order to comply with Article 10a not less than 2 months before such changes are implemented.\n\n5. Account servicing payment service providers shall make available a testing facility, including support, for connection and functional testing to enable authorised payment initiation service providers, payment service providers issuing card-based payment instruments and account information service providers, or payment service providers that have applied for the relevant authorisation, to test their software and applications used for offering a payment service to users. This testing facility should be made available no later than 6 months before the application date referred to in Article 38(2) or before the target date for the market launch of the access interface when the launch takes place after the date referred to in Article 38(2).\n\nHowever, no sensitive information shall be shared through the testing facility.\n\n6. Competent authorities shall ensure that account servicing payment service providers comply at all times with the obligations included in these standards in relation to the interface(s) that they put in place. In the event that an account servicing payment services provider fails to comply with the requirements for interfaces laid down in these standards, competent authorities shall ensure that the provision of payment initiation services and account information services is not prevented or disrupted to the extent that the respective providers of such services comply with the conditions defined under Article 33(5)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-access-interface"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_30",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 30, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/032",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 32",
+      "path": "032",
+      "heading": "Obligations for a dedicated interface",
+      "texts": {
+        "en": "1. Subject to compliance with Article 30 and 31, account servicing payment service providers that have put in place a dedicated interface shall ensure that the dedicated interface offers at all times the same level of availability and performance, including support, as the interfaces made available to the payment service user for directly accessing its payment account online.\n\n2. Account servicing payment service providers that have put in place a dedicated interface shall define transparent key performance indicators and service level targets, at least as stringent as those set for the interface used by their payment service users both in terms of availability and of data provided in accordance with Article 36. Those interfaces, indicators and targets shall be monitored by the competent authorities and stress-tested.\n\n3. Account servicing payment service providers that have put in place a dedicated interface shall ensure that this interface does not create obstacles to the provision of payment initiation and account information services. Such obstacles, may include, among others, preventing the use by payment service providers referred to in Article 30(1) of the credentials issued by account servicing payment service providers to their customers, imposing redirection to the account servicing payment service provider's authentication or other functions, requiring additional authorisations and registrations in addition to those provided for in Articles 11, 14 and 15 of Directive (EU) 2015/2366, or requiring additional checks of the consent given by payment service users to providers of payment initiation and account information services.\n\n4. For the purpose of paragraphs 1 and 2, account servicing payment service providers shall monitor the availability and performance of the dedicated interface. Account servicing payment service providers shall publish on their website quarterly statistics on the availability and performance of the dedicated interface and of the interface used by its payment service users."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-access-interface"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_32",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 32, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32018r0389/033",
+      "instrument": "celex-32018r0389",
+      "provisionKind": "article",
+      "refLabel": "Article 33",
+      "path": "033",
+      "heading": "Contingency measures for a dedicated interface",
+      "texts": {
+        "en": "1. Account servicing payment service providers shall include, in the design of the dedicated interface, a strategy and plans for contingency measures for the event that the interface does not perform in compliance with Article 32, that there is unplanned unavailability of the interface and that there is a systems breakdown. Unplanned unavailability or a systems breakdown may be presumed to have arisen when five consecutive requests for access to information for the provision of payment initiation services or account information services are not replied to within 30 seconds.\n\n2. Contingency measures shall include communication plans to inform payment service providers making use of the dedicated interface of measures to restore the system and a description of the immediately available alternative options payment service providers may have during this time.\n\n3. Both the account servicing payment service provider and the payment service providers referred to in Article 30(1) shall report problems with dedicated interfaces as described in paragraph 1 to their respective competent national authorities without delay.\n\n4. As part of a contingency mechanism, payment service providers referred to in Article 30(1) shall be allowed to make use of the interfaces made available to the payment service users for the authentication and communication with their account servicing payment service provider, until the dedicated interface is restored to the level of availability and performance provided for in Article 32.\n\n5. For this purpose, account servicing payment service providers shall ensure that the payment service providers referred to in Article 30(1) can be identified and can rely on the authentication procedures provided by the account servicing payment service provider to the payment service user. Where the payment service providers referred to in Article 30(1) make use of the interface referred to in paragraph 4 they shall:\n(a) take the necessary measures to ensure that they do not access, store or process data for purposes other than for the provision of the service as requested by the payment service user;\n(b) continue to comply with the obligations following from Article 66(3) and Article 67(2) of Directive (EU) 2015/2366 respectively;\n(c) log the data that are accessed through the interface operated by the account servicing payment service provider for its payment service users, and provide, upon request and without undue delay, the log files to their competent national authority;\n(d) duly justify to their competent national authority, upon request and without undue delay, the use of the interface made available to the payment service users for directly accessing its payment account online;\n(e) inform the account servicing payment service provider accordingly.\n\n6. Competent authorities, after consulting EBA to ensure a consistent application of the following conditions, shall exempt the account servicing payment service providers that have opted for a dedicated interface from the obligation to set up the contingency mechanism described under paragraph 4 where the dedicated interface meets all of the following conditions:\n(a) it complies with all the obligations for dedicated interfaces as set out in Article 32;\n(b) it has been designed and tested in accordance with Article 30(5) to the satisfaction of the payment service providers referred to therein;\n(c) it has been widely used for at least 3 months by payment service providers to offer account information services, payment initiation services and to provide confirmation on the availability of funds for card-based payments;\n(d) any problem related to the dedicated interface has been resolved without undue delay.\n\n7. Competent authorities shall revoke the exemption referred to in paragraph 6 where the conditions (a) and (d) are not met by the account servicing payment service providers for more than 2 consecutive calendar weeks. Competent authorities shall inform EBA of this revocation and shall ensure that the account servicing payment service provider establishes, within the shortest possible time and at the latest within 2 months, the contingency mechanism referred to in paragraph 4."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sca-rts-interface-contingency"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/2023-09-12/eng#art_33",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 33, consolidated text of 2023-09-12 (CELEX 02018R0389-20230912). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32021r1230/003",
+      "instrument": "celex-32021r1230",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Charges for cross-border payments and corresponding national payments",
+      "texts": {
+        "en": "1. Charges levied by a payment service provider on a payment service user in respect of cross-border payments in euro shall be the same as the charges levied by that payment service provider for corresponding national payments of the same value in the national currency of the Member State in which the payment service provider of the payment service user is located.\n\n2. Charges levied by a payment service provider on a payment service user in respect of cross-border payments in the national currency of a Member State that has notified its decision to extend the application of this Regulation to its national currency in accordance with Article 13 shall be the same as the charges levied by that payment service provider on payment service users for corresponding national payments of the same value and in the same currency.\n\n3. When assessing, for the purpose of complying with paragraph 1, the level of charges for a cross-border payment, a payment service provider shall identify the corresponding national payment. The competent authorities shall issue guidelines to identify corresponding national payments where they consider it necessary to do so. The competent authorities shall actively cooperate within the Payments Committee established by Article 85(1) of Directive 2007/64/EC, to ensure the consistency of guidelines for corresponding national payments.\n\n4. Paragraphs 1 and 2 shall not apply to currency conversion charges.\n\n5. Paragraph 1 of this Article shall not apply where Article 5b(1) of Regulation (EU) No 260/2012 of the European Parliament and of the Council ( ⁴ ) would require a payment service provider located in a Member State that does not have the euro as its currency, with respect to an instant credit transfer, to levy a charge which would be lower than the charge which would be levied, with respect to the same instant credit transfer, if paragraph 1 of this Article were to be applied.\n\nFor the purposes of the first subparagraph of this paragraph, the term ‘instant credit transfer’ means an instant credit transfer as defined in Article 2, point (1a), of Regulation (EU) No 260/2012, that is in euro and cross-border.\n\n( ⁴ ) Regulation (EU) No 260/2012 of the European Parliament and of the Council of 14 March 2012 establishing technical and business requirements for credit transfers and direct debits in euro and amending Regulation (EC) No 924/2009 (OJ L 94, 30.3.2012, p. 22)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-cbpr-charges-parity"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/2024-04-08/eng#art_3",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 3, consolidated text of 2024-04-08 (CELEX 02021R1230-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32021r1230/004",
+      "instrument": "celex-32021r1230",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Currency conversion charges related to card-based transactions",
+      "texts": {
+        "en": "1. With regard to the information requirements on currency conversion charges and the applicable exchange rate, as set out in Article 45(1), Article 52, point (3), and Article 59(2) of Directive (EU) 2015/2366, payment service providers and parties providing currency conversion services at an automated teller machine (ATM) or at the point of sale, as referred to in Article 59(2) of that Directive, shall express the total currency conversion charges as a percentage mark-up over the latest available euro foreign exchange reference rates issued by the European Central Bank (ECB). That mark-up shall be disclosed to the payer prior to the initiation of the payment transaction.\n\n2. Payment service providers shall also make the mark-up referred to in paragraph 1 public in a comprehensible and easily accessible manner on a broadly available and easily accessible electronic platform.\n\n3. In addition to the information referred to in paragraph 1, a party providing a currency conversion service at an ATM or at the point of sale shall provide the payer with the following information prior to the initiation of the payment transaction:\n(a) the amount to be paid to the payee in the currency used by the payee;\n(b) the amount to be paid by the payer in the currency of the payer’s account.\n\n4. A party providing currency conversion services at an ATM or at the point of sale shall clearly display the information referred to in paragraph 1 at the ATM or at the point of sale. Prior to the initiation of the payment transaction, that party shall also inform the payer of the possibility of paying in the currency used by the payee and having the currency conversion subsequently performed by the payer’s payment service provider. The information referred to in paragraphs 1 and 3 shall also be made available to the payer on a durable medium following the initiation of the payment transaction.\n\n5. The payer’s payment service provider shall, for each payment card that was issued to the payer by the payer’s payment service provider and that is linked to the same account, send to the payer an electronic message with the information referred to in paragraph 1, without undue delay after the payer’s payment service provider receives a payment order for a cash withdrawal at an ATM or a payment at the point of sale that is denominated in any Union currency that is different from the currency of the payer’s account.\n\nNotwithstanding the first subparagraph, such a message shall be sent once every month in which the payer’s payment service provider receives from the payer a payment order denominated in the same currency.\n\n6. The payment service provider shall agree with the payment service user on the broadly available and easily accessible electronic communication channel or channels through which the payment service provider will send the message referred to in paragraph 5.\n\nThe payment service provider shall offer payment service users the possibility of opting out of receiving the electronic messages referred to in paragraph 5.\n\nThe payment service provider and the payment service user may agree that paragraph 5 and this paragraph do not apply in whole or in part where the payment service user is not a consumer.\n\n7. The information referred to in this Article shall be provided free of charge and in a neutral and comprehensible manner."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-cbpr-card-conversion-markup",
+        "obl-eu-cbpr-conversion-message"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/2024-04-08/eng#art_4",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 4, consolidated text of 2024-04-08 (CELEX 02021R1230-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32021r1230/005",
+      "instrument": "celex-32021r1230",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Currency conversion charges related to credit transfers",
+      "texts": {
+        "en": "1. When a currency conversion service is offered by the payer’s payment service provider in relation to a credit transfer, as defined in point (24) of Article 4 of Directive (EU) 2015/2366, that is initiated online directly, using the website or the mobile banking application of the payment service provider, the payment service provider, with regard to Article 45(1) and Article 52, point (3), of that Directive, shall inform the payer prior to the initiation of the payment transaction, in a clear, neutral and comprehensible manner, of the estimated charges for currency conversion services applicable to the credit transfer.\n\n2. Prior to the initiation of a payment transaction, the payment service provider shall communicate to the payer, in a clear, neutral and comprehensible manner, the estimated total amount of the credit transfer in the currency of the payer’s account, including any transaction fee and any currency conversion charges. The payment service provider shall also communicate the estimated amount to be transferred to the payee in the currency used by the payee."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-cbpr-credit-transfer-conversion"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/2024-04-08/eng#art_5",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 5, consolidated text of 2024-04-08 (CELEX 02021R1230-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32021r1230/006",
+      "instrument": "celex-32021r1230",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Measures for facilitating the automation of payments",
+      "texts": {
+        "en": "1. The payment service provider shall, where applicable, communicate to the payment service user the payment service user’s international payment account number identifier (IBAN) and the payment service provider’s business identifier code (BIC).\n\nIn addition, where applicable, the payment service provider shall indicate the payment service user’s IBAN and the payment service provider’s BIC on statements of account or in an annex thereto.\n\nThe payment service provider shall provide the information required under this paragraph to the payment service user free of charge.\n\n2. The payment service provider may levy charges additional to those levied in accordance with Article 3(1) of this Regulation on the payment service user where that user instructs the payment service provider to execute a cross-border payment without communicating the IBAN and, where appropriate and in accordance with Regulation (EU) No 260/2012, the related BIC for the payment account in the other Member State. Those charges shall be appropriate and in line with the costs. They shall be agreed between the payment service provider and the payment service user. The payment service provider shall inform the payment service user of the amount of the additional charges in good time before the payment service user is bound by such an agreement.\n\n3. Where appropriate, with regard to the nature of the payment transaction concerned, for all invoicing of goods and services in the Union, a supplier of goods and services that accepts payments covered by this Regulation shall communicate its IBAN and the BIC of its payment service provider to its customers."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-cbpr-iban-bic"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/2024-04-08/eng#art_6",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 6, consolidated text of 2024-04-08 (CELEX 02021R1230-20240408). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32025r1979/001",
+      "instrument": "celex-32025r1979",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Reporting on the level of charges",
+      "texts": {
+        "en": "1. PSPs shall report on the level of charges for credit transfers, instant credit transfers and payment accounts by submitting the information specified in templates 1.1, 1.2, 2.1, 2.2 and 3 set out in Annex I and in accordance with the instructions set out in Annex II.\n\n2. PSPs shall report the annual aggregate figures up until 31 of December of the calendar year preceding the year in which the report is submitted.\n\n3. By way of derogation from paragraph 2, the first harmonised report shall contain aggregate figures for each year preceding the year in which the report is submitted, starting with the period of 26 October 2022 – 31 December 2022, for 2022."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-its-reporting-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj#art_1",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, Article 1, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32025r1979/002",
+      "instrument": "celex-32025r1979",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Reporting of share of rejected instant credit transfer transactions and reference periods",
+      "texts": {
+        "en": "1. PSPs shall report the share of instant credit transfer transactions that have been rejected due to targeted financial restrictive measures, as referred to in Article 15(3) of Regulation (EU) No 260/2012, including separate data for national and cross-border transactions, by submitting the information specified in template 4 set out in Annex I and in accordance with the instructions set out in Annex II.\n\n2. The reports shall include the number of rejections for the calendar year preceding the year in which the report is submitted.\n\n3. By way of derogation from paragraph 2, the first harmonised report shall contain the completed templates with the number of rejections for each year preceding the year in which the report is submitted, starting with the period of 26 October 2022 – 31 December 2022, for 2022."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-its-reporting-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32025r1979/003",
+      "instrument": "celex-32025r1979",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Data exchange formats and information accompanying submissions",
+      "texts": {
+        "en": "PSPs shall submit the information referred to in Articles 1 and 2 of this Regulation in the data exchange formats and representations specified by the competent authorities, and respect the data point definition of the data point model and the validation formulae made available on the EBA website. PSPs shall comply with the following specifications:\n(a) information that is not required or not applicable shall not be included in a data submission;\n(b) numerical values shall be submitted as follows:\n(i) PSPs shall report data points with the data type ‘Monetary’ using a minimum precision equivalent to thousands of units;\n(ii) PSPs shall not use decimals when reporting data points with the data type ‘Integer’ and shall use a precision equivalent to units."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-its-reporting-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj#art_3",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32025r1979/annex-001",
+      "instrument": "celex-32025r1979",
+      "provisionKind": "annex",
+      "refLabel": "ANNEX I",
+      "path": "annex-001",
+      "heading": null,
+      "texts": {
+        "en": "Level of charges for credit transfers and share of rejected transactions\nISSUER TEMPLATES\nTemplate number\nTemplate code\nAdressees\nName of the template /group of templates\nLevel of charges for credit transfers and share of rejected transactions\n1,1\nS 01.01\nAll PSPs\nNUMBER AND VALUE OF CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (NATIONAL CURRENCY)\n1,2\nS 01.02\nPSPs located in non-Euro member states\nNUMBER AND VALUE OF CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (EURO)\n2,1\nS 02.01\nALL PSPs\nCHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (NATIONAL CURRENCY)\n2,2\nS 02.02\nPSPs located in non-Euro member states\nCHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (EURO)\n3\nS 03.00\nALL PSPs\nNUMBER OF PAYMENT ACCOUNTS AND TOTAL CHARGES (NATIONAL CURRENCY)\n4\nS 04.00\nALL PSPs\nNUMBER OF REJECTED INSTANT CREDIT TRANSFERS\nS 01.01 - TOTAL NUMBER AND TOTAL VALUE OF CREDIT TRANSFERS AND OF INSTANT CREDIT TRANSFERS (NATIONAL CURRENCY)\nCredit transfers sent\nCredit transfers received\nNumber of credit transfers\nValue of credit transfers\nNumber of credit transfers\nValue of credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\n0010\n0020\n0030\n0040\n0050\n0060\n0070\n0080\nTotal\n0010\nof which: initiated electronically via online banking\n0020\nof which: initiated electronically via mobile payment solutions\n0030\nof which: initiated in a paper-based form\n0040\nBreakdown by location of PSPs\nNational\n0050\nCross-border\n0060\nBreakdown by charges levied\nFree of charge\n0070\nCharged\n0080\nBreakdown by PSU type\nPSUs other than consumers\n0090\nConsumers\n0100\nS 01.02 - TOTAL NUMBER AND TOTAL VALUE OF CREDIT TRANSFERS AND OF INSTANT CREDIT TRANSFERS (EURO)\nCredit transfers sent\nCredit transfers received\nNumber of credit transfers\nValue of credit transfers\nNumber of credit transfers\nValue of credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\n0010\n0020\n0030\n0040\n0050\n0060\n0070\n0080\nTotal\n0010\nS 02.01 - CHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (NATIONAL CURRENCY)\nCredit transfers sent\nCredit transfers received\nValue of charges for credit transfers\nValue of charges for credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\n0010\n0020\n0030\n0040\nTotal\n0010\nof which: initiated electronically via online banking\n0020\nof which: initiated electronically via mobile payment solutions\n0030\nof which: initiated in a paper-based form\n0040\nBreakdown by location of the PSPs\nNational\n0050\nCross-border\n0060\nBreakdown by PSU type\nPSUs other than consumers\n0070\nConsumers\n0080\nS 02.02 - CHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (EURO)\nCredit transfers sent\nCredit transfers received\nValue of charges for credit transfers\nValue of charges for credit transfers\nof which: instant credit transfers\nof which: instant credit transfers\n0010\n0020\n0030\n0040\nTotal\n0010\nS 03.00 - TOTAL NUMBER OF PAYMENT ACCOUNTS AND TOTAL CHARGES FOR PAYMENT ACCOUNTS\nNumber of payment accounts\nValue of charges for payment accounts\nof which: maintainance of payment accounts\n0010\n0020\n0030\nTotal\n0010\nS 04.00 - NUMBER OF REJECTED INSTANT CREDIT TRANSFERS\nNumber of instances when instant credit transfers were not executed or funds were frozen, as\nPayee's PSP\nPayer's PSP\n0010\n0020\nTotal\n0010\nBreakdown by location of PSPs\nNational\n0020\nCross-border\n0030"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-its-reporting-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj#anx_I",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, ANNEX I, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32025r1979/annex-002",
+      "instrument": "celex-32025r1979",
+      "provisionKind": "annex",
+      "refLabel": "ANNEX II",
+      "path": "annex-002",
+      "heading": null,
+      "texts": {
+        "en": "REPORTING FOR PAYMENT SERVICES PROVIDERS OF LEVEL OF CHARGES FOR CREDIT TRANSFERS AND PAYMENT ACCOUNTS, AND REJECTED TRANSACTIONS - INSTRUCTIONS\n\nTable of Contents\nREPORTING FOR PAYMENT SERVICES PROVIDERS OF LEVEL OF CHARGES FOR CREDIT TRANSFERS AND PAYMENT ACCOUNTS, AND REJECTED TRANSACTIONS - INSTRUCTIONS\n9\nGENERAL INSTRUCTIONS\n10\nTEMPLATE S 01.01: TOTAL NUMBER AND TOTAL VALUE OF CREDIT TRANSFERS, AND OF INSTANT CREDIT TRANSFERS\n11\nTEMPLATE S 01.02: TOTAL NUMBER AND TOTAL VALUE OF CREDIT TRANSFERS, AND OF INSTANT CREDIT TRANSFERS (only for PSPs in non-euro Member States)\n16\nTEMPLATE S 02.01: CHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS\n16\nTEMPLATE S 02.02: CHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (only for PSPs in non-euro Member States)\n18\nTEMPLATE S 03.00: TOTAL NUMBER OF PAYMENT ACCOUNTS, AND TOTAL CHARGES FOR PAYMENT ACCOUNTS (NATIONAL CURRENCY)\n19\nTEMPLATE S 04.00: NUMBER OF REJECTED INSTANT CREDIT TRANSFERS\n20\n\nGENERAL INSTRUCTIONS\n\nContent\n1. This Annex contains the instructions for completing the reporting templates in Annex I. The instructions are addressed to the Payment Service Providers (PSPs). The instructions contain legal references for each of the templates.\n2. Annex I consists of six different templates:\n— Total number and total value of credit transfers, and of instant credit transfers (national currency) (S 01.01)\n— Total number and total value of credit transfers, and of instant credit transfers (euro) (S 01.02)\n— Charges for credit transfers and instant credit transfers (national currency) (S 02.01)\n— Charges for credit transfers and instant credit transfers (euro) (S 02.02)\n— Total number of payment accounts, and total charges for payment accounts (national currency) (S 03.00)\n— Number of rejected instant credit transfers (S 04.00).\n3. In Annex I, in columns “Number”, PSPs shall report numerical values following the specific instructions given for the templates.\n4. The following general notation is followed in these instructions: {Template; Row; Column; z-axis}. In the case of templates with only one column, only rows are referred to {Template; Row}, with z-axis where applicable.\n\nScope of reporting\n5. PSPs located in euro Member States in scope for the reporting obligations based on Article 15 of Regulation (EU) No 260/2012 of the European Parliament and of the Council (¹) shall report templates S 01.01, S 02.01, S 03.00 and S 04.00, with all the data points presented in this Annex, unless the national competent authorities in their jurisdiction allow them to send only a reference (including a link, where available) to identical previously submitted data points.\n6. PSPs located in non-euro Member States which offer the payment service of receiving and sending regular credit transfers in euro are also within the scope of the obligations to offer their PSUs the payment service of receiving and sending instant credit transfers in euro. Those PSPs should also comply with obligations regarding the charges levied on payers and payees in respect of sending and receiving instant credit transfers in euro. As such, those PSPs are also within the scope of the reporting obligations based on Article 15 of Regulation (EU) No 260/2012. Therefore, they shall report all templates with all the data points presented in this Annex, unless the national competent authorities in their jurisdiction allow them to send only a reference (including a link, where available) to identical previously submitted data points.\n7. Branches of PSPs located in Member States other than Member States of their parent entities shall submit their data to the competent authority of the host Member State and parent entities shall report for themselves to the competent authority of their home Member State.\n8. Article 15(2) and (3) of Regulation (EU) No 260/2012 specify that those paragraphs apply to credit transfers and instant credit transfers, while excluding transactions that are referred to in Article 1(2) of that Regulation. Furthermore, Article 15(2) of Regulation (EU) No 260/2012 provides that the development of charges for national and cross-border credit transfers and instant credit transfers in euro and in the national currency of the Member States whose currency is not the euro are also to be evaluated by the European Commission. National and cross-border credit transfers are defined in Article 2, points (26) and (27) of that Regulation. In light of this, to determine whether a credit transfer is under the scope of this Regulation, both the credit transfer currency (the credit transfer is in euro or in the national currency of the Member States whose currency is not the euro) and the PSP location (the payer's and the payee's PSPs of the credit transfer are located in the Union) are to be considered.\n9. Charges for transfers denominated in euro shall always be reported in euro, even if they were levied in another currency.\n10. Charges for transfers denominated in Member States’ national currencies other than euro shall be reported in that national currency, even where they were levied in a different currency. In such cases, where charges are converted into euro or into other national currencies, data shall be converted using the ECB reference exchange rate or exchange rates applied for those transactions, in accordance with Regulation (EU) No 1409/2013 of the European Central Bank (²).\n11. The currency conversion fee shall be excluded from reporting.\n12. PSPs shall report the six sets of templates in this Annex separately for each reference period.\n\nTEMPLATE S 01.01: TOTAL NUMBER AND TOTAL VALUE OF CREDIT TRANSFERS, AND OF INSTANT CREDIT TRANSFERS\n\nGeneral remarks\n13. PSPs shall complete Template S 01.01 with the number and value of sent credit transfers and instant credit transfers in euro for PSPs located in euro Member States, and in national currency other than euro for PSPs located in non-euro Member States.\nThe number and value of credit transfers and instant credit transfers shall include the number of such transfers sent by each PSP in the reference period, with breakdowns by:\n(a) transfers that are free of charge and those that are not free of charge;\n(b) type of customer initiating the credit transfer;\n(c) national or cross-border nature of the credit transfer;\n(d) payment initiation method used.\nFor the breakdowns referred to in points (a), (b) and (c), the sum of the reported data points shall add up to the total number or value of reported credit transfers.\nFor the breakdown referred to in point (d), in the credit transfers \"initiated electronically via online banking’, PSPs shall include credit transfers initiated online on a single payment basis and credit transfers initiated in a file/batch. Credit transfers initiated in a file/batch are electronically initiated credit transfers that are part of a group of credit transfers jointly initiated by the payer via a dedicated line. Each credit transfer contained in a batch shall be counted as a separate credit transfer when reporting the number of transactions.\n14. PSPs shall indicate in Template S 01.01 the number and value of received credit transfers and instant credit transfers in euro for PSPs located in euro Member States, and in national currency other than euro for PSPs located in non-euro Member States. The number and value of credit transfers and instant credit transfers shall indicate the number of transfers received by each PSP in the reference period, with a breakdown by whether the transfer is free of charge or not.\n15. Information in this template shall be reported at a total level.\nInstructions concerning specific positions of Template S 01.01\nRow; Column\nLegal references and instructions\n0010;\n0010\nTotal number of sent credit transfers\nTotal number of sent credit transfers in national currency\n0010;\n0020\nof which instant credit transfers\n0010;\n0030\nTotal value of sent credit transfers\nTotal value of all sent credit transfers in national currency, expressed in national currency.\n0010;\n0040\nof which instant credit transfers\n0010;\n0050\nTotal number of received credit transfers\nTotal number of received credit transfers in national currency\n0010;\n0060\nof which instant credit transfers\n0010;\n0070\nTotal value of received credit transfers\nTotal value of all received credit transfers in national currency, expressed in national currency.\n0010;\n0080\nof which instant credit transfers\n0020;\n0010\nTotal number of sent credit transfers initiated electronically via online banking\nTotal number of all credit transfers initiated through online banking, including credit transfers initiated in a file/batch, and payment initiation services.\n0020;\n0020\nof which instant credit transfers\n0020;\n0030\nTotal value of sent credit transfers initiated electronically via online banking\nTotal value of all credit transfers initiated through online banking, including credit transfers initiated in a file/batch, and payment initiation services, expressed in national currency.\n0020;\n0040\nof which instant credit transfers\n0030;\n0010\nTotal number of sent credit transfers initiated electronically via mobile payment solutions\nTotal number of credit transfer initiated via a mobile payment solution, where that solution is used to initiate payments for which the payments data and the payment instructions are transmitted or confirmed via mobile communication and data transmission technology through a mobile device. This category includes digital wallets and other mobile payment solutions used to initiate P2P (person-to-person) or C2B (consumer-to-business) transactions, according to the data definitions set out in Annex II to Regulation (EU) No 1409/2013.\n0030;\nof which instant credit transfers\n0020\n0030;\n0030\nTotal value of sent credit transfers initiated electronically via mobile payment solutions\nTotal value of credit transfer initiated via a mobile payment solution, expressed in national currency, where that solution is used to initiate payments for which the payments data and the payment instructions are transmitted or confirmed via mobile communication and data transmission technology through a mobile device. This category includes digital wallets and other mobile payment solutions used to initiate P2P (person-to-person) or C2B (consumer-to-business) transactions, according to the data definitions set out in Annex II to Regulation (EU) No 1409/2013.\n0030;\n0040\nof which instant credit transfers\n0040;\n0010\nTotal number of sent credit transfers initiated in paper-based form\nTotal number of credit transfers initiated by the payer in paper-based form, where a “Credit transfer initiated in paper- based form” means, according to the definitions set out in Annex II to Regulation (EU) No 1409/2013, “a credit transfer initiated by the payer in paper-based form or by instructing staff at a branch over the counter (OTC) to initiate a credit transfer and any other credit transfer, which requires manual processing”.\n0040;\n0020\nof which instant credit transfers\n0040;\n0030\nTotal value of sent credit transfers initiated in paper-based form\nTotal value of credit transfers initiated by the payer in paper-based form, expressed in national currency, where a “Credit transfer initiated in paper- based form” means, according to the definitions set out in Annex II to Regulation (EU) No 1409/2013, “a credit transfer initiated by the payer in paper-based form or by instructing staff at a branch over the counter (OTC) to initiate a credit transfer and any other credit transfer, which requires manual processing”.\n0040;\n0040\nof which instant credit transfers\n0050;\n0010\nTotal number of sent national credit transfers\nTotal number of national credit transfers where the payer’s PSP and the payee’s PSP are located in the same Member State\n0050;\n0020\nof which instant credit transfers\n0050;\n0030\nTotal value of sent national credit transfers\nTotal value of all credit transfers, where the payer’s PSP and the payee’s PSP are located in the same Member State. The value shall be expressed in national currency.\n0050;\n0040\nof which instant credit transfers\n0060;\n0010\nTotal number of sent cross-border credit transfers\nTotal number of credit transfers where the payer’s PSP and the payee’s PSP are located in different Member States. Cross-border transactions where either the payer’s or the payee’s PSP are located outside the Union shall be excluded.\n0060;\n0020\nof which instant credit transfers\n0060;\n0030\nTotal value of sent cross-border credit transfers\nTotal value of credit transfers where the payer’s PSP and the payee’s PSP are located in different Member States, expressed in national currency. Cross-border transactions where either the payer’s or the payee’s PSP are located outside the Union shall be excluded.\n0060;\n0040\nof which instant credit transfers\n0070;\n0010\nTotal number of sent credit transfers that were free of charge\nTotal number of sent credit transfers that were free of charge, including cases where the transfer is free as part of a paid-for payment account package.\n0070;\n0020\nof which instant credit transfers\n0070;\n0030\nTotal value of sent credit transfers that were free of charge\nTotal value of all sent credit transfers that were free of charge, including cases where the transfer is free as part of a paid-for payment account package, expressed in national currency.\n0070;\n0040\nof which instant credit transfers\n0070;\n0050\nTotal number of received credit transfers that were free of charge\nTotal number of received credit transfers that were free of charge, including cases where the transfer is free as part of a paid-for payment account package.\n0070;\n0060\nof which instant credit transfers\n0070;\n0070\nTotal value of received credit transfers that were free of charge\nTotal value of all received credit transfers that were free of charge, including where the transfer is free as part of a paid-for payment account package, expressed in national currency.\n0070;\n0080\nof which instant credit transfers\n0080;\n0010\nTotal number of sent credit transfers where the payer was charged\nTotal number of credit transfers where the payer’s PSP levied charges to its PSU for an individual transfer as opposed to as part of a paid-for payment account package.\n0080;\n0020\nof which instant credit transfers\n0080;\n0030\nTotal value of sent credit transfers where the payer was charged\nTotal value of all sent credit transfers where the payer’s PSP levied charges to its PSU, expressed in national currency.\n0080;\n0040\nof which instant credit transfers\n0080;\n0050\nTotal number of received credit transfers where the payee was charged\nTotal number of credit transfers where the payee’s PSP levied charges to its PSU for an individual transfer as opposed to as part of a paid-for payment account package.\n0080;\n0060\nof which instant credit transfers\n0080;\n0070\nTotal value of received credit transfers where the payee was charged\nTotal value of all received credit transfers where the payee’s PSP levied charges to its PSU, expressed in national currency.\n0080;\n0080\nof which instant credit transfers\n0090;\n0010\nTotal number of sent credit transfers initiated by PSUs other than consumers\nTotal number of all credit transfers from payment accounts held by PSUs other than consumers, including natural persons acting for the purposes of his or her trade, business or profession, or legal persons.\n0090;\n0020\nof which instant credit transfers\n0090;\n0030\nTotal value of sent credit transfers initiated by PSUs other than consumers\nTotal value of all credit transfers from payment accounts held by PSUs other than consumers, including natural persons acting for the purposes of his or her trade business or profession, or legal persons, expressed in national currency.\n0090;\n0040\nof which instant credit transfers\n0100;\n0010\nTotal number of sent credit transfers initiated by consumers\nTotal number of credit transfers initiated from payment accounts belonging to consumers.\n0100;\n0020\nof which instant credit transfers\n0100;\n0030\nTotal value of sent credit transfers initiated by consumers\nTotal value of all credit transfers initiated by a consumer, expressed in national currency\n0100;\n0040\nof which instant credit transfers\n\nTEMPLATE S 01.02: TOTAL NUMBER AND TOTAL VALUE OF CREDIT TRANSFERS, AND OF INSTANT CREDIT TRANSFERS (only for PSPs in non-euro Member States)\n16. PSPs shall complete Template S 01.02 by including the number and value of sent and received credit transfers and instant credit transfers in euro only for PSPs located in non-euro Member States, without further breakdowns.\nInstructions concerning specific positions of Template S 01.02\nRow; Column\nLegal references and instructions\n0010;\n0010\nTotal number of sent credit transfers\nTotal number of sent credit transfers in euro.\n0010;\n0020\nof which instant credit transfers\n0010;\n0030\nTotal value of sent credit transfers\nTotal value of all sent credit transfers in euro, expressed in euro.\n0010;\n0040\nof which instant credit transfers\n0010;\n0050\nTotal number of received credit transfers\nTotal number of received credit transfers in euro.\n0010;\n0060\nof which instant credit transfers\n0010;\n0070\nTotal value of received credit transfers\nTotal value of all received credit transfers in euro, expressed in euro.\n0010;\n0080\nof which instant credit transfers\n\nTEMPLATE S 02.01: CHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS\n\nGeneral remarks\n17. PSPs shall complete Template S 02.01 by including information on the charges levied by PSPs on PSUs for sent credit transfers and instant credit transfers in euro for PSPs located in euro Member States, and in national currency other than euro levied by PSPs located in non-euro Member States, in the reference period. The value of charges for sent credit transfers and instant credit transfers in the reference period shall include breakdowns by:\n(a) national or cross-border nature of the credit transfer;\n(b) type of customer initiating the credit transfer;\n(c) payment initiation method.\n18. For the breakdowns referred to in points (a) and (b), the sum of the reported data points shall add up to the total value of charges for the reported credit transfers.\n19. PSPs shall also include in Template S 02.01 information on the charges levied by PSPs on PSUs for received credit transfers and instant credit transfers in euro for PSPs located in euro Member States, and in national currency other than euro for PSPs located in non-euro Member States, with no further breakdowns.\nInstructions concerning specific positions of Template S 02.01\nRow; Column\nLegal references and instructions\n0010;\n0010\nTotal value of charges for sent credit transfers\nTotal value of charges for sent credit transfers, expressed in national currency.\n0010;\n0020\nof which for instant credit transfers\n0010; 0030\nTotal value of charges for received credit transfers\nTotal value of charges for received credit transfers, expressed in national currency.\n0010;\n0040\nof which for instant credit transfers\n0020;\n0010\nTotal value of charges for sent credit transfers initiated electronically via online banking\nTotal value of charges for sent credit transfers initiated through online banking, including credit transfers initiated in a file/batch, and payment initiation services.\n0020;\n0020\nof which for instant credit transfers\n0030;\n0010\nTotal value of charges for sent credit transfers initiated electronically via mobile payment solutions\nTotal value of charges for sent credit transfers initiated via mobile payment solutions expressed in national currency, where that solution is used to initiate payments for which the payments data and the payment instructions are transmitted or confirmed via mobile communication and data transmission technology through a mobile device. This category includes digital wallets and other mobile payment solutions used to initiate P2P (person-to-person) or C2B (consumer-to-business) transactions, according to the data definitions set out in Annex II to Regulation (EU) No 1409/2013.\n0030;\n0020\nof which for instant credit transfers\n0040;\n0010\nTotal value of charges for sent credit transfers initiated in a paper-based form\nTotal value of charges for credit transfers initiated by the payer in paper-based form, expressed in national currency, where a “Credit transfer initiated in paper-based form” means, according to the definition set out in Annex II to Regulation (EU) No 1409/2013, “a credit transfer initiated by the payer in paper-based form or by instructing staff at a branch over the counter (OTC) to initiate a credit transfer and any other credit transfer, which requires manual processing”.\n0040;\n0020\nof which for instant credit transfers\n0050;\n0010\nTotal value of charges for sent national credit transfers\nTotal value of charges for credit transfers where the payer’s PSP and the payee’s PSP are located in the same Member State. The value shall be expressed in national currency.\n0050;\n0020\nof which instant credit transfers\n0060;\n0010\nTotal value of charges for sent cross-border credit transfers\nTotal value of charges for credit transfers where the payer’s PSP and the payee’s PSP are located in different Member States, expressed in national currency.\nCharges of cross-border transactions where either the payer’s or the payee’s PSP are located outside the Union, shall be excluded.\n0060;\n0020\nof which for instant credit transfers\n0070;\n0010\nTotal value of charges for sent credit transfers initiated by PSUs other than consumers\nTotal value of charges for credit transfers initiated by PSUs other than consumers, expressed in national currency\n0070;\n0020\nof which for instant credit transfers\n0080;\n0010\nTotal value of charges for sent credit transfers initiated by consumers\nTotal value of charges for credit transfers initiated by a consumer, expressed in national currency\n0080;\n0020\nof which for instant credit transfers\n\nTEMPLATE S 02.02: CHARGES FOR CREDIT TRANSFERS AND INSTANT CREDIT TRANSFERS (only for PSPs in non-euro Member States)\n20. PSPs shall complete Template S 02.02 by including information on the charges for sent and received credit transfers and instant credit transfers in euro only for PSPs located in non-euro Member States, without further breakdowns.\nInstructions concerning specific positions of Template S 02.02\nRow; Column\nLegal references and instructions\n0010;\n0010\nTotal value of charges for sent credit transfers\nTotal value of charges for sent credit transfers, expressed in euro.\n0010;\n0020\nof which for instant credit transfers\n0010;\n0030\nTotal value of charges for received credit transfers\nTotal value of charges for received credit transfers, expressed in euro.\n0010;\n0040\nof which for instant credit transfers\n\nTEMPLATE S 03.00: TOTAL NUMBER OF PAYMENT ACCOUNTS, AND TOTAL CHARGES FOR PAYMENT ACCOUNTS (NATIONAL CURRENCY)\n\nGeneral remarks\n21. Template S 03.00 shall include information on the number of payment accounts and total charges for such accounts in the reference period.\n22. Values of charges shall be reported in euro for PSPs located in euro Member States and in national currency other than euro for non-euro Member States. Where charges were applied in a different currency than the one used for reporting in this template, the value of such charges shall be converted into euro or into other national currencies, using the ECB reference exchange rate or exchange rates applied for those transactions, in accordance with Regulation (EU) No 1409/2013.\nInstructions concerning specific positions of Template S 03.00\nRow; Column\nLegal references and instructions\n0010;\n0010\nTotal number of payment accounts\nThe total number of payment accounts shall reflect the number at the end of the reference period.\nAll payment accounts shall be included irrespective of the currency they are denominated in.\n0010;\n0020\nTotal value of charges for a payment account\nTotal value of charges refers to the total fees paid summarising the overall annual cost of the payment account, as reported to some account holders in the annual Statement of Fees (SoF). For those accounts which do not fall within the scope of Directive 2014/92/EU of the European Parliament and of the Council (³) and for which the SoF is not mandatory nor provided to the account holder, the figure shall in any case indicate the total annual fees paid by the account holders for the services linked to the payment account, which may vary according to the number and type of services provided and to the type of pricing applied by the PSPs.\nThe figure shall be expressed in national currency.\nIn case a pre-paid package (or 'single flat fee') is applied, meaning that one or more services are offered as part of a package of services linked to a payment account, the figure shall just disclose the single fee applied for the entire package and the additional fee charged for any service exceeding the quantity covered by the package fee, if applicable.\nAll charges irrespective of the currency shall be included.\nThe currency conversion fee shall be excluded from reporting.\n0010;\n0030\nTotal value of charges for the maintenance of payment accounts\nMaintenance fee refers to general account services as reported to the account holders in the Fee Information Document (FID), in accordance with the most commonly used services as defined within the Member State in which the reporting PSP operates. For those accounts which do not fall within the scope of Directive 2014/92/EU and for which the FID is not mandatory nor provided to the account holder, the figure shall in any case indicate the charge for the maintenance of the payment account, meaning the charges that the provider levies to operate the account for use by the customer, as per the national list of the most representative services linked to a payment account drafted by each Member State and applicable to the specific reporting PSP.\nThe figure shall be expressed in national currency.\nIn case a pre-paid package (or 'single flat fee') is applied, meaning that one or more services are offered as part of a package of services linked to a payment account, the figure shall just disclose the single fee applied for the entire package.\nAll charges irrespective of the currency shall be included.\nThe currency conversion fee shall be excluded from reporting.\n\nTEMPLATE S 04.00: NUMBER OF REJECTED INSTANT CREDIT TRANSFERS\n\nGeneral remarks\n23. PSPs shall complete Template S 04.00 by including information on the number of rejected instant credit transfers due to the application of the targeted financial restrictive measures in the reference period.\n24. The aim of this reporting is to verify the number of instances where an instant credit transfer from or to an entity subject to targeted financial restrictive measures (TFRM) was not allowed to go through, irrespective of the mechanism used. That could derive from the fact that the payer’s or the payee’s PSP has stopped the execution of an initiated transaction, or the payer’s PSP has frozen funds before an instant credit transfer was initiated, or the payee’s PSP has frozen funds after the instant credit transfer has arrived at an account.\n25. The number of rejected instant credit transfers shall include both transfers within the same PSP and transfers between different PSPs.\nInstructions concerning specific positions of Template S 04.00\nRow; Column\nLegal references and instructions\n0010;\n0010\nTotal number of instances where an instant credit transfer was not executed or funds were frozen, as payee's PSP.\nThe reported figure shall include incoming instant credit transfers rejected by the reporting PSP or instances when funds were received and immediately frozen on the account of the reporting PSP’s PSU. Only actions due to the application of the targeted financial restrictive measures, in the reference period, shall be reported.\n0010;\n0020\nTotal number of instances where an instant credit transfer was not executed or funds were frozen, as payer's PSP\nThe reported figure shall include instances where the payer’s PSP stopped the execution of the requested instant credit transfer, following its PSU’s request to initiate the transaction, including situations stemming from the payer’s PSP obligation under Article 5d(1) of Regulation (EU) No 260/2012 to verify its PSUs or due to the PSU’s payment account being frozen following such a verification. Only actions due to the application of the targeted financial restrictive measures, in the reference period, shall be reported.\n0020;\n0010\nTotal number of instances where a national instant credit transfer was not executed or funds were frozen, as payee's PSP\nThe reported figure shall include incoming instant credit transfers rejected by the reporting PSP or instances where funds were received and immediately frozen on the account of the reporting PSP’s PSU. Only actions due to the application of the targeted financial restrictive measures, in the reference period, shall be reported. National instant credit transfers shall be those where the payer’s PSP and the payee’s PSP are located in the same Member State.\n0020;\n0020\nTotal number of instances where a national instant credit transfer was not executed or funds were frozen, as payer's PSP\nThe reported figure shall include instances where the payer’s PSP stopped the execution of the requested national instant credit transfer, following its PSU’s request to initiate the transaction, including situations stemming from the payer’s PSP obligation under Article 5d(1) of Regulation (EU) No 260/2012 to verify its PSUs or due to the PSU’s payment account being frozen following such a verification. Only actions due to the application of the targeted financial restrictive measures, in the reference period shall be reported. National instant credit transfers shall be those where both the payer’s PSP and the payee’s PSP are located in the same Member State.\n0030;\n0010\nTotal number of instances where a cross-border instant credit transfer was not executed or funds were frozen, as payee's PSP.\nThe reported figure shall include incoming cross-border instant credit transfers rejected by the reporting PSP or instances where funds were received and immediately frozen on the account of the reporting PSP’s PSU. Only actions due to the application of the targeted financial restrictive measures, in the reference period, shall be reported. Cross-border instant credit transfers shall be those where both the payer’s PSP and the payee’s PSP are not located in the same Member State.\n0030;\n0020\nTotal number of instances where a cross-border instant credit transfer was not executed or funds were frozen, as payer's PSP\nThe reported figure shall include instances where the payer’s PSP stopped the execution of the requested cross-border instant credit transfer, following its PSU’s request to initiate the transaction, including situations stemming from the payer’s PSP obligation under Article 5d(1) of Regulation (EU) No 260/2012 to verify its PSUs or due to the PSU’s payment account being frozen following such a verification. Only actions due to the application of the targeted financial restrictive measures, in the reference period, shall be reported. Cross-border instant credit transfers shall be those where both the payer’s PSP and the payee’s PSP are not located in the same Member State.\n\n(¹) Regulation (EU) No 260/2012 of the European Parliament and of the Council of 14 March 2012 establishing technical and business requirements for credit transfers and direct debits in euro and amending Regulation (EC) No 924/2009 (OJ L 94, 30/03/2012, p. 22, ELI: http://data.europa.eu/eli/reg/2012/260/oj ).\n\n(²) Regulation (EU) No 1409/2013 of the European Central Bank of 28 November 2013 on payments statistics (ECB/2013/43), (OJ L 352, 24/12/2013, p. 18, ELI: http://data.europa.eu/eli/reg/2013/1409/oj).\n\n(³) Directive 2014/92/EU of the European Parliament and of the Council of 23 July 2014 on the comparability of fees related to payment accounts, payment account switching and access to payment accounts with basic features (OJ L 257, 28.8.2014, p. 214, ELI: http://data.europa.eu/eli/dir/2014/92/oj)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sepa-its-reporting-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj#anx_II",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, ANNEX II, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    }
+  ],
+  "withoutProvision": [
+    {
+      "obligation": "obl-eu-eba-contingency-gl-interface-kpis",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-contingency-gl-stress-testing",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-fraud-gl-branches-and-revisions",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-fraud-gl-semi-annual-report",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-ict-gl-psu-controls-and-alerts",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-eba-ict-gl-psu-security-awareness",
+      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+    },
+    {
+      "obligation": "obl-eu-ipr-charges-parity-euro-area",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-charges-parity-non-euro",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-charges-reporting",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-instant-transfers-euro-area",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-instant-transfers-non-euro",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-sanctions-screening",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-verification-of-payee-euro-area",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    },
+    {
+      "obligation": "obl-eu-ipr-verification-of-payee-non-euro",
+      "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."
+    }
+  ]
+}

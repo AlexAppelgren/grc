@@ -340,3 +340,41 @@ toggle between the two. It supersedes hardening H13's separate accounts.
   the support request, the four reminders with the digest, and the weekly briefing. Not done:
   no Outlook was within reach, so the first look in a bank's mailbox is the owner's
   (`docs/TODO_FOR_alex.md`); identity's and the support request's mails are still English only.
+
+## What applies, Licences and the law's own words (worktree branch, 2026-11-13, PRD 0.10, D-139 to D-143)
+
+Alex's asks of 2026-11-12 and 2026-11-13: decide per company what its licences bring in,
+with no limit on how many at once; see every company's licences under Admin; find a
+regulation's obligations from its page; a shorter obligation page; and hold the law's own
+words in the language the authority published them in, beside translations that say what
+they are.
+
+- **Built (register):** What applies (`/applies`) lists, per company, the obligations its
+  licences leave in span with the answer so far (REG-S19, REG-S22). "Decide all" sets every
+  unanswered one in one confirmed run, on the worker, each answer through the door of a
+  single answer with its own audit event; a person's answers are never overwritten and a
+  second run cannot start beside the first (REG-S20, D-140, AC-REG1b). The obligation page
+  decides in one step, the reason suggested from the company's licence facts with no model
+  (D-141).
+- **Built (library):** a provision's original is the language of its instrument's
+  jurisdiction, or the door refuses it; Finland's Swedish is the authority's own, and every
+  other text beside an original is stored as a machine translation whatever the payload
+  says. The obligation read and the provision tree give every language a text is held in
+  (INV-S20, INV-S23, D-142, AC-INV3). The baseline gained `provisions/<tranche>.json`, its
+  checker and its filing as `new_provision` proposals.
+- **Built (screens):** Admin, Licences, one card per company with what each register line
+  brings into scope (TEN-S16); the regulation page with its obligations by answer and, for
+  a directive, its national laws (INV-S16, INV-S21); the obligation page as five cards, the
+  rule's own words beside "In plain words", each text labelled original, official text or
+  machine translation (INV-S22); the same three labels in the provision tree and both
+  queues, and the kind "New provision" in the library queue's filter. Components are Radix
+  and shadcn-pattern, coloured by the Green tokens (D-139).
+- **Content:** 2,721 provisions in 24 files give 1,728 of the baseline's 1,894 obligations
+  their text. How each was read and checked: `docs/reviews/LAW_TEXT_REVIEW_2026-11-13.md`.
+- **Left, deliberately:** a model drafting or rewording a reason (D-143, the owner's call);
+  the text of the EBA, ESMA and EIOPA guidelines, whose check against the printed pages
+  found faults (98 obligations say so); 68 more obligations whose text waits for a reason
+  the file states. The corrections the reading of duty beside text proposes for 172
+  obligations are listed in `docs/reviews/law-text-2026-11-13/duty-reading.json` and
+  nothing in the baseline's obligations was changed. `docs/TODO_FOR_alex.md` has what needs
+  the owner.

@@ -1,0 +1,482 @@
+{
+  "tranche": "nordic-sanctions",
+  "researchedOn": "2026-11-13",
+  "provisions": [
+    {
+      "key": "dk-bek-2026-778/001",
+      "instrument": "dk-bek-2026-778",
+      "provisionKind": "section",
+      "refLabel": "§ 1",
+      "path": "001",
+      "heading": "Afskærmende foranstaltninger",
+      "texts": {
+        "da": "Ved afskærmende foranstaltninger efter § 1 a i lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v., forstås handlinger, undladelser og tiltag, som har til hensigt at afskære en fysisk eller juridisk person, som er underlagt restriktive foranstaltninger under henvisning til artikel 29 i traktaten om Den Europæiske Union eller artikel 215 i traktaten om Den Europæiske Unions Funktionsmåde, og som direkte eller indirekte ejer eller kontrollerer en virksomhed, fra at udøve kontrol med virksomheden.\n\nStk. 2. Afskærmende foranstaltninger skal være egnede og tilstrækkelige til effektivt at afskære en fysisk eller juridisk person, som nævnt i stk. 1, fra at udøve kontrol med virksomheden og forhindre, at midler og aktiver stilles til rådighed for den fysiske eller juridiske person.\n\nStk. 3. Afskærmende foranstaltninger kan bestå i, men er ikke begrænset til:\n1) Suspension af instruktionsbeføjelse over virksomhedens ansatte og ledelse.\n2) Suspension af stemmerettigheder.\n3) Udelukkelse fra virksomhedens it-systemer.\n4) Udelukkelse fra virksomhedens fysiske lokaler.\n5) Afskæring fra at råde over virksomhedens midler og aktiver, herunder bankkonti, lån og fordringer.\n6) Kommunikation til samtlige medarbejdere om de indførte foranstaltninger, herunder baggrunden for disses indførelse.\n7) Kommunikation til virksomhedens væsentlige samarbejdspartnere, såsom kunder og leverandører, om de indførte foranstaltninger, herunder baggrunden for disses indførelse.\n8) Suspension af fuldmagter, herunder MitID.\n9) Fratagelse af tegningsretten, opdatering af virksomhedens bestemmelser herom og berigtigelse af Det Centrale Virksomhedsregister (CVR) berigtiges i overensstemmelse hermed.\n10) Spærring eller inddragelse af udleverede betalingskort.\n11) Suspension af adgangen til personalegoder, herunder biler, fly og andre transportmidler.\n12) Ophør af lønudbetaling m.m.",
+        "en": "For the purposes of section 1a of the Act on the Application of Certain European Union Legal Acts on Economic Relations with Third Countries etc., ring-fencing measures means actions, omissions and steps intended to cut off a natural or legal person from exercising control over an undertaking where that person is subject to restrictive measures adopted with reference to Article 29 of the Treaty on European Union or Article 215 of the Treaty on the Functioning of the European Union and directly or indirectly owns or controls the undertaking.\n\n(2) Ring-fencing measures must be suitable and adequate to cut off a natural or legal person as referred to in subsection (1) effectively from exercising control over the undertaking and to prevent funds and assets from being made available to that person.\n\n(3) Ring-fencing measures may include, but are not limited to:\n1) Suspension of the power to give instructions to the undertaking's employees and management.\n2) Suspension of voting rights.\n3) Exclusion from the undertaking's IT systems.\n4) Exclusion from the undertaking's physical premises.\n5) Cutting off the ability to dispose of the undertaking's funds and assets, including bank accounts, loans and receivables.\n6) Communication to all employees about the measures introduced, including the reasons for introducing them.\n7) Communication to the undertaking's key business partners, such as customers and suppliers, about the measures introduced, including the reasons for introducing them.\n8) Suspension of powers of attorney, including MitID.\n9) Removal of the power to bind the company, updating of the undertaking's provisions on that power, and rectification of Det Centrale Virksomhedsregister (the Central Business Register, CVR) accordingly.\n10) Blocking or withdrawal of payment cards issued.\n11) Suspension of access to staff benefits, including cars, aircraft and other means of transport.\n12) Cessation of salary payments etc.",
+        "sv": "Med avskärmande åtgärder enligt 1 a § lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v. (lagen om tillämpningen av vissa av Europeiska unionens rättsakter om ekonomiska förbindelser med tredjeländer m.m.) avses handlingar, underlåtenheter och åtgärder som syftar till att hindra en fysisk eller juridisk person från att utöva kontroll över ett företag, om personen omfattas av restriktiva åtgärder med hänvisning till artikel 29 i fördraget om Europeiska unionen eller artikel 215 i fördraget om Europeiska unionens funktionssätt och direkt eller indirekt äger eller kontrollerar företaget.\n\nStk. 2. De avskärmande åtgärderna ska vara lämpliga och tillräckliga för att effektivt hindra en sådan fysisk eller juridisk person som avses i första stycket från att utöva kontroll över företaget och för att förhindra att medel och tillgångar görs tillgängliga för personen.\n\nStk. 3. Avskärmande åtgärder kan bland annat bestå av följande:\n1) Tillfälligt upphävande av instruktionsrätten över företagets anställda och ledning.\n2) Tillfälligt upphävande av rösträtter.\n3) Uteslutning från företagets it-system.\n4) Uteslutning från företagets fysiska lokaler.\n5) Hinder mot att förfoga över företagets medel och tillgångar, däribland bankkonton, lån och fordringar.\n6) Information till samtliga anställda om de införda åtgärderna, däribland skälen till att de har införts.\n7) Information till företagets väsentliga samarbetspartner, till exempel kunder och leverantörer, om de införda åtgärderna, däribland skälen till att de har införts.\n8) Tillfälligt upphävande av fullmakter, däribland MitID.\n9) Fråntagande av firmateckningsrätten, uppdatering av företagets bestämmelser om denna och rättelse av Det Centrale Virksomhedsregister (CVR, danska centrala företagsregistret) rättas i enlighet därmed.\n10) Spärrning eller indragning av utlämnade betalkort.\n11) Tillfälligt upphävande av tillgången till personalförmåner, däribland bilar, flygplan och andra transportmedel.\n12) Upphörande av löneutbetalning m.m."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-afskaering-measures-documentation"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+      "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, § 1, text as issued, bekendtgørelse nr. 778 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-bek-2026-778/002",
+      "instrument": "dk-bek-2026-778",
+      "provisionKind": "section",
+      "refLabel": "§ 2",
+      "path": "002",
+      "heading": null,
+      "texts": {
+        "da": "Dokumentation for indførelse af afskærmende foranstaltninger efter § 1 a, stk. 1 og 2, i lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v., og efter § 3, stk. 2, i denne bekendtgørelse, skal indsendes til Erhvervsstyrelsen.\n\nStk. 2. Dokumentation kan bestå i, men er ikke begrænset til:\n1) Udskrift af kvittering fra ekstern leverandør for suspension af f.eks. MitID, betalingskort, adgangskort, og adgangen til virksomhedens it-systemer.\n2) Udskrift af medie som anvendt til kommunikation til medarbejdere og samarbejdspartnere.\n3) Politikker, forretningsgange og øvrige interne procedurer, som afspejler de indførte afskærmende foranstaltninger.\n4) Registrering af ændringer i Det Centrale Virksomhedsregister (CVR).",
+        "en": "Documentation of the introduction of ring-fencing measures under section 1a(1) and (2) of the Act on the Application of Certain European Union Legal Acts on Economic Relations with Third Countries etc. and under section 3(2) of this Executive Order must be submitted to Erhvervsstyrelsen (the Danish Business Authority).\n\n(2) Documentation may include, but is not limited to:\n1) A printout of a receipt from an external supplier for the suspension of, for example, MitID, payment cards, access cards and access to the undertaking's IT systems.\n2) A printout of the medium used to communicate with employees and business partners.\n3) Policies, procedures and other internal procedures reflecting the ring-fencing measures introduced.\n4) Registration of changes in Det Centrale Virksomhedsregister (the Central Business Register, CVR).",
+        "sv": "Dokumentation om att avskärmande åtgärder har införts enligt 1 a § första och andra styckena lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v. (lagen om tillämpningen av vissa av Europeiska unionens rättsakter om ekonomiska förbindelser med tredjeländer m.m.) och enligt 3 § andra stycket i dessa föreskrifter ska ges in till Erhvervsstyrelsen (danska Näringslivsstyrelsen).\n\nStk. 2. Dokumentationen kan bland annat bestå av följande:\n1) Utskrift av kvitto från en extern leverantör på tillfälligt upphävande av till exempel MitID, betalkort, passerkort och tillgången till företagets it-system.\n2) Utskrift av det medium som har använts för att informera anställda och samarbetspartner.\n3) Policyer, rutiner och andra interna förfaranden som återspeglar de avskärmande åtgärder som har införts.\n4) Registrering av ändringar i Det Centrale Virksomhedsregister (CVR, danska centrala företagsregistret)."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-afskaering-measures-documentation"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+      "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, § 2, text as issued, bekendtgørelse nr. 778 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-bek-2026-778/003",
+      "instrument": "dk-bek-2026-778",
+      "provisionKind": "section",
+      "refLabel": "§ 3",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "da": "Erhvervsstyrelsen kan fastsætte krav om indførelse af yderligere afskærmende foranstaltninger, eller tilpasning af allerede indførte afskærmende foranstaltninger, som betingelse for styrelsens godkendelse, i forbindelse med styrelsens vurdering af om de afskærmende foranstaltninger kan godkendes, jf. § 1 a, stk. 2, 1. pkt., i lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v.\n\nStk. 2. Erhvervsstyrelsen kan påbyde, at virksomheden indfører yderligere afskærmende foranstaltninger eller tilpasser allerede indførte afskærmende foranstaltninger, hvis styrelsen vurderer, at de godkendte foranstaltninger ikke længere er egnede eller tilstrækkelige.\n\nStk. 3. Erhvervsstyrelsen kan ændre eller tilbagekalde en godkendelse af indførte afskærmende foranstaltninger, i følgende tilfælde:\n1) Virksomheden efterlever ikke de afskærmende foranstaltninger, som er blevet godkendt af Erhvervsstyrelsen.\n2) Virksomheden efterkommer ikke et påbud fra Erhvervsstyrelsen, jf. stk. 2.\n3) Virksomheden har afgivet urigtige eller vildledende oplysninger eller fortiet oplysninger af betydning for sagens afgørelse.\n4) Virksomheden overholder ikke pligten til at indsende en redegørelse, jf. § 4, stk. 3 eller stk. 4.",
+        "en": "When assessing whether ring-fencing measures may be approved under the first sentence of section 1a(2) of the Act on the Application of Certain European Union Legal Acts on Economic Relations with Third Countries etc., Erhvervsstyrelsen (the Danish Business Authority) may, as a condition of its approval, require further ring-fencing measures to be introduced or ring-fencing measures already introduced to be adjusted.\n\n(2) Erhvervsstyrelsen may order the undertaking to introduce further ring-fencing measures or to adjust ring-fencing measures already introduced if it considers that the approved measures are no longer suitable or adequate.\n\n(3) Erhvervsstyrelsen may amend or withdraw an approval of ring-fencing measures introduced in the following cases:\n1) The undertaking does not comply with the ring-fencing measures approved by Erhvervsstyrelsen.\n2) The undertaking does not comply with an order from Erhvervsstyrelsen under subsection (2).\n3) The undertaking has given incorrect or misleading information or has withheld information of significance for the decision in the case.\n4) The undertaking does not comply with the duty to submit a report under section 4(3) or (4).",
+        "sv": "När Erhvervsstyrelsen (danska Näringslivsstyrelsen) bedömer om de avskärmande åtgärderna kan godkännas enligt 1 a § andra stycket första meningen lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v. (lagen om tillämpningen av vissa av Europeiska unionens rättsakter om ekonomiska förbindelser med tredjeländer m.m.), får styrelsen som villkor för sitt godkännande ställa krav på att ytterligare avskärmande åtgärder införs eller att redan införda avskärmande åtgärder anpassas.\n\nStk. 2. Erhvervsstyrelsen får förelägga företaget att införa ytterligare avskärmande åtgärder eller anpassa redan införda avskärmande åtgärder, om styrelsen bedömer att de godkända åtgärderna inte längre är lämpliga eller tillräckliga.\n\nStk. 3. Erhvervsstyrelsen får ändra eller återkalla ett godkännande av införda avskärmande åtgärder i följande fall:\n1) Företaget efterlever inte de avskärmande åtgärder som Erhvervsstyrelsen har godkänt.\n2) Företaget följer inte ett föreläggande från Erhvervsstyrelsen enligt andra stycket.\n3) Företaget har lämnat oriktiga eller vilseledande uppgifter eller förtigit uppgifter av betydelse för beslutet i ärendet.\n4) Företaget fullgör inte sin skyldighet att ge in en redogörelse enligt 4 § tredje eller fjärde stycket."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-afskaering-measures-documentation"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+      "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, § 3, text as issued, bekendtgørelse nr. 778 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-bek-2026-778/004",
+      "instrument": "dk-bek-2026-778",
+      "provisionKind": "section",
+      "refLabel": "§ 4",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "da": "Erhvervsstyrelsen fører tilsyn med, at virksomheder, som har indført afskærmende foranstaltninger, overholder regler fastsat i denne bekendtgørelse, herunder at indførte afskærmende foranstaltninger efterleves og er egnede og tilstrækkelige.\n\nStk. 2. Erhvervsstyrelsen offentliggør oplysninger om, at styrelsen har godkendt foranstaltninger, jf. § 1 a, stk. 2, 1. pkt., i lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v., herunder baggrunden herfor samt retsvirkningen heraf.\n\nStk. 3. En virksomhed, som har indført afskærmende foranstaltninger, skal årligt, regnet fra Erhvervsstyrelsens godkendelse af de indførte foranstaltninger, fremsende en redegørelse til styrelsen om de indførte foranstaltninger. Redegørelsen skal som minimum indeholde virksomhedens egen vurdering af, om de enkelte foranstaltninger er egnede og tilstrækkelige.\n\nStk. 4. Erhvervsstyrelsen kan til enhver tid påbyde virksomheden at fremsende en redegørelse, som nævnt i stk. 3.",
+        "en": "Erhvervsstyrelsen (the Danish Business Authority) supervises whether undertakings that have introduced ring-fencing measures comply with the rules laid down in this Executive Order, including whether the ring-fencing measures introduced are complied with and are suitable and adequate.\n\n(2) Erhvervsstyrelsen publishes information that it has approved measures under the first sentence of section 1a(2) of the Act on the Application of Certain European Union Legal Acts on Economic Relations with Third Countries etc., including the reasons for the approval and its legal effect.\n\n(3) An undertaking that has introduced ring-fencing measures must send Erhvervsstyrelsen a report on those measures every year, counted from Erhvervsstyrelsen's approval of the measures introduced. As a minimum, the report must contain the undertaking's own assessment of whether each individual measure is suitable and adequate.\n\n(4) Erhvervsstyrelsen may at any time order the undertaking to send a report as referred to in subsection (3).",
+        "sv": "Erhvervsstyrelsen (danska Näringslivsstyrelsen) utövar tillsyn över att företag som har infört avskärmande åtgärder följer bestämmelserna i dessa föreskrifter, däribland att de införda avskärmande åtgärderna efterlevs och är lämpliga och tillräckliga.\n\nStk. 2. Erhvervsstyrelsen offentliggör uppgifter om att styrelsen har godkänt åtgärder enligt 1 a § andra stycket första meningen lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v. (lagen om tillämpningen av vissa av Europeiska unionens rättsakter om ekonomiska förbindelser med tredjeländer m.m.), däribland skälen till godkännandet och dess rättsverkan.\n\nStk. 3. Ett företag som har infört avskärmande åtgärder ska varje år, räknat från det att Erhvervsstyrelsen godkände de införda åtgärderna, skicka en redogörelse för åtgärderna till styrelsen. Redogörelsen ska minst innehålla företagets egen bedömning av om de enskilda åtgärderna är lämpliga och tillräckliga.\n\nStk. 4. Erhvervsstyrelsen får när som helst förelägga företaget att skicka en sådan redogörelse som avses i tredje stycket."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-afskaering-annual-statement"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+      "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, § 4, text as issued, bekendtgørelse nr. 778 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-bek-2026-778/005",
+      "instrument": "dk-bek-2026-778",
+      "provisionKind": "section",
+      "refLabel": "§ 5",
+      "path": "005",
+      "heading": "Gebyrer",
+      "texts": {
+        "da": "Virksomheder, som skal indføre foranstaltninger, jf. § 1 a, stk. 1, i lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v., betaler et gebyr på 610 kr. pr. anvendt time i 2026 efter regning til Erhvervsstyrelsen. Gebyret pr. time kan årligt reguleres med pris- og lønudviklingen.\n\nStk. 2. Som anvendt tid regnes tid forbundet med Erhvervsstyrelsens forberedelse af sagen, kontakt med virksomheden og andre eksterne, herunder øvrige myndigheder, angående sagen, udstedelse af påbud, vurdering og godkendelse af indførte foranstaltninger, løbende tilpasning af foranstaltninger og kommunikation med virksomheden herom, tilsyn m.m.\n\nStk. 3. Virksomheden skal alene betale gebyrer for den del af Erhvervsstyrelsens arbejde, som kan henføres til den pågældende virksomhed.\n\nStk. 4. Virksomheden skal afholde rejseudgifter, herunder til transport og overnatning, for Erhvervsstyrelsens nødvendige rejser til og ophold i nærheden af virksomhedens fysiske lokaler.\n\nStk. 5. Erhvervsstyrelsen opkræver det samlede gebyr én gang årligt. Gebyret forfalder til betaling, når Erhvervsstyrelsen har godkendt de afskærmende foranstaltninger, jf. § 1 a, stk. 2, 1. pkt., i lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v.",
+        "en": "Undertakings that are required to introduce measures under section 1a(1) of the Act on the Application of Certain European Union Legal Acts on Economic Relations with Third Countries etc. pay Erhvervsstyrelsen (the Danish Business Authority) a fee of DKK 610 per hour spent in 2026, charged on invoice. The hourly fee may be adjusted annually in line with price and wage developments.\n\n(2) Time spent includes time associated with Erhvervsstyrelsen's preparation of the case, contact with the undertaking and with other external parties, including other authorities, concerning the case, the issuing of orders, the assessment and approval of measures introduced, the ongoing adjustment of measures and communication with the undertaking about this, supervision etc.\n\n(3) The undertaking must pay fees only for the part of Erhvervsstyrelsen's work that is attributable to that undertaking.\n\n(4) The undertaking must bear travel expenses, including transport and accommodation, for Erhvervsstyrelsen's necessary travel to, and stays in the vicinity of, the undertaking's physical premises.\n\n(5) Erhvervsstyrelsen charges the total fee once a year. The fee falls due for payment when Erhvervsstyrelsen has approved the ring-fencing measures under the first sentence of section 1a(2) of the Act on the Application of Certain European Union Legal Acts on Economic Relations with Third Countries etc.",
+        "sv": "Företag som ska införa åtgärder enligt 1 a § första stycket lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v. (lagen om tillämpningen av vissa av Europeiska unionens rättsakter om ekonomiska förbindelser med tredjeländer m.m.) betalar till Erhvervsstyrelsen (danska Näringslivsstyrelsen) en avgift på 610 kr per nedlagd timme under 2026 enligt räkning. Timavgiften får justeras årligen i takt med pris- och löneutvecklingen.\n\nStk. 2. Som nedlagd tid räknas tid för Erhvervsstyrelsens förberedelse av ärendet, kontakter i ärendet med företaget och med andra externa parter, däribland andra myndigheter, utfärdande av förelägganden, bedömning och godkännande av införda åtgärder, löpande anpassning av åtgärderna och kommunikation med företaget om detta, tillsyn m.m.\n\nStk. 3. Företaget ska betala avgifter endast för den del av Erhvervsstyrelsens arbete som kan hänföras till det berörda företaget.\n\nStk. 4. Företaget ska stå för resekostnaderna, däribland för transport och övernattning, för Erhvervsstyrelsens nödvändiga resor till och vistelser i närheten av företagets fysiska lokaler.\n\nStk. 5. Erhvervsstyrelsen tar ut den samlade avgiften en gång per år. Avgiften förfaller till betalning när Erhvervsstyrelsen har godkänt de avskärmande åtgärderna enligt 1 a § andra stycket första meningen lagen om tillämpningen av vissa av Europeiska unionens rättsakter om ekonomiska förbindelser med tredjeländer m.m."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-afskaering-annual-statement"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+      "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, § 5, text as issued, bekendtgørelse nr. 778 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-lov-1984-109/001a",
+      "instrument": "dk-lov-1984-109",
+      "provisionKind": "section",
+      "refLabel": "§ 1 a",
+      "path": "001a",
+      "heading": "Bemyndigelser som følge af Den Europæiske Unions forordninger, afskærmende foranstaltninger og transportforbud",
+      "texts": {
+        "da": "En virksomhed, som direkte eller indirekte er ejet eller kontrolleret af fysiske eller juridiske personer, som er underlagt restriktive foranstaltninger under henvisning til artikel 29 i Traktaten om Den Europæiske Union eller artikel 215 i Traktaten om Den Europæiske Unions Funktionsmåde, skal indføre nødvendige foranstaltninger for at afskære den fysiske eller juridiske person fra at udøve kontrol med virksomheden.\n\nStk. 2. Erhvervsstyrelsen godkender nødvendige foranstaltninger efter stk. 1. Indfører en virksomhed ikke nødvendige foranstaltninger i henhold til stk. 1, kan Erhvervsstyrelsen påbyde indførelsen heraf.\n\nStk. 3. Erhvervsstyrelsen kan forlange de oplysninger, som er nødvendige for at kunne tage stilling til, om de indførte nødvendige foranstaltninger efter stk. 1 kan godkendes, jf. stk. 2, 1. pkt.\n\nStk. 4. Erhvervsstyrelsen kan, hvis den fysiske eller juridiske person omfattet af stk. 1 indgår i virksomhedens ledelse, afregistrere den pågældende i Det Centrale Virksomhedsregister (CVR). Erhvervsstyrelsen kan derudover afvise at registrere en fysisk eller juridisk person omfattet af stk. 1 i virksomhedens ledelse.\n\nStk. 5. Erhvervsstyrelsen fører tilsyn med overholdelsen af de afskærmende foranstaltninger efter stk. 1.\n\nStk. 6. Erhvervs- og konkurrencekraftsministeren fastsætter nærmere regler om afskærmende foranstaltninger efter stk. 1-5.\n\nStk. 7. Erhvervs- og konkurrencekraftsministeren fastsætter regler om opkrævning af gebyr fra virksomhederne til betaling af udgifter forbundet med Erhvervsstyrelsens arbejde med virksomheders indførelse af afskærmende foranstaltninger og tilsyn hermed.",
+        "en": "An undertaking that is directly or indirectly owned or controlled by natural or legal persons subject to restrictive measures with reference to Article 29 of the Treaty on European Union or Article 215 of the Treaty on the Functioning of the European Union must introduce the measures necessary to cut the natural or legal person off from exercising control over the undertaking.\n\n(2) Erhvervsstyrelsen (the Danish Business Authority) approves the necessary measures under subsection (1). If an undertaking does not introduce necessary measures under subsection (1), Erhvervsstyrelsen may order it to do so.\n\n(3) Erhvervsstyrelsen may require the information necessary to decide whether the necessary measures introduced under subsection (1) can be approved, see the first sentence of subsection (2).\n\n(4) If the natural or legal person covered by subsection (1) is part of the undertaking's management, Erhvervsstyrelsen may remove that person from the Central Business Register (CVR). Erhvervsstyrelsen may also refuse to register a natural or legal person covered by subsection (1) as part of the undertaking's management.\n\n(5) Erhvervsstyrelsen supervises compliance with the ring-fencing measures under subsection (1).\n\n(6) The Minister for Business and Competitiveness lays down detailed rules on ring-fencing measures under subsections (1) to (5).\n\n(7) The Minister for Business and Competitiveness lays down rules on charging undertakings a fee to cover the costs of Erhvervsstyrelsen's work on undertakings' introduction of ring-fencing measures and on the supervision of those measures.",
+        "sv": "Ett företag som direkt eller indirekt ägs eller kontrolleras av fysiska eller juridiska personer som omfattas av restriktiva åtgärder med hänvisning till artikel 29 i fördraget om Europeiska unionen eller artikel 215 i fördraget om Europeiska unionens funktionssätt ska införa de åtgärder som är nödvändiga för att hindra den fysiska eller juridiska personen från att utöva kontroll över företaget.\n\nStk. 2. Erhvervsstyrelsen (danska Näringslivsstyrelsen) godkänner nödvändiga åtgärder enligt första stycket. Om ett företag inte inför nödvändiga åtgärder enligt första stycket, får Erhvervsstyrelsen förelägga företaget att införa dem.\n\nStk. 3. Erhvervsstyrelsen får begära de uppgifter som behövs för att den ska kunna ta ställning till om de nödvändiga åtgärder som har införts enligt första stycket kan godkännas, se andra stycket första meningen.\n\nStk. 4. Om en fysisk eller juridisk person som omfattas av första stycket ingår i företagets ledning, får Erhvervsstyrelsen avregistrera vederbörande i Det Centrale Virksomhedsregister (CVR, danska centrala företagsregistret). Erhvervsstyrelsen får dessutom vägra att registrera en fysisk eller juridisk person som omfattas av första stycket i företagets ledning.\n\nStk. 5. Erhvervsstyrelsen utövar tillsyn över efterlevnaden av de avskärmande åtgärderna enligt första stycket.\n\nStk. 6. Närings- och konkurrenskraftsministern meddelar närmare föreskrifter om avskärmande åtgärder enligt första–femte styckena.\n\nStk. 7. Närings- och konkurrenskraftsministern meddelar föreskrifter om uttag av avgifter från företagen för att täcka kostnaderna för Erhvervsstyrelsens arbete med företagens införande av avskärmande åtgärder och tillsynen över detta."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-eksportkontrolloven-ring-fencing"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/727",
+      "sourceLabel": "Retsinformation, LOV nr 109 af 28/03/1984, § 1 a, text as enacted, lov nr. 727 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-lov-1984-109/001g",
+      "instrument": "dk-lov-1984-109",
+      "provisionKind": "section",
+      "refLabel": "§ 1 g",
+      "path": "001g",
+      "heading": "Kontrol- og reaktionsbeføjelser",
+      "texts": {
+        "da": "Hvor en fysisk eller juridisk person er underlagt restriktive foranstaltninger under henvisning til artikel 29 i Traktaten om Den Europæiske Union eller artikel 215 i Traktaten om Den Europæiske Unions Funktionsmåde, og direkte eller indirekte ejer eller på anden vis kontrollerer en virksomhed, der er hjemmehørende i Danmark, suspenderes de forvaltningsmæssige og økonomiske rettigheder, der kan henføres til den sanktionerede person.\n\nStk. 2. De øvrige ejeres andel af stemmerettighederne, der er noteret i virksomhedens ejerbog eller tilsvarende fortegnelse, forhøjes forholdsmæssigt med den sanktionerede persons stemmerettigheder.",
+        "en": "Where a natural or legal person is subject to restrictive measures with reference to Article 29 of the Treaty on European Union or Article 215 of the Treaty on the Functioning of the European Union and directly or indirectly owns or otherwise controls an undertaking domiciled in Denmark, the management and economic rights attributable to the sanctioned person are suspended.\n\n(2) The other owners' shares of the voting rights recorded in the undertaking's register of owners or an equivalent register are increased proportionately by the sanctioned person's voting rights.",
+        "sv": "Om en fysisk eller juridisk person som omfattas av restriktiva åtgärder med hänvisning till artikel 29 i fördraget om Europeiska unionen eller artikel 215 i fördraget om Europeiska unionens funktionssätt direkt eller indirekt äger eller på annat sätt kontrollerar ett företag med hemvist i Danmark, suspenderas de förvaltningsmässiga och ekonomiska rättigheter som kan hänföras till den sanktionerade personen.\n\nStk. 2. De övriga ägarnas andel av de rösträtter som är antecknade i företagets aktiebok eller motsvarande förteckning ökas proportionellt med den sanktionerade personens rösträtter."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-eksportkontrolloven-ring-fencing"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/727",
+      "sourceLabel": "Retsinformation, LOV nr 109 af 28/03/1984, § 1 g, text as enacted, lov nr. 727 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-lov-1984-109/001i",
+      "instrument": "dk-lov-1984-109",
+      "provisionKind": "section",
+      "refLabel": "§ 1 i",
+      "path": "001i",
+      "heading": null,
+      "texts": {
+        "da": "Erhvervsstyrelsen kan anmode skifteretten om at opløse en virksomhed, hvis den undlader at efterkomme et påbud om at indføre afskærmende foranstaltninger efter § 1 a, stk. 2, 2. pkt.\n\nStk. 2. Erhvervsstyrelsen kan slette en filial af en udenlandsk virksomhed fra Det Centrale Virksomhedsregister (CVR), hvis filialen undlader at efterkomme et påbud efter § 1 a, stk. 2, 2. pkt. Vedrører forholdet et interessentskab eller et kommanditselskab, kan styrelsen slette registreringen af interessentskabet eller kommanditselskabet i Det Centrale Virksomhedsregister (CVR).\n\nStk. 3. Erhvervsstyrelsens afgørelser truffet i henhold til stk. 1 og 2 kan ikke indbringes for anden administrativ myndighed.",
+        "en": "Erhvervsstyrelsen (the Danish Business Authority) may request skifteretten (the probate court) to dissolve an undertaking if the undertaking fails to comply with an order to introduce ring-fencing measures under the second sentence of section 1a(2).\n\n(2) Erhvervsstyrelsen may delete a branch of a foreign undertaking from the Central Business Register (CVR) if the branch fails to comply with an order under the second sentence of section 1a(2). Where the matter concerns a general partnership or a limited partnership, Erhvervsstyrelsen may delete the registration of the general partnership or limited partnership in the Central Business Register (CVR).\n\n(3) Decisions made by Erhvervsstyrelsen under subsections (1) and (2) may not be brought before any other administrative authority.",
+        "sv": "Erhvervsstyrelsen (danska Näringslivsstyrelsen) får begära att skifteretten (dansk domstol för dödsbon och konkurser) upplöser ett företag, om företaget inte följer ett föreläggande om att införa avskärmande åtgärder enligt 1 a § andra stycket andra meningen.\n\nStk. 2. Erhvervsstyrelsen får avregistrera en filial till ett utländskt företag i Det Centrale Virksomhedsregister (CVR, danska centrala företagsregistret), om filialen inte följer ett föreläggande enligt 1 a § andra stycket andra meningen. Om saken gäller ett handelsbolag eller ett kommanditbolag, får Erhvervsstyrelsen avregistrera handelsbolaget eller kommanditbolaget i Det Centrale Virksomhedsregister (CVR).\n\nStk. 3. Erhvervsstyrelsens beslut enligt första och andra styckena får inte överklagas till någon annan förvaltningsmyndighet."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-eksportkontrolloven-ring-fencing"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2026/727",
+      "sourceLabel": "Retsinformation, LOV nr 109 af 28/03/1984, § 1 i, text as enacted, lov nr. 727 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-1967-659/002b",
+      "instrument": "fi-sd-1967-659",
+      "provisionKind": "section",
+      "refLabel": "2 b §",
+      "path": "002b",
+      "heading": null,
+      "texts": {
+        "fi": "Sen lisäksi, mitä 2 a §:n 1 momentissa tarkoitetuissa Euroopan unionin toiminnasta tehdyn sopimuksen nojalla annetuissa asetuksissa säädetään, niiden liitteissä nimetyn luonnollisen henkilön tai oikeushenkilön varojen jäädyttämisen panee täytäntöön ulkoasiainministeriön hakemuksesta ulosottomies noudattaen ulosottokaaren (705/2007) 8 luvun 5–10 ja 12–15 §:ää. Jäädyttämisen täytäntöönpanosta ja jäädytettyjen varojen säilyttämisestä ja hoidosta aiheutuvista kuluista vastaa päätöksen kohde.\n\nJäädyttämistä ja jäädyttämisen kumoamista koskeva asetus pannaan täytäntöön muutoksenhausta huolimatta.\n\nRahanpesun ja terrorismin rahoittamisen estämisestä annetun lain (444/2017) 1 luvun 2 §:ssä tarkoitetun ilmoitusvelvollisen on salassapitosäännösten estämättä viipymättä oma-aloitteisesti toimitettava hallussaan olevat tämän pykälän 1 momentissa tarkoitettuja luonnollisia henkilöitä tai oikeushenkilöitä koskevat ulosottokaaren 3 luvun 66 §:ssä tarkoitetut tiedot ulosottomiehelle. Sivullisen ja viranomaisen velvollisuudesta antaa tietoja ulosottomiehelle säädetään ulosottokaaren 3 luvun 64–68 §:ssä.\n\nEdellä 2 a §:n 1 momentissa tarkoitetuissa Euroopan unionin toiminnasta tehdyn sopimuksen nojalla annetuissa asetuksissa, Euroopan unionista tehdyn sopimuksen 29 artiklan nojalla annetuissa rajoittavia toimenpiteitä koskevissa neuvoston päätöksissä ja Yhdistyneiden kansakuntien turvallisuusneuvoston pakotteita koskevissa päätöslauselmissa kansalliselle toimivaltaiselle viranomaiselle osoitettavista tehtävistä vastaa Suomessa ulkoasiainministeriö, jos ne eivät kuulu muun viranomaisen toimialaan.",
+        "en": "In addition to the provisions of the regulations issued under the Treaty on the Functioning of the European Union that are referred to in section 2a, subsection 1, the freezing of the funds of a natural or legal person named in the annexes to those regulations is enforced by the enforcement officer on application by ulkoasiainministeriö (Ministry for Foreign Affairs), applying chapter 8, sections 5 to 10 and 12 to 15 of the Enforcement Code (705/2007). The person subject to the decision bears the costs of enforcing the freezing and of keeping and managing the frozen funds.\n\nA regulation on freezing, or on revoking a freeze, is enforced notwithstanding an appeal.\n\nNotwithstanding the provisions on secrecy, an obliged entity referred to in chapter 1, section 2 of the Act on Preventing Money Laundering and Terrorist Financing (444/2017) must, without delay and on its own initiative, submit to the enforcement officer any information referred to in chapter 3, section 66 of the Enforcement Code that it holds on the natural or legal persons referred to in subsection 1 of this section. Provisions on the obligation of third parties and authorities to provide information to the enforcement officer are laid down in chapter 3, sections 64 to 68 of the Enforcement Code.\n\nIn Finland, ulkoasiainministeriö is responsible for the tasks assigned to the national competent authority in the regulations issued under the Treaty on the Functioning of the European Union that are referred to in section 2a, subsection 1, in Council decisions on restrictive measures adopted under Article 29 of the Treaty on European Union and in United Nations Security Council resolutions on sanctions, unless those tasks fall within the remit of another authority.",
+        "sv": "Utöver vad som föreskrivs i de i 2 a § 1 mom. avsedda förordningar som antagits med stöd av fördraget om Europeiska unionens funktionssätt verkställs frysning av tillgångar som tillhör i förordningarnas bilagor nämnda fysiska eller juridiska personer av utmätningsmannen på utrikesministeriets ansökan med iakttagande av 8 kap. 5–10 och 12–15 § i utsökningsbalken (705/2007). För de kostnader som frysningen av tillgångarna och förvaringen och förvaltningen av de frysta tillgångarna orsakar svarar den som är föremål för beslutet.\n\nEn förordning om frysning av tillgångar eller upphävande av frysning verkställs oberoende av ändringssökande.\n\nRapporteringsskyldiga som avses i 1 kap. 2 § i lagen om förhindrande av penningtvätt och av finansiering av terrorism (444/2017) ska trots sekretessbestämmelserna på eget initiativ meddela utmätningsmannen sådana i 3 kap. 66 § i utsökningsbalken avsedda uppgifter som de har om fysiska eller juridiska personer som avses i 1 mom. i denna paragraf. Bestämmelser om skyldigheten för utomstående och myndigheter att lämna ut uppgifter till utmätningsmannen finns i 3 kap. 64–68 § i utsökningsbalken.\n\nFör skötseln av uppgifter som åläggs nationella behöriga myndigheter i de i 2 a § 1 mom. avsedda förordningar som antagits med stöd av fördraget om Europeiska unionens funktionssätt, i rådets beslut om restriktiva åtgärder som antagits med stöd av artikel 29 i fördraget om Europeiska unionen eller i resolutioner om sanktioner av Förenta nationernas säkerhetsråd ansvarar i Finland utrikesministeriet, om inte uppgifterna hör till någon annan myndighets behörighet."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-pakotelaki-report-to-bailiff"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659#sec_2b",
+      "sourceLabel": "Finlex, 659/1967, 2 b §, consolidated text fin@20250182 of 2025-04-25, Swedish swe@20250182. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-1967-659/003",
+      "instrument": "fi-sd-1967-659",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "fi": "Sitoumusta tai välipuhetta, joka on tehty tämän lain tai siihen perustuvien määräysten vastaisesti tai joka tarkoittaa niiden kiertämistä, älköön pantako täytäntöön.\n\nJos ennen tämän lain nojalla annetun asetuksen voimaantuloa tehty sitoumus tai välipuhe on ristiriidassa asetuksessa annettujen tai siihen perustuvien määräysten kanssa, on sen täytäntöönpano viipymättä keskeytettävä.",
+        "en": "An undertaking or agreement that has been made in breach of this Act or of the regulations issued under it, or that is intended to circumvent them, must not be performed.\n\nIf an undertaking or agreement made before the entry into force of a decree issued under this Act conflicts with the regulations laid down in that decree or issued under it, its performance must be suspended without delay.",
+        "sv": "Förbindelse eller avtal, som ingåtts i strid med stadgandena i denna lag eller med stöd av densamma utfärdade föreskrifter eller som avser kringgående av dem, må icke uppfyllas.\n\nStår förbindelse eller avtal, som ingåtts före med stöd av denna lag given förordnings ikraftträdande, i strid med föreskrifter som utfärdats i förordningen eller grunda sig på densamma, skall dess uppfyllande omedelbart avbrytas."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-pakotelaki-suspend-commitments"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659#sec_3",
+      "sourceLabel": "Finlex, 659/1967, 3 §, consolidated text fin@20250182 of 2025-04-25, Swedish swe@20250182. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-1967-659/004",
+      "instrument": "fi-sd-1967-659",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": null,
+      "texts": {
+        "fi": "Rangaistus viranomaisen tämän lain nojalla antaman säännöstelymääräyksen rikkomisesta tai sen yrittämisestä sekä Euroopan unionin yhteisen ulko- ja turvallisuuspolitiikan alaan kuuluvien Euroopan unionin toiminnasta tehdyn sopimuksen 215 artiklan nojalla annettujen asetusten rikkomisesta ja sen yrittämisestä säädetään rikoslain (39/1889) 46 luvun 3 a–3 d §:ssä.",
+        "en": "Provisions on the penalty for breaching, or attempting to breach, a regulatory order issued by an authority under this Act, and for breaching, or attempting to breach, regulations within the scope of the common foreign and security policy of the European Union that have been issued under Article 215 of the Treaty on the Functioning of the European Union, are laid down in chapter 46, sections 3a to 3d of the Criminal Code (39/1889).",
+        "sv": "Bestämmelser om straff för brott eller försök till brott mot en regleringsföreskrift som en myndighet har meddelat med stöd av denna lag samt för brott eller försök till brott mot de förordningar som omfattas av Europeiska unionens gemensamma utrikes- och säkerhetspolitik och har antagits med stöd av artikel 215 i fördraget om Europeiska unionens funktionssätt finns i 46 kap. 3 a–3 d § i strafflagen (39/1889)."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-pakotelaki-sanctions-offences"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659#sec_4",
+      "sourceLabel": "Finlex, 659/1967, 4 §, consolidated text fin@20250182 of 2025-04-25, Swedish swe@20250182. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "no-lov-2021-04-16-18/001",
+      "instrument": "no-lov-2021-04-16-18",
+      "provisionKind": "section",
+      "refLabel": "§ 1",
+      "path": "001",
+      "heading": "Fullmakt til å gjennomføre bindende FN-vedtak",
+      "texts": {
+        "nb": "Kongen kan gi forskrift med nødvendige bestemmelser til gjennomføring av bindende vedtak av De forente nasjoners sikkerhetsråd etter FN-paktens artikkel 41.\n\nKongen avgjør hvorvidt et vedtak av Sikkerhetsrådet er bindende.",
+        "en": "The King may issue regulations containing the provisions necessary to implement binding decisions of the United Nations Security Council under Article 41 of the Charter of the United Nations.\n\nThe King decides whether a decision of the Security Council is binding.",
+        "sv": "Konungen får meddela de föreskrifter som behövs för att genomföra bindande beslut av Förenta nationernas säkerhetsråd enligt artikel 41 i FN-stadgan.\n\nKonungen avgör om ett beslut av säkerhetsrådet är bindande."
+      },
+      "originalLanguage": "nb",
+      "isMachine": true,
+      "obligations": [
+        "obl-no-sanksjonsloven-comply"
+      ],
+      "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18/%C2%A71",
+      "sourceLabel": "Lovdata, LOV-2021-04-16-18, § 1, consolidated text as amended up to lov/2024-12-20-80, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "no-lov-2021-04-16-18/002",
+      "instrument": "no-lov-2021-04-16-18",
+      "provisionKind": "section",
+      "refLabel": "§ 2",
+      "path": "002",
+      "heading": "Fullmakt til å gjennomføre internasjonale ikke-militære tiltak",
+      "texts": {
+        "nb": "Kongen kan gi forskrift med nødvendige bestemmelser for at Norge kan gjennomføre sanksjoner eller restriktive tiltak som er vedtatt i mellomstatlige organisasjoner, eller som ellers har bred internasjonal oppslutning, og som har som formål å opprettholde fred og sikkerhet eller sikre respekt for demokrati og rettsstat, menneskerettigheter eller folkeretten for øvrig.\n\nForskrifter etter første ledd kan gjelde\na. forbud mot eller restriksjoner på handel, tjenester og økonomiske eller finansielle transaksjoner\nb. forbud mot eller restriksjoner på vitenskapelig, teknologisk og kulturelt samarbeid\nc. økonomiske sanksjoner rettet mot fysiske eller juridiske personer\nd. reiserestriksjoner\ne. andre tiltak som har som formål å opprettholde fred og sikkerhet eller sikre respekt for demokrati og rettsstat, menneskerettigheter eller folkeretten for øvrig.\n\nForskrifter etter første ledd gjelder med de begrensninger som følger av folkeretten eller av avtale med fremmed stat.",
+        "en": "The King may issue regulations containing the provisions necessary to enable Norway to implement sanctions or restrictive measures that have been adopted in intergovernmental organisations, or that otherwise have broad international support, and whose purpose is to maintain peace and security or to ensure respect for democracy and the rule of law, human rights or international law in general.\n\nRegulations under the first paragraph may concern\na. prohibitions or restrictions on trade, services and economic or financial transactions\nb. prohibitions or restrictions on scientific, technological and cultural cooperation\nc. economic sanctions directed at natural or legal persons\nd. travel restrictions\ne. other measures whose purpose is to maintain peace and security or to ensure respect for democracy and the rule of law, human rights or international law in general.\n\nRegulations under the first paragraph apply subject to the limitations that follow from international law or from agreements with foreign states.",
+        "sv": "Konungen får meddela de föreskrifter som behövs för att Norge ska kunna genomföra sanktioner eller restriktiva åtgärder som har beslutats inom mellanstatliga organisationer eller som i övrigt har brett internationellt stöd, och som har till syfte att upprätthålla fred och säkerhet eller säkerställa respekt för demokratin och rättsstaten, de mänskliga rättigheterna eller folkrätten i övrigt.\n\nFöreskrifter enligt första stycket får avse\na. förbud mot eller begränsningar av handel, tjänster och ekonomiska eller finansiella transaktioner\nb. förbud mot eller begränsningar av vetenskapligt, tekniskt och kulturellt samarbete\nc. ekonomiska sanktioner riktade mot fysiska eller juridiska personer\nd. reserestriktioner\ne. andra åtgärder som har till syfte att upprätthålla fred och säkerhet eller säkerställa respekt för demokratin och rättsstaten, de mänskliga rättigheterna eller folkrätten i övrigt.\n\nFöreskrifter enligt första stycket gäller med de begränsningar som följer av folkrätten eller av avtal med främmande stat."
+      },
+      "originalLanguage": "nb",
+      "isMachine": true,
+      "obligations": [
+        "obl-no-sanksjonsloven-comply"
+      ],
+      "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18/%C2%A72",
+      "sourceLabel": "Lovdata, LOV-2021-04-16-18, § 2, consolidated text as amended up to lov/2024-12-20-80, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "no-lov-2021-04-16-18/003",
+      "instrument": "no-lov-2021-04-16-18",
+      "provisionKind": "section",
+      "refLabel": "§ 3",
+      "path": "003",
+      "heading": "Lovens virkeområde",
+      "texts": {
+        "nb": "Loven gjelder\na. på norsk territorium, inkludert norsk luftrom\nb. om bord på alle fartøy, også luftfartøy, boreplattformer og andre lignende flyttbare innretninger under norsk jurisdiksjon\nc. for alle norske statsborgere og personer med bosted i Norge\nd. for alle foretak registrert i Foretaksregisteret\ne. for alle foretak med hensyn til forretningsvirksomhet de driver helt eller delvis i Norge.\n\nLoven gjelder for Svalbard og Jan Mayen. Kongen kan gi forskrift om lovens anvendelse for de norske bilandene.\n\nKongen kan gi forskrift om avvikende virkeområde for tiltak gjennomført med hjemmel i denne loven.",
+        "en": "This Act applies\na. on Norwegian territory, including Norwegian airspace\nb. on board all vessels, including aircraft, drilling platforms and other similar mobile installations under Norwegian jurisdiction\nc. to all Norwegian nationals and persons resident in Norway\nd. to all undertakings registered in Foretaksregisteret (Register of Business Enterprises)\ne. to all undertakings in respect of business they carry on wholly or partly in Norway.\n\nThis Act applies to Svalbard and Jan Mayen. The King may issue regulations on the application of this Act to the Norwegian dependencies.\n\nThe King may issue regulations laying down a different scope for measures implemented pursuant to this Act.",
+        "sv": "Lagen gäller\na. på norskt territorium, inbegripet norskt luftrum\nb. ombord på alla fartyg, även luftfartyg, borrplattformar och andra liknande flyttbara anläggningar under norsk jurisdiktion\nc. för alla norska medborgare och personer med hemvist i Norge\nd. för alla företag som är registrerade i Foretaksregisteret (norska företagsregistret)\ne. för alla företag i fråga om affärsverksamhet som de helt eller delvis bedriver i Norge.\n\nLagen gäller för Svalbard och Jan Mayen. Konungen får meddela föreskrifter om lagens tillämpning på de norska biländerna.\n\nKonungen får meddela föreskrifter om ett avvikande tillämpningsområde för åtgärder som har genomförts med stöd av denna lag."
+      },
+      "originalLanguage": "nb",
+      "isMachine": true,
+      "obligations": [
+        "obl-no-sanksjonsloven-comply"
+      ],
+      "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18/%C2%A73",
+      "sourceLabel": "Lovdata, LOV-2021-04-16-18, § 3, consolidated text as amended up to lov/2024-12-20-80, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "no-lov-2021-04-16-18/004",
+      "instrument": "no-lov-2021-04-16-18",
+      "provisionKind": "section",
+      "refLabel": "§ 4",
+      "path": "004",
+      "heading": "Straff for overtredelser av bestemmelser gitt i medhold av loven",
+      "texts": {
+        "nb": "Den som overtrer bestemmelser gitt i medhold av denne lovens §§ 1 og 2, straffes med bøter eller fengsel inntil tre år eller begge deler.\n\nDen som uaktsomt overtrer bestemmelser som nevnt i første ledd, straffes med bøter eller fengsel inntil seks måneder eller begge deler.",
+        "en": "Any person who breaches provisions laid down pursuant to sections 1 and 2 of this Act is liable to fines or imprisonment for up to three years, or both.\n\nAny person who negligently breaches provisions referred to in the first paragraph is liable to fines or imprisonment for up to six months, or both.",
+        "sv": "Den som överträder bestämmelser som har meddelats med stöd av 1 och 2 §§ i denna lag döms till böter eller fängelse i högst tre år eller till båda.\n\nDen som av oaktsamhet överträder bestämmelser som avses i första stycket döms till böter eller fängelse i högst sex månader eller till båda."
+      },
+      "originalLanguage": "nb",
+      "isMachine": true,
+      "obligations": [
+        "obl-no-sanksjonsloven-comply"
+      ],
+      "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18/%C2%A74",
+      "sourceLabel": "Lovdata, LOV-2021-04-16-18, § 4, consolidated text as amended up to lov/2024-12-20-80, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/001",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "1 §",
+      "path": "001",
+      "heading": "Lagens syfte och tillämpningsområde",
+      "texts": {
+        "sv": "Denna lag innehåller bestämmelser för genomförande av punkterna 1 c och d i Förenta nationernas säkerhetsråds resolution 1373 (2001). Syftet med lagen är att förhindra och motverka finansiering av terroristhandlingar i enlighet med vad som anges i resolutionen.\n\nLagen gäller inte de fysiska eller juridiska personer som i stället omfattas av frysningsåtgärder enligt en förordning om ekonomiska sanktioner som har beslutats av Europeiska unionen.",
+        "en": "This Act contains provisions implementing paragraphs 1(c) and (d) of United Nations Security Council Resolution 1373 (2001). The purpose of the Act is to prevent and counteract the financing of terrorist acts as set out in the resolution.\n\nThe Act does not apply to natural or legal persons who are instead subject to freezing measures under a regulation on economic sanctions adopted by the European Union."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-no-assets-available"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 1 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/003",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "3 §",
+      "path": "003",
+      "heading": "Ordförklaring",
+      "texts": {
+        "sv": "Med frysning avses i denna lag ett enligt lagen meddelat beslut som innebär\n1. ett förbud för den som anges i beslutet och någon som avses i 5 § att förfoga över sina tillgångar, och\n2. ett förbud för var och en att tillhandahålla tillgångar till den som anges i beslutet eller till någon som avses i 5 §.",
+        "en": "In this Act, freezing means a decision issued under this Act that entails\n1. a prohibition against the person named in the decision, and any person referred to in Section 5, disposing of their assets, and\n2. a prohibition against anyone making assets available to the person named in the decision or to any person referred to in Section 5."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-no-assets-available",
+        "obl-se-frysning-respect-freezing-decisions"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 3 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/004",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "4 §",
+      "path": "004",
+      "heading": "Beslut om frysning",
+      "texts": {
+        "sv": "Om det behövs för att förhindra fortsatt brottslighet av likartat slag får ett beslut om frysning meddelas för den som\n1. skäligen kan misstänkas för brott enligt terroristbrottslagen (2022:666),\n2. har dömts för brott enligt terroristbrottslagen, eller\n3. på grund av innehållet i utländsk brottsutredning eller dom skäligen kan misstänkas för att i annan stat ha begått brott som motsvarar brott enligt terroristbrottslagen.\n\nFörsta stycket 1 och 2 gäller också den som är misstänkt eller dömd för brott enligt lagen (2002:444) om straff för finansiering av särskilt allvarlig brottslighet i vissa fall, lagen (2003:148) om straff för terroristbrott eller lagen (2010:299) om straff för offentlig uppmaning, rekrytering och utbildning avseende terroristbrott och annan särskilt allvarlig brottslighet. Lag (2025:330).",
+        "en": "Where it is necessary to prevent continued criminal activity of a similar kind, a freezing decision may be issued in respect of a person who\n1. can reasonably be suspected of an offence under the Terrorist Offences Act (2022:666),\n2. has been convicted of an offence under the Terrorist Offences Act, or\n3. on account of the content of a foreign criminal investigation or judgment, can reasonably be suspected of having committed, in another State, an offence corresponding to an offence under the Terrorist Offences Act.\n\nThe first paragraph, points 1 and 2, also apply to a person who is suspected or convicted of an offence under the Act (2002:444) on Criminal Responsibility for the Financing of Particularly Serious Crime in Some Cases, the Act (2003:148) on Criminal Responsibility for Terrorist Offences or the Act (2010:299) on Criminal Responsibility for Public Provocation, Recruitment and Training concerning Terrorist Offences and other Particularly Serious Crime. Act (2025:330)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-no-assets-available"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 4 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/005",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": null,
+      "texts": {
+        "sv": "Ett förbud mot att förfoga över tillgångar gäller inte bara egendom som tillhör den som beslutet om frysning avser, utan även egendom som\n1. tillhör juridiska personer som ägs eller kontrolleras, direkt eller indirekt, av någon som avses i 4 §,\n2. tillhör fysiska eller juridiska personer som agerar i stället för någon som avses i 4 § eller punkten 1 eller på uppdrag av sådana personer, eller\n3. utgör avkastning av egendom som ägs eller kontrolleras, direkt eller indirekt, av någon som avses i 4 § eller punkterna 1 eller 2.",
+        "en": "A prohibition on disposing of assets applies not only to property belonging to the person to whom the freezing decision relates, but also to property that\n1. belongs to legal persons owned or controlled, directly or indirectly, by any person referred to in Section 4,\n2. belongs to natural or legal persons acting in place of any person referred to in Section 4 or point 1, or on behalf of such persons, or\n3. constitutes the return on property owned or controlled, directly or indirectly, by any person referred to in Section 4 or point 1 or 2."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-no-assets-available",
+        "obl-se-frysning-respect-freezing-decisions"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 5 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/006",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "6 §",
+      "path": "006",
+      "heading": null,
+      "texts": {
+        "sv": "Ett förbud mot att tillhandahålla tillgångar till de fysiska eller juridiska personer som avses i 4 eller 5 § gäller var och en.",
+        "en": "A prohibition on making assets available to the natural or legal persons referred to in Section 4 or 5 applies to any person."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-no-assets-available"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 6 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/008",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "8 §",
+      "path": "008",
+      "heading": null,
+      "texts": {
+        "sv": "Beslut om frysning meddelas av åklagaren. Åklagaren får avvakta med att meddela beslut om beslutet är till men för utredning eller lagföring av den brottslighet misstankarna avser eller för arbete med att förebygga, förhindra, upptäcka, utreda eller lagföra sammanhängande eller likartad brottslighet.\n\nOm förutsättningarna enligt 4 § är uppfyllda får åklagaren fatta beslut på begäran av behörig myndighet i en annan stat.\n\nBeslutet gäller omedelbart. Beslutet ska snarast möjligt kungöras i Post- och Inrikes Tidningar och delges den som beslutet avser.",
+        "en": "Freezing decisions are issued by the prosecutor. The prosecutor may defer issuing a decision if the decision would be detrimental to the investigation or prosecution of the criminal activity to which the suspicions relate, or to work to prevent, hinder, detect, investigate or prosecute related or similar criminal activity.\n\nIf the conditions under Section 4 are met, the prosecutor may take a decision at the request of a competent authority in another State.\n\nThe decision takes effect immediately. It must be published as soon as possible in Post- och Inrikes Tidningar (the Official Swedish Gazette) and served on the person to whom it relates."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-no-assets-available"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P8",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 8 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2023-677/019",
+      "instrument": "sfs-2023-677",
+      "provisionKind": "section",
+      "refLabel": "19 §",
+      "path": "019",
+      "heading": "Straff",
+      "texts": {
+        "sv": "Den som uppsåtligen eller av grov oaktsamhet bryter mot ett beslut om frysning enligt 4 § döms till fängelse i högst tre år eller, om brottet begåtts uppsåtligen och är grovt, till fängelse i lägst två år och högst sex år.\n\nOm ett brott enligt första stycket med hänsyn till egendomens värde eller övriga omständigheter vid brottet är att anse som ringa, döms till böter eller fängelse i högst sex månader.\n\nEn gärning enligt denna paragraf utgör inte brott om den avser humanitärt bistånd, verksamhet till stöd för grundläggande mänskliga behov eller annat sådant stöd. Lag (2025:330).",
+        "en": "A person who, intentionally or through gross negligence, breaches a freezing decision under Section 4 is sentenced to imprisonment for at most three years or, if the offence was committed intentionally and is gross, to imprisonment for at least two and at most six years.\n\nIf, having regard to the value of the property or the other circumstances of the offence, an offence under the first paragraph is to be regarded as minor, the sentence is a fine or imprisonment for at most six months.\n\nAn act under this Section does not constitute an offence if it relates to humanitarian aid, activities in support of basic human needs or other such support. Act (2025:330)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-frysning-respect-freezing-decisions"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/#P19",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, 19 §, consolidated text as amended up to SFS 2025:330. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    }
+  ],
+  "withoutProvision": [
+    {
+      "obligation": "obl-dk-eksportkontrolloven-accurate-applications",
+      "reason": "The section has been amended since the text Retsinformation publishes for this act; its wording in force is added once a consolidated text exists."
+    },
+    {
+      "obligation": "obl-dk-eksportkontrolloven-information-assistance",
+      "reason": "The section has been amended since the text Retsinformation publishes for this act; its wording in force is added once a consolidated text exists."
+    }
+  ]
+}

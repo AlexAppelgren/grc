@@ -1,0 +1,784 @@
+{
+  "tranche": "eu-securitisation",
+  "researchedOn": "2026-11-13",
+  "provisions": [
+    {
+      "key": "celex-32017r2402/003",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Selling of securitisations to retail clients",
+      "texts": {
+        "en": "1. The seller of a securitisation position shall not sell such a position to a retail client, as defined in point 11 of Article 4(1) of Directive 2014/65/EU, unless all of the following conditions are fulfilled:\n(a) the seller of the securitisation position has performed a suitability test in accordance with Article 25(2) of Directive 2014/65/EU;\n(b) the seller of the securitisation position is satisfied, on the basis of the test referred to in point (a), that the securitisation position is suitable for that retail client;\n(c) the seller of the securitisation position immediately communicates in a report to the retail client the outcome of the suitability test.\n\n2. Where the conditions set out in paragraph 1 are fulfilled and the financial instrument portfolio of that retail client does not exceed EUR 500 000 , the seller shall ensure, on the basis of the information provided by the retail client in accordance with paragraph 3, that the retail client does not invest an aggregate amount exceeding 10 % of that client’s financial instrument portfolio in securitisation positions, and that the initial minimum amount invested in one or more securitisation positions is EUR 10 000 .\n\n3. The retail client shall provide the seller with accurate information on the retail client’s financial instrument portfolio, including any investments in securitisation positions.\n\n4. For the purposes of paragraphs 2 and 3, the retail client’s financial instrument portfolio shall include cash deposits and financial instruments, but shall exclude any financial instruments that have been given as collateral."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-retail-sale"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_3",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 3, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/005",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Due-diligence requirements for institutional investors",
+      "texts": {
+        "en": "1. Prior to holding a securitisation position, an institutional investor, other than the originator, sponsor or original lender, shall verify that:\n(a) where the originator or original lender established in the Union is not a credit institution or an investment firm as defined in points (1) and (2) of Article 4(1) of Regulation (EU) No 575/2013, the originator or original lender grants all the credits giving rise to the underlying exposures on the basis of sound and well-defined criteria and clearly established processes for approving, amending, renewing and financing those credits and has effective systems in place to apply those criteria and processes in accordance with Article 9(1) of this Regulation;\n(b) where the originator or original lender is established in a third country, the originator or original lender grants all the credits giving rise to the underlying exposures on the basis of sound and well-defined criteria and clearly established processes for approving, amending, renewing and financing those credits and has effective systems in place to apply those criteria and processes to ensure that credit-granting is based on a thorough assessment of the obligor’s creditworthiness;\n(c) if established in the Union, the originator, sponsor or original lender retains on an ongoing basis a material net economic interest in accordance with Article 6 and the risk retention is disclosed to the institutional investor in accordance with Article 7;\n(d) if established in a third country, the originator, sponsor or original lender retains on an ongoing basis a material net economic interest which, in any event, shall not be less than 5 %, determined in accordance with Article 6, and discloses the risk retention to institutional investors;\n(e) the originator, sponsor or SSPE has, where applicable, made available the information required by Article 7 in accordance with the frequency and modalities provided for in that Article;\n(f) in the case of non-performing exposures, sound standards are applied in the selection and pricing of the exposures.\n\n2. By derogation from paragraph 1, as regards fully supported ABCP transactions, the requirement specified in point (a) of paragraph 1 shall apply to the sponsor. In such cases, the sponsor shall verify that the originator or original lender which is not a credit institution or an investment firm grants all the credits giving rise to the underlying exposures on the basis of sound and well-defined criteria and clearly established processes for approving, amending, renewing and financing those credits and has effective systems in place to apply those criteria and processes in accordance with Article 9(1).\n\n3. Prior to holding a securitisation position, an institutional investor, other than the originator, sponsor or original lender, shall carry out a due-diligence assessment which enables it to assess the risks involved. That assessment shall consider at least all of the following:\n(a) the risk characteristics of the individual securitisation position and of the underlying exposures;\n(b) all the structural features of the securitisation that can materially impact the performance of the securitisation position, including the contractual priorities of payment and priority of payment-related triggers, credit enhancements, liquidity enhancements, market value triggers, and transaction-specific definitions of default;\n(c) with regard to a securitisation notified as STS in accordance with Article 27, the compliance of that securitisation with the requirements provided for in Articles 19 to 22 or in Articles 23 to 26, and Article 27. Institutional investors may rely to an appropriate extent on the STS notification pursuant to Article 27(1) and on the information disclosed by the originator, sponsor and SSPE on the compliance with the STS requirements, without solely or mechanistically relying on that notification or information.\n\nNotwithstanding points (a) and (b) of the first subparagraph, in the case of a fully supported ABCP programme, institutional investors in the commercial paper issued by that ABCP programme shall consider the features of the ABCP programme and the full liquidity support.\n\n4. An institutional investor, other than the originator, sponsor or original lender, holding a securitisation position, shall at least:\n(a) establish appropriate written procedures that are proportionate to the risk profile of the securitisation position and, where relevant, to the institutional investor’s trading and non-trading book, in order to monitor, on an ongoing basis, compliance with paragraphs 1 and 3 and the performance of the securitisation position and of the underlying exposures.\nWhere relevant with respect to the securitisation and the underlying exposures, those written procedures shall include monitoring of the exposure type, the percentage of loans more than 30, 60 and 90 days past due, default rates, prepayment rates, loans in foreclosure, recovery rates, repurchases, loan modifications, payment holidays, collateral type and occupancy, and frequency distribution of credit scores or other measures of credit worthiness across underlying exposures, industry and geographical diversification, frequency distribution of loan to value ratios with band widths that facilitate adequate sensitivity analysis. Where the underlying exposures are themselves securitisation positions, as permitted under Article 8, institutional investors shall also monitor the exposures underlying those positions;\n(b) in the case of a securitisation other than a fully supported ABCP programme, regularly perform stress tests on the cash flows and collateral values supporting the underlying exposures or, in the absence of sufficient data on cash flows and collateral values, stress tests on loss assumptions, having regard to the nature, scale and complexity of the risk of the securitisation position;\n(c) in the case of fully supported ABCP programme, regularly perform stress tests on the solvency and liquidity of the sponsor;\n(d) ensure internal reporting to its management body so that the management body is aware of the material risks arising from the securitisation position and so that those risks are adequately managed;\n(e) be able to demonstrate to its competent authorities, upon request, that it has a comprehensive and thorough understanding of the securitisation position and its underlying exposures and that it has implemented written policies and procedures for the risk management of the securitisation position and for maintaining records of the verifications and due diligence in accordance with paragraphs 1 and 2 and of any other relevant information; and\n(f) in the case of exposures to a fully supported ABCP programme, be able to demonstrate to its competent authorities, upon request, that it has a comprehensive and thorough understanding of the credit quality of the sponsor and of the terms of the liquidity facility provided.\n\n5. Without prejudice to paragraphs 1 to 4 of this Article, where an institutional investor has given another institutional investor authority to make investment management decisions that might expose it to a securitisation, the institutional investor may instruct that managing party to fulfil its obligations under this Article in respect of any exposure to a securitisation arising from those decisions. Member States shall ensure that, where an institutional investor is instructed under this paragraph to fulfil the obligations of another institutional investor and fails to do so, any sanction under Articles 32 and 33 may be imposed on the managing party and not on the institutional investor who is exposed to the securitisation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-investor-due-diligence",
+        "obl-eu-secr-investor-monitoring"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_5",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 5, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/006",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Risk retention",
+      "texts": {
+        "en": "1. The originator, sponsor or original lender of a securitisation shall retain on an ongoing basis a material net economic interest in the securitisation of not less than 5 %. That interest shall be measured at the origination and shall be determined by the notional value for off-balance-sheet items. Where the originator, sponsor or original lender have not agreed between them who will retain the material net economic interest, the originator shall retain the material net economic interest. There shall be no multiple applications of the retention requirements for any given securitisation. The material net economic interest shall not be split amongst different types of retainers and not be subject to any credit-risk mitigation or hedging.\n\nFor the purposes of this Article, an entity shall not be considered to be an originator where the entity has been established or operates for the sole purpose of securitising exposures.\n\nWhen measuring the material net economic interest, the retainer shall take into account any fees that may in practice be used to reduce the effective material net economic interest.\n\nIn the case of traditional NPE securitisations, the requirement of this paragraph may also be fulfilled by the servicer provided that the servicer can demonstrate that it has expertise in servicing exposures of a similar nature to those securitised and that it has well-documented and adequate policies, procedures and risk-management controls in place relating to the servicing of exposures.\n\n2. Originators shall not select assets to be transferred to the SSPE with the aim of rendering losses on the assets transferred to the SSPE, measured over the life of the transaction, or over a maximum of 4 years where the life of the transaction is longer than four years, higher than the losses over the same period on comparable assets held on the balance sheet of the originator. Where the competent authority finds evidence suggesting contravention of that prohibition, the competent authority shall investigate the performance of assets transferred to the SSPE and comparable assets held on the balance sheet of the originator. If the performance of the transferred assets is significantly lower than that of the comparable assets held on the balance sheet of the originator as a consequence of the intent of the originator, the competent authority shall impose a sanction pursuant to Articles 32 and 33.\n\n3. Only the following shall qualify as a retention of a material net economic interest of not less than 5 % within the meaning of paragraph 1:\n(a) the retention of not less than 5 % of the nominal value of each of the tranches sold or transferred to investors;\n(b) in the case of revolving securitisations or securitisations of revolving exposures, the retention of the originator’s interest of not less than 5 % of the nominal value of each of the securitised exposures;\n(c) the retention of randomly selected exposures, equivalent to not less than 5 % of the nominal value of the securitised exposures, where such non-securitised exposures would otherwise have been securitised in the securitisation, provided that the number of potentially securitised exposures is not less than 100 at origination;\n(d) the retention of the first loss tranche and, where such retention does not amount to 5 % of the nominal value of the securitised exposures, if necessary, other tranches having the same or a more severe risk profile than those transferred or sold to investors and not maturing any earlier than those transferred or sold to investors, so that the retention equals in total not less than 5 % of the nominal value of the securitised exposures; or\n(e) the retention of a first loss exposure of not less than 5 % of every securitised exposure in the securitisation.\n\n3a. By way of derogation from paragraph 3, in the case of NPE securitisations, where a non-refundable purchase price discount has been agreed, the retention of a material net economic interest for the purposes of that paragraph shall not be less than 5 % of the sum of the net value of the securitised exposures that qualify as non-performing exposures and, if applicable, the nominal value of any performing securitised exposures.\n\nThe net value of a non-performing exposure shall be calculated by deducting the non-refundable purchase price discount agreed at the level of the individual securitised exposure at the time of origination or, where applicable, a corresponding share of the non-refundable purchase price discount agreed at the level of the pool of underlying exposures at the time of origination from the exposure’s nominal value or, where applicable, its outstanding value at the time of origination. In addition, for the purpose of determining the net value of the securitised non-performing exposures, the non-refundable purchase price discount may include the difference between the nominal amount of the tranches of the NPE securitisation underwritten by the originator for subsequent sale and the price at which these tranches are first sold to unrelated third parties.\n\n4. Where a mixed financial holding company established in the Union within the meaning of Directive 2002/87/EC of the European Parliament and of the Council ( ⁴ ), a parent institution or a financial holding company established in the Union, or one of its subsidiaries within the meaning of Regulation (EU) No 575/2013, as an originator or sponsor, securitises exposures from one or more credit institutions, investment firms or other financial institutions which are included in the scope of supervision on a consolidated basis, the requirements referred to in paragraph 1 may be satisfied on the basis of the consolidated situation of the related parent institution, financial holding company, or mixed financial holding company established in the Union.\n\nThe first subparagraph shall apply only where credit institutions, investment firms or financial institutions which created the securitised exposures comply with the requirements set out in Article 79 of Directive 2013/36/EU of the European Parliament and of the Council ( ⁵ ) and deliver the information needed to satisfy the requirements provided for in Article 5 of this Regulation, in a timely manner, to the originator or sponsor and to the Union parent credit institution, financial holding company or mixed financial holding company established in the Union.\n\n5. Paragraph 1 shall not apply where the securitised exposures are exposures on or exposures fully, unconditionally and irrevocably guaranteed by:\n(a) central governments or central banks;\n(b) regional governments, local authorities and public sector entities within the meaning of point (8) of Article 4(1) of Regulation (EU) No 575/2013 of Member States;\n(c) institutions to which a 50 % risk weight or less is assigned under Part Three, Title II, Chapter 2 of Regulation (EU) No 575/2013;\n(d) national promotional banks or institutions within the meaning of point (3) of Article 2 of Regulation (EU) 2015/1017 of the European Parliament and of the Council ( ⁶ ); or\n(e) the multilateral development banks listed in Article 117 of Regulation (EU) No 575/2013.\n\n6. Paragraph 1 shall not apply to transactions based on a clear, transparent and accessible index, where the underlying reference entities are identical to those that make up an index of entities that is widely traded, or are other tradable securities other than securitisation positions.\n\n7. EBA, in close cooperation with the ESMA and the European Insurance and Occupational Pensions Authority (EIOPA) which was established by Regulation (EU) No 1094/2010 of the European Parliament and of the Council ( ⁷ ), shall develop draft regulatory technical standards to specify in greater detail the risk-retention requirement, in particular with regard to:\n(a) the modalities for retaining risk pursuant to paragraph 3, including the fulfilment through a synthetic or contingent form of retention;\n(b) the measurement of the level of retention referred to in paragraph 1;\n(c) the prohibition of hedging or selling the retained interest;\n(d) the conditions for retention on a consolidated basis in accordance with paragraph 4;\n(e) the conditions for exempting transactions based on a clear, transparent and accessible index referred to in paragraph 6;\n(f) the modalities of retaining risk pursuant to paragraphs 3 and 3a in the case of NPE securitisations;\n(g) the impact of fees paid to the retainer on the effective material net economic interest within the meaning of paragraph 1.\n\nEBA shall submit those draft regulatory technical standards to the Commission by 10 October 2021.\n\nThe Commission is empowered to supplement this Regulation by adopting the regulatory technical standards referred to in this paragraph in accordance with Articles 10 to 14 of Regulation (EU) No 1093/2010.\n\n( ⁴ ) Directive 2002/87/EC of the European Parliament and of the Council of 16 December 2002 on the supplementary supervision of credit institutions, insurance undertakings and investment firms in a financial conglomerate and amending Council Directives 73/239/EEC, 79/267/EEC, 92/49/EEC, 92/96/EEC, 93/6/EEC and 93/22/EEC, and Directives 98/78/EC and 2000/12/EC of the European Parliament and of the Council (OJ L 35, 11.2.2003, p. 1).\n\n( ⁵ ) Directive 2013/36/EU of the European Parliament and of the Council of 26 June 2013 on access to the activity of credit institutions and the prudential supervision of credit institutions and investment firms, amending Directive 2002/87/EC and repealing Directives 2006/48/EC and 2006/49/EC (OJ L 176, 27.6.2013, p. 338).\n\n( ⁶ ) Regulation (EU) 2015/1017 of the European Parliament and of the Council of 25 June 2015 on the European Fund for Strategic Investments, the European Investment Advisory Hub and the European Investment Project Portal and amending Regulations (EU) No 1291/2013 and (EU) No 1316/2013 — the European Fund for Strategic Investments (OJ L 169, 1.7.2015, p. 1).\n\n( ⁷ ) Regulation (EU) No 1094/2010 of the European Parliament and of the Council of 24 November 2010 establishing a European Supervisory Authority (European Insurance and Occupational Pensions Authority), amending Decision No 716/2009/EC and repealing Commission Decision 2009/79/EC (OJ L 331, 15.12.2010, p. 48)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-risk-retention",
+        "obl-eu-secr-no-adverse-selection"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_6",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 6, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/007",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 7",
+      "path": "007",
+      "heading": "Transparency requirements for originators, sponsors and SSPEs",
+      "texts": {
+        "en": "1. The originator, sponsor and SSPE of a securitisation shall, in accordance with paragraph 2 of this Article, make at least the following information available to holders of a securitisation position, to the competent authorities referred to in Article 29 and, upon request, to potential investors:\n(a) information on the underlying exposures on a quarterly basis, or, in the case of ABCP, information on the underlying receivables or credit claims on a monthly basis;\n(b) all underlying documentation that is essential for the understanding of the transaction, including but not limited to, where applicable, the following documents:\n(i) the final offering document or the prospectus together with the closing transaction documents, excluding legal opinions;\n(ii) for traditional securitisation the asset sale agreement, assignment, novation or transfer agreement and any relevant declaration of trust;\n(iii) the derivatives and guarantee agreements, as well as any relevant documents on collateralisation arrangements where the exposures being securitised remain exposures of the originator;\n(iv) the servicing, back-up servicing, administration and cash management agreements;\n(v) the trust deed, security deed, agency agreement, account bank agreement, guaranteed investment contract, incorporated terms or master trust framework or master definitions agreement or such legal documentation with equivalent legal value;\n(vi) any relevant inter-creditor agreements, derivatives documentation, subordinated loan agreements, start-up loan agreements and liquidity facility agreements;\nThat underlying documentation shall include a detailed description of the priority of payments of the securitisation;\n(c) where a prospectus has not been drawn up in compliance with Directive 2003/71/EC of the European Parliament and of the Council ( ⁸ ), a transaction summary or overview of the main features of the securitisation, including, where applicable:\n(i) details regarding the structure of the deal, including the structure diagrams containing an overview of the transaction, the cash flows and the ownership structure;\n(ii) details regarding the exposure characteristics, cash flows, loss waterfall, credit enhancement and liquidity support features;\n(iii) details regarding the voting rights of the holders of a securitisation position and their relationship to other secured creditors;\n(iv) a list of all triggers and events referred to in the documents provided in accordance with point (b) that could have a material impact on the performance of the securitisation position;\n(d) in the case of STS securitisations, the STS notification referred to in Article 27;\n(e) quarterly investor reports, or, in the case of ABCP, monthly investor reports, containing the following:\n(i) all materially relevant data on the credit quality and performance of underlying exposures;\n(ii) information on events which trigger changes in the priority of payments or the replacement of any counterparties, and, in the case of a securitisation which is not an ABCP transaction, data on the cash flows generated by the underlying exposures and by the liabilities of the securitisation;\n(iii) information about the risk retained, including information on which of the modalities provided for in Article 6(3) has been applied, in accordance with Article 6.\n(f) any inside information relating to the securitisation that the originator, sponsor or SSPE is obliged to make public in accordance with Article 17 of Regulation (EU) No 596/2014 of the European Parliament and of the Council ( ⁹ ) on insider dealing and market manipulation;\n(g) where point (f) does not apply, any significant event such as:\n(i) a material breach of the obligations provided for in the documents made available in accordance with point (b), including any remedy, waiver or consent subsequently provided in relation to such a breach;\n(ii) a change in the structural features that can materially impact the performance of the securitisation;\n(iii) a change in the risk characteristics of the securitisation or of the underlying exposures that can materially impact the performance of the securitisation;\n(iv) in the case of STS securitisations, where the securitisation ceases to meet the STS requirements or where competent authorities have taken remedial or administrative actions;\n(v) any material amendment to transaction documents.\n\nThe information described in points (b), (c) and (d) of the first subparagraph shall be made available before pricing.\n\nThe information described in points (a) and (e) of the first subparagraph shall be made available simultaneously each quarter at the latest one month after the due date for the payment of interest or, in the case of ABCP transactions, at the latest one month after the end of the period the report covers.\n\nIn the case of ABCP, the information described in points (a), (c)(ii) and (e)(i) of the first subparagraph shall be made available in aggregate form to holders of securitisation positions and, upon request, to potential investors. Loan-level data shall be made available to the sponsor and, upon request, to competent authorities.\n\nWithout prejudice to Regulation (EU) No 596/2014, the information described in points (f) and (g) of the first subparagraph shall be made available without delay.\n\nWhen complying with this paragraph, the originator, sponsor and SSPE of a securitisation shall comply with national and Union law governing the protection of confidentiality of information and the processing of personal data in order to avoid potential breaches of such law as well as any confidentiality obligation relating to customer, original lender or debtor information, unless such confidential information is anonymised or aggregated.\n\nIn particular, with regard to the information referred to in point (b) of the first subparagraph, the originator, sponsor and SSPE may provide a summary of the documentation concerned.\n\nCompetent authorities referred to in Article 29 shall be able to request the provision of such confidential information to them in order to fulfil their duties under this Regulation.\n\n2. The originator, sponsor and SSPE of a securitisation shall designate amongst themselves one entity to fulfil the information requirements pursuant to points (a), (b), (d), (e), (f) and (g) of the first subparagraph of paragraph 1.\n\nThe entity designated in accordance with the first subparagraph shall make the information for a securitisation transaction available by means of a securitisation repository.\n\nThe obligations referred to in the second and fourth subparagraphs shall not apply to securitisations where no prospectus has to be drawn up in compliance with Directive 2003/71/EC.\n\nWhere no securitisation repository is registered in accordance with Article 10, the entity designated to fulfil the requirements set out in paragraph 1 of this Article shall make the information available by means of a website that:\n(a) includes a well-functioning data quality control system;\n(b) is subject to appropriate governance standards and to maintenance and operation of an adequate organisational structure that ensures the continuity and orderly functioning of the website;\n(c) is subject to appropriate systems, controls and procedures that identify all relevant sources of operational risk;\n(d) includes systems that ensure the protection and integrity of the information received and the prompt recording of the information; and\n(e) makes it possible to keep record of the information for at least five years after the maturity date of the securitisation.\n\nThe entity responsible for reporting the information, and the securitisation repository where the information is made available shall be indicated in the documentation regarding the securitisation.\n\n3. ESMA, in close cooperation with the EBA and EIOPA, shall develop draft regulatory technical standards to specify the information that the originator, sponsor and SSPE shall provide in order to comply with their obligations under points (a) and (e) of the first subparagraph of paragraph 1 taking into account the usefulness of information for the holder of the securitisation position, whether the securitisation position is of a short-term nature and, in the case of an ABCP transaction, whether it is fully supported by a sponsor;\n\nESMA shall submit those draft regulatory technical standards to the Commission by 18 January 2019.\n\nThe Commission is empowered to supplement this Regulation by adopting the regulatory technical standards referred to in this paragraph in accordance with Articles 10 to 14 of Regulation (EU) No 1095/2010.\n\n4. In order to ensure uniform conditions of application for the information to be specified in accordance with paragraph 3, ESMA, in close cooperation with the EBA and EIOPA, shall develop draft implementing technical standards specifying the format thereof by means of standardised templates.\n\nESMA shall submit those draft implementing technical standards to the Commission by 18 January 2019.\n\nThe Commission is empowered to adopt the implementing technical standards referred to in this paragraph in accordance with Article 15 of Regulation (EU) No 1095/2010.\n\n( ⁸ ) Directive 2003/71/EC of the European Parliament and of the Council of 4 November 2003 on the prospectus to be published when securities are offered to the public or admitted to trading and amending Directive 2001/34/EC (OJ L 345, 31.12.2003, p. 64).\n\n( ⁹ ) Regulation (EU) No 596/2014 of the European Parliament and of the Council of 16 April 2014 on market abuse (market abuse regulation) and repealing Directive 2003/6/EC of the European Parliament and of the Council and Commission Directives 2003/124/EC, 2003/125/EC and 2004/72/EC (OJ L 173, 12.6.2014, p. 1)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-transparency"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_7",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 7, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/008",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 8",
+      "path": "008",
+      "heading": "Ban on resecuritisation",
+      "texts": {
+        "en": "1. The underlying exposures used in a securitisation shall not include securitisation positions.\n\nBy way of derogation, the first subparagraph shall not apply to:\n(a) any securitisation the securities of which were issued before 1 January 2019; and\n(b) any securitisation, to be used for legitimate purposes as set out in paragraph 3, the securities of which were issued on or following 1 January 2019.\n\n2. A competent authority designated pursuant to Article 29(2), (3) or (4), as applicable, may grant permission to an entity under its supervision to include securitisation positions as underlying exposures in a securitisation where that competent authority deems the use of a resecuritisation to be for legitimate purposes as set out in paragraph 3 of this Article.\n\nWhere such supervised entity is a credit institution or an investment firm as defined in points (1) and (2) of Article 4(1) of Regulation (EU) No 575/2013, the competent authority referred to in the first subparagraph of this paragraph shall consult with the resolution authority and any other authority relevant for that entity before granting permission for the inclusion of securitisation positions as underlying exposures in a securitisation. Such consultation shall last no longer than 60 days from the date on which the competent authority notifies the resolution authority, and any other authority relevant for that entity, of the need for consultation.\n\nWhere the consultation results in a decision to grant permission for the use of securitisation positions as underlying exposures in a securitisation, the competent authority shall notify ESMA thereof.\n\n3. For the purposes of this Article, the following shall be deemed to be legitimate purposes:\n(a) the facilitation of the winding-up of a credit institution, an investment firm or a financial institution;\n(b) ensuring the viability as a going concern of a credit institution, an investment firm or a financial institution in order to avoid its winding-up; or\n(c) where the underlying exposures are non-performing, the preservation of the interests of investors.\n\n4. A fully supported ABCP programme shall not be considered to be a resecuritisation for the purposes of this Article, provided that none of the ABCP transactions within that programme is a resecuritisation and that the credit enhancement does not establish a second layer of tranching at the programme level.\n\n5. In order to reflect market developments of other resecuritisations undertaken for legitimate purposes, and taking into account the overarching objectives of financial stability and preservation of the best interests of the investors, ESMA, in close cooperation with the EBA, may develop draft regulatory technical standards to supplement the list of legitimate purposes set out in paragraph 3.\n\nESMA shall submit any such draft regulatory technical standards to the Commission. The Commission is empowered to supplement this Regulation by adopting the regulatory technical standards referred to in this paragraph in accordance with Articles 10 to 14 of Regulation (EU) No 1095/2010."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-resecuritisation-ban"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_8",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 8, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/009",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Criteria for credit-granting",
+      "texts": {
+        "en": "1. Originators, sponsors and original lenders shall apply to exposures to be securitised the same sound and well-defined criteria for credit-granting which they apply to non-securitised exposures. To that end, the same clearly established processes for approving and, where relevant, amending, renewing and refinancing credits shall be applied. Originators, sponsors and original lenders shall have effective systems in place to apply those criteria and processes in order to ensure that credit-granting is based on a thorough assessment of the obligor’s creditworthiness taking appropriate account of factors relevant to verifying the prospect of the obligor meeting his obligations under the credit agreement.\n\nBy way of derogation from the first subparagraph, with regard to underlying exposures that were non-performing exposures at the time the originator purchased them from the relevant third party, sound standards shall apply in the selection and pricing of the exposures.\n\n2. Where the underlying exposures of securitisations are residential loans made after the entry into force of Directive 2014/17/EU, the pool of those loans shall not include any loan that is marketed and underwritten on the premise that the loan applicant or, where applicable, intermediaries were made aware that the information provided by the loan applicant might not be verified by the lender.\n\n3. Where an originator purchases a third party’s exposures for its own account and then securitises them, that originator shall verify that the entity which was, directly or indirectly, involved in the original agreement which created the obligations or potential obligations to be securitised fulfils the requirements referred to in paragraph 1.\n\n4. Paragraph 3 does not apply if;\n(a) the original agreement, which created the obligations or potential obligations of the debtor or potential debtor, was entered into before the entry into force of Directive 2014/17/EU; and\n(b) the originator that purchases a third party’s exposures for its own account and then securitises them meets the obligations that originator institutions were required to meet under Article 21(2) of Delegated Regulation (EU) No 625/2014 before 1 January 2019."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-credit-granting"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_9",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 9, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/018",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 18",
+      "path": "018",
+      "heading": "Use of the designation ‘simple, transparent and standardised securitisation’",
+      "texts": {
+        "en": "Originators, sponsors and SSPEs may use the designation ‘STS’ or ‘simple, transparent and standardised’, or a designation that refers directly or indirectly to those terms for their securitisation, only where:\n(a) the securitisation meets all the requirements set out in Section 1, 2 or 2a of this Chapter, and ESMA has been notified pursuant to Article 27(1); and\n(b) the securitisation is included in the list referred to in Article 27(5).\n\nThe originator, sponsor and SSPE involved in a securitisation considered STS shall be established in the Union."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-sts-notification"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_18",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 18, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32017r2402/027",
+      "instrument": "celex-32017r2402",
+      "provisionKind": "article",
+      "refLabel": "Article 27",
+      "path": "027",
+      "heading": "STS notification requirements",
+      "texts": {
+        "en": "1. Originators and sponsors shall jointly notify ESMA by means of the template referred to in paragraph 7 of this Article where a securitisation meets the requirements set out in Articles 19 to 22, Articles 23 to 26 or Articles 26a to 26e (‘STS notification’). In the case of an ABCP programme, only the sponsor shall be responsible for the notification of that programme and, within that programme, of the ABCP transactions complying with Article 24. In the case of synthetic securitisation, only the originator shall be responsible for the notification.\n\nThe STS notification shall include an explanation by the originator and sponsor of how the STS criteria set out in Articles 20 to 22, Articles 24 to 26 or Articles 26b to 26e have been complied with.\n\nESMA shall publish the STS notification on its official website pursuant to paragraph 5. Originators and sponsors of a securitisation shall inform their competent authorities of the STS notification and designate amongst themselves one entity to be the first contact point for investors and competent authorities.\n\n2. The originator, sponsor or SSPE may use the service of a third party authorised under Article 28 to assess whether a securitisation complies with Articles 19 to 22, Articles 23 to 26 or Articles 26a to 26e. However, the use of such a service shall not, under any circumstances, affect the liability of the originator, sponsor or SSPE in respect of their legal obligations under this Regulation. The use of such service shall not affect the obligations imposed on institutional investors as set out in Article 5.\n\nWhere the originator, sponsor or SSPE uses the service of a third party authorised pursuant to Article 28 to assess whether a securitisation complies with Articles 19 to 22, Articles 23 to 26 or Articles 26a to 26e, the STS notification shall include a statement that compliance with the STS criteria was confirmed by that authorised third party. The notification shall include the name of the authorised third party, its place of establishment and the name of the competent authority that authorised it.\n\n3. Where the originator or original lender is not a credit institution or investment firm, as defined in points (1) and (2) of Article 4(1) of Regulation (EU) No 575/2013, established in the Union, the notification pursuant to paragraph 1 of this Article shall be accompanied by the following:\n(a) confirmation by the originator or original lender that its credit-granting is done on the basis of sound and well-defined criteria and clearly established processes for approving, amending, renewing and financing credits and that the originator or original lender has effective systems in place to apply such processes in accordance with Article 9 of this Regulation; and\n(b) a declaration by the originator or original lender as to whether credit granting referred to in point (a) is subject to supervision.\n\n4. The originator and, where applicable, sponsor, shall immediately notify ESMA and inform their competent authority when a securitisation no longer meets the requirements set out in Articles 19 to 22, Articles 23 to 26, or Articles 26a to 26e.\n\n5. ESMA shall maintain, on its official website, a list of all securitisations which the originators and sponsors have notified it of meeting the requirements set out in Articles 19 to 22, Articles 23 to 26, or Articles 26a to 26e. ESMA shall add each securitisation so notified to that list immediately and shall update the list where the securitisations are no longer considered to be STS following a decision of competent authorities or a notification by the originator or sponsor. Where the competent authority has imposed administrative sanctions in accordance with Article 32, it shall notify ESMA thereof immediately. ESMA shall immediately indicate on the list that a competent authority has imposed administrative sanctions in relation to the securitisation concerned.\n\n6. ESMA, in close cooperation with the EBA and EIOPA, shall develop draft regulatory technical standards specifying the information that the originator, sponsor and SSPE are required to provide in order to comply with the obligations referred to in paragraph 1.\n\nESMA shall submit those draft regulatory technical standards to the Commission by 10 October 2021.\n\nThe Commission is empowered to supplement this Regulation by adopting the regulatory technical standards referred to in this paragraph in accordance with Articles 10 to 14 of Regulation (EU) No 1095/2010.\n\n7. In order to ensure uniform conditions for the implementation of this Regulation, ESMA, in close cooperation with the EBA and EIOPA, shall develop draft implementing technical standards to establish the templates to be used for the provision of the information referred to in paragraph 6.\n\nESMA shall submit those draft implementing technical standards to the Commission by 10 October 2021.\n\nPower is conferred on the Commission to adopt the implementing technical standards referred to in this paragraph in accordance with Article 15 of Regulation (EU) No 1095/2010."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-sts-notification"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/2021-04-09/eng#art_27",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, Article 27, consolidated text of 2021-04-09 (CELEX 02017R2402-20210409). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r1851/001",
+      "instrument": "celex-32019r1851",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Homogeneity of underlying exposures",
+      "texts": {
+        "en": "For the purposes of Articles 20(8), 24(15), and 26b(8) of Regulation (EU) 2017/2402, underlying exposures shall be deemed to be homogeneous where all of the following conditions are met:\n(a) they correspond to one of the following asset types:\n(i) residential loans that are either secured by one or more mortgages on residential immovable property or that are fully guaranteed by an eligible protection provider among those referred to in Article 201(1) of Regulation (EU) No 575/2013 of the European Parliament and of the Council ( ¹ ) and qualifying for the credit quality step 2 or above as set out in Part Three, Title II, Chapter 2 of that Regulation;\n(ii) commercial loans that are secured by one or more mortgages on commercial immovable property, including offices or other commercial premises;\n(iii) credit facilities provided to individuals for personal, family or household consumption purposes, and credit facilities provided to enterprises where the originator applies the same credit risk assessment approach as for individuals not covered under points (i) and (ii) and points (iv) to (viii);\n(iv) credit facilities, including loans and leases, provided to any type of enterprise or corporation;\n(v) auto loans and leases;\n(vi) credit card receivables;\n(vii) trade receivables;\n(viii) other underlying exposures that are considered by the originator or sponsor to constitute a distinct asset type on the basis of internal methodologies and parameters;\n(b) they are underwritten in accordance with standards that apply similar approaches for assessing associated credit risk;\n(c) they are serviced in accordance with similar procedures for monitoring, collecting and administering cash receivables;\n(d) one or more of the homogeneity factors are applied in accordance with Article 2, where applicable.\n\nFor the purposes of point (a) of this Article, where an underlying exposure corresponds to more than one asset type, that exposure shall be assigned to only one asset type in that securitisation.\n\nAny changes to underlying exposures in a pool that is deemed to be homogenous pursuant to this Regulation shall not affect such homogeneity where such changes are due to reasons outside the control of the originator or sponsor.\n\n( ¹ ) Regulation (EU) No 575/2013 of the European Parliament and of the Council of 26 June 2013 on prudential requirements for credit institutions and investment firms and amending Regulation (EU) No 648/2012 (OJ L 176, 27.6.2013, p. 1)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-homogeneity-rts-pool"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/1851/2024-03-06/eng#art_1",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/1851, Article 1, consolidated text of 2024-03-06 (CELEX 02019R1851-20240306). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32019r1851/002",
+      "instrument": "celex-32019r1851",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Homogeneity factors",
+      "texts": {
+        "en": "1. The homogeneity factors for the asset type referred to in Article 1(a)(i) shall be the following:\n(a) ranking of security rights, whereby the pool of underlying exposures consists of only one of the following:\n(i) loans secured by first ranking security rights on a residential immovable property;\n(ii) loans secured by lower and all prior ranking rights on a residential immovable property;\n(iii) loans secured by lower ranking security rights on a residential immovable property;\n(b) type of residential immovable property, whereby the pool consists of only one of the following types:\n(i) income-producing properties;\n(ii) non-income producing properties;\n(c) jurisdiction, whereby the pool consists of exposures secured by residential immovable properties located in the same jurisdiction.\n\n2. The homogeneity factors for the asset type referred to in Article 1(a)(ii) shall be the following:\n(a) ranking of security rights, whereby the pool consists of only one of the following types of underlying exposures:\n(i) loans secured by first ranking security rights on a commercial immovable property;\n(ii) loans secured by lower and all prior ranking rights on a commercial immovable property;\n(iii) loans secured by lower ranking security rights on a commercial immovable property;\n(b) type of immovable commercial property, whereby the pool consists of only one of the following types:\n(i) office buildings;\n(ii) retail space;\n(iii) hospitals;\n(iv) storage facilities;\n(v) hotels;\n(vi) industrial properties;\n(vii) other specific type of commercial immovable properties;\n(c) jurisdiction, whereby the pool consists of underlying exposures secured by properties located in the same jurisdiction.\n\n3. The homogeneity factors for the asset type referred to in Article 1(a)(iv) shall be the following:\n(a) type of obligor, whereby the pool consists of only one of the following types of obligors:\n(i) micro-, small- and medium-sized enterprises;\n(ii) other types of enterprises and corporates;\n(b) jurisdiction, whereby the pool consists of only one of the following types of underlying exposures:\n(i) exposures secured by immovable property located in the same jurisdiction;\n(ii) exposures to obligors with residence in the same jurisdiction.\n\n4. The homogeneity factors for the asset type referred to in Article 1(a)(v) shall be the following:\n(a) type of obligor, whereby the pool consists of underlying exposures with only one of the following types of obligors:\n(i) individuals, and enterprises where the originator applies the same approach for assessing the credit risk associated with exposures to enterprises as for exposures to individuals;\n(ii) micro-, small- and medium-sized enterprises;\n(iii) other types of enterprises and corporates;\n(iv) public sector entities;\n(v) financial institutions;\n(b) jurisdiction, whereby the pool consists of underlying exposures to obligors with residence in the same jurisdiction.\n\n5. The homogeneity factors for the asset type referred to in Article 1(a)(vi) shall be the following:\n(a) type of obligor, whereby the pool consists of underlying exposures with only one of the following types of obligors:\n(i) individuals, and enterprises where the originator applies the same approach for assessing the credit risk associated with exposures to enterprises as for exposures to individuals;\n(ii) micro-, small- and medium-sized enterprises;\n(iii) other types of enterprises and corporates;\n(iv) public sector entities;\n(v) financial institutions;\n(b) jurisdiction, whereby the pool consists of underlying exposures to obligors with residence in the same jurisdiction.\n\n6. The homogeneity factors for the asset type referred to in Article 1(a)(viii) shall be any of the following:\n(a) type of obligor;\n(b) ranking of security rights;\n(c) type of immovable property;\n(d) jurisdiction."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-homogeneity-rts-pool"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/1851/2024-03-06/eng#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/1851, Article 2, consolidated text of 2024-03-06 (CELEX 02019R1851-20240306). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/002",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Information on underlying exposures",
+      "texts": {
+        "en": "1. The information to be made available for a non-ABCP securitisation pursuant to Article 7(1)(a) of Regulation (EU) 2017/2402 is specified in:\n(a) Annex II for loans to private households secured by residential real estate, regardless of the purpose of those loans;\n(b) Annex III for loans for the purposes of acquiring commercial real estate or secured by commercial real estate;\n(c) Annex IV for corporate underlying exposures, including underlying exposures to micro, small- and medium-sized enterprises;\n(d) Annex V for automobile underlying exposures, including both loans and leases to legal or natural persons backed by automobiles;\n(e) Annex VI for consumer underlying exposures;\n(f) Annex VII for credit card underlying exposures;\n(g) Annex VIII for leasing underlying exposures;\n(h) Annex IX for underlying exposures that do not fall within any of the categories set out in points (a) to (g).\n\nFor the purposes of point (a), residential real estate means any immovable property, available for dwelling purposes (including buy-to-let housing or property), acquired, built or renovated by a private household and that is not qualified as commercial real estate.\n\nFor the purposes of point (b), commercial real estate means any income-producing real estate, either existing or under development, and excludes social housing and property owned by end-users.\n\n2. Where a non-ABCP securitisation includes more than one of the types of underlying exposures listed in paragraph 1, the reporting entity for that securitisation shall make available the information specified in the applicable Annex for each underlying exposure type.\n\n3. The reporting entity for a non-performing exposure securitisation shall make available the information specified in:\n(a) the Annexes referred to in points (a) to (h) of paragraph 1, as relevant to the underlying exposure type;\n(b) Annex X.\n\nFor the purposes of this paragraph, a ‘non-performing exposure securitisation’ shall be considered to be a non-ABCP securitisation the majority of whose active underlying exposures, measured in terms of outstanding principal balance as at the data cut-off date, are one of the following:\n(a) non-performing exposures as referred to in paragraphs 213 to 239 of Annex V, Part 2, to Commission Implementing Regulation (EU) No 680/2014 (⁷);\n(b) credit-impaired financial assets as defined in Appendix A to International Financial Reporting Standard 9 in Commission Regulation (EC) No 1126/2008 (⁸) or financial assets accounted for as credit impaired under national rules applying the Generally Accepted Accounting Principles (GAAP) based on Council Directive 86/635/EEC (⁹).\n\n4. The reporting entity for an ABCP transaction shall make available the information specified in Annex XI.\n\n5. For the purposes of this Article, the information to be made available pursuant to paragraphs 1 to 4 shall be on:\n(a) active underlying exposures as at the data cut-off date;\n(b) inactive underlying exposures that were active underlying exposures at the immediately-preceding data cut-off date.\n\n(⁷) Commission Implementing Regulation (EU) No 680/2014 of 16 April 2014 laying down implementing technical standards with regard to supervisory reporting of institutions according to Regulation (EU) No 575/2013 of the European Parliament and of the Council (OJ L 191, 28.6.2014, p. 1).\n\n(⁸) Commission Regulation (EC) No 1126/2008 of 3 November 2008 adopting certain international accounting standards in accordance with Regulation (EC) No 1606/2002 of the European Parliament and of the Council (OJ L 320, 29.11.2008, p. 1).\n\n(⁹) Council Directive 86/635/EEC of 8 December 1986 on the annual accounts and consolidated accounts of banks and other financial institutions (OJ L 372, 31.12.1986, p. 1)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-exposure-data"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/003",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Information on investor reports",
+      "texts": {
+        "en": "1. The reporting entity for a non-ABCP securitisation shall make available the information on investor reports specified in Annex XII.\n\n2. The reporting entity for an ABCP securitisation shall make available the information on investor reports specified in Annex XIII."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-exposure-data"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_3",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/006",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Inside information",
+      "texts": {
+        "en": "1. The reporting entity for a non-ABCP securitisation shall make available the inside information specified in Annex XIV.\n\n2. The reporting entity for an ABCP securitisation shall make available the inside information specified in Annex XV."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-inside-information-events"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_6",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 6, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/007",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 7",
+      "path": "007",
+      "heading": "Information on significant events",
+      "texts": {
+        "en": "1. The reporting entity for a non-ABCP securitisation shall make available the information on significant events specified in Annex XIV.\n\n2. The reporting entity for an ABCP securitisation shall make available the information on significant events specified in Annex XV."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-inside-information-events"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_7",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 7, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/009",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Information completeness and consistency",
+      "texts": {
+        "en": "1. The information made available pursuant to this Regulation shall be complete and consistent.\n\n2. Where the reporting entity identifies factual errors in any information that it has made available pursuant to this Regulation, it shall make available, without undue delay, a corrected report of all information about the securitisation required under this Regulation.\n\n3. Where permitted in the corresponding Annex, the reporting entity may report one of the following ‘No Data Option’ (‘ND’) values corresponding to the reason justifying the unavailability of the information to be made available:\n(a) value ‘ND1’, where the required information has not been collected because it was not required by the lending or underwriting criteria at the time of origination of the underlying exposure;\n(b) value ‘ND2’, where the required information has been collected at the time of origination of the underlying exposure but is not loaded into the reporting system of the reporting entity at the data cut-off date;\n(c) value ‘ND3’, where the required information has been collected at the time of origination of the underlying exposure but is loaded into a separate system from the reporting system of the reporting entity at the data cut-off date;\n(d) value ‘ND4-YYYY-MM-DD’, where the required information has been collected but it will only be possible to make it available at a date taking place after the data cut-off date. ‘YYYY-MM-DD’ shall respectively refer to the numerical year, month, and day corresponding to the future date at which the required information will be made available;\n(e) value ‘ND5’, where the required information is not applicable to the item being reported.\n\nFor the purposes of this paragraph, the report of any ND values shall not be used to circumvent the requirements in this Regulation.\n\nUpon request by competent authorities, the reporting entity shall provide details of the circumstances that justify the use of those ND values."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-data-quality"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_9",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 9, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/010",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 10",
+      "path": "010",
+      "heading": "Information timeliness",
+      "texts": {
+        "en": "1. Where a securitisation is not an ABCP securitisation, the information made available pursuant to this Regulation shall not have a data cut-off date later than two calendar months prior to the submission date.\n\n2. Where a securitisation is an ABCP securitisation:\n(a) the information specified in Annex XI and in the ‘transaction information section’ in Annexes XIII and XV shall not have a data cut-off date later than two calendar months prior to the submission date;\n(b) the information specified in all sections of Annexes XIII and XV other than the ‘transaction information section’ shall not have a data cut-off date later than one calendar month prior to the submission date."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-data-quality"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_10",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 10, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1224/011",
+      "instrument": "celex-32020r1224",
+      "provisionKind": "article",
+      "refLabel": "Article 11",
+      "path": "011",
+      "heading": "Unique identifiers",
+      "texts": {
+        "en": "1. Each securitisation shall be assigned a unique identifier composed of the following elements, in sequential order:\n(a) the Legal Entity Identifier of the reporting entity;\n(b) the letter ‘A’ where the securitisation is an ABCP securitisation or the letter ‘N’ where the securitisation is a non-ABCP securitisation;\n(c) the four-digit year corresponding to:\n(i) the year in which the first securities of the securitisation were issued, where the securitisation is a non-ABCP securitisation;\n(ii) the year in which the first securities within the ABCP programme were issued, where the securitisation is an ABCP securitisation;\n(d) the number 01 or, where there is more than one securitisation with the same identifier as referred to in points (a), (b) and (c), a two-digit sequential number corresponding to the order in which information about each securitisation is made available. The order of simultaneous securitisations shall be discretionary.\n\n2. Each ABCP transaction in an ABCP programme shall be assigned a unique identifier composed of the following elements, in sequential order:\n(a) the Legal Entity Identifier of the reporting entity;\n(b) the letter ‘T’;\n(c) the four-digit year corresponding to the first closing date of the ABCP transaction;\n(d) the number 01 or, where there is more than one ABCP transaction with the same identifier as referred to in points (a), (b) and (c) of this paragraph, a two-digit sequential number corresponding to the order of the first closing date of each ABCP transaction. The order of simultaneous ABCP transactions shall be discretionary.\n\n3. Unique identifiers shall not be amended by the reporting entity."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-rts-data-quality"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj#art_11",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1225/001",
+      "instrument": "celex-32020r1225",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Underlying exposures templates",
+      "texts": {
+        "en": "1. The information referred to in paragraphs 1 and 2 of Article 2 of Commission Delegated Regulation (EU) 2020/1224 (⁶) shall be made available using the following templates:\n(a) the template set out in Annex II to this Regulation for loans to private households secured by residential real estate, regardless of the purpose of those loans;\n(b) the template set out in Annex III to this Regulation for loans for the purposes of acquiring commercial real estate or secured by commercial real estate;\n(c) the template set out in Annex IV to this Regulation for corporate underlying exposures, including underlying exposures to micro, small- and medium-sized enterprises;\n(d) the template set out in Annex V to this Regulation for automobile underlying exposures, including loans and leases to legal or natural persons that are backed by automobiles;\n(e) the template set out in Annex VI to this Regulation for consumer underlying exposures;\n(f) the template set out in Annex VII to this Regulation for credit card underlying exposures;\n(g) the template set out in Annex VIII to this Regulation for leasing underlying exposures;\n(h) the template set out in Annex IX to this Regulation for underlying exposures that do not fall within any of the categories set out in points (a) to (g).\n\n2. The information referred to in Article 2(3) of Delegated Regulation (EU) 2020/1224 shall be made available using the following templates:\n(a) the templates set out in paragraph 1 of this Article, as relevant to the underlying exposure type;\n(b) the template set out in Annex X for non-performing exposure securitisations as referred to in the second subparagraph of Article 2(3) of Delegated Regulation (EU) 2020/1224.\n\n3. The information referred to in Article 2(4) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XI.\n\n(⁶) Commission Delegated Regulation (EU) 2020/1224 of 16 October 2019 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council with regard to regulatory technical standards specifying the information and the details of a securitisation to be made available by the originator, sponsor and SSPE (See page 1 of this Official Journal)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-its-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj#art_1",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225, Article 1, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1225/002",
+      "instrument": "celex-32020r1225",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Investor report templates",
+      "texts": {
+        "en": "1. The information referred to in Article 3(1) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XII.\n\n2. The information referred to in Article 3(2) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XIII."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-its-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1225/003",
+      "instrument": "celex-32020r1225",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Inside information templates",
+      "texts": {
+        "en": "1. The information referred to in Article 6(1) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XIV.\n\n2. The information referred to in Article 6(2) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XV."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-its-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj#art_3",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1225/004",
+      "instrument": "celex-32020r1225",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Significant event templates",
+      "texts": {
+        "en": "1. The information referred to in Article 7(1) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XIV.\n\n2. The information referred to in Article 7(2) of Delegated Regulation (EU) 2020/1224 shall be made available using the template set out in Annex XV."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-its-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj#art_4",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1225/005",
+      "instrument": "celex-32020r1225",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Format of information",
+      "texts": {
+        "en": "1. The format of the information provided in the templates set out in Annexes I to XV shall conform to the corresponding format set out in Table 1 of Annex I\n\n2. The information shall be made available in an electronic and machine-readable form via common XML templates."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-disclosure-its-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj#art_5",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225, Article 5, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1226/001",
+      "instrument": "celex-32020r1226",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Information to be included in the STS notification",
+      "texts": {
+        "en": "1. The information to be included in the STS notification pursuant to Article 27 of Regulation (EU) 2017/2402 shall be the following:\n(a) where the securitisation is a non-ABCP securitisation, the information specified in Annex I to this Regulation;\n(b) where the securitisation is an ABCP securitisation, the information specified in Annex II to this Regulation;\n(c) for an ABCP programme, the information specified in Annex III to this Regulation;\n(d) where the securitisation is an on-balance-sheet synthetic securitisation, the information specified in Annex IV to this Regulation.\n\n2. For securitisations where no prospectus must be drawn up pursuant to Regulation (EU) 2017/1129, the information to be included in the STS notification pursuant to paragraph 1 shall be accompanied by the following:\n(a) where the securitisation is a non-ABCP securitisation, the information specified in fields STSS9 and STSS10 of Annex I to this Regulation;\n(b) where the securitisation is an ABCP securitisation, the information specified in fields STSAT9 and STSAT10 of Annex II to this Regulation;\n(c) for an ABCP programme, the information specified in field STSAP9 of Annex III to this Regulation;\n(d) where the securitisation is an on-balance-sheet synthetic securitisation, the information specified in fields STSSY2, STSSY10, STSSY12 and STSSY13 of Annex IV to this Regulation.\n\nFor the purposes of the third subparagraph of Article 27(1) of Regulation (EU) 2017/2402, the publication of the STS notification for those securitisations shall be limited to the information referred to in this paragraph."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-notification-rts-content"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1226/2022-08-15/eng#art_1",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1226, Article 1, consolidated text of 2022-08-15 (CELEX 02020R1226-20220815). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1226/002",
+      "instrument": "celex-32020r1226",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Additional Information",
+      "texts": {
+        "en": "Where the following documents include information relevant to the STS notification, a reference to the relevant parts of those documents may be provided in the additional information column in Annexes I, II, III or IV to this Regulation and, where such information is provided, that documentation shall be clearly identified:\n(a) a prospectus drawn up pursuant to Regulation (EU) 2017/1129;\n(b) any other underlying documentation referred to in Article 7(1)(b) of Regulation (EU) 2017/2402;\n(c) any other document with information relevant to the STS notification, including, for on-balance-sheet synthetic securitisations, documents related to any originator, any investor, the credit protection agreement, the third-party verification agent referred to in Article 26e(4) of Regulation (EU) 2017/2402, and, where available, the documentation supporting the credit linked notes referred to in Article 26e(10), fifth subparagraph, of Regulation (EU) 2017/2402."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-notification-rts-content"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1226/2022-08-15/eng#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1226, Article 2, consolidated text of 2022-08-15 (CELEX 02020R1226-20220815). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32020r1227/001",
+      "instrument": "celex-32020r1227",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "Templates for STS notification",
+      "texts": {
+        "en": "1. The information referred to in Article 1(1)(a) and Article 1(2)(a) of Commission Delegated Regulation (EU) 2020/1226 ( ¹ ) shall be provided by means of the template set out in Annex I to this Regulation.\n\n2. The information referred to in Article 1(1)(b) and Article 1(2)(b) of Delegated Regulation (EU) 2020/1226 shall be provided by means of the template set out in Annex II to this Regulation.\n\n3. The information referred to in Article 1(1)(c) and Article 1(2)(c) of Delegated Regulation (EU) 2020/1226 shall be provided by means of the template set out in Annex III to this Regulation.\n\n3a. The information referred to in Article 1(1), point (d), and Article 1(2), point (d), of Delegated Regulation (EU) 2020/1226 shall be provided by means of the template set out in Annex IV to this Regulation.\n\n4. Where the information to be provided pursuant to this Article is not available or required due to the application of the transitional provisions laid down in Articles 43 and 43a of Regulation (EU) 2017/2402, the notification shall state ‘Not applicable due to the application of transitional provisions’ in the relevant field or fields of the Annexes to this Regulation.\n\n5. The information referred to in this Article shall be submitted in an electronic and machine-readable form.\n\n6. The additional information referred to in Article 2 of Delegated Regulation (EU) 2020/1226 shall be included in the field ‘Box to complete’ of Annexes I to IV to this Regulation.\n\n( ¹ ) Commission Delegated Regulation (EU) 2020/1226 of 12 November 2019 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council and laying down regulatory technical standards specifying the information to be provided in accordance with the STS notification requirements (See page 285 of this Official Journal)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-notification-its-templates"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1227/2022-11-02/eng#art_1",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1227, Article 1, consolidated text of 2022-11-02 (CELEX 02020R1227-20221102). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/003",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Fulfilment of the retention requirement through a synthetic or contingent form of retention",
+      "texts": {
+        "en": "1. The fulfilment of the retention requirement in a manner equivalent to one of the options set out in Article 6(3) of Regulation (EU) 2017/2402 through a synthetic or contingent form of retention shall meet all of the following conditions:\n(a) the amount retained is at least equal to the amount required under the option which the synthetic or contingent form of retention corresponds to;\n(b) the retainer has explicitly disclosed in the final offering document, prospectus, transaction summary or overview of the main features of the securitisation that it will retain a material net economic interest in the securitisation through a synthetic or contingent form on an ongoing basis.\n\nFor the purposes of point (b), the retainer shall disclose in the final offering document, prospectus, transaction summary or overview of the main features of the securitisation all the details on the applicable synthetic or contingent form of retention, including the methodology used in the determination of the material net interest retained and an explanation to which of the options set out in Article 6(3), points (a) to (e), of Regulation (EU) 2017/2402 the retention is equivalent.\n\n2. Where an entity other than an institution as defined in Article 4(1), point (3), of Regulation (EU) No 575/2013 and other than an insurance or reinsurance undertaking as defined in Article 13, points (1) and (4), of Directive 2009/138/EC, retains an economic interest through a synthetic or contingent form of retention, that retained interest shall be fully collateralised in cash and be held under arrangements as referred to in Article 16(9) of Directive 2014/65/EU of the European Parliament and of the Council (⁶).\n\n(⁶) Directive 2014/65/EU of the European Parliament and of the Council of 15 May 2014 on markets in financial instruments and amending Directive 2002/92/EC and Directive 2011/61/EU (OJ L 173, 12.6.2014, p. 349)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_3",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/004",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Retention equivalent to not less than 5 % of the nominal value of each of the tranches sold or transferred to investors",
+      "texts": {
+        "en": "The retention referred to in Article 6(3), point (a), of Regulation (EU) 2017/2402 (vertical slice) shall be fulfilled by any of the following methods:\n(a) direct retention of not less than 5 % of the nominal value of each of the tranches sold or transferred to investors;\n(b) the retention of an exposure which exposes its holder to the credit risk of each issued tranche of a securitisation transaction on a pro-rata basis of not less than 5 % of the total nominal value of each of the issued tranches;\n(c) the retention of not less than 5 % of the nominal value of each of the securitised exposures, provided that the retained credit risk ranks pari passu with or is subordinated to the credit risk securitised in relation to the same exposures;\n(d) the provision, in the context of an ABCP programme, of a liquidity facility, provided that all of the following conditions are met:\n(i) the liquidity facility covers 100 % of the share of the credit risk of the securitised exposures of the securitisation transaction that is funded by the ABCP programme;\n(ii) the liquidity facility covers the credit risk for as long as the retainer has to retain the material net economic interest;\n(iii) the liquidity facility is provided by the originator, sponsor or original lender in the securitisation transaction;\n(iv) the investors have been given access to information within the initial disclosure that enables them to verify that points (i), (ii) and (iii) are complied with."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_4",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/005",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Retention of the originator’s interest in a revolving securitisation or securitisation of revolving exposures",
+      "texts": {
+        "en": "The retention of the originator’s interest of not less than 5 % of the nominal value of each of the securitised exposures as referred to in Article 6(3), point (b), of Regulation (EU) 2017/2402 shall only be considered fulfilled where the retained credit risk of such exposures ranks pari passu with, or is subordinated to, the credit risk securitised in relation to the same exposures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_5",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 5, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/006",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Retention of randomly selected exposures equivalent to no less than 5 % of the nominal value of the securitised exposures",
+      "texts": {
+        "en": "1. The pool of at least 100 potentially securitised exposures from which retained non-securitised and securitised exposures are to be randomly selected, as referred to in Article 6(3), point (c), of Regulation (EU) 2017/2402, shall be sufficiently diverse to avoid an excessive concentration of the retained interest.\n\n2. When selecting the exposures referred to in paragraph 1, retainers shall take into account quantitative and qualitative factors that are appropriate for the type of securitised exposures to ensure that the distinction between retained non-securitised and securitised exposures is random. For that purpose, and where relevant, retainers shall take into consideration the following factors when selecting exposures:\n(a) the time of origination of the loan (vintage);\n(b) the type of securitised exposures;\n(c) the geographical location;\n(d) the origination date;\n(e) the maturity date;\n(f) the loan to value ratio;\n(g) the collateral type;\n(h) the industry sector;\n(i) the outstanding loan balance;\n(j) any other factor deemed relevant by the retainer.\n\n3. Retainers shall not select different individual exposures at different points in time, except where that may be necessary to fulfil the retention requirement in relation to a securitisation in which the securitised exposures fluctuate over time, either due to new exposures being added to the securitisation or to changes in the level of the individual securitised exposures.\n\n4. Where the retainer is the securitisation’s servicer, the selection conducted in accordance with this Article shall not lead to a deterioration in the servicing standards applied by the retainer on the transferred exposures relative to the retained exposures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_6",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 6, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/007",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 7",
+      "path": "007",
+      "heading": "Retention of the first loss tranche",
+      "texts": {
+        "en": "1. The retention of the first loss tranche referred to in Article 6(3), point (d), of Regulation (EU) 2017/2402 shall be fulfilled by any of the following methods:\n(a) holding either on-balance sheet or off-balance sheet positions;\n(b) holding an exposure by means of a provision of a contingent form of retention or of a liquidity facility in the context of an ABCP programme, which fulfils all of the following criteria:\n(i) the exposure covers at least 5 % of the nominal value of the securitised exposures;\n(ii) the exposure constitutes a first loss position in relation to the securitisation;\n(iii) the exposure covers the credit risk for the entire duration of the retention commitment;\n(iv) the exposure is provided by the retainer;\n(v) the investors have been given access within the initial disclosure to all information necessary to verify that points (i) to (iv) are complied with;\n(c) overcollateralisation, as defined in Article 242, point (9), of Regulation (EU) No 575/2013, if that overcollateralisation operates as a ‘first loss’ position of not less than 5 % of the nominal value of the securitised exposures.\n\n2. Where the first loss tranche exceeds 5 % of the nominal value of the securitised exposures, the retainer may choose to retain a pro-rata portion of such first loss tranche only, provided that that portion is equivalent to at least 5 % of the nominal value of the securitised exposures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_7",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 7, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/008",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 8",
+      "path": "008",
+      "heading": "Retention of a first loss exposure of not less than 5 % of every securitised exposure",
+      "texts": {
+        "en": "1. The retention of a first loss exposure at the level of every securitised exposure as referred to in Article 6(3), point (e), of Regulation (EU) 2017/2402 shall only be considered to be fulfilled where the retained credit risk is subordinated to the credit risk securitised in relation to the same exposures.\n\n2. By way of derogation from paragraph 1, the retention of a first loss exposure at the level of every securitised exposure as referred to in Article 6(3), point (e), of Regulation (EU) 2017/2402 may also be fulfilled through the sale by the originator or original lender of the underlying exposures at a discounted value where each of the following conditions is met:\n(a) the amount of the discount is not less than 5 % of the nominal value of each exposure;\n(b) the discounted sale amount is refundable to the originator or original lender only if that discounted sale amount is not absorbed by losses related to the credit risk associated to the securitised exposures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_8",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 8, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/009",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 9",
+      "path": "009",
+      "heading": "Application of the retention options on traditional NPE securitisations",
+      "texts": {
+        "en": "1. In the case of NPE securitisations as referred to in Article 6(3a) of Regulation (EU) 2017/2402, for the purpose of applying Article 4, point (a), and Articles 5 to 8 of this Regulation to the share of non-performing exposures in the pool of underlying exposures of a securitisation, any reference to the nominal value of the securitised exposures shall be construed as a reference to the net value of the non-performing exposures.\n\n2. For the purposes of Article 6 of this Regulation, the net value of the retained non-performing exposures shall be calculated using the same amount of the non-refundable purchase price discount that would have been applied had the retained non-performing exposures been securitised.\n\n3. For the purposes of Article 4, point (a), Article 5 and Article 8 of this Regulation, the net value of the retained part of the non-performing exposures shall be calculated using the same percentage of the non-refundable purchase price discount that applies to the part that is not retained.\n\n4. Where the non-refundable purchase price discount as referred to in Article 6(3a), second subparagraph, of Regulation (EU) 2017/2402 has been agreed at the level of the pool of underlying non-performing exposures or at sub-pool level, the net value of individual securitised non-performing exposures included in the pool or sub-pool, as applicable, shall be calculated by applying a corresponding share of the non-refundable purchase price discount to each of the non-performing securitised exposures in proportion to their nominal value or, where applicable, their outstanding value at the time of origination.\n\n5. Where the non-refundable purchase price discount includes the difference between the nominal amount of one tranche or several tranches of an NPE securitisation underwritten by the originator for subsequent sale and the price at which that tranche or those tranches are first sold to unrelated third parties as referred to in Article 6(3a), second subparagraph, of Regulation (EU) 2017/2402, that difference shall be taken into account in the calculation of the net value of individual securitised non-performing exposures by applying a corresponding share of the difference to each of the non-performing securitised exposures in proportion to their nominal value."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_9",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 9, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/010",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 10",
+      "path": "010",
+      "heading": "Measurement of the level of retention",
+      "texts": {
+        "en": "1. When measuring the level of retention of the net economic interest, the following criteria shall be applied:\n(a) the origination shall be the time at which the exposures were first securitised, which shall be one of the following:\n(i) the date of the issuance of securities;\n(ii) the date of the signature of the credit protection agreement;\n(iii) the date of the agreement on a refundable purchase price discount;\n(b) where the calculation of the level of retention is based on nominal values, the acquisition price of assets shall not be taken into account for the purpose of that calculation;\n(c) the finance charge collections and other fee income received in respect of the securitised exposures in a traditional securitisation net of costs and expenses (traditional excess spread) shall not be taken into account when measuring the retainer’s net economic interest;\n(d) where the originator acts as the securitisation’s retainer and applies the retention option referred to in Article 6(3), point (d), of Regulation (EU) 2017/2402, and where the exposure value of the synthetic excess spread that provides credit enhancement to all the tranches of the synthetic securitisation and serves as a first loss protection is subject to capital requirements in accordance with the prudential regulation applicable to the originator, the originator may take the exposure value of the synthetic excess spread into account when calculating the material net economic interest in accordance with Article 7 of this Regulation by treating the exposure value of the synthetic excess spread as retention of the first loss tranche, in addition to any actual retention of the first loss tranche;\n(e) the retention option and methodology used to calculate the net economic interest shall not be changed during the life of a securitisation, unless exceptional circumstances require a change and that change is not used as a means to reduce the amount of the retained interest.\n\n2. The retainer shall not be required to constantly replenish or readjust its retained interest to at least 5 % when losses are realised on its retained exposures or allocated to its retained positions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-retention-modalities"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_10",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 10, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/012",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 12",
+      "path": "012",
+      "heading": "Prohibition of hedging or selling the retained interest",
+      "texts": {
+        "en": "1. The obligation laid down in Article 6(1), first subparagraph, of Regulation (EU) 2017/2402 to retain on an ongoing basis a material net economic interest in the securitisation shall be deemed to have been met only where, taking into account the economic substance of the transaction, both of the following conditions are met:\n(a) the retained material net economic interest is not subject to any credit risk mitigation or hedging of either the retained securitisation positions or the retained exposures,\n(b) the retainer does not sell, transfer or otherwise surrender all or part of the rights, benefits or obligations arising from the retained net economic interest.\n\nBy way of derogation from point (a), the retainer may hedge the net economic interest where the hedge is not against the credit risk of either the retained securitisation positions or the retained exposures.\n\n2. The retainer may use retained exposures or securitisation positions as collateral for secured funding purposes including, where relevant, funding arrangements that involve a sale, transfer or other surrender of all or part of the rights, benefits or obligations arising from the retained net economic interest, provided that such use as collateral does not transfer the exposure to the credit risk of those retained exposures or securitisation positions to a third party.\n\n3. Paragraph 1, point (b), shall not apply in any of the following events:\n(a) in the event of the insolvency of the retainer;\n(b) where the retainer, for legal reasons beyond its control and beyond the control of its shareholders, is unable to continue acting as a retainer;\n(c) in the case of retention on a consolidated basis as referred to in Article 14."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-no-hedging-or-sale"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_12",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 12, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/015",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 15",
+      "path": "015",
+      "heading": "Requirements on the allocation of cash flows and losses to the retained interest and on fees payable to the retainer",
+      "texts": {
+        "en": "1. Retainers shall not use arrangements or embedded mechanisms in the securitisation by virtue of which the retained interest at origination would decline faster than the interest transferred. In the allocation of cash flows, the retained interest shall not be prioritised to preferentially benefit from being repaid or amortised ahead of the transferred interest.\n\nThe amortisation of the retained interest via cash flow allocation in accordance with the first subparagraph or through the allocation of losses that, in effect, reduces the level of retention over time, shall be allowed.\n\n2. For the purposes of paragraph 1, arrangements on any fees, either fixed or contingent on the volume or the performance of the securitised exposures or the evolution of relevant market benchmarks, payable to the retainer on a priority basis to remunerate that retainer for any services provided to the securitisation shall only be deemed consistent with the requirements on the retained interest laid down in that paragraph where all of the following conditions are met:\n(a) the amount of the fees is set on an arm’s length basis having regard to comparable transactions in the market;\n(b) the fees are structured as a consideration for the provision of the service and do not create a preferential claim in the securitisation cash flows that effectively declines the retained interest faster than the transferred interest.\nFor the purposes of point (a), in the absence of comparable transactions in the relevant market, the amount of the fees shall comply with the requirement that those fees are set on an arm’s length basis where those fees are set by reference to fees payable in similar transactions in other markets, or are set by using valuation metrics that appropriately take into account the type of securitisation and the service being provided.\nThe conditions in the first subparagraph, points (a) and (b), shall not be considered to be met when the fees are guaranteed or payable up-front in any form, in full or in part in advance of the service being provided post-closing, and the effective material net economic interest after deducting the fees is lower than the minimum net economic interest required under the retention option chosen from the options laid down in Article 6(3), points (a) to (e), of Regulation (EU) 2017/2402."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-no-hedging-or-sale"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_15",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 15, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32023r2175/018",
+      "instrument": "celex-32023r2175",
+      "provisionKind": "article",
+      "refLabel": "Article 18",
+      "path": "018",
+      "heading": "Assets transferred to the SSPE",
+      "texts": {
+        "en": "1. For the purposes of Article 6(2) of Regulation (EU) 2017/2402, assets held on the balance sheet of the originator that according to the documentation of the securitisation meet the eligibility criteria, shall be deemed to be comparable to the assets to be transferred to the SSPE where, at the time of the selection of the assets, both of the following conditions are met:\n(a) the expected performance of both the assets to be further held on the balance sheet and the assets to be transferred is determined by similar factors;\n(b) on the basis of indications, including past performance and applicable models, it can be reasonably expected that the performance of the assets to be further held on the balance sheet will not be significantly better during the time period referred to in Article 6(2) of Regulation (EU) 2017/2402 than the performance of the assets to be transferred.\n\n2. The assessment whether the originator has complied with Article 6(2) of Regulation (EU) 2017/2402 shall take into account whether the originator has taken any actions to comply with that Article, and in particular whether the originator has put in place any internal policies, procedures and controls to prevent the systematic or intentional selection for securitisation purposes of assets of a worse average credit quality than comparable assets retained on its balance sheet.\n\n3. An originator shall be deemed to have complied with Article 6(2) of Regulation (EU) 2017/2402 where, after the securitisation, there are no exposures left on the originator’s balance sheet that are comparable to the securitised exposures, other than the exposures which the originator is already contractually committed to securitise, and provided that that fact has been clearly communicated to investors."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-secr-rr-rts-asset-selection-controls"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj#art_18",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 18, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r0920/002",
+      "instrument": "celex-32024r0920",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Specification of the outstanding amount of the underlying portfolio for the backward-looking triggers referred to in Article 26c(5), third subparagraph, point (a), of Regulation (EU) 2017/2402",
+      "texts": {
+        "en": "1. Except for the cases referred to in paragraphs 2 and 3, for the purposes of applying the backward-looking triggers referred to in Article 26c(5), third subparagraph, point (a), of Regulation (EU) 2017/2402, the outstanding amount of the underlying portfolio shall be the outstanding amount at the closing date of the transaction.\n\n2. Where the securitisation includes a replenishment period, the outstanding amount of the underlying portfolio shall be the lower one of the following:\n(a) the outstanding amount at the closing date of the transaction;\n(b) the outstanding amount at the end of the replenishment period.\n\n3. Where the securitisation includes a pre-defined period during which the portfolio of securitised exposures is built up, and which is starting at the closing date of the transaction, and where the credit protection agreement is applicable from the closing date of the transaction, the outstanding amount of the underlying portfolio shall be the following:\n(a) during the pre-defined build-up period, the outstanding amount shall be the maximum amount of the securitised exposures allowed in the credit protection agreement at the end of that pre-defined period;\n(b) after the end of the pre-defined build-up period, the outstanding amount shall be the outstanding amount at the end of that pre-defined period.\n\n4. For the purposes of paragraphs 1 to 3, the parties to the credit protection agreement shall calculate the increase in the cumulative amount of defaulted exposures or the increase in the cumulative losses from the closing date of the transaction."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-triggers-rts-set-triggers"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r0920/003",
+      "instrument": "celex-32024r0920",
+      "provisionKind": "article",
+      "refLabel": "Article 3",
+      "path": "003",
+      "heading": "Specification of the application of the additional backward-looking trigger referred to in Article 26c(5), third subparagraph, point (b), of Regulation (EU) 2017/2402",
+      "texts": {
+        "en": "1. The parties to the credit protection agreement shall set a threshold for the percentage of the reduction of the detachment point of the most senior protected tranche, calculated in accordance with Article 256(2) of Regulation (EU) No 575/2013 of the European Parliament and of the Council (³), from its level at the closing date of the transaction, or, where the securitisation includes a pre-defined period during which the portfolio of securitised exposures is built up, at the end of that pre-defined build-up period.\n\n2. The additional backward-looking trigger referred to in Article 26c(5), third subparagraph, point (b), of Regulation (EU) 2017/2402 shall occur at any point in time after the closing date of the transaction where the decrease of the detachment point exceeds the threshold determined in accordance with paragraph 1 of this Article.\n\n(³) Regulation (EU) No 575/2013 of the European Parliament and of the Council of 26 June 2013 on prudential requirements for credit institutions and amending Regulation (EU) No 648/2012 (OJ L 176, 27.6.2013, p. 1)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-triggers-rts-set-triggers"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj#art_3",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Article 3, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r0920/004",
+      "instrument": "celex-32024r0920",
+      "provisionKind": "article",
+      "refLabel": "Article 4",
+      "path": "004",
+      "heading": "Specification of the application of the forward-looking trigger referred to in Article 26c(5), third subparagraph, point (c), of Regulation (EU) 2017/2402",
+      "texts": {
+        "en": "1. The forward-looking trigger shall be determined in accordance with paragraph 2 or with paragraph 4 of this Article, depending on the effective number of exposures in the pool (‘N’), calculated in accordance with Article 259(4) of Regulation (EU) No 575/2013, at the closing date of the transaction.\n\n2. Where N is less than 100, the parties to the credit protection agreement shall set a threshold for the number of the largest securitised exposures towards individual obligors, calculated in accordance with paragraph 3.\n\nThe forward-looking trigger shall occur where, at any point in time, the number of the largest securitised exposures towards individual obligors, calculated in accordance with paragraph 3, falls below the threshold determined in accordance with the first subparagraph.\n\n3. To determine the number of the largest securitised exposures towards individual obligors, as referred to in paragraph 2, the parties to the securitisation shall take the following steps in the following order:\n(a) they shall consolidate multiple exposures to the same obligor and treat them as a single exposure;\n(b) they shall sort the consolidated exposures to individual obligors by their outstanding amount, in descending order;\n(c) they shall add the outstanding amounts of the consolidated exposures towards individual obligors, starting with the largest exposure, in descending order;\n(d) the addition referred to in point (c) shall stop before adding the next exposure results in the total being higher than the sum of the outstanding amounts of the most senior protected tranche and of the tranches subordinated to it.\n\n4. Where N is equal to or greater than 100, the parties to the credit protection agreement shall set a threshold for the increase between the ratio of the outstanding amount of the higher credit risk buckets, as determined according to paragraph 8, divided by the total outstanding amount of all the securitised exposures (‘higher credit risk buckets ratio’), and the corresponding ratio at the closing date of the transaction.\n\nThe forward-looking trigger shall occur where, at any point in time, the threshold determined in accordance with the first subparagraph is breached.\n\n5. The parties to the credit protection agreement shall clearly set out in the transaction documentation the criteria for assigning exposures to credit risk buckets.\n\nFor the purposes of the first subparagraph, the parties to the credit protection agreement shall determine, in the credit protection agreement, the differentiation between individual credit risk buckets based on the following:\n(a) the grades referred to in Article 170(1), point (b), of Regulation (EU) No 575/2013, where the originator applies the IRB Approach in accordance with Part Three, Title II, Chapter 3 of that Regulation to determine the own funds requirements for credit risk for securitised exposures to corporates, with the exception of specialised lending exposures referred to under point (b), institutions and central governments and central banks;\n(b) the grades referred to in Article 170(2) of Regulation (EU) No 575/2013, where the originator applies the IRB Approach in accordance with Part Three, Title II, Chapter 3 of that Regulation to determine the own funds requirements for credit risk for securitised exposures that are treated as specialised lending exposures to which the methods set out in Article 153(5) of that Regulation apply;\n(c) the grades or pools referred to in Article 170(3), point (b), of Regulation (EU) No 575/2013 where the originator applies the IRB Approach in accordance with Part Three, Title II, Chapter 3 of that Regulation to determine the own funds requirements for credit risk for securitised exposures that are treated as retail exposures;\n(d) in all other cases, in accordance with the applicable accounting framework applied by the originator in its financial statements.\n\n6. The parties to the credit protection agreement shall assign the following exposures to higher credit risk buckets from the credit risk buckets determined in accordance with paragraph 5:\n(a) all exposures in default as referred to in Article 178(1) of Regulation (EU) No 575/2013;\n(b) all exposures to a credit-impaired debtor;\n(c) all other exposures entailing higher credit risk according to the credit protection agreement, other than those referred to in points (a) and (b).\n\nThe parties to the credit protection agreement shall exclude from the assignment referred to in the first subparagraph all exposures that have been subject to a credit event under the credit protection agreement and for which an interim or a final credit protection payment has been made that has reduced the total amount of the protected tranche and the other tranches that are subordinated to it.\n\n7. Where the securitised exposures include more than one of the groups of exposures referred to in paragraph 5, points (a) to (d), the parties to the credit protection agreement shall assign the exposures to the higher credit risk buckets for each of these groups determined in accordance with paragraph 5.\n\n8. For the purposes of paragraph 4, the outstanding amount of the higher credit risk buckets shall be the sum of the outstanding amounts of all the securitised exposures assigned to the buckets in accordance with paragraph 6 and 7."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-triggers-rts-set-triggers"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj#art_4",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r0920/005",
+      "instrument": "celex-32024r0920",
+      "provisionKind": "article",
+      "refLabel": "Article 5",
+      "path": "005",
+      "heading": "Criteria for setting the level of the triggers referred to in Article 26c(5), third subparagraph, of Regulation (EU) 2017/2402",
+      "texts": {
+        "en": "The parties to the credit protection agreement shall set the thresholds for the performance-related triggers referred to in Article 26c(5), third subparagraph, of Regulation (EU) 2017/2402 at a level which ensures that all of the following criteria are met:\n(a) the triggers are activated before the tranches providing credit protection have been amortised to an extent that those tranches cannot absorb significant losses occurring in the last part of the maturity of the transaction;\n(b) in relation to backward-looking triggers, the effectiveness of those triggers has been tested in a back-loaded loss distribution scenario;\n(c) where the originator applies Part Three, Title II, Chapter 5 of Regulation (EU) No 575/2013 to determine the own funds requirements for its exposure to the securitisation, both the calculation of the lifetime expected losses and the assumptions to be made under a back-loaded loss distribution scenario are consistent with those used for the significant and commensurate risk transfer assessment under Article 245 of that Regulation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-triggers-rts-calibration"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj#art_5",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Article 5, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r0920/006",
+      "instrument": "celex-32024r0920",
+      "provisionKind": "article",
+      "refLabel": "Article 6",
+      "path": "006",
+      "heading": "Outstanding STSs on-balance-sheet securitisations featuring non-sequential priority of payments",
+      "texts": {
+        "en": "For STS on-balance-sheet securitisations that feature non-sequential priority of payments and performance-related triggers in accordance with Article 26c(5), third subparagraph, of Regulation (EU) 2017/2402, and that were notified to the European Securities and Markets Authority in accordance with Article 27(1) of that Regulation before 11 April 2024, originators and SSPEs may, without complying with the requirements laid down in Articles 1 to 5 of this Regulation, continue to use the designation ‘STS’ or ‘simple, transparent and standardised’ or a designation that refers directly or indirectly to those terms, provided that those securitisations comply with Article 18 of that Regulation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-triggers-rts-calibration"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj#art_6",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Article 6, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1700/001",
+      "instrument": "celex-32024r1700",
+      "provisionKind": "article",
+      "refLabel": "Article 1",
+      "path": "001",
+      "heading": "General principles for the presentation of information",
+      "texts": {
+        "en": "1. Originators shall provide the information required by this Regulation by using templates, definitions and formulas laid down in the Annex and in a manner that is prominent, simple, concise, comprehensible, fair, clear, and not misleading.\n\n2. Originators shall make the information required by this Regulation available in a searchable electronic format.\n\n3. Originators shall make the information required by this Regulation available in accordance with the conditions set out in Article 7(1), point (a), of Regulation (EU) 2017/2402.\n\n4. Originators that use the option to disclose the information related to the principal adverse impacts of the assets financed by the underlying exposures on sustainability factors, rather than the available information related to the environmental performance of the assets financed by residential loans or auto loans or leases, shall use the ‘No Data Options’ (‘ND’) in fields RREC10 and RREC11 in Annex II to Delegated Regulation (EU) 2020/1224 and in fields AUTL57 and AUTL58 in Annex V to that Regulation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-pai-rts-presentation"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1700/oj#art_1",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1700, Article 1, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1700/002",
+      "instrument": "celex-32024r1700",
+      "provisionKind": "article",
+      "refLabel": "Article 2",
+      "path": "002",
+      "heading": "Statement on principal adverse impacts on sustainability factors of the assets financed by underlying exposures of the securitisation",
+      "texts": {
+        "en": "1. Originators shall publish the statement on principal adverse impacts on sustainability factors in the format set out in Tables 1, 2 and 3 of the Annex.\n\n2. In the summary section in Table 1 of the Annex, originators shall include all of the following information:\n(a) the unique identifier of the securitisation;\n(b) where available, the international securities identification numbers (ISIN codes) of each of the tranches or bonds in the securitisation;\n(c) the fact that principal adverse impacts on sustainability factors are considered;\n(d) the reference period of the statement on principal adverse impacts on sustainability factors;\n(e) for each asset type in the securitisation pool, the total current principal balance of the underlying exposures;\n(f) a summary of the principal adverse impacts on sustainability factors of the assets financed by underlying exposures.\n\nThe summary section shall be of a maximum length of two sides of A4-sized paper when printed.\n\n3. In the section ‘Explanation of how principal adverse impacts on sustainability factors of the assets financed by underlying exposures of the securitisation are considered in the selection of underlying exposures to be added to the pool at the time of offering or during the lifetime of the securitisation’ in Table 1 of the Annex, originators shall include all of the following information:\n(a) a description of any criteria or numerical thresholds applicable to the composition of the pool of underlying exposures in the securitisation relating to the principal adverse impacts on sustainability factors of the assets financed by the underlying exposures in the pool;\n(b) a description of any tests, events, and triggers relating to those principal adverse impacts;\n(c) clear references to the relevant pages and sections in the final offering document or, where relevant, the prospectus, and the closing transaction documents where those thresholds, tests, events, or triggers are described;\n(d) a concise explanation of whether and, if so, how, principal adverse impacts on sustainability factors are taken into account in the originator’s credit granting criteria;\n(e) clear references and hyperlinks to any available public disclosures in which the criteria referred to in point (a) are described.\n\nWhere information relating to any of the indicators of principal adverse impacts on sustainability factors as set out in the Annex is not readily available, originators shall include in that section details of the best efforts used to obtain that information from obligors, external experts, or by making reasonable assumptions.\n\n4. For the purposes of the concise explanation referred to in paragraph 3, point (d), originators may also provide references to relevant business conduct codes and internationally recognised standards for due diligence and reporting to which they adhered.\n\n5. In the section ‘Description of principal adverse impacts on sustainability factors of the assets financed by the underlying exposures of the securitisation’ in Table 1 of the Annex, originators shall describe the principal adverse impacts on sustainability factors of the assets financed by the underlying exposures of the securitisation, and provide all of the following information:\n(a) available information on the indicators related to principal adverse impacts on sustainability factors as set out in Table 1 of the Annex;\n(b) available information on one or more additional climate and other environment-related indicators, as set out in Table 2 of the Annex;\n(c) available information on one or more additional indicators for social and employee matters, respect for human rights, and anti-corruption and anti-bribery matters as set out in Table 3 of the Annex;\n(d) available information on any other indicators used to identify and assess additional principal adverse impacts on a sustainability factor as set out in Table 1 of the Annex.\n\nWhere the originator has provided at least one previous statement on principal adverse impacts on sustainability factors in accordance with this Article, the originator shall provide a historical comparison between the current period reported on and every previous period reported on up to the last four previous periods.\n\n6. Where the statement on principal adverse impacts on sustainability factors is made available by means of a securitisation repository, the item code 1 of Table 3 of Annex I to Delegated Regulation (EU) 2020/1224 shall be used.\n\n7. An originator that identifies factual errors in any information that it has made available pursuant to paragraphs 1 to 6 shall correct those errors and publish a corrected statement on principal adverse impacts on sustainability factors without undue delay."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-sts-pai-rts-statement",
+        "obl-eu-sts-pai-rts-presentation"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1700/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1700, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    }
+  ],
+  "withoutProvision": []
+}

@@ -2,29 +2,81 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
-## Proposed provisions in the library queue (2026-11-13, D-142)
+## What applies, Licences and the law's own words (2026-11-13, PRD 0.10, D-139 to D-143)
 
-The queue now shows a proposed provision's texts, each labelled original, official text or
-machine translation. Three gaps need a backend change before the 2,000 provisions arrive:
+Four screens changed and the library gained the words of the law itself. What needs you,
+most urgent first.
 
+- [ ] **Approve the law's own words in the library queue.** After the deploy the baseline
+      files 2,721 proposals, one per section or article, within the hour, or at once with
+      `python manage.py file_library_baseline` in the `api` shell (runbook step 17). In the
+      Platform console open Queue, choose the kind "New provision", open a few, then
+      "Approve all" with one passkey. Each holds the text as the authority published it and
+      its translations, marked as machine translations whoever approves.
+- [ ] **Look at the four screens and say what should change.** Admin, Licences; What
+      applies; a regulation's page; an obligation's page. They are built as the recommended
+      layout of `design/proposals/obligations-regulations-licences.html`.
+- [ ] **Decide whether a model may draft the reason (D-143).** "Does it apply" suggests a
+      reason from the company's licence facts, with no model. A drafted or reworded reason
+      would send the bank's facts, or what the member typed, to a model, which D-07 allows
+      only for Ask and for the bank's own agent. Say yes and from what (licence facts only,
+      or the typed text too), or leave it as it is. Nothing is built for it.
+- [ ] **Nine summaries say something the law's words do not.** Read beside the cited text,
+      these state a deadline, an actor or a condition differently:
+      `obl-dk-kompbolig-training`, `obl-dk-afvplan-financial-contracts-register`,
+      `obl-eu-mifir-transaction-report-accuracy`, `obl-eu-mar-bb-rts-buyback-disclosure`,
+      `obl-eu-eugb-allocation-impact-reports`, `obl-fi-holdings-decree-notification-content`,
+      `obl-fi-aifml-reporting`, `obl-se-ptl-pep-measures` and
+      `obl-no-sanksjon-guinea-report` (whose cited section says the article it rests on does
+      not apply in Norway: the duty may not exist). The words at issue and what to change
+      are in `docs/reviews/law-text-2026-11-13/duty-reading.json`, with 149 more whose
+      summary holds an element from a section that is not cited. Each is a new version of
+      the obligation through the proposal door: say the word and the research agent files
+      them for your approval.
+- [ ] **Norwegian duties that rest on an EU regulation show only the clause that makes it
+      Norwegian law** (14 under the incorporation acts, 82 under the sanctions
+      regulations). That clause is the Norwegian law's own words, and the EU article is in
+      the library under the EU act. Showing the article beside the clause needs a provision
+      tied to a duty of another instrument, which the door refuses today. Say if you want it.
+- [ ] **The guidelines of EBA, ESMA and EIOPA are not in yet.** Their text is published as
+      PDF, and the readers who compared every paragraph with a picture of the printed page
+      found 16 faults in 471 units, one of them a paragraph that lost its list. The 98
+      obligations under them say so in one line. The extraction is being repaired and read
+      again in full; it arrives as a second delivery.
+- [ ] **Eleven citations to settle.** No text is shown because the citation could not be
+      followed: `obl-se-laif-liquidity-management` (8 kap. 3 § cannot be cut with
+      certainty), `obl-se-sfl-interest-expense-statement` (18 kap. 1 § is not in the
+      Riksdag's consolidated text), `obl-dk-godskik-share-ownership-tying` (§ 16 a is not in
+      the cited order), `obl-dk-hvsunderretbek-report-content` (cites an annex), the three
+      `obl-dk-kal-*` duties cited from two versions of the Danish credit agreements act,
+      `obl-eu-emir-co-g4-interest-rate-classes`, `obl-eu-emir-co-nok-pln-sek-classes`,
+      `obl-eu-cd1183-reporting`, and `obl-fi-lll-remuneration` (Finlex has not published the
+      Swedish text of the wording in force). Nine more sit under an amending act while the
+      article is in the act it amends (`obl-eu-csdr-t1-settlement`, eight `obl-eu-ipr-*`).
+- [ ] **One word: "kontrolluppgift".** The translations follow Skatteverket's own English,
+      "income statement"; our summaries say "control statement". Pick one.
+- [ ] **Parts of five Finnish sections are not in force yet** (between 20 November 2026 and
+      16 April 2027). Finlex prints them in the consolidated section with its own note, and
+      the text keeps both, note included. Say if you would rather hold such parts back
+      until their day.
+- [ ] **Where the extraction tooling should live.** The fetchers, parsers, checkers, the
+      reviewed translation batches and the cached official documents are in the build
+      session's working folder,
+      `C:\Users\Alex\AppData\Local\Temp\claude\6892ebcaaa7cf27b\885a81e4-7810-4df3-aca0-5949c09c3c43\scratchpad\law`,
+      and are lost when it is cleaned. Copy the folder somewhere you keep, or say that it
+      should become a tool in the repository.
+- [ ] **A lawyer's eye on the machine translations before a bank relies on them** (D-142's
+      open point). Each was written, read by a second reader and checked by program, and
+      the flagged ones by a third; all of them models.
 - [ ] **A new version of a provision does not say which law it changes.** For
-      `new_provision_version` the payload carries no regulation, reference or heading, and the
-      detail's `target` covers obligations only, so the reviewer sees the texts, a date and
-      obligation keys, and only the proposer's own title names the law. Ask for the detail to
-      fill `target` (regulation short name, reference label, heading) from the provision the
-      version belongs to; the screen then draws them as it does for a new provision.
-- [ ] **A provision's text that is neither original nor official is stored as the authority's
-      own.** The queue labels such a text a machine translation, but when a person approves a
-      payload with `isMachine` false, `_provision_texts` stores it as neither original nor
-      machine, and the regulation page then calls it "<Language>, official text". Decide one:
-      store every such text as machine-made, or refuse a provision payload whose non-official
-      texts are not marked `isMachine`.
-- [ ] **The queue names the regulation and the obligations by stable key only** for a proposed
-      provision (`instrumentShortName` is empty for provision kinds). Ask for the short name and
-      the obligations' titles, to show title over key as a new obligation does.
-- [ ] **No E2E journey checks the regulation page's "What it is" chips**, because the E2E seed
-      holds no instrument summary. The unit tests pin that they never say "original"; a seeded
-      summary would let INV-S16 check it end to end.
+      `new_provision_version` the queue shows the texts, a date and obligation keys, and
+      only the proposer's own title names the law. The detail should fill `target`
+      (regulation, reference, heading) from the provision; the screen then draws them as it
+      does for a new provision. The baseline files no such proposal.
+- [ ] **The queue names a proposed provision's obligations by stable key.** The regulation
+      now reads by its short name; the obligations' titles would need the same.
+- [ ] **No journey checks the regulation page's "What it is" chips**, because the E2E seed
+      holds no instrument summary. The unit tests pin that they never say "original".
 
 ## The new mail layout (2026-11-12, D-138)
 
