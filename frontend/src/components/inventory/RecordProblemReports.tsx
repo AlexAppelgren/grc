@@ -106,7 +106,8 @@ function ReportRow({ report, closable, onClose }: { report: ProblemReport; closa
   );
 }
 
-export function RecordProblemReports({ subjectType, subjectId }: { subjectType: ProblemReportSubjectType; subjectId: string }) {
+/** `bare` leaves out the card and its heading, where the section sits inside another card's fold. */
+export function RecordProblemReports({ subjectType, subjectId, bare = false }: { subjectType: ProblemReportSubjectType; subjectId: string; bare?: boolean }) {
   const t = useT();
   const permissions = usePermissions() ?? [];
   const meId = useSession().me?.user.id ?? null;
@@ -118,8 +119,8 @@ export function RecordProblemReports({ subjectType, subjectId }: { subjectType: 
   const items = reports.data?.items ?? [];
   const total = reports.data?.total ?? 0;
 
-  return (
-    <Panel title={t('inventory.reports.title')} data-problem-reports="">
+  const body = (
+    <>
       <p className="text-meta text-muted">{t(permissions.includes(CLOSE_ANY_PERMISSION) ? 'inventory.reports.introAll' : 'inventory.reports.introOwn')}</p>
       <p className="mb-3 text-meta text-muted" data-reports-watch="">
         {t('inventory.reports.watchCorrects')}
@@ -147,6 +148,13 @@ export function RecordProblemReports({ subjectType, subjectId }: { subjectType: 
         </>
       )}
       {closing === null ? null : <CloseReportModal report={closing} onOpenChange={(open) => (open ? undefined : setClosing(null))} />}
+    </>
+  );
+  return bare ? (
+    <div data-problem-reports="">{body}</div>
+  ) : (
+    <Panel title={t('inventory.reports.title')} data-problem-reports="">
+      {body}
     </Panel>
   );
 }

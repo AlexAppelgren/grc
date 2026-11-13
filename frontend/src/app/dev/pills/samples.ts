@@ -163,7 +163,7 @@ const compliant = complianceStatuses[0] as KindRef<ComplianceKind>;
 /** Register entries as inventory rows: the library's slots, then the bank's applicability and status. */
 export const registerEntries: readonly RowFacts[] = [
   {
-    instrument: { key: 'lvm', shortName: 'LVM' },
+    instrument: { id: 'in-lvm', key: 'lvm', shortName: 'LVM' },
     binding: true,
     bindingLevel: { key: 'act', kind: null, label: 'Act' },
     openChangeCount: 2,
@@ -174,7 +174,7 @@ export const registerEntries: readonly RowFacts[] = [
     complianceStatus: partly,
   },
   {
-    instrument: { key: 'esmagl', shortName: 'ESMAGL' },
+    instrument: { id: 'in-esmagl', key: 'esmagl', shortName: 'ESMAGL' },
     binding: false,
     bindingLevel: { key: 'eu_guidance', kind: null, label: 'EU guidance' },
     openChangeCount: 0,
@@ -185,7 +185,7 @@ export const registerEntries: readonly RowFacts[] = [
     complianceStatus: null,
   },
   {
-    instrument: { key: 'own-outsourcing-policy', shortName: 'Outsourcing policy' },
+    instrument: { id: 'in-own-outsourcing', key: 'own-outsourcing-policy', shortName: 'Outsourcing policy' },
     binding: true,
     bindingLevel: { key: 'internal', kind: null, label: 'Internal rule' },
     openChangeCount: 0,

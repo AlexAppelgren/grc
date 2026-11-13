@@ -2,7 +2,10 @@ import type { PresentedPill, VocabularyRef } from '@/features/shared/presentatio
 import { slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 
+import type { components } from '@/types/api.generated';
+
 import { presentBindingLevel } from './obligation-presentation';
+import type { InstrumentLinkRef, Obligation } from './types';
 
 // Instrument header and row (design/screens/tenant-instrument.html,
 // tenant-inventory.html): the short name as brand, the level as information,
@@ -70,3 +73,29 @@ export function obligationsTitleOf(levelKey: string, t: Translate): string {
 
 /** The level whose duties sit in each country's implementing law, not under the record itself (ADR 0065). */
 export const DIRECTIVE_LEVEL = 'eu_directive';
+
+/** A directive's national laws as its page opens them: the laws with duties in the bank's scope first, and the totals over every law listed. */
+export function nationalLawsOf(implementedBy: readonly InstrumentLinkRef[]): { laws: InstrumentLinkRef[]; obligations: number; inScope: number } {
+  return {
+    // A stable sort: within each half the laws keep the order the read answers them in.
+    laws: [...implementedBy].sort((a, b) => Number(b.obligationCounts.inScope > 0) - Number(a.obligationCounts.inScope > 0)),
+    obligations: implementedBy.reduce((sum, law) => sum + law.obligationCounts.inLibrary, 0),
+    inScope: implementedBy.reduce((sum, law) => sum + law.obligationCounts.inScope, 0),
+  };
+}
+
+/** One chip of a regulation's answer filter: the list's `applicability` value (none for every obligation in scope) and its label with its count. */
+export interface AnswerFilter {
+  value: Obligation['applicability'] | null;
+  label: string;
+}
+
+/** The answer filter over a regulation's obligations in scope, from its roll-up: all, still to decide, applies, does not apply. */
+export function answerFiltersOf(rollup: Pick<components['schemas']['RegisterInstrumentApplicability'], 'inScope' | 'underAssessment' | 'applies' | 'notApplicable'>, t: Translate): AnswerFilter[] {
+  return [
+    { value: null, label: t('inventory.instrument.answer.all', { count: rollup.inScope }) },
+    { value: 'under_assessment', label: t('inventory.instrument.answer.underAssessment', { count: rollup.underAssessment }) },
+    { value: 'applies', label: t('inventory.instrument.answer.applies', { count: rollup.applies }) },
+    { value: 'not_applicable', label: t('inventory.instrument.answer.notApplicable', { count: rollup.notApplicable }) },
+  ];
+}

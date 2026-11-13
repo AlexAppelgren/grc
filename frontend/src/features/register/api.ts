@@ -1,3 +1,4 @@
+import type { components } from '@/types/api.generated';
 import { api, segment } from '@/shared/utils/api-client';
 
 import type {
@@ -157,3 +158,11 @@ export async function listSpannedEntities(obligationId: string): Promise<Registe
   return (await api.get<RegisterSpannedEntity[]>(`${obligation(obligationId)}/register/entities`)).data;
 }
 
+// One regulation rolled up for the bank, for its own page: how its obligations in scope were
+// answered, how the bank complies where they apply, and the answers per company.
+
+export type RegisterInstrumentApplicability = components['schemas']['RegisterInstrumentApplicability'];
+
+export async function getInstrumentApplicability(instrumentId: string): Promise<RegisterInstrumentApplicability> {
+  return (await api.get<RegisterInstrumentApplicability>(`${V1}/instruments/${segment(instrumentId)}/applicability`)).data;
+}

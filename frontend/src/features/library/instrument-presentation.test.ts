@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 
-import { INSTRUMENT_SLOT_ORDER, presentInstrument, type InstrumentFacts } from './instrument-presentation';
+import { answerFiltersOf, INSTRUMENT_SLOT_ORDER, nationalLawsOf, presentInstrument, type InstrumentFacts } from './instrument-presentation';
+import type { InstrumentLinkRef } from './types';
 
 const t = createT('en');
 const sv = createT('sv');
@@ -74,5 +75,40 @@ describe('presentInstrument', () => {
       label: 'Guidance, comply or explain',
       tone: 'warning',
     });
+  });
+});
+
+describe('nationalLawsOf', () => {
+  const law = (key: string, inLibrary: number, inScope: number): InstrumentLinkRef => ({
+    id: `in-${key}`,
+    key,
+    shortName: key,
+    jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
+    obligationCounts: { inLibrary, inScope },
+  });
+
+  it('opens the laws with obligations in scope first, keeping the order the read answers within each half, and sums every law', () => {
+    const answered = [law('dk', 21, 0), law('se', 34, 23), law('fi', 18, 0), law('no', 9, 2)];
+    const { laws, obligations, inScope } = nationalLawsOf(answered);
+    expect(laws.map((row) => row.key)).toEqual(['se', 'no', 'dk', 'fi']);
+    expect([obligations, inScope]).toEqual([82, 25]);
+    expect(answered.map((row) => row.key)).toEqual(['dk', 'se', 'fi', 'no']);
+  });
+
+  it('holds nothing when the library holds no national law', () => {
+    expect(nationalLawsOf([])).toEqual({ laws: [], obligations: 0, inScope: 0 });
+  });
+});
+
+describe('answerFiltersOf', () => {
+  it('offers every obligation in scope, then each answer, with its count and the value the list takes', () => {
+    const rollup = { inScope: 14, underAssessment: 5, applies: 8, notApplicable: 1 };
+    expect(answerFiltersOf(rollup, t).map((filter) => [filter.value, filter.label])).toEqual([
+      [null, 'All 14'],
+      ['under_assessment', 'To decide 5'],
+      ['applies', 'Applies 8'],
+      ['not_applicable', 'Does not apply 1'],
+    ]);
+    expect(answerFiltersOf(rollup, sv).map((filter) => filter.label)).toEqual(['Alla 14', 'Att bedöma 5', 'Gäller 8', 'Gäller inte 1']);
   });
 });

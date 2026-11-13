@@ -94,4 +94,10 @@ describe('register api', () => {
     expect(sent[0]?.body).toEqual({ severity: 'high', source: 'assessment', title: 'No yearly review' });
     expect(ifMatch.every((value) => value === null)).toBe(true);
   });
+
+  it("reads a regulation's roll-up on its own route", async () => {
+    const { sent } = record();
+    expect(await register.getInstrumentApplicability('in 1')).toEqual({ ok: '/api/v1/instruments/in%201/applicability' });
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/instruments/in%201/applicability']]);
+  });
 });

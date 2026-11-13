@@ -151,6 +151,7 @@ Given the seeded instrument "FFFS 2017:2" from the Swedish FSA
 Then it holds level, binding force, official reference, ELI, jurisdiction SE, authority, a regime, in-force date with precision and the instrument it amends
 And the API returns the binding level as key, kind and label
 And the instrument screen shows the short name as a brand pill, the regime as information and "Guidance, comply or explain" only when it is not binding and the level kind is not standard
+And the screen lists its obligations first and its provisions under them, each related instrument in its lineage is a link to its own page, and Back leads to the Regulations tab
 And the record carries no tenant_id and is readable by every tenant
 ```
 
@@ -158,9 +159,10 @@ And the record carries no tenant_id and is readable by every tenant
 ```gherkin
 Given the EU directive "Directive 2002/47/EC" with a summary, and the Swedish act "SFS 2004:46" whose implementsNote names Directive 2002/47/EC
 When a reader opens the directive's card
-Then it carries the summary, the Swedish act among the laws that implement it, and no duties of its own
+Then it carries the summary, the Swedish act among the laws that implement it, opened in place on its page, and no duties of its own
 And the act's card names the directive among what it implements, and an act numbered 2002/470 is never matched
 And the counts of duties held and in scope are those GET /obligations answers for the same regulation, with new duties waiting for review counted apart
+And a regulation's page says those counts before its list of duties, and names the duties by the level of the regulation
 When a second summary of the same regulation is proposed
 Then it is refused with duplicate_key, and an agent cannot approve one: a person does
 ```
@@ -342,5 +344,15 @@ And those are the totals GET /obligations answers for that law, with footprint a
 And the directive's own counts stay zero, because its duties sit under the national laws
 When the reader lists the Swedish act's duties, opens one of them or reads an instrument's lineage
 Then each names the regulation by the id GET /instruments/{id} opens, and a lineage entry names the other instrument, never the card's own
+```
+
+### INV-S21 — A directive opens its national laws in place, with their obligations `@e2e` (INV-09)
+```gherkin
+Given an EU directive with no duties of its own, implemented by a Swedish law with duties in the bank's scope and a Norwegian law with none in it
+When a reader opens the directive's page
+Then it says a directive binds the member states, and how many duties the national laws the library holds carry and how many fall in the reader's scope
+And the Swedish law comes first and open, with its first page of duties in scope and a link to all of them on its own page
+And the Norwegian law comes after it, closed, and reads its duties only once opened
+And the page never claims the laws listed are every law that implements the directive
 ```
 

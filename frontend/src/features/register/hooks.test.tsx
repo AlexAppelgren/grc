@@ -110,6 +110,20 @@ describe('register hooks', () => {
     await waitFor(() => expect(sent.filter((s) => s.method === 'get').length).toBeGreaterThan(1));
   });
 
+  it("reads a regulation's roll-up only when allowed, and a register write re-reads it", async () => {
+    const sent = installAdapter((s) => ({ status: 200, data: s.path.startsWith('/api/v1/instruments/') ? { inScope: 1 } : { version: 1 } }));
+    const { wrapper } = queryWrapper();
+    expect(renderHook(() => hooks.useInstrumentApplicability('in-2', false), { wrapper }).result.current.fetchStatus).toBe('idle');
+    const rollup = renderHook(() => hooks.useInstrumentApplicability('in-1', true), { wrapper });
+    await waitFor(() => expect(rollup.result.current.data).toEqual({ inScope: 1 }));
+    expect(hooks.registerKeys.instrument('in-1')).toEqual(['register', 'instrument', 'in-1']);
+    const write = renderHook(() => hooks.useSetApplicability('ob1'), { wrapper });
+    await act(async () => {
+      await write.result.current.mutateAsync({ body: { applicability: 'applies', reason: '' }, version: 1 });
+    });
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments/in-1/applicability')).toHaveLength(2));
+  });
+
   it('keeps a stale write unsent a second time and reloads the saved version on request', async () => {
     let saved = 4;
     const sent = installAdapter((s) =>

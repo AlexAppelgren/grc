@@ -126,13 +126,31 @@ test.describe('library journeys', () => {
     // instrument, and this instrument implements the delegated directive
     // (INV-01, T13's seeded amendment). Both are library facts, so they are
     // found through the group's key rather than quoted copy.
-    await expect(page.locator('[data-lineage-group="amends:incoming"] [data-lineage-instrument="fffs-2026-11"]')).toBeVisible();
-    await expect(page.locator('[data-lineage-group="implements:outgoing"] [data-lineage-instrument="celex-32017l0593"]')).toBeVisible();
+    // Each related regulation is a link to its own page; Back leads to the Regulations tab.
+    await expect(page.locator('[data-lineage-group="amends:incoming"] [data-lineage-instrument="fffs-2026-11"] a')).toHaveAttribute('href', /^\/inventory\/instruments\/[0-9a-f-]{36}$/);
+    await expect(page.locator('[data-lineage-group="implements:outgoing"] [data-lineage-instrument="celex-32017l0593"] a')).toHaveAttribute('href', /^\/inventory\/instruments\/[0-9a-f-]{36}$/);
+    await expect(page.locator('a[href="/inventory?tab=instruments"]').first()).toBeVisible();
+
+    // The obligations come first, the provisions under them (INV-09).
+    const obligations = page.locator('[data-obligations-panel]');
+    await expect(page.locator('[data-obligations-panel] ~ [data-provision-tree]')).toBeVisible();
+
+    // The bank's answers rolled up: the answer filter leads with every obligation in scope,
+    // and choosing one narrows the list through the inventory's own applicability filter.
+    const answers = obligations.getByRole('group', { name: 'Filter by answer' });
+    await expect(answers.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+    const undecided = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/obligations?') && new URL(response.url()).searchParams.get('applicability') === 'under_assessment',
+    );
+    await answers.getByRole('button').nth(1).click();
+    await undecided;
+    await answers.getByRole('button').first().click();
+    await expect(answers.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+    await expect(obligations.getByLabel('Find an obligation')).toBeVisible();
 
     // The obligations from this instrument read inside our scope first, the
     // same list the inventory answers when filtered by it (FP-03, FP-04), with
     // the scope as one filter of three values, the total and a way into that list.
-    const obligations = page.locator('[data-obligations-panel]');
     const scope = obligations.getByRole('group', { name: 'Scope' });
     await expect(scope.getByRole('button', { name: 'My scope' })).toHaveAttribute('aria-pressed', 'true');
     await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'false');
@@ -210,6 +228,49 @@ test.describe('library journeys', () => {
     const obligations = page.locator('[data-obligations-panel]');
     await expect(obligations.getByRole('heading', { name: 'Obligations from these rules' })).toBeVisible();
     await expect(obligations.locator('[data-applies-counts]')).toContainText('in the library.');
+  });
+
+  // Pending on the seed, not the screen: `implementedBy` matches a directive's official number
+  // (2014/65) in a law's implementsNote, and the seeded directives carry CELEX numbers as their
+  // official reference (backend/apps/library/fixtures/prototype_data.json: "CELEX 32014L0065"),
+  // so no seeded directive has a national law yet. Un-fixme once celex-32014l0065 reads
+  // "Directive 2014/65/EU", which LVM (SE, in tenant A's scope) and Verdipapirhandelloven (NO,
+  // outside it) both name.
+  test.fixme("INV-S21: A directive opens its national laws in place, with their obligations", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/inventory?tab=instruments');
+    const pager = page.locator('[data-list-pager]');
+    await pager.getByRole('combobox').selectOption('all');
+    await page.locator('[data-instrument="celex-32014l0065"]').click();
+    await expect(page.locator('[data-instrument="celex-32014l0065"] [data-header-pills]')).toBeVisible();
+
+    // The directive holds no duties of its own: it says so, then the totals over the laws the
+    // library holds, never claiming the list is complete.
+    const obligations = page.locator('[data-obligations-panel]');
+    await expect(obligations.getByRole('heading', { name: 'Obligations from this directive' })).toBeVisible();
+    await expect(obligations.locator('[data-national-totals]')).toContainText('national laws the library holds.');
+
+    // The law with duties in our scope comes first and starts open, its first page read in place.
+    const laws = obligations.locator('[data-national-law]');
+    await expect(laws.first()).toHaveAttribute('data-national-law', 'sfs-2007-528');
+    const swedish = obligations.locator('[data-national-law="sfs-2007-528"]');
+    await expect(swedish.locator('[data-slot="fold-trigger"]')).toHaveAttribute('aria-expanded', 'true');
+    await expect(swedish.locator('[data-obligation]').first()).toBeVisible();
+    await expect(swedish.locator('[data-see-all]')).toHaveAttribute('href', /^\/inventory\/instruments\/[0-9a-f-]{36}$/);
+
+    // A law with none in our scope starts closed, and opens on request with the way to all of its duties.
+    const norwegian = obligations.locator('[data-national-law="no-lov-2007-06-29-75"]');
+    const toggle = norwegian.locator('[data-slot="fold-trigger"]');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // Its name opens its page in one click, without opening the fold.
+    await expect(norwegian.locator('[data-law-link]')).toHaveAttribute('href', /^\/inventory\/instruments\/[0-9a-f-]{36}$/);
+    await toggle.click();
+    await expect(norwegian.locator('[data-see-all]')).toBeVisible();
+
+    // "See all" opens the law's own page.
+    await swedish.locator('[data-see-all]').click();
+    await expect(page.locator('[data-instrument="sfs-2007-528"] [data-header-pills]')).toBeVisible();
   });
 
   test("INV-S17: The inventory narrows to one country or several", async ({ page, apiGuard }) => {

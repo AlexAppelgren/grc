@@ -77,6 +77,7 @@ const research: ObligationDetail = {
   refLabel: 'Third-party payments',
   title: { text: 'Pay for third-party research only under the permitted models', language: 'en', isOriginal: true, isMachine: false },
   instrument: {
+    id: 'in-1',
     key: 'fffs-2017-2',
     shortName: 'FFFS 2017:2',
     officialRef: 'FFFS 2017:2',
@@ -108,7 +109,7 @@ const research: ObligationDetail = {
     {
       id: 'ob-2',
       title: { text: 'Disclose all costs and charges', language: 'en', isOriginal: true, isMachine: false },
-      instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' },
+      instrument: { id: 'in-1', key: 'fffs-2017-2', shortName: 'FFFS 2017:2' },
       relation: { key: 'related', kind: null, label: 'Related' },
       binding: true,
     },

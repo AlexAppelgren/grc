@@ -4,10 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
-import { ScopeControl } from '@/components/inventory/InventoryFilters';
-import { searchOf } from '@/components/inventory/InventoryScreen';
+import { ObligationsPanel } from '@/components/inventory/InstrumentObligations';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
-import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { languageChoices, originalLanguage, textIn } from '@/components/inventory/ObligationScreen';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
 import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
@@ -15,18 +13,19 @@ import { ReportProblemModal, type ReportContext } from '@/components/inventory/R
 import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Fold } from '@/components/ui/fold';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, NotFoundScreen, QueryState } from '@/components/ui/States';
+import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { lineageDirectionOf } from '@/features/library/api';
-import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
-import { DIRECTIVE_LEVEL, obligationsTitleOf, presentInstrument } from '@/features/library/instrument-presentation';
+import { useInstrument, useReportInstrumentProblem } from '@/features/library/hooks';
+import { presentInstrument } from '@/features/library/instrument-presentation';
 import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligation-presentation';
-import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef, ScopeFilter } from '@/features/library/types';
+import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef } from '@/features/library/types';
 import { inForceLabel, languageName } from '@/features/library/version-presentation';
-import { useRefreshProblemReports } from '@/features/library/problem-reports/hooks';
+import { useRecordProblemReports, useRefreshProblemReports } from '@/features/library/problem-reports/hooks';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';
@@ -37,11 +36,15 @@ import { problemStatus } from '@/shared/utils/problem';
 // FP-03). It reads and never writes the library: the one thing a reader can
 // send from here is a problem report, which stays inside their own bank,
 // and the close of one in its Reported problems section (AUD-03). The
-// provision tree is its own panel (chunk3-rest-T18); the identity panel and
-// lineage land here.
+// obligations come first (InstrumentObligations.tsx) and the provision tree
+// under them (chunk3-rest-T18); what it is, the identity panel with its
+// reported problems, and lineage sit beside them.
 
 /** Reporting a problem with a library record is everyone's, but it is still a permission. */
 const REPORT_PERMISSION = 'problems.report';
+
+/** Where Back and Not found lead: the Inventory's Regulations tab. */
+const REGULATIONS_HREF = '/inventory?tab=instruments';
 
 /** One heading of the lineage panel: every link of one relation type in one direction. */
 interface LineageGroupOf {
@@ -78,7 +81,9 @@ function LineageGroup({ group }: { group: LineageGroupOf }) {
       <ul className="m-0 grid list-none gap-1.5 p-0 text-meta">
         {group.links.map((link) => (
           <li key={`${group.id}:${link.instrument.key}`} data-lineage-instrument={link.instrument.key}>
-            <span className="font-medium">{link.instrument.shortName}</span>
+            <Link href={`/inventory/instruments/${link.instrument.id}`} prefetch={false} className="font-medium underline">
+              {link.instrument.shortName}
+            </Link>
             {link.note === '' ? null : <Meta className="mt-0.5">{link.note}</Meta>}
           </li>
         ))}
@@ -167,45 +172,6 @@ function SummaryPanel({ instrument, selected, onChoose }: { instrument: Instrume
   );
 }
 
-/**
- * What applies, said before any list (INV-09): how many duties the library holds and
- * how many fall in the reader's scope; for a directive, that its duties come from each
- * country's implementing law, with those laws; and new duties still waiting for review.
- */
-function WhatApplies({ instrument }: { instrument: InstrumentDetail }) {
-  const t = useT();
-  const counts = instrument.obligationCounts;
-  const directive = instrument.level.key === DIRECTIVE_LEVEL && counts.inLibrary === 0;
-  return (
-    <div className="mb-3 grid gap-2 text-body" data-what-applies="">
-      {directive ? (
-        <>
-          <p>{t('inventory.instrument.applies.directive')}</p>
-          {instrument.implementedBy.length === 0 ? (
-            <p className="text-meta text-muted">{t('inventory.instrument.applies.noNationalLaw')}</p>
-          ) : (
-            <div data-implemented-by="">
-              <h3 className="mb-1.5 font-semibold">{t('inventory.instrument.applies.implementedByTitle')}</h3>
-              <InstrumentLinks links={instrument.implementedBy} />
-            </div>
-          )}
-        </>
-      ) : counts.inLibrary === 0 ? (
-        counts.waitingForReview === 0 ? (
-          <p className="text-meta text-muted">{t('inventory.instrument.applies.none')}</p>
-        ) : null
-      ) : (
-        <p data-applies-counts="">{t('inventory.instrument.applies.counts', { inLibrary: counts.inLibrary, inScope: counts.inScope })}</p>
-      )}
-      {counts.waitingForReview === 0 ? null : (
-        <p className="text-meta text-muted" data-applies-waiting="">
-          {t('inventory.instrument.applies.waiting', { count: counts.waitingForReview })}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /** The Identity panel: official reference, ELI or "Not available", level, binding, jurisdiction, authority, in force, last verified. */
 function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; actions?: React.ReactNode }) {
   const t = useT();
@@ -237,54 +203,19 @@ function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; 
 }
 
 /**
- * The obligations from this instrument under the reader's scope filter
- * (FP-03, FP-04), exactly as the inventory filtered by this instrument lists
- * them: the total says how many there are beyond the first page, and the link
- * opens that same list in the inventory.
+ * The bank's reports on this regulation, folded under Identity with their count, and left out
+ * while there is none: the section is read with the same permission as filing one, which the
+ * caller checks, and shares its read with the section inside.
  */
-function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
+function ReportedProblems({ instrumentId }: { instrumentId: string }) {
   const t = useT();
-  const [scope, setScope] = useState<ScopeFilter>('in');
-  const obligations = useObligations(scope === 'in' ? { instrument: instrument.stableKey } : { instrument: instrument.stableKey, footprint: scope });
-  const items = obligations.data?.items ?? [];
-  const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', scope })}`;
-  if (instrument.obligationCounts.inLibrary === 0) {
-    return (
-      <Panel title={obligationsTitleOf(instrument.level.key, t)} data-obligations-panel="">
-        <WhatApplies instrument={instrument} />
-      </Panel>
-    );
-  }
+  const reports = useRecordProblemReports('instrument', instrumentId, true);
+  const total = reports.data?.total ?? 0;
+  if (total === 0 && !reports.isError) return null;
   return (
-    <Panel title={obligationsTitleOf(instrument.level.key, t)} data-obligations-panel="">
-      <WhatApplies instrument={instrument} />
-      <div className="mb-3">
-        <ScopeControl value={scope} onChange={setScope} />
-      </div>
-      <QueryState query={obligations} rows={2} errorTitle={t('inventory.instrument.obligationsErrorTitle')}>
-        {(data) =>
-          items.length === 0 ? (
-            <p className="text-meta text-muted">
-              {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
-            </p>
-          ) : (
-            <>
-              <div className="grid gap-2">
-                {items.map((obligation) => (
-                  <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
-                ))}
-              </div>
-              <Meta className="mt-3">
-                <span data-obligations-total="">{t('inventory.count', { count: data?.total ?? items.length })}</span>
-                <Link href={inventory} prefetch={false} className="underline">
-                  {t('inventory.instrument.obligationsInInventory')}
-                </Link>
-              </Meta>
-            </>
-          )
-        }
-      </QueryState>
-    </Panel>
+    <Fold title={t('inventory.reports.title')} count={reports.data?.total} as="h3" className="mt-4" data-reported-problems="">
+      <RecordProblemReports subjectType="instrument" subjectId={instrumentId} bare />
+    </Fold>
   );
 }
 
@@ -307,7 +238,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   };
 
   if (instrument.isError) {
-    if (problemStatus(instrument.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.instrument.back')} />;
+    if (problemStatus(instrument.error) === 404) return <NotFoundScreen backHref={REGULATIONS_HREF} backLabel={t('inventory.instrument.back')} />;
     return <ErrorState title={t('inventory.instrument.errorTitle')} onRetry={() => void instrument.refetch()} />;
   }
   if (record === undefined) return <LoadingState rows={3} />;
@@ -337,7 +268,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
 
   return (
     <div data-instrument={record.stableKey}>
-      <BackLink href="/inventory" label={t('inventory.instrument.back')} />
+      <BackLink href={REGULATIONS_HREF} label={t('inventory.instrument.back')} />
       <div className="mb-1.5" data-header-pills="">
         <PillRow pills={header} />
       </div>
@@ -358,22 +289,26 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <SummaryPanel instrument={record} selected={selected} onChoose={setChosen} />
           <ObligationsPanel instrument={record} />
           <ProvisionTree instrumentId={instrumentId} levelKind={record.level.kind} sourceUrl={record.sourceUrl} />
         </div>
         <div>
+          <SummaryPanel instrument={record} selected={selected} onChoose={setChosen} />
           <IdentityPanel
             instrument={record}
             actions={
               permissions.includes(REPORT_PERMISSION) ? (
-                <Button variant="outline" size="small" className="mt-4" onClick={() => setReporting(true)}>
-                  {t('inventory.instrument.reportProblem')}
-                </Button>
+                <>
+                  <div className="mt-4 flex justify-end">
+                    <Button variant="outline" size="small" onClick={() => setReporting(true)}>
+                      {t('inventory.instrument.reportProblem')}
+                    </Button>
+                  </div>
+                  <ReportedProblems instrumentId={record.id} />
+                </>
               ) : undefined
             }
           />
-          <RecordProblemReports subjectType="instrument" subjectId={record.id} />
           <LineagePanel instrument={record} />
         </div>
       </div>

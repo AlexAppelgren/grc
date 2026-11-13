@@ -220,6 +220,19 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 .box h2{margin-bottom:12px}
 .toast{display:inline-block;background:#0a0b0b;color:#fff;padding:12px 18px;border-radius:999px;font-size:.92rem;border:1px solid rgba(255,255,255,.2)}
 .note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+[data-variant][hidden]{display:none}
+.lede{color:var(--muted);margin:0 0 6px}
+.muted{color:var(--muted)}
+.co{color:var(--text);font-weight:600}
+.findrow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:flex-end;margin:12px 0}
+.fold{border-top:1px solid var(--line);padding:4px 0}
+.fold>summary{cursor:pointer;font-weight:500;padding:8px 0}
+.fold .counts{display:block;color:var(--muted);font-weight:400;font-size:.86rem}
+.rollup{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:center;font-size:.86rem;margin-bottom:8px}
+.rollup span{display:inline-flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--text)}
+.dot.positive{background:var(--green)}.dot.warning{background:var(--amber)}.dot.negative{background:var(--red)}
+.oneline{display:flex;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;align-items:baseline;font-size:.9rem;padding:4px 0}
 .tabbar{display:none}
 @media (max-width:820px){
   .app{grid-template-columns:1fr}.side{display:none}
@@ -258,11 +271,46 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
   </aside>
   <main id="main" tabindex="-1">
     <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced bläck"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
-<button class="back">← Inventory</button>
-    <div class="meta" style="margin-bottom:6px"><span class="pill brand">FFFS 2017:2</span><span class="pill">FI regulation</span><span class="pill">Binding</span><span class="pill brand">Sweden</span><span class="pill">Securities</span></div>
-    <h1 style="margin-bottom:6px">FFFS 2017:2 om värdepappersrörelse</h1>
-    <p class="meta" style="margin-bottom:16px"><span>Finansinspektionen</span><span>In force 3 Jan 2018</span><span>Amended 15 Sep 2026, in force 1 Oct 2026</span><span>Source: <a href="#" rel="noopener">fi.se</a></span></p>
+    <div class="filters" role="group" aria-label="Which regulation to show" style="border-bottom:1px dashed var(--line-strong);padding-bottom:12px;margin-bottom:20px">
+      <span class="meta">Show the page for</span>
+      <button class="chip" type="button" aria-pressed="true" data-show="regulation">A regulation</button>
+      <button class="chip" type="button" aria-pressed="false" data-show="directive">A directive</button>
+    </div>
+
+    <!-- Variant 1: a regulation that carries its own obligations -->
+    <div data-variant="regulation">
+    <button class="back">← Regulations</button>
+    <div class="meta" style="margin-bottom:6px"><span class="pill">FI regulation</span><span class="pill">Binding</span><span class="pill brand">Sweden</span><span class="pill">Securities</span></div>
+    <h1 style="margin-bottom:6px">FFFS 2017:2</h1>
+    <p class="lede" lang="sv">FFFS 2017:2 om värdepappersrörelse</p>
+    <p class="meta" style="margin-bottom:20px"><span>In force from 3 Jan 2018</span><a href="#" rel="noopener">Source</a></p>
     <div class="grid g2"><div class="grid" style="align-content:start">
+      <div class="panel"><h2>Obligations from these rules</h2>
+        <p>4 obligations in the library. 4 fall in your scope.</p>
+        <div class="facets" role="group" aria-label="Filter by answer" style="margin-bottom:10px">
+          <button class="chip" type="button" aria-pressed="true">All 4</button>
+          <button class="chip" type="button" aria-pressed="false">To decide 1</button>
+          <button class="chip" type="button" aria-pressed="false">Applies 3</button>
+          <button class="chip" type="button" aria-pressed="false">Does not apply 0</button>
+        </div>
+        <div class="rollup"><span class="muted">Where it applies</span><span><i class="dot positive" aria-hidden="true"></i>2 Compliant</span><span><i class="dot warning" aria-hidden="true"></i>1 Partly compliant</span></div>
+        <details class="fold"><summary>By company</summary>
+          <div class="oneline"><span><span class="co">Example Bank AB</span> <span class="muted">3 apply · 0 do not · 1 to decide</span></span><a href="#">Decide 1</a></div>
+          <div class="oneline"><span><span class="co">Example Fonder AB</span> <span class="muted">0 apply · 0 do not · 2 to decide</span></span><a href="#">Decide 2</a></div>
+        </details>
+        <div class="findrow">
+          <div class="field" style="flex:1 1 150px;margin-bottom:0"><label for="regulation-find">Find an obligation</label><input id="regulation-find" type="search"></div>
+          <div class="facets" role="group" aria-label="Scope"><button class="chip" type="button" aria-pressed="true">My scope</button><button class="chip" type="button" aria-pressed="false">Markets we watch</button><button class="chip" type="button" aria-pressed="false">Show all items</button></div>
+        </div>
+        <div class="rows">
+          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill notice">1 open change</span><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">9 kap. 6 §</span><span>Advice, Portfolio management</span></div></a>
+          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div><h3>Disclose all costs and charges before and after the service</h3><div class="meta"><span class="mono">9 kap. 10 §</span><span>All services</span></div></a>
+          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span></div><h3>Define a target market and distribution strategy for each product</h3><div class="meta"><span class="mono">10 kap.</span><span>All services</span></div></a>
+          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div><h3>Keep clients' instruments and funds separate and reconciled</h3><div class="meta"><span class="mono">11 kap.</span><span>Custody</span></div></a>
+        </div>
+        <div class="oneline" style="margin-top:12px"><span class="inline"><span class="muted">1–4 of 4</span><button class="btn ghost small" type="button" disabled>Previous</button><button class="btn ghost small" type="button" disabled>Next</button></span><span class="muted">Per page <select><option>20</option><option>50</option><option>100</option><option>All</option></select></span></div>
+        <p class="meta" style="justify-content:flex-end;margin-top:10px"><span>4 obligations</span><a href="#">Open in the inventory</a></p>
+      </div>
       <div class="panel"><h2>Provisions</h2>
         <ul class="tree">
           <li><details open><summary><span class="ref">9 kap.</span>Skydd för investerare</summary>
@@ -278,19 +326,70 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
           <li><details><summary><span class="ref">10 kap.</span>Produktstyrning</summary></details></li>
           <li><details><summary><span class="ref">11 kap.</span>Kundmedel och finansiella instrument</summary></details></li>
         </ul></div>
-      <div class="panel"><h2>Obligations from this instrument</h2>
-        <div class="rows">
-          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill notice">1 open change</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">9 kap. 6 §</span><span>Advice, Portfolio management</span></div></a>
-          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span></div><h3>Disclose all costs and charges before and after the service</h3><div class="meta"><span class="mono">9 kap. 10 §</span><span>All services</span></div></a>
-          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span></div><h3>Define a target market and distribution strategy for each product</h3><div class="meta"><span class="mono">10 kap.</span><span>All services</span></div></a>
-          <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span></div><h3>Keep clients' instruments and funds separate and reconciled</h3><div class="meta"><span class="mono">11 kap.</span><span>Custody</span></div></a>
-        </div></div>
     </div><div class="grid" style="align-content:start">
-      <div class="panel"><h2>Identity</h2><dl class="kv"><dt>Official reference</dt><dd class="mono">FFFS 2017:2</dd><dt>ELI</dt><dd>Not available for FFFS</dd><dt>Level</dt><dd>FI regulation</dd><dt>Binding force</dt><dd>Binding</dd><dt>Jurisdiction</dt><dd>Sweden</dd><dt>Authority</dt><dd>Finansinspektionen</dd><dt>Adopted</dt><dd>21 Nov 2017</dd><dt>In force</dt><dd>3 Jan 2018</dd><dt>Last verified</dt><dd>30 Jun 2026</dd></dl><div class="bar"><button class="btn ghost small">This looks wrong</button></div></div>
-      <div class="panel"><h2>Lineage</h2><h3 style="margin:0 0 6px">Implements</h3><p><a href="#">Delegated directive (EU) 2017/593</a><br><span class="meta">EU directive, binding</span></p><p><a href="#">Directive 2014/65/EU (MiFID II)</a><br><span class="meta">EU directive, binding</span></p><h3 style="margin:10px 0 6px">Elaborated by</h3><p><a href="#">ESMA guidelines on appropriateness and execution-only</a><br><span class="meta">EU guidance, level 3</span></p><h3 style="margin:10px 0 6px">Amended by</h3><p>FFFS 2026:11, in force 1 Oct 2026</p></div>
+      <div class="panel"><h2>What it is</h2>
+        <div class="facets" role="group" aria-label="Language" style="margin-bottom:12px"><button class="chip" type="button" aria-pressed="true">English</button><button class="chip" type="button" aria-pressed="false">Swedish, original</button></div>
+        <p style="margin:0">Sets the detailed conduct and organisation rules for firms that run a securities business in Sweden: how clients are classified and informed, how advice is tested for suitability, how costs are recorded and how client assets are kept apart.</p>
+      </div>
+      <div class="panel"><h2>Identity</h2><dl class="kv"><dt>Official reference</dt><dd class="mono">FFFS 2017:2</dd><dt>ELI</dt><dd>Not available</dd><dt>Level</dt><dd>FI regulation</dd><dt>Binding force</dt><dd>Binding</dd><dt>Jurisdiction</dt><dd>Sweden</dd><dt>Authority</dt><dd>Finansinspektionen</dd><dt>In force</dt><dd>In force from 3 Jan 2018</dd><dt>Last verified</dt><dd>30 Jun 2026</dd></dl>
+        <div class="bar"><button class="btn ghost small">This looks wrong</button></div>
+        <details class="fold"><summary>Reported problems <span class="muted">(1)</span></summary>
+          <p class="meta" style="display:block">The reports you filed on this record, newest first.</p>
+          <div class="row"><div class="meta"><span class="pill warning">Open</span></div><p style="margin:6px 0 0">The in-force date does not match the source.</p><p class="meta">Reported by Sara Lindqvist, 21 Sep 2026 09:00</p></div>
+        </details>
+      </div>
+      <div class="panel"><h2>Lineage</h2><h3 style="margin:0 0 6px">Implements</h3><p><a href="#">MiFID II delegated directive</a> <span class="meta" style="display:inline">European Union</span></p><h3 style="margin:10px 0 6px">Amends this regulation</h3><p style="margin:0"><a href="#">FFFS 2026:11</a><br><span class="meta">Amends FFFS 2017:2, in force 1 October 2026.</span></p></div>
     </div></div>
+    </div>
+
+    <!-- Variant 2: a directive, whose obligations sit in each country's implementing law -->
+    <div data-variant="directive" hidden>
+    <button class="back">← Regulations</button>
+    <div class="meta" style="margin-bottom:6px"><span class="pill">EU directive</span><span class="pill">Binding</span><span class="pill brand">European Union</span><span class="pill">Securities</span></div>
+    <h1 style="margin-bottom:6px">MiFID II</h1>
+    <p class="lede">Directive 2014/65/EU on markets in financial instruments</p>
+    <p class="meta" style="margin-bottom:20px"><span>In force from 2 Jul 2014</span><a href="#" rel="noopener">Source</a></p>
+    <div class="grid g2"><div class="grid" style="align-content:start">
+      <div class="panel"><h2>Obligations from this directive</h2>
+        <p>A directive binds the member states, not your bank directly. A bank's obligations come from each country's law that implements it.</p>
+        <p>4 obligations in 2 national laws the library holds. 3 fall in your scope.</p>
+        <h3 style="margin:10px 0 0"><a href="#">LVM</a></h3>
+        <details class="fold" open><summary><small class="counts">Sweden · 3 obligations · 3 in your scope</small></summary>
+          <div class="rows">
+            <a class="row" href="#"><div class="meta"><span class="pill brand">LVM</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div><h3>Run the business with sound governance and internal control</h3><div class="meta"><span class="mono">8 kap. 4 §</span><span>All services</span></div></a>
+            <a class="row" href="#"><div class="meta"><span class="pill brand">LVM</span><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div><h3>Identify and manage conflicts of interest</h3><div class="meta"><span class="mono">8 kap. 21 §</span><span>All services</span></div></a>
+            <a class="row" href="#"><div class="meta"><span class="pill brand">LVM</span></div><h3>Give the retail client a suitability statement before an advised trade</h3><div class="meta"><span class="mono">9 kap.</span><span>Advice</span></div></a>
+          </div>
+          <p class="meta" style="justify-content:flex-end;margin-top:10px"><a href="#">See all 3 in your scope</a></p>
+        </details>
+        <h3 style="margin:10px 0 0"><a href="#">Verdipapirhandelloven</a></h3>
+        <details class="fold"><summary><small class="counts">Norway · 1 obligation · 0 in your scope</small></summary>
+          <p class="meta" style="display:block">No obligation from this regulation is in our scope.</p>
+          <p class="meta" style="justify-content:flex-end"><a href="#">Open this law</a></p>
+        </details>
+      </div>
+    </div><div class="grid" style="align-content:start">
+      <div class="panel"><h2>What it is</h2>
+        <div class="facets" role="group" aria-label="Language" style="margin-bottom:12px"><button class="chip" type="button" aria-pressed="true">English, original</button><button class="chip" type="button" aria-pressed="false">Swedish</button></div>
+        <p style="margin:0">Sets the common EU rules for firms that provide investment services and for the venues where financial instruments trade: authorisation, how a firm is organised, how clients are protected and how markets stay transparent.</p>
+      </div>
+      <div class="panel"><h2>Identity</h2><dl class="kv"><dt>Official reference</dt><dd class="mono">Directive 2014/65/EU</dd><dt>ELI</dt><dd>http://data.europa.eu/eli/dir/2014/65/oj</dd><dt>Level</dt><dd>EU directive</dd><dt>Binding force</dt><dd>Binding</dd><dt>Jurisdiction</dt><dd>European Union</dd><dt>Authority</dt><dd>European Parliament and Council</dd><dt>In force</dt><dd>In force from 2 Jul 2014</dd><dt>Last verified</dt><dd>14 Sep 2026</dd></dl>
+        <div class="bar"><button class="btn ghost small">This looks wrong</button></div>
+      </div>
+      <div class="panel"><h2>Lineage</h2><h3 style="margin:0 0 6px">Elaborates this regulation</h3><p style="margin:0"><a href="#">ESMA guidelines</a><br><span class="meta">Elaborates MiFID II Article 25(3) and (4)</span></p></div>
+    </div></div>
+    </div>
 
     <div class="states">
+    <h2 class="k">The roll-up: a reader without register read, a bank of one company, nothing matches the answer</h2>
+    <p class="meta" style="display:block">Without register read: no answer filter, no "Where it applies", no "By company" and no error; the counts sentence, the search, the scope and the list stay.</p>
+    <p class="meta" style="display:block">A bank of one company: the answer filter and "Where it applies" without the "By company" fold.</p>
+    <p class="meta" style="display:block">No obligation matches. Clear the search or choose All.</p>
+
+    <h2 class="k">A directive whose national laws the library does not hold yet</h2>
+    <p>A directive binds the member states, not your bank directly. A bank's obligations come from each country's law that implements it.</p>
+    <p class="meta" style="display:block">The library holds no national law that implements it yet.</p>
+
     <h2 class="k">Instrument with a partial in-force date, and one with no provisions yet</h2>
     <p class="meta" style="display:block"><span class="pill brand">Retail Investment Strategy</span> Publication pending · Application 2028, exact date unknown</p>
     <div class="empty"><h2>No provisions yet</h2><p>The provision tree appears here once the library holds it.</p><a href="#">See the obligations</a></div>
@@ -306,10 +405,23 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 
     <h2 class="k">Loading, error, not found</h2>
     <div class="rows" aria-busy="true"><div class="skeleton" style="height:48px"></div><div class="skeleton" style="height:180px"></div></div>
-    <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this instrument</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
-    <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Inventory</a></div>
+    <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this regulation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+    <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Regulations</a></div>
     </div>
-    <p class="note">Instrument card. The short name is brand (scope from the library), level and binding force are information from their kinds, the jurisdiction is a brand facet, the regime information. The provision tree is a disclosure list with the verbatim text of the selected version, its in-force range and any transitional note; a provision lists the obligations that cite it. A standard (its level's kind is <code>standard</code>) reads "Standard" as information in the binding slot, never "Guidance, comply or explain", and its Provisions panel says the text is licensed and links the publisher's catalogue (the instrument's source) instead of a tree. Lineage shows what the instrument implements, what elaborates it and what amends it. Every role reads; a member reports. Legal dates render with their precision.</p>
+    <p class="note">The regulation's page puts its obligations first, then its provisions; what it is, its identity and its lineage sit beside them (under them on a phone). The counts sentence comes first. For a reader holding register read, the answer filter rolls up how the bank answered the obligations in scope, each chip filtering the list below through the inventory's own applicability filter and keeping the scope; "Where it applies" counts the compliance statuses with a dot in each status kind's tone; "By company" (two companies or more) gives each company's answers and a link to decide what is left. The list pages 20 at a time with the inventory's pager. A directive holds no obligations of its own: it opens each national law the library holds in place, laws with obligations in scope first and open, an open law reading its first page and linking to all of them on its own page; the page says "the library holds" and never claims the list is complete. Lineage names every related regulation as a link. Reported problems fold under Identity with their count and are left out when there are none. Back leads to the Inventory's Regulations tab.</p>
+    <script>
+    (function(){
+      var chips=[].slice.call(document.querySelectorAll('[data-show]'));
+      var variants=[].slice.call(document.querySelectorAll('[data-variant]'));
+      chips.forEach(function(chip){
+        chip.addEventListener('click',function(){
+          var key=chip.getAttribute('data-show');
+          chips.forEach(function(c){c.setAttribute('aria-pressed',String(c===chip));});
+          variants.forEach(function(v){v.hidden=v.getAttribute('data-variant')!==key;});
+        });
+      });
+    })();
+    </script>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

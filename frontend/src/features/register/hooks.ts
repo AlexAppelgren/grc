@@ -65,6 +65,7 @@ export const registerKeys = {
   statement: (obligationId: string, entity: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'statement', entity, page] as const,
   gapList: (filters: RegisterGapQuery, page: RegisterPageQuery) => ['register', 'gaps', filters, page] as const,
   items: (q: string) => ['register', 'items', q] as const,
+  instrument: (instrumentId: string) => ['register', 'instrument', instrumentId] as const,
 };
 
 const spanKey = (obligationId: string) => ['register-span', obligationId] as const;
@@ -236,3 +237,10 @@ export function useSpannedEntities(obligationId: string): UseQueryResult<Registe
   return useQuery({ queryKey: spanKey(obligationId), queryFn: () => register.listSpannedEntities(obligationId) });
 }
 
+/**
+ * A regulation's roll-up for its own page. It sits under the register's keys, so an answer or a
+ * status written anywhere re-reads it; `enabled` holds it back from someone without `register.read`.
+ */
+export function useInstrumentApplicability(instrumentId: string, enabled: boolean): UseQueryResult<register.RegisterInstrumentApplicability> {
+  return useQuery({ queryKey: registerKeys.instrument(instrumentId), queryFn: () => register.getInstrumentApplicability(instrumentId), enabled });
+}
