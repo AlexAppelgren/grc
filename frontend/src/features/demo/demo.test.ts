@@ -105,6 +105,20 @@ describe('the demo replay', () => {
     expect((await api.get('/api/v1/changes?limit=20&offset=0&tab=closed&q=')).data).toEqual({ items: [{ id: ID }] });
   });
 
+  it("borrows a filter's answer only from a recording about the same regulation, company or record", async () => {
+    const api = client(
+      recordings([
+        { key: `GET /api/v1/applicability/rows?instrument=celex-1&orgUnitId=${ID}&state=to_decide`, status: 200, contentType: 'application/json', body: { items: ['one'] } },
+        { key: `GET /api/v1/applicability/rows?instrument=celex-2&orgUnitId=${ID}&state=to_decide`, status: 200, contentType: 'application/json', body: { items: ['two'] } },
+      ]),
+    );
+    expect((await api.get(`/api/v1/applicability/rows?instrument=celex-2&orgUnitId=${ID}&state=decided`)).data).toEqual({ items: ['two'] });
+    for (const other of [`instrument=celex-3&orgUnitId=${ID}`, `instrument=celex-1&orgUnitId=${OTHER_ID}`]) {
+      const refused = await api.get(`/api/v1/applicability/rows?${other}&state=decided`).catch((error: AxiosError) => error);
+      expect((refused as AxiosError).response?.data).toMatchObject({ code: DEMO_NOT_RECORDED_CODE });
+    }
+  });
+
   it('never answers a later page or a search with the first page of the list', async () => {
     const api = client(recorded);
     for (const asked of ['offset=20', 'tab=new&limit=20&offset=40', 'q=capital', 'query=capital', 'search=capital&offset=0']) {
