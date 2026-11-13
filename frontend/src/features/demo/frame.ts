@@ -5,8 +5,6 @@
 // is not enough on its own: the parent must be this very origin, so no other
 // site can put the app into demo mode by naming a window.
 
-import { useSyncExternalStore } from 'react';
-
 export const DEMO_FRAME_NAME = 'bleqq-demo';
 
 interface FrameWindow {
@@ -29,12 +27,4 @@ export function isDemoFrameWindow(win: FrameWindow): boolean {
 
 export function isDemoFrame(): boolean {
   return typeof window !== 'undefined' && isDemoFrameWindow(window);
-}
-
-// A frame's name stays the same for as long as the app runs in it.
-const unchanging = () => () => undefined;
-
-/** Demo mode for a component: off while the server renders and the browser hydrates, so the two agree. */
-export function useDemoFrame(): boolean {
-  return useSyncExternalStore(unchanging, isDemoFrame, () => false);
 }

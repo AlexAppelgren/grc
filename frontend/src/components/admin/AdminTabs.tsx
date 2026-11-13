@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useDemoFrame } from '@/features/demo/frame';
+import { useDemoFrame } from '@/features/demo/use-demo-frame';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { adminGroups, currentAdminPage } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';

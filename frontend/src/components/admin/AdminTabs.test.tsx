@@ -8,7 +8,7 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 
 const nav = vi.hoisted(() => ({ pathname: '/admin/members', replace: vi.fn() }));
 const framed = vi.hoisted(() => ({ value: false }));
-vi.mock('@/features/demo/frame', async (importOriginal) => ({ ...(await importOriginal<object>()), useDemoFrame: () => framed.value }));
+vi.mock('@/features/demo/use-demo-frame', async (importOriginal) => ({ ...(await importOriginal<object>()), useDemoFrame: () => framed.value }));
 vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
   useRouter: () => ({ replace: nav.replace, push: vi.fn() }),

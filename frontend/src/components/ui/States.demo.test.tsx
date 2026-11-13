@@ -6,7 +6,7 @@ import { ErrorState, NotFoundScreen, QueryState } from './States';
 
 // Inside the public page's demo, a read with no recording reads the demo's line
 // wherever a screen would have said "not found" or "check your connection".
-vi.mock('@/features/demo/frame', async (importOriginal) => ({ ...(await importOriginal<object>()), useDemoFrame: () => true }));
+vi.mock('@/features/demo/use-demo-frame', async (importOriginal) => ({ ...(await importOriginal<object>()), useDemoFrame: () => true }));
 
 const DEMO_LINE = 'The demo has no sample data for this page.';
 

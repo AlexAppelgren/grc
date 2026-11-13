@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/Button';
-import { useDemoFrame } from '@/features/demo/frame';
+import { useDemoFrame } from '@/features/demo/use-demo-frame';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
 import { humaniseKey } from '@/shared/utils/format';

@@ -3,7 +3,8 @@ import axios, { type AxiosError } from 'axios';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { installDemoClock } from './clock';
-import { DEMO_FRAME_NAME, isDemoFrame, isDemoFrameWindow, useDemoFrame } from './frame';
+import { DEMO_FRAME_NAME, isDemoFrame, isDemoFrameWindow } from './frame';
+import { useDemoFrame } from './use-demo-frame';
 import committed from './recordings.json';
 import { type DemoRecordings, patternOf, requestKey, shapeDifference, shapeOf, staleness } from './recordings';
 import { createReplayAdapter, DEMO_ACCESS_TOKEN, DEMO_NOT_RECORDED_CODE, DEMO_READ_ONLY_CODE } from './replay';
