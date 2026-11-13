@@ -1,0 +1,139 @@
+{
+  "tranche": "se-fffs",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-se-fffs-2004-4-adviser-competence",
+      "title": "Correct obl-se-fffs-2004-4-adviser-competence: cite the scope section with its exclusions",
+      "source": "https://www.fi.se/contentassets/3f0fdf1cfd954076934ab383c48873d5/fs0404k.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2004:4, 1 kap. 2 §, Finansinspektionen's consolidated version, last updated 2018-10-01, latest amending regulation listed FFFS 2018:11. Källa: Finansinspektionen",
+      "why": "The exclusion of advice given by fund management companies, securities institutions, foreign investment firms and AIF managers is in 1 kap. 2 §, which the citation left out; it now cites it. The exclusion covers fund management companies and management companies under the Swedish UCITS Act as well.",
+      "payload": {
+        "summaries": {
+          "en": "A firm under Finansinspektionen's supervision giving financial advice to consumers under the Financial Advice Act must make sure its advisers know the relevant rules, adviser duties and ethics, and savings in financial instruments and insurance, have passed a suitable knowledge test (independently approved if set in-house), have practical experience and keep their knowledge current. Advice given by fund management companies and management companies under the UCITS Act, by securities institutions and foreign investment firms under the Securities Market Act, and by AIF managers is outside these rules."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 kap. 2 § och 2 kap. 1–7 §§",
+        "provisions": [
+          "fffs-2004-4/001-002",
+          "fffs-2004-4/002-001",
+          "fffs-2004-4/002-002",
+          "fffs-2004-4/002-003",
+          "fffs-2004-4/002-004",
+          "fffs-2004-4/002-005",
+          "fffs-2004-4/002-006",
+          "fffs-2004-4/002-007"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-fffs-2011-1-deferral",
+      "title": "Correct obl-se-fffs-2011-1-deferral: cite the size exemption and state its tests",
+      "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2011:1, 1 kap. 2 a §, Finansinspektionen's consolidated version, last updated 2021-12-21, latest amending regulation listed FFFS 2021:17. Källa: Finansinspektionen",
+      "why": "The exemption for smaller firms is in 1 kap. 2 a §, which the citation left out: 4 kap. 6 and 7 §§ do not apply to a firm that is not a large institution under the Capital Requirements Regulation and whose assets have averaged at most EUR 5 billion over the four preceding financial years. The citation now includes it and the summary states both tests.",
+      "payload": {
+        "summaries": {
+          "en": "For material risk takers, at least 40 percent of variable pay must be deferred for at least four years and at least 50 percent paid in shares or equivalent instruments with a retention period, unless the employee's variable pay is at most EUR 50,000 and one third of total pay. The deferral and instrument rules do not apply to a firm that is not a large institution under the Capital Requirements Regulation and whose assets have averaged at most EUR 5 billion, individually, over the four preceding financial years."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 kap. 2 a § och 4 kap. 6–8 §§",
+        "provisions": [
+          "fffs-2011-1/001-002a",
+          "fffs-2011-1/004-006",
+          "fffs-2011-1/004-006a",
+          "fffs-2011-1/004-007",
+          "fffs-2011-1/004-007a",
+          "fffs-2011-1/004-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-fffs-2013-9-significant-events",
+      "title": "Correct obl-se-fffs-2013-9-significant-events: cite the DORA carve-out in 1 kap. 1 §",
+      "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fs20139k2628.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2013:9, 1 kap. 1 §, Finansinspektionen's consolidated version, last updated 2026-09-30, latest amending regulation listed FFFS 2026:26. Källa: Finansinspektionen",
+      "why": "The rule that Chapter 10 does not apply to major ICT-related incidents under Article 19 of DORA is in 1 kap. 1 § second paragraph, which the citation left out; it now cites it.",
+      "payload": {
+        "summaries": {
+          "en": "The fund company must immediately report in writing to Finansinspektionen events that may threaten its stability or the protection of client assets, stop it meeting its obligations, cause significant financial harm to many clients or serious reputational damage. The board adopts rules for handling such events, and suspected crimes are reported to the police or a prosecutor. Major ICT incidents under DORA are reported under DORA instead."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 kap. 1 § och 10 kap. 1–5 §§",
+        "provisions": [
+          "fffs-2013-9/001-001",
+          "fffs-2013-9/010-001",
+          "fffs-2013-9/010-002",
+          "fffs-2013-9/010-003",
+          "fffs-2013-9/010-004",
+          "fffs-2013-9/010-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-fffs-2014-1-outsourcing",
+      "title": "Correct obl-se-fffs-2014-1-outsourcing: cite the DORA carve-out in 1 kap. 1 a §",
+      "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf#page=2",
+      "sourceLabel": "Finansinspektionen, FFFS 2014:1, 1 kap. 1 a §, Finansinspektionen's consolidated version, last updated 2025-03-24, latest amending regulation listed FFFS 2024:28. Källa: Finansinspektionen",
+      "why": "The rule that Chapter 10 does not apply to outsourcing agreements covered by Chapter V of DORA is in 1 kap. 1 a § third paragraph, which the citation left out; it now cites it, and the summary uses its words (outsourcing agreements, not ICT arrangements in general).",
+      "payload": {
+        "summaries": {
+          "en": "The institution must have internal rules for outsourcing and, for work of material importance, keep competent staff to control it, make sure the provider follows the applicable rules, and use a written agreement covering performance, notification duties, access for the institution, its auditors and Finansinspektionen, confidentiality and continuity. Outsourcing agreements covered by Chapter V of DORA are outside these rules."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 kap. 1 a § och 10 kap. 2 a–6 §§",
+        "provisions": [
+          "fffs-2014-1/001-001a",
+          "fffs-2014-1/010-002a",
+          "fffs-2014-1/010-003",
+          "fffs-2014-1/010-004",
+          "fffs-2014-1/010-005",
+          "fffs-2014-1/010-006"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-fffs-2014-4-appetite-limits",
+      "title": "Correct obl-se-fffs-2014-4-appetite-limits: cite the DORA carve-out in 1 kap. 2 §",
+      "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2014:4, 1 kap. 2 §, Finansinspektionen's consolidated version, last updated 2025-06-19, latest amending regulation listed FFFS 2025:11. Källa: Finansinspektionen",
+      "why": "The rule that the regulation does not apply to the management of ICT risks under DORA is in 1 kap. 2 § third paragraph, which the citation left out; it now cites it.",
+      "payload": {
+        "summaries": {
+          "en": "The firm must set and document an appetite and measurable limits for operational risk, based on its products, services, functions, processes and systems. The board decides and regularly reviews the appetite, the CEO the limits, and board-approved internal rules set out the main risks and how they are identified, measured and managed. ICT risks under DORA are outside these rules."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 kap. 2 § och 2 kap. 1–2 §§",
+        "provisions": [
+          "fffs-2014-4/001-002",
+          "fffs-2014-4/002-001",
+          "fffs-2014-4/002-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-fffs-2018-16-credit-assessment",
+      "title": "Correct obl-se-fffs-2018-16-credit-assessment: cite the scope rule in 1 kap. 3 §",
+      "source": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2018:16, 1 kap. 3 §, the regulation as published. Källa: Finansinspektionen",
+      "why": "The rule that Chapter 4 applies only to credit to borrowers other than consumers and to consumer residential mortgage credit is in 1 kap. 3 §, which the citation left out; it now cites it.",
+      "payload": {
+        "summaries": {
+          "en": "Credit assessment must follow well-defined criteria, investigate and limit groups of connected clients, test guarantors, rest on information giving a good picture of repayment capacity and collateral, look forward, include sensitivity analysis for institutions and companies, and stress repayment for loans in a currency the borrower does not earn in. This applies to non-consumer credits and consumer mortgage credits."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 kap. 3 § och 4 kap. 1–6 §§",
+        "provisions": [
+          "fffs-2018-16/001-003",
+          "fffs-2018-16/004-001",
+          "fffs-2018-16/004-002",
+          "fffs-2018-16/004-003",
+          "fffs-2018-16/004-004",
+          "fffs-2018-16/004-005",
+          "fffs-2018-16/004-006"
+        ]
+      }
+    }
+  ]
+}

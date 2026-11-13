@@ -1,0 +1,1498 @@
+{
+  "tranche": "no-sanctions",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-no-sanksjon-guinea-report",
+      "title": "Correct obl-no-sanksjon-guinea-report: Article 12 does not apply in Norway; cite the duty in Article 10",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626/a10",
+      "sourceLabel": "Lovdata, FOR-2014-05-09-626, Vedlegg A, artikkel 10 (Regulation 1284/2009 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 says Article 12 of Regulation (EU) No 1284/2009, on which the old text rested, does not apply in Norway. A duty to inform DEKSA that does apply is Article 10(1) of the regulation (Annex A to the forskrift): a credit to a frozen account is reported immediately.",
+      "payload": {
+        "summaries": {
+          "en": "A bank may credit a frozen account with funds a third party transfers to a person, entity or body listed in Annex II of Regulation (EU) No 1284/2009 only if the amounts credited are frozen too, and must then inform Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, of the transaction immediately. The regulation's general duty to report frozen accounts and amounts, Article 12, does not apply in Norway: § 2 lists it among the articles that are internal to the EU."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Tell DEKSA immediately when a frozen account under the Republic of Guinea sanctions is credited with funds a third party transfers"
+        },
+        "refLabel": "§ 2; Vedlegg A, artikkel 10 nr. 1 (Regulation (EU) No 1284/2009 Art. 10(1))",
+        "provisions": [
+          "no-for-2014-05-09-626/002",
+          "no-for-2014-05-09-626/vedlegg-a-art-010"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-belarus-freeze",
+      "title": "Correct obl-no-sanksjon-belarus-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041/a2",
+      "sourceLabel": "Lovdata, FOR-2006-09-08-1041, Vedlegg A, artikkel 2 (Regulation 765/2006 as the forskrift prints it), consolidated text as amended up to forskrift/2026-09-14-1810 fra 2026-10-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 765/2006 Norwegian law; the duty to freeze is in Article 2 of Regulation 765/2006 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EC) No 765/2006, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EC) No 765/2006 Art. 2(1))",
+        "provisions": [
+          "no-for-2006-09-08-1041/002",
+          "no-for-2006-09-08-1041/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-belarus-no-funds",
+      "title": "Correct obl-no-sanksjon-belarus-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041/a2",
+      "sourceLabel": "Lovdata, FOR-2006-09-08-1041, Vedlegg A, artikkel 2 (Regulation 765/2006 as the forskrift prints it), consolidated text as amended up to forskrift/2026-09-14-1810 fra 2026-10-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 765/2006 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 765/2006 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EC) No 765/2006, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EC) No 765/2006 Art. 2(2))",
+        "provisions": [
+          "no-for-2006-09-08-1041/002",
+          "no-for-2006-09-08-1041/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-belarus-report",
+      "title": "Correct obl-no-sanksjon-belarus-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041/a5",
+      "sourceLabel": "Lovdata, FOR-2006-09-08-1041, Vedlegg A, artikkel 5 (Regulation 765/2006 as the forskrift prints it), consolidated text as amended up to forskrift/2026-09-14-1810 fra 2026-10-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 765/2006 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 5 of Regulation 765/2006 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EC) No 765/2006, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 1 (Regulation (EC) No 765/2006 Art. 5(1))",
+        "provisions": [
+          "no-for-2006-09-08-1041/002",
+          "no-for-2006-09-08-1041/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-burundi-freeze",
+      "title": "Correct obl-no-sanksjon-burundi-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104/a2",
+      "sourceLabel": "Lovdata, FOR-2016-02-05-104, Vedlegg A, artikkel 2 (Regulation 2015/1755 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2015/1755 Norwegian law; the duty to freeze is in Article 2 of Regulation 2015/1755 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2015/1755, which § 2 makes Norwegian law. Under § 2, the list in Annex I is replaced by links to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2015/1755 Art. 2(1))",
+        "provisions": [
+          "no-for-2016-02-05-104/002",
+          "no-for-2016-02-05-104/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-burundi-no-funds",
+      "title": "Correct obl-no-sanksjon-burundi-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104/a2",
+      "sourceLabel": "Lovdata, FOR-2016-02-05-104, Vedlegg A, artikkel 2 (Regulation 2015/1755 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2015/1755 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2015/1755 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2015/1755, which § 2 makes Norwegian law. Under § 2, the list in Annex I is replaced by links to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2015/1755 Art. 2(2))",
+        "provisions": [
+          "no-for-2016-02-05-104/002",
+          "no-for-2016-02-05-104/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-burundi-report",
+      "title": "Correct obl-no-sanksjon-burundi-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104/a7",
+      "sourceLabel": "Lovdata, FOR-2016-02-05-104, Vedlegg A, artikkel 7 (Regulation 2015/1755 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2015/1755 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 7 of Regulation 2015/1755 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2015/1755, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 7 nr. 1 (Regulation (EU) 2015/1755 Art. 7(1))",
+        "provisions": [
+          "no-for-2016-02-05-104/002",
+          "no-for-2016-02-05-104/vedlegg-a-art-007"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-cyber-freeze",
+      "title": "Correct obl-no-sanksjon-cyber-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459/a3",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1459, Vedlegg A, artikkel 3 (Regulation 2019/796 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2019/796 Norwegian law; the duty to freeze is in Article 3 of Regulation 2019/796 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/796, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 3 nr. 1 (Regulation (EU) 2019/796 Art. 3(1))",
+        "provisions": [
+          "no-for-2021-05-11-1459/002",
+          "no-for-2021-05-11-1459/vedlegg-a-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-cyber-no-funds",
+      "title": "Correct obl-no-sanksjon-cyber-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459/a3",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1459, Vedlegg A, artikkel 3 (Regulation 2019/796 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2019/796 Norwegian law; the ban on making funds and economic resources available is in Article 3 of Regulation 2019/796 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/796, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 3 nr. 2 (Regulation (EU) 2019/796 Art. 3(2))",
+        "provisions": [
+          "no-for-2021-05-11-1459/002",
+          "no-for-2021-05-11-1459/vedlegg-a-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-cyber-report",
+      "title": "Correct obl-no-sanksjon-cyber-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459/a8",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1459, Vedlegg A, artikkel 8 (Regulation 2019/796 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2019/796 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 2019/796 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2019/796, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) 2019/796 Art. 8(1))",
+        "provisions": [
+          "no-for-2021-05-11-1459/002",
+          "no-for-2021-05-11-1459/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-guinea-bissau-freeze",
+      "title": "Correct obl-no-sanksjon-guinea-bissau-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434/a2",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1434, Vedlegg A, artikkel 2 (Regulation 377/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 377/2012 Norwegian law; the duty to freeze is in Article 2 of Regulation 377/2012 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 377/2012, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list, where those listed with the country code GNB are the persons listed under this forskrift."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) No 377/2012 Art. 2(1))",
+        "provisions": [
+          "no-for-2015-12-11-1434/002",
+          "no-for-2015-12-11-1434/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-guinea-bissau-no-funds",
+      "title": "Correct obl-no-sanksjon-guinea-bissau-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434/a2",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1434, Vedlegg A, artikkel 2 (Regulation 377/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 377/2012 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 377/2012 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 377/2012, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list, where those listed with the country code GNB are the persons listed under this forskrift."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) No 377/2012 Art. 2(2))",
+        "provisions": [
+          "no-for-2015-12-11-1434/002",
+          "no-for-2015-12-11-1434/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-guinea-bissau-report",
+      "title": "Correct obl-no-sanksjon-guinea-bissau-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434/a8",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1434, Vedlegg A, artikkel 8 (Regulation 377/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 377/2012 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 377/2012 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 377/2012, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) No 377/2012 Art. 8(1))",
+        "provisions": [
+          "no-for-2015-12-11-1434/002",
+          "no-for-2015-12-11-1434/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-guinea-freeze",
+      "title": "Correct obl-no-sanksjon-guinea-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626/a6",
+      "sourceLabel": "Lovdata, FOR-2014-05-09-626, Vedlegg A, artikkel 6 (Regulation 1284/2009 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 1284/2009 Norwegian law; the duty to freeze is in Article 6 of Regulation 1284/2009 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex II of Regulation (EU) No 1284/2009, which § 2 makes Norwegian law."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 6 nr. 1 (Regulation (EU) No 1284/2009 Art. 6(1))",
+        "provisions": [
+          "no-for-2014-05-09-626/002",
+          "no-for-2014-05-09-626/vedlegg-a-art-006"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-guinea-no-funds",
+      "title": "Correct obl-no-sanksjon-guinea-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626/a6",
+      "sourceLabel": "Lovdata, FOR-2014-05-09-626, Vedlegg A, artikkel 6 (Regulation 1284/2009 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 1284/2009 Norwegian law; the ban on making funds and economic resources available is in Article 6 of Regulation 1284/2009 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex II of Regulation (EU) No 1284/2009, which § 2 makes Norwegian law."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 6 nr. 2 (Regulation (EU) No 1284/2009 Art. 6(2))",
+        "provisions": [
+          "no-for-2014-05-09-626/002",
+          "no-for-2014-05-09-626/vedlegg-a-art-006"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-haiti-freeze",
+      "title": "Correct obl-no-sanksjon-haiti-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404/a3",
+      "sourceLabel": "Lovdata, FOR-2023-03-24-404, Vedlegg A, artikkel 3 (Regulation 2022/2309 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2022/2309 Norwegian law; the duty to freeze is in Article 3 of Regulation 2022/2309 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes I and Ia of Regulation (EU) 2022/2309, which § 1 makes Norwegian law. Under § 1, Annex I is a link to the UN Sanctions Committee's consolidated list and Annex Ia a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 3 nr. 1 (Regulation (EU) 2022/2309 Art. 3(1))",
+        "provisions": [
+          "no-for-2023-03-24-404/001",
+          "no-for-2023-03-24-404/vedlegg-a-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-haiti-no-funds",
+      "title": "Correct obl-no-sanksjon-haiti-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404/a3",
+      "sourceLabel": "Lovdata, FOR-2023-03-24-404, Vedlegg A, artikkel 3 (Regulation 2022/2309 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2022/2309 Norwegian law; the ban on making funds and economic resources available is in Article 3 of Regulation 2022/2309 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes I and Ia of Regulation (EU) 2022/2309, which § 1 makes Norwegian law. Under § 1, Annex I is a link to the UN Sanctions Committee's consolidated list and Annex Ia a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 3 nr. 2 (Regulation (EU) 2022/2309 Art. 3(2))",
+        "provisions": [
+          "no-for-2023-03-24-404/001",
+          "no-for-2023-03-24-404/vedlegg-a-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-haiti-report",
+      "title": "Correct obl-no-sanksjon-haiti-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404/a10",
+      "sourceLabel": "Lovdata, FOR-2023-03-24-404, Vedlegg A, artikkel 10 (Regulation 2022/2309 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2022/2309 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 10 of Regulation 2022/2309 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2022/2309, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 10 nr. 1 (Regulation (EU) 2022/2309 Art. 10(1))",
+        "provisions": [
+          "no-for-2023-03-24-404/001",
+          "no-for-2023-03-24-404/vedlegg-a-art-010"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-iran-freeze",
+      "title": "Correct obl-no-sanksjon-iran-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149/KAPITTEL_1-1",
+      "sourceLabel": "Lovdata, FOR-2007-02-09-149, Vedlegg A, artikkel 2 (Regulation 359/2011 as the forskrift prints it), consolidated text as amended up to forskrift/2026-05-11-809, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§§ 1, 2 and 3 only make Regulations 359/2011, 267/2012 and 2023/1529 Norwegian law; the duty to freeze is in Article 2 of Regulation 359/2011 (Annex A to the forskrift), Article 23 of Regulation 267/2012 (Annex B to the forskrift) and Article 3 of Regulation 2023/1529 (Annex C to the forskrift), which the forskrift prints in Norwegian. The correction cites those articles beside the sections.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 359/2011 (human rights), Annexes VIII and IX of Regulation (EU) No 267/2012 (proliferation) and Annex III of Regulation (EU) 2023/1529 (military support to Russia's war against Ukraine), which §§ 1 to 3 make Norwegian law. Under §§ 1 to 3, Annex VIII of Regulation (EU) No 267/2012 is a link to the UN consolidated list and the other annexes named are links to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 1 ((EU) No 359/2011 Art. 2(1)); § 2; Vedlegg B, artikkel 23 nr. 1 og 2 ((EU) No 267/2012 Art. 23(1)-(2)); § 3; Vedlegg C, artikkel 3 nr. 1 ((EU) 2023/1529 Art. 3(1))",
+        "provisions": [
+          "no-for-2007-02-09-149/001",
+          "no-for-2007-02-09-149/002",
+          "no-for-2007-02-09-149/003",
+          "no-for-2007-02-09-149/vedlegg-a-art-002",
+          "no-for-2007-02-09-149/vedlegg-b-art-023",
+          "no-for-2007-02-09-149/vedlegg-c-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-iran-no-funds",
+      "title": "Correct obl-no-sanksjon-iran-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149/KAPITTEL_1-1",
+      "sourceLabel": "Lovdata, FOR-2007-02-09-149, Vedlegg A, artikkel 2 (Regulation 359/2011 as the forskrift prints it), consolidated text as amended up to forskrift/2026-05-11-809, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§§ 1 to 3 only make Regulations 359/2011, 267/2012 and 2023/1529 Norwegian law; the ban on making funds and economic resources available is in Article 2 of 359/2011, Article 23 of 267/2012 and Article 3 of 2023/1529, which the forskrift prints in Norwegian as Annexes A to C. The correction cites those articles.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 359/2011 (human rights), Annexes VIII and IX of Regulation (EU) No 267/2012 (proliferation) and Annex III of Regulation (EU) 2023/1529 (military support to Russia's war against Ukraine), which §§ 1 to 3 make Norwegian law. Under §§ 1 to 3, Annex VIII of Regulation (EU) No 267/2012 is a link to the UN consolidated list and the other annexes named are links to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 2 ((EU) No 359/2011 Art. 2(2)); § 2; Vedlegg B, artikkel 23 nr. 3 ((EU) No 267/2012 Art. 23(3)); § 3; Vedlegg C, artikkel 3 nr. 2 ((EU) 2023/1529 Art. 3(2))",
+        "provisions": [
+          "no-for-2007-02-09-149/001",
+          "no-for-2007-02-09-149/002",
+          "no-for-2007-02-09-149/003",
+          "no-for-2007-02-09-149/vedlegg-a-art-002",
+          "no-for-2007-02-09-149/vedlegg-b-art-023",
+          "no-for-2007-02-09-149/vedlegg-c-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-iran-report",
+      "title": "Correct obl-no-sanksjon-iran-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149/a40",
+      "sourceLabel": "Lovdata, FOR-2007-02-09-149, Vedlegg B, artikkel 40 (Regulation 267/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2026-05-11-809, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 267/2012 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 40 of Regulation 267/2012 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 267/2012, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg B, artikkel 40 nr. 1 (Regulation (EU) No 267/2012 Art. 40(1))",
+        "provisions": [
+          "no-for-2007-02-09-149/002",
+          "no-for-2007-02-09-149/vedlegg-b-art-040"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-kjemiske-vapen-freeze",
+      "title": "Correct obl-no-sanksjon-kjemiske-vapen-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456/a2",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1456, Vedlegg A, artikkel 2 (Regulation 2018/1542 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2018/1542 Norwegian law; the duty to freeze is in Article 2 of Regulation 2018/1542 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2018/1542, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2018/1542 Art. 2(1))",
+        "provisions": [
+          "no-for-2021-05-11-1456/002",
+          "no-for-2021-05-11-1456/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-kjemiske-vapen-no-funds",
+      "title": "Correct obl-no-sanksjon-kjemiske-vapen-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456/a2",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1456, Vedlegg A, artikkel 2 (Regulation 2018/1542 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2018/1542 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2018/1542 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2018/1542, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2018/1542 Art. 2(2))",
+        "provisions": [
+          "no-for-2021-05-11-1456/002",
+          "no-for-2021-05-11-1456/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-kjemiske-vapen-report",
+      "title": "Correct obl-no-sanksjon-kjemiske-vapen-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456/a7",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1456, Vedlegg A, artikkel 7 (Regulation 2018/1542 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2018/1542 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 7 of Regulation 2018/1542 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2018/1542, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 7 nr. 1 (Regulation (EU) 2018/1542 Art. 7(1))",
+        "provisions": [
+          "no-for-2021-05-11-1456/002",
+          "no-for-2021-05-11-1456/vedlegg-a-art-007"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-kongo-freeze",
+      "title": "Correct obl-no-sanksjon-kongo-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221/a2",
+      "sourceLabel": "Lovdata, FOR-2003-10-10-1221, Vedlegg A, artikkel 2 (Regulation 1183/2005 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 1183/2005 Norwegian law; the duty to freeze is in Article 2 of Regulation 1183/2005 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes I and Ia of Regulation (EC) No 1183/2005, which § 2 makes Norwegian law. Under § 2, Annex I is a link to the UN Sanctions Committee's list and Annex Ia a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EC) No 1183/2005 Art. 2(1))",
+        "provisions": [
+          "no-for-2003-10-10-1221/002",
+          "no-for-2003-10-10-1221/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-kongo-no-funds",
+      "title": "Correct obl-no-sanksjon-kongo-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221/a2",
+      "sourceLabel": "Lovdata, FOR-2003-10-10-1221, Vedlegg A, artikkel 2 (Regulation 1183/2005 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 1183/2005 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 1183/2005 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes I and Ia of Regulation (EC) No 1183/2005, which § 2 makes Norwegian law. Under § 2, Annex I is a link to the UN Sanctions Committee's list and Annex Ia a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EC) No 1183/2005 Art. 2(2))",
+        "provisions": [
+          "no-for-2003-10-10-1221/002",
+          "no-for-2003-10-10-1221/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-kongo-report",
+      "title": "Correct obl-no-sanksjon-kongo-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221/a6",
+      "sourceLabel": "Lovdata, FOR-2003-10-10-1221, Vedlegg A, artikkel 6 (Regulation 1183/2005 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 1183/2005 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 6 of Regulation 1183/2005 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EC) No 1183/2005, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 6 nr. 1 (Regulation (EC) No 1183/2005 Art. 6(1))",
+        "provisions": [
+          "no-for-2003-10-10-1221/002",
+          "no-for-2003-10-10-1221/vedlegg-a-art-006"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-libya-freeze",
+      "title": "Correct obl-no-sanksjon-libya-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265/a5",
+      "sourceLabel": "Lovdata, FOR-2011-03-11-265, Vedlegg A, artikkel 5 (Regulation 2016/44 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2016/44 Norwegian law; the duty to freeze is in Article 5 of Regulation 2016/44 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes II and III of Regulation (EU) 2016/44, which § 2 makes Norwegian law."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 1 (Regulation (EU) 2016/44 Art. 5(1))",
+        "provisions": [
+          "no-for-2011-03-11-265/002",
+          "no-for-2011-03-11-265/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-libya-no-funds",
+      "title": "Correct obl-no-sanksjon-libya-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265/a5",
+      "sourceLabel": "Lovdata, FOR-2011-03-11-265, Vedlegg A, artikkel 5 (Regulation 2016/44 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2016/44 Norwegian law; the ban on making funds and economic resources available is in Article 5 of Regulation 2016/44 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes II and III of Regulation (EU) 2016/44, which § 2 makes Norwegian law."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 2 (Regulation (EU) 2016/44 Art. 5(2))",
+        "provisions": [
+          "no-for-2011-03-11-265/002",
+          "no-for-2011-03-11-265/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-libya-report",
+      "title": "Correct obl-no-sanksjon-libya-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265/a13",
+      "sourceLabel": "Lovdata, FOR-2011-03-11-265, Vedlegg A, artikkel 13 (Regulation 2016/44 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2016/44 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 13 of Regulation 2016/44 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2016/44, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 13 nr. 1 (Regulation (EU) 2016/44 Art. 13(1))",
+        "provisions": [
+          "no-for-2011-03-11-265/002",
+          "no-for-2011-03-11-265/vedlegg-a-art-013"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-mali-freeze",
+      "title": "Correct obl-no-sanksjon-mali-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955/a2",
+      "sourceLabel": "Lovdata, FOR-2020-05-07-955, Vedlegg A, artikkel 2 (Regulation 2017/1770 as the forskrift prints it), consolidated text as amended up to forskrift/2024-12-18-3382 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2017/1770 Norwegian law; the duty to freeze is in Article 2 of Regulation 2017/1770 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex Ia of Regulation (EU) 2017/1770, which § 1 makes Norwegian law. Under § 1, Annex Ia is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2017/1770 Art. 2(1))",
+        "provisions": [
+          "no-for-2020-05-07-955/001",
+          "no-for-2020-05-07-955/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-mali-no-funds",
+      "title": "Correct obl-no-sanksjon-mali-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955/a2",
+      "sourceLabel": "Lovdata, FOR-2020-05-07-955, Vedlegg A, artikkel 2 (Regulation 2017/1770 as the forskrift prints it), consolidated text as amended up to forskrift/2024-12-18-3382 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2017/1770 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2017/1770 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex Ia of Regulation (EU) 2017/1770, which § 1 makes Norwegian law. Under § 1, Annex Ia is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2017/1770 Art. 2(2))",
+        "provisions": [
+          "no-for-2020-05-07-955/001",
+          "no-for-2020-05-07-955/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-mali-report",
+      "title": "Correct obl-no-sanksjon-mali-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955/a7",
+      "sourceLabel": "Lovdata, FOR-2020-05-07-955, Vedlegg A, artikkel 7 (Regulation 2017/1770 as the forskrift prints it), consolidated text as amended up to forskrift/2024-12-18-3382 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2017/1770 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 7 of Regulation 2017/1770 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2017/1770, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 7 nr. 1 (Regulation (EU) 2017/1770 Art. 7(1))",
+        "provisions": [
+          "no-for-2020-05-07-955/001",
+          "no-for-2020-05-07-955/vedlegg-a-art-007"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-menneskerettigheter-freeze",
+      "title": "Correct obl-no-sanksjon-menneskerettigheter-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458/a3",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1458, Vedlegg A, artikkel 3 (Regulation 2020/1998 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2020/1998 Norwegian law; the duty to freeze is in Article 3 of Regulation 2020/1998 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2020/1998, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 3 nr. 1 (Regulation (EU) 2020/1998 Art. 3(1))",
+        "provisions": [
+          "no-for-2021-05-11-1458/002",
+          "no-for-2021-05-11-1458/vedlegg-a-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-menneskerettigheter-no-funds",
+      "title": "Correct obl-no-sanksjon-menneskerettigheter-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458/a3",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1458, Vedlegg A, artikkel 3 (Regulation 2020/1998 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2020/1998 Norwegian law; the ban on making funds and economic resources available is in Article 3 of Regulation 2020/1998 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2020/1998, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 3 nr. 2 (Regulation (EU) 2020/1998 Art. 3(2))",
+        "provisions": [
+          "no-for-2021-05-11-1458/002",
+          "no-for-2021-05-11-1458/vedlegg-a-art-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-menneskerettigheter-report",
+      "title": "Correct obl-no-sanksjon-menneskerettigheter-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458/a9",
+      "sourceLabel": "Lovdata, FOR-2021-05-11-1458, Vedlegg A, artikkel 9 (Regulation 2020/1998 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2020/1998 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 9 of Regulation 2020/1998 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2020/1998, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 9 nr. 1 (Regulation (EU) 2020/1998 Art. 9(1))",
+        "provisions": [
+          "no-for-2021-05-11-1458/002",
+          "no-for-2021-05-11-1458/vedlegg-a-art-009"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-moldova-freeze",
+      "title": "Correct obl-no-sanksjon-moldova-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993/a2",
+      "sourceLabel": "Lovdata, FOR-2023-06-20-993, Vedlegg A, artikkel 2 (Regulation 2023/888 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2023/888 Norwegian law; the duty to freeze is in Article 2 of Regulation 2023/888 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/888, which § 1 makes Norwegian law. Under § 1, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2023/888 Art. 2(1))",
+        "provisions": [
+          "no-for-2023-06-20-993/001",
+          "no-for-2023-06-20-993/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-moldova-no-funds",
+      "title": "Correct obl-no-sanksjon-moldova-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993/a2",
+      "sourceLabel": "Lovdata, FOR-2023-06-20-993, Vedlegg A, artikkel 2 (Regulation 2023/888 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2023/888 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2023/888 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/888, which § 1 makes Norwegian law. Under § 1, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2023/888 Art. 2(2))",
+        "provisions": [
+          "no-for-2023-06-20-993/001",
+          "no-for-2023-06-20-993/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-moldova-report",
+      "title": "Correct obl-no-sanksjon-moldova-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993/a8",
+      "sourceLabel": "Lovdata, FOR-2023-06-20-993, Vedlegg A, artikkel 8 (Regulation 2023/888 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2023/888 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 2023/888 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2023/888, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) 2023/888 Art. 8(1))",
+        "provisions": [
+          "no-for-2023-06-20-993/001",
+          "no-for-2023-06-20-993/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-myanmar-freeze",
+      "title": "Correct obl-no-sanksjon-myanmar-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895/a4a",
+      "sourceLabel": "Lovdata, FOR-2003-07-04-895, Vedlegg A, artikkel 4a (Regulation 401/2013 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 401/2013 Norwegian law; the duty to freeze is in Article 4a of Regulation 401/2013 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex IV of Regulation (EU) No 401/2013, which § 2 makes Norwegian law. Under § 2, the list in Annex IV is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 4a nr. 1 (Regulation (EU) No 401/2013 Art. 4a(1))",
+        "provisions": [
+          "no-for-2003-07-04-895/002",
+          "no-for-2003-07-04-895/vedlegg-a-art-004a"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-myanmar-no-funds",
+      "title": "Correct obl-no-sanksjon-myanmar-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895/a4a",
+      "sourceLabel": "Lovdata, FOR-2003-07-04-895, Vedlegg A, artikkel 4a (Regulation 401/2013 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 401/2013 Norwegian law; the ban on making funds and economic resources available is in Article 4a of Regulation 401/2013 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex IV of Regulation (EU) No 401/2013, which § 2 makes Norwegian law. Under § 2, the list in Annex IV is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 4a nr. 2 (Regulation (EU) No 401/2013 Art. 4a(2))",
+        "provisions": [
+          "no-for-2003-07-04-895/002",
+          "no-for-2003-07-04-895/vedlegg-a-art-004a"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-myanmar-report",
+      "title": "Correct obl-no-sanksjon-myanmar-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895/a4e",
+      "sourceLabel": "Lovdata, FOR-2003-07-04-895, Vedlegg A, artikkel 4e (Regulation 401/2013 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 401/2013 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 4e of Regulation 401/2013 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 401/2013, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 4e nr. 1 (Regulation (EU) No 401/2013 Art. 4e(1))",
+        "provisions": [
+          "no-for-2003-07-04-895/002",
+          "no-for-2003-07-04-895/vedlegg-a-art-004e"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-nicaragua-freeze",
+      "title": "Correct obl-no-sanksjon-nicaragua-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283/a2",
+      "sourceLabel": "Lovdata, FOR-2020-06-23-1283, Vedlegg A, artikkel 2 (Regulation 2019/1716 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2019/1716 Norwegian law; the duty to freeze is in Article 2 of Regulation 2019/1716 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/1716, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2019/1716 Art. 2(1))",
+        "provisions": [
+          "no-for-2020-06-23-1283/002",
+          "no-for-2020-06-23-1283/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-nicaragua-no-funds",
+      "title": "Correct obl-no-sanksjon-nicaragua-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283/a2",
+      "sourceLabel": "Lovdata, FOR-2020-06-23-1283, Vedlegg A, artikkel 2 (Regulation 2019/1716 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2019/1716 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2019/1716 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/1716, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2019/1716 Art. 2(2))",
+        "provisions": [
+          "no-for-2020-06-23-1283/002",
+          "no-for-2020-06-23-1283/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-nicaragua-report",
+      "title": "Correct obl-no-sanksjon-nicaragua-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283/a8",
+      "sourceLabel": "Lovdata, FOR-2020-06-23-1283, Vedlegg A, artikkel 8 (Regulation 2019/1716 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2019/1716 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 2019/1716 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2019/1716, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) 2019/1716 Art. 8(1))",
+        "provisions": [
+          "no-for-2020-06-23-1283/002",
+          "no-for-2020-06-23-1283/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-niger-freeze",
+      "title": "Correct obl-no-sanksjon-niger-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655/a2",
+      "sourceLabel": "Lovdata, FOR-2025-08-15-1655, Vedlegg A, artikkel 2 (Regulation 2023/2406 as the forskrift prints it), consolidated text of 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2023/2406 Norwegian law; the duty to freeze is in Article 2 of Regulation 2023/2406 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/2406, which § 1 makes Norwegian law. Under § 1, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2023/2406 Art. 2(1))",
+        "provisions": [
+          "no-for-2025-08-15-1655/001",
+          "no-for-2025-08-15-1655/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-niger-no-funds",
+      "title": "Correct obl-no-sanksjon-niger-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655/a2",
+      "sourceLabel": "Lovdata, FOR-2025-08-15-1655, Vedlegg A, artikkel 2 (Regulation 2023/2406 as the forskrift prints it), consolidated text of 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2023/2406 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2023/2406 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/2406, which § 1 makes Norwegian law. Under § 1, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2023/2406 Art. 2(2))",
+        "provisions": [
+          "no-for-2025-08-15-1655/001",
+          "no-for-2025-08-15-1655/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-niger-report",
+      "title": "Correct obl-no-sanksjon-niger-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655/a8",
+      "sourceLabel": "Lovdata, FOR-2025-08-15-1655, Vedlegg A, artikkel 8 (Regulation 2023/2406 as the forskrift prints it), consolidated text of 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2023/2406 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 2023/2406 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2023/2406, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) 2023/2406 Art. 8(1))",
+        "provisions": [
+          "no-for-2025-08-15-1655/001",
+          "no-for-2025-08-15-1655/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-nord-korea-freeze",
+      "title": "Correct obl-no-sanksjon-nord-korea-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405/a34",
+      "sourceLabel": "Lovdata, FOR-2006-12-15-1405, Vedlegg A, artikkel 34 (Regulation 2017/1509 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2017/1509 Norwegian law; the duty to freeze is in Article 34 of Regulation 2017/1509 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes XIII, XV, XVI and XVII of Regulation (EU) 2017/1509, which § 2 makes Norwegian law. Under § 2, Annex XIII is a link to the Sanctions Committee's consolidated list and Annexes XV, XVI and XVII links to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 34 nr. 1 (Regulation (EU) 2017/1509 Art. 34(1))",
+        "provisions": [
+          "no-for-2006-12-15-1405/002",
+          "no-for-2006-12-15-1405/vedlegg-a-art-034"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-nord-korea-no-funds",
+      "title": "Correct obl-no-sanksjon-nord-korea-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405/a34",
+      "sourceLabel": "Lovdata, FOR-2006-12-15-1405, Vedlegg A, artikkel 34 (Regulation 2017/1509 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2017/1509 Norwegian law; the ban on making funds and economic resources available is in Article 34 of Regulation 2017/1509 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes XIII, XV, XVI and XVII of Regulation (EU) 2017/1509, which § 2 makes Norwegian law. Under § 2, Annex XIII is a link to the Sanctions Committee's consolidated list and Annexes XV, XVI and XVII links to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 34 nr. 3 (Regulation (EU) 2017/1509 Art. 34(3))",
+        "provisions": [
+          "no-for-2006-12-15-1405/002",
+          "no-for-2006-12-15-1405/vedlegg-a-art-034"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-nord-korea-report",
+      "title": "Correct obl-no-sanksjon-nord-korea-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405/a50",
+      "sourceLabel": "Lovdata, FOR-2006-12-15-1405, Vedlegg A, artikkel 50 (Regulation 2017/1509 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2017/1509 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 50 of Regulation 2017/1509 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2017/1509, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 50 nr. 1 (Regulation (EU) 2017/1509 Art. 50(1))",
+        "provisions": [
+          "no-for-2006-12-15-1405/002",
+          "no-for-2006-12-15-1405/vedlegg-a-art-050"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-destabilisering-freeze",
+      "title": "Correct obl-no-sanksjon-russland-destabilisering-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466/a2",
+      "sourceLabel": "Lovdata, FOR-2025-03-14-466, Vedlegg A, artikkel 2 (Regulation 2024/2642 as the forskrift prints it), consolidated text as amended up to forskrift/2025-07-08-1505 fra 2025-07-10, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2024/2642 Norwegian law; the duty to freeze is in Article 2 of Regulation 2024/2642 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2024/2642, which § 1 makes Norwegian law. Under § 1, the list in Annex I is a link to the EU's consolidated list. Under § 1, the freeze does not apply to vessels of Norebo JSC and Murman SeaFood while they are in port in Svalbard or in its territorial waters."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) 2024/2642 Art. 2(1))",
+        "provisions": [
+          "no-for-2025-03-14-466/001",
+          "no-for-2025-03-14-466/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-destabilisering-no-funds",
+      "title": "Correct obl-no-sanksjon-russland-destabilisering-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466/a2",
+      "sourceLabel": "Lovdata, FOR-2025-03-14-466, Vedlegg A, artikkel 2 (Regulation 2024/2642 as the forskrift prints it), consolidated text as amended up to forskrift/2025-07-08-1505 fra 2025-07-10, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2024/2642 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 2024/2642 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2024/2642, which § 1 makes Norwegian law. Under § 1, the list in Annex I is a link to the EU's consolidated list. Under § 1, the prohibition does not apply to vessels of Norebo JSC and Murman SeaFood while they are in port in Svalbard or in its territorial waters; that exception does not cover Norwegian natural and legal persons, entities and bodies."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) 2024/2642 Art. 2(2))",
+        "provisions": [
+          "no-for-2025-03-14-466/001",
+          "no-for-2025-03-14-466/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-destabilisering-report",
+      "title": "Correct obl-no-sanksjon-russland-destabilisering-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466/a8",
+      "sourceLabel": "Lovdata, FOR-2025-03-14-466, Vedlegg A, artikkel 8 (Regulation 2024/2642 as the forskrift prints it), consolidated text as amended up to forskrift/2025-07-08-1505 fra 2025-07-10, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2024/2642 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 2024/2642 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2024/2642, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) 2024/2642 Art. 8(1))",
+        "provisions": [
+          "no-for-2025-03-14-466/001",
+          "no-for-2025-03-14-466/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-securities-sale",
+      "title": "Correct obl-no-sanksjon-russland-securities-sale: the cut-off dates and currencies § 8h sets, and who is exempt",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78h",
+      "sourceLabel": "Lovdata, FOR-2014-08-15-1076, § 8h, consolidated text as amended up to forskrift/2026-10-19-2106 fra 2026-10-21, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 8h bans selling securities in Norwegian kroner or an EU currency issued after 3 May 2022 and in any other currency issued after 15 November 2023, and exempts nationals and residence-permit holders of Norway, the EEA and Switzerland; the old text gave a 4 May 2022, euro-only date the section does not state and left out the other currencies and the exemption.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not sell to Russian nationals, natural persons residing in Russia or legal persons established in Russia transferable securities denominated in Norwegian kroner or an official currency of an EU Member State issued after 3 May 2022, or in any other currency issued after 15 November 2023, or units in collective investment undertakings giving exposure to such securities. The ban does not apply to nationals of Norway, another EEA state or Switzerland, or to natural persons holding a temporary or permanent residence permit in one of them."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Do not sell securities issued after the cut-off dates to Russian nationals, residents and entities"
+        }
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-situasjonen-freeze",
+      "title": "Correct obl-no-sanksjon-russland-situasjonen-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472/a6",
+      "sourceLabel": "Lovdata, FOR-2025-03-14-472, Vedlegg A, artikkel 6 (Regulation 2024/1485 as the forskrift prints it), consolidated text as amended up to forskrift/2025-03-31-632, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2024/1485 Norwegian law; the duty to freeze is in Article 6 of Regulation 2024/1485 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex IV of Regulation (EU) 2024/1485, which § 1 makes Norwegian law. Under § 1, the list in Annex IV is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 6 nr. 1 (Regulation (EU) 2024/1485 Art. 6(1))",
+        "provisions": [
+          "no-for-2025-03-14-472/001",
+          "no-for-2025-03-14-472/vedlegg-a-art-006"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-situasjonen-no-funds",
+      "title": "Correct obl-no-sanksjon-russland-situasjonen-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472/a6",
+      "sourceLabel": "Lovdata, FOR-2025-03-14-472, Vedlegg A, artikkel 6 (Regulation 2024/1485 as the forskrift prints it), consolidated text as amended up to forskrift/2025-03-31-632, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2024/1485 Norwegian law; the ban on making funds and economic resources available is in Article 6 of Regulation 2024/1485 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex IV of Regulation (EU) 2024/1485, which § 1 makes Norwegian law. Under § 1, the list in Annex IV is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 6 nr. 2 (Regulation (EU) 2024/1485 Art. 6(2))",
+        "provisions": [
+          "no-for-2025-03-14-472/001",
+          "no-for-2025-03-14-472/vedlegg-a-art-006"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-russland-situasjonen-report",
+      "title": "Correct obl-no-sanksjon-russland-situasjonen-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472/a12",
+      "sourceLabel": "Lovdata, FOR-2025-03-14-472, Vedlegg A, artikkel 12 (Regulation 2024/1485 as the forskrift prints it), consolidated text as amended up to forskrift/2025-03-31-632, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes Regulation 2024/1485 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 12 of Regulation 2024/1485 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2024/1485, including the accounts and amounts frozen and any funds or economic resources in Norway of persons, entities or bodies listed in Annex IV that those obliged to freeze them have not treated as frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 12 nr. 1 (Regulation (EU) 2024/1485 Art. 12(1))",
+        "provisions": [
+          "no-for-2025-03-14-472/001",
+          "no-for-2025-03-14-472/vedlegg-a-art-012"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sentralafrikanske-republikk-freeze",
+      "title": "Correct obl-no-sanksjon-sentralafrikanske-republikk-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061/a5",
+      "sourceLabel": "Lovdata, FOR-2015-09-18-1061, Vedlegg A, artikkel 5 (Regulation 224/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 224/2014 Norwegian law; the duty to freeze is in Article 5 of Regulation 224/2014 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 224/2014, which § 2 makes Norwegian law. Under § 2, Annex I is a link to the UN Sanctions Committee's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 1 (Regulation (EU) No 224/2014 Art. 5(1))",
+        "provisions": [
+          "no-for-2015-09-18-1061/002",
+          "no-for-2015-09-18-1061/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sentralafrikanske-republikk-no-funds",
+      "title": "Correct obl-no-sanksjon-sentralafrikanske-republikk-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061/a5",
+      "sourceLabel": "Lovdata, FOR-2015-09-18-1061, Vedlegg A, artikkel 5 (Regulation 224/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 224/2014 Norwegian law; the ban on making funds and economic resources available is in Article 5 of Regulation 224/2014 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 224/2014, which § 2 makes Norwegian law. Under § 2, Annex I is a link to the UN Sanctions Committee's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 2 (Regulation (EU) No 224/2014 Art. 5(2))",
+        "provisions": [
+          "no-for-2015-09-18-1061/002",
+          "no-for-2015-09-18-1061/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sentralafrikanske-republikk-report",
+      "title": "Correct obl-no-sanksjon-sentralafrikanske-republikk-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061/a11",
+      "sourceLabel": "Lovdata, FOR-2015-09-18-1061, Vedlegg A, artikkel 11 (Regulation 224/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 224/2014 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 11 of Regulation 224/2014 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 224/2014, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 11 nr. 1 (Regulation (EU) No 224/2014 Art. 11(1))",
+        "provisions": [
+          "no-for-2015-09-18-1061/002",
+          "no-for-2015-09-18-1061/vedlegg-a-art-011"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-somalia-freeze",
+      "title": "Correct obl-no-sanksjon-somalia-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77/KAPITTEL_2-1",
+      "sourceLabel": "Lovdata, FOR-1992-02-07-77, Vedlegg B, artikkel 2 (Regulation 356/2010 as the forskrift prints it), consolidated text as amended up to forskrift/2024-12-09-3030 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 356/2010 Norwegian law; the duty to freeze is in Article 2 of Regulation 356/2010 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 356/2010, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the UN Sanctions Committee's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg B, artikkel 2 nr. 1 (Regulation (EU) No 356/2010 Art. 2(1))",
+        "provisions": [
+          "no-for-1992-02-07-77/002",
+          "no-for-1992-02-07-77/vedlegg-b-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-somalia-no-funds",
+      "title": "Correct obl-no-sanksjon-somalia-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77/KAPITTEL_2-1",
+      "sourceLabel": "Lovdata, FOR-1992-02-07-77, Vedlegg B, artikkel 2 (Regulation 356/2010 as the forskrift prints it), consolidated text as amended up to forskrift/2024-12-09-3030 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 356/2010 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 356/2010 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 356/2010, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the UN Sanctions Committee's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg B, artikkel 2 nr. 2 (Regulation (EU) No 356/2010 Art. 2(2))",
+        "provisions": [
+          "no-for-1992-02-07-77/002",
+          "no-for-1992-02-07-77/vedlegg-b-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-somalia-report",
+      "title": "Correct obl-no-sanksjon-somalia-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77/KAPITTEL_2-1",
+      "sourceLabel": "Lovdata, FOR-1992-02-07-77, Vedlegg B, artikkel 9 (Regulation 356/2010 as the forskrift prints it), consolidated text as amended up to forskrift/2024-12-09-3030 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 356/2010 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 9 of Regulation 356/2010 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 356/2010, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg B, artikkel 9 nr. 1 (Regulation (EU) No 356/2010 Art. 9(1))",
+        "provisions": [
+          "no-for-1992-02-07-77/002",
+          "no-for-1992-02-07-77/vedlegg-b-art-009"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sor-sudan-freeze",
+      "title": "Correct obl-no-sanksjon-sor-sudan-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435/a5",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1435, Vedlegg A, artikkel 5 (Regulation 2015/735 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2015/735 Norwegian law; the duty to freeze is in Article 5 of Regulation 2015/735 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes I and II of Regulation (EU) 2015/735, which § 2 makes Norwegian law. Under § 2, the regulation's annexes are the forskrift's own Annexes I to III, and Annex I is a link to the UN list of the Security Council committee set up under resolution 2206 (2015)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 1 og 2 (Regulation (EU) 2015/735 Art. 5(1)-(2))",
+        "provisions": [
+          "no-for-2015-12-11-1435/002",
+          "no-for-2015-12-11-1435/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sor-sudan-no-funds",
+      "title": "Correct obl-no-sanksjon-sor-sudan-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435/a5",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1435, Vedlegg A, artikkel 5 (Regulation 2015/735 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2015/735 Norwegian law; the ban on making funds and economic resources available is in Article 5 of Regulation 2015/735 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes I and II of Regulation (EU) 2015/735, which § 2 makes Norwegian law. Under § 2, the regulation's annexes are the forskrift's own Annexes I to III, and Annex I is a link to the UN list of the Security Council committee set up under resolution 2206 (2015)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 5 nr. 3 (Regulation (EU) 2015/735 Art. 5(3))",
+        "provisions": [
+          "no-for-2015-12-11-1435/002",
+          "no-for-2015-12-11-1435/vedlegg-a-art-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sor-sudan-report",
+      "title": "Correct obl-no-sanksjon-sor-sudan-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435/a14",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1435, Vedlegg A, artikkel 14 (Regulation 2015/735 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2015/735 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 14 of Regulation 2015/735 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2015/735, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 14 nr. 1 (Regulation (EU) 2015/735 Art. 14(1))",
+        "provisions": [
+          "no-for-2015-12-11-1435/002",
+          "no-for-2015-12-11-1435/vedlegg-a-art-014"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sudan-freeze",
+      "title": "Correct obl-no-sanksjon-sudan-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573/KAPITTEL_2",
+      "sourceLabel": "Lovdata, FOR-2006-06-02-573, Vedlegg A, artikkel 5 (Regulation 747/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2026-09-01-1723 fra 2026-09-15, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§§ 1 and 2 only make Regulations 747/2014 and 2023/2147 Norwegian law; the duty to freeze is in Article 5 of Regulation 747/2014 (Annex A to the forskrift) and Article 2 of Regulation 2023/2147 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites those articles beside the sections.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 747/2014 and Annex I of Regulation (EU) 2023/2147, which §§ 1 and 2 make Norwegian law. Under §§ 1 and 2, the list in Annex I of each regulation is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 5 nr. 1 (Regulation (EU) No 747/2014 Art. 5(1)); § 2; Vedlegg B, artikkel 2 nr. 1 (Regulation (EU) 2023/2147 Art. 2(1))",
+        "provisions": [
+          "no-for-2006-06-02-573/001",
+          "no-for-2006-06-02-573/002",
+          "no-for-2006-06-02-573/vedlegg-a-art-005",
+          "no-for-2006-06-02-573/vedlegg-b-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sudan-no-funds",
+      "title": "Correct obl-no-sanksjon-sudan-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573/KAPITTEL_2",
+      "sourceLabel": "Lovdata, FOR-2006-06-02-573, Vedlegg A, artikkel 5 (Regulation 747/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2026-09-01-1723 fra 2026-09-15, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§§ 1 and 2 only make Regulations 747/2014 and 2023/2147 Norwegian law; the ban on making funds and economic resources available is in Article 5 of Regulation 747/2014 (Annex A to the forskrift) and Article 2 of Regulation 2023/2147 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites those articles beside the sections.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 747/2014 and Annex I of Regulation (EU) 2023/2147, which §§ 1 and 2 make Norwegian law. Under §§ 1 and 2, the list in Annex I of each regulation is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 5 nr. 2 (Regulation (EU) No 747/2014 Art. 5(2)); § 2; Vedlegg B, artikkel 2 nr. 2 (Regulation (EU) 2023/2147 Art. 2(2))",
+        "provisions": [
+          "no-for-2006-06-02-573/001",
+          "no-for-2006-06-02-573/002",
+          "no-for-2006-06-02-573/vedlegg-a-art-005",
+          "no-for-2006-06-02-573/vedlegg-b-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-sudan-report",
+      "title": "Correct obl-no-sanksjon-sudan-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573/KAPITTEL_2",
+      "sourceLabel": "Lovdata, FOR-2006-06-02-573, Vedlegg A, artikkel 9 (Regulation 747/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2026-09-01-1723 fra 2026-09-15, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§§ 1 and 2 only make Regulations 747/2014 and 2023/2147 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 9 of Regulation 747/2014 (Annex A to the forskrift) and Article 8 of Regulation 2023/2147 (Annex B to the forskrift), which the forskrift prints in Norwegian. The correction cites those articles beside the sections.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which §§ 1 and 2 name as the competent authority, any information that would facilitate compliance with Regulation (EU) No 747/2014 and Regulation (EU) 2023/2147, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1; Vedlegg A, artikkel 9 nr. 1 (Regulation (EU) No 747/2014 Art. 9(1)); § 2; Vedlegg B, artikkel 8 nr. 1 (Regulation (EU) 2023/2147 Art. 8(1))",
+        "provisions": [
+          "no-for-2006-06-02-573/001",
+          "no-for-2006-06-02-573/002",
+          "no-for-2006-06-02-573/vedlegg-a-art-009",
+          "no-for-2006-06-02-573/vedlegg-b-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-syria-freeze",
+      "title": "Correct obl-no-sanksjon-syria-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902/a14",
+      "sourceLabel": "Lovdata, FOR-2011-09-02-902, Vedlegg A, artikkel 14 (Regulation 36/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2025-07-02-1419, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 36/2012 Norwegian law; the duty to freeze is in Article 14 of Regulation 36/2012 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex II of Regulation (EU) No 36/2012, which § 2 makes Norwegian law. Under § 2, the list in Annex II is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 14 nr. 1 (Regulation (EU) No 36/2012 Art. 14(1))",
+        "provisions": [
+          "no-for-2011-09-02-902/002",
+          "no-for-2011-09-02-902/vedlegg-a-art-014"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-syria-no-funds",
+      "title": "Correct obl-no-sanksjon-syria-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902/a14",
+      "sourceLabel": "Lovdata, FOR-2011-09-02-902, Vedlegg A, artikkel 14 (Regulation 36/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2025-07-02-1419, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 36/2012 Norwegian law; the ban on making funds and economic resources available is in Article 14 of Regulation 36/2012 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex II of Regulation (EU) No 36/2012, which § 2 makes Norwegian law. Under § 2, the list in Annex II is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 14 nr. 2 (Regulation (EU) No 36/2012 Art. 14(2))",
+        "provisions": [
+          "no-for-2011-09-02-902/002",
+          "no-for-2011-09-02-902/vedlegg-a-art-014"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-syria-report",
+      "title": "Correct obl-no-sanksjon-syria-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902/a29",
+      "sourceLabel": "Lovdata, FOR-2011-09-02-902, Vedlegg A, artikkel 29 (Regulation 36/2012 as the forskrift prints it), consolidated text as amended up to forskrift/2025-07-02-1419, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 36/2012 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 29 of Regulation 36/2012 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 36/2012, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 29 nr. 1 (Regulation (EU) No 36/2012 Art. 29(1))",
+        "provisions": [
+          "no-for-2011-09-02-902/002",
+          "no-for-2011-09-02-902/vedlegg-a-art-029"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-tunisia-freeze",
+      "title": "Correct obl-no-sanksjon-tunisia-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436/a2",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1436, Vedlegg A, artikkel 2 (Regulation 101/2011 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 101/2011 Norwegian law; the duty to freeze is in Article 2 of Regulation 101/2011 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 101/2011, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) No 101/2011 Art. 2(1))",
+        "provisions": [
+          "no-for-2015-12-11-1436/002",
+          "no-for-2015-12-11-1436/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-tunisia-no-funds",
+      "title": "Correct obl-no-sanksjon-tunisia-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436/a2",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1436, Vedlegg A, artikkel 2 (Regulation 101/2011 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 101/2011 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 101/2011 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 101/2011, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) No 101/2011 Art. 2(2))",
+        "provisions": [
+          "no-for-2015-12-11-1436/002",
+          "no-for-2015-12-11-1436/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-tunisia-report",
+      "title": "Correct obl-no-sanksjon-tunisia-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436/a9",
+      "sourceLabel": "Lovdata, FOR-2015-12-11-1436, Vedlegg A, artikkel 9 (Regulation 101/2011 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 101/2011 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 9 of Regulation 101/2011 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 101/2011, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 9 nr. 1 (Regulation (EU) No 101/2011 Art. 9(1))",
+        "provisions": [
+          "no-for-2015-12-11-1436/002",
+          "no-for-2015-12-11-1436/vedlegg-a-art-009"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-ukraina-freeze",
+      "title": "Correct obl-no-sanksjon-ukraina-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612/a2",
+      "sourceLabel": "Lovdata, FOR-2014-05-09-612, Vedlegg A, artikkel 2 (Regulation 208/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 208/2014 Norwegian law; the duty to freeze is in Article 2 of Regulation 208/2014 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 208/2014, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 1 (Regulation (EU) No 208/2014 Art. 2(1))",
+        "provisions": [
+          "no-for-2014-05-09-612/002",
+          "no-for-2014-05-09-612/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-ukraina-no-funds",
+      "title": "Correct obl-no-sanksjon-ukraina-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612/a2",
+      "sourceLabel": "Lovdata, FOR-2014-05-09-612, Vedlegg A, artikkel 2 (Regulation 208/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 208/2014 Norwegian law; the ban on making funds and economic resources available is in Article 2 of Regulation 208/2014 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 208/2014, which § 2 makes Norwegian law. Under § 2, the list in Annex I is a link to the EU's consolidated list."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 2 nr. 2 (Regulation (EU) No 208/2014 Art. 2(2))",
+        "provisions": [
+          "no-for-2014-05-09-612/002",
+          "no-for-2014-05-09-612/vedlegg-a-art-002"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-ukraina-report",
+      "title": "Correct obl-no-sanksjon-ukraina-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612/a8",
+      "sourceLabel": "Lovdata, FOR-2014-05-09-612, Vedlegg A, artikkel 8 (Regulation 208/2014 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 208/2014 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 8 of Regulation 208/2014 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 208/2014, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) No 208/2014 Art. 8(1))",
+        "provisions": [
+          "no-for-2014-05-09-612/002",
+          "no-for-2014-05-09-612/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-venezuela-freeze",
+      "title": "Correct obl-no-sanksjon-venezuela-freeze: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103/a8",
+      "sourceLabel": "Lovdata, FOR-2017-12-15-2103, Vedlegg A, artikkel 8 (Regulation 2017/2063 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2017/2063 Norwegian law; the duty to freeze is in Article 8 of Regulation 2017/2063 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes IV and V of Regulation (EU) 2017/2063, which § 2 makes Norwegian law. Under § 2, the list in Annex IV is replaced by a national list of its own."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 8 nr. 1 (Regulation (EU) 2017/2063 Art. 8(1))",
+        "provisions": [
+          "no-for-2017-12-15-2103/002",
+          "no-for-2017-12-15-2103/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-venezuela-no-funds",
+      "title": "Correct obl-no-sanksjon-venezuela-no-funds: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103/a8",
+      "sourceLabel": "Lovdata, FOR-2017-12-15-2103, Vedlegg A, artikkel 8 (Regulation 2017/2063 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2017/2063 Norwegian law; the ban on making funds and economic resources available is in Article 8 of Regulation 2017/2063 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes IV and V of Regulation (EU) 2017/2063, which § 2 makes Norwegian law. Under § 2, the list in Annex IV is replaced by a national list of its own."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 8 nr. 2 (Regulation (EU) 2017/2063 Art. 8(2))",
+        "provisions": [
+          "no-for-2017-12-15-2103/002",
+          "no-for-2017-12-15-2103/vedlegg-a-art-008"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-sanksjon-venezuela-report",
+      "title": "Correct obl-no-sanksjon-venezuela-report: cite the annexed regulation's article that holds the duty",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103/a12",
+      "sourceLabel": "Lovdata, FOR-2017-12-15-2103, Vedlegg A, artikkel 12 (Regulation 2017/2063 as the forskrift prints it), consolidated text as amended up to forskrift/2024-11-22-2888 fra 2025-01-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes Regulation 2017/2063 Norwegian law; the duty to inform the competent authority, DEKSA, and to cooperate with it is in Article 12 of Regulation 2017/2063 (Annex A to the forskrift), which the forskrift prints in Norwegian. The correction cites that article beside the section.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2017/2063, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 2; Vedlegg A, artikkel 12 nr. 1 (Regulation (EU) 2017/2063 Art. 12(1))",
+        "provisions": [
+          "no-for-2017-12-15-2103/002",
+          "no-for-2017-12-15-2103/vedlegg-a-art-012"
+        ]
+      }
+    }
+  ]
+}

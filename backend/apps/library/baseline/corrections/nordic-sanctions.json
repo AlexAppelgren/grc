@@ -1,0 +1,20 @@
+{
+  "tranche": "nordic-sanctions",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-fi-pakotelaki-sanctions-offences",
+      "title": "Correct obl-fi-pakotelaki-sanctions-offences: section 4 points to the Criminal Code for the offences and penalties",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659#sec_4",
+      "sourceLabel": "Finlex, 659/1967, 4 §, consolidated text fin@20250182 of 2025-04-25, Swedish swe@20250182. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "Section 4 only says that breaching an Article 215 sanctions regulation or an order under the Act is punished under chapter 46, sections 3a to 3d of the Criminal Code; the offence elements and penalties the old text listed are in the Criminal Code, not in this Act, so the summary now says where they are.",
+      "payload": {
+        "summaries": {
+          "en": "Breaching, or attempting to breach, an EU sanctions regulation adopted under Article 215 TFEU, or a regulatory order an authority issues under the Act, is punishable as section 4 provides. The offences and their penalties are laid down in chapter 46, sections 3a to 3d of the Criminal Code (39/1889), to which section 4 refers."
+        },
+        "originalLanguage": "en"
+      }
+    }
+  ]
+}

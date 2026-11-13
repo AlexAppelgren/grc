@@ -1,0 +1,72 @@
+{
+  "tranche": "eu-insurance-funds",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-eltif-portfolio-composition",
+      "title": "Correct obl-eu-eltif-portfolio-composition: the transition for older ELTIFs is in Regulation (EU) 2023/606, not in Article 13",
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/760/2024-01-10/eng#art_13",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760, Article 13, consolidated text of 2024-01-10 (CELEX 02015R0760-20240110). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 13 sets the limits and the exemption for ELTIFs marketed only to professional investors but says nothing about the start date or older ELTIFs; those rules are in Article 2 of Regulation (EU) 2023/606 (read in its Official Journal text), which the summary now names.",
+      "payload": {
+        "summaries": {
+          "en": "An ELTIF must invest at least 55% of its capital in eligible investment assets and generally no more than 20% in any single qualifying portfolio undertaking, real asset or fund, with further limits for securitisations and counterparty exposure; only the 55% floor applies to an ELTIF marketed solely to professional investors. Under Article 2 of Regulation (EU) 2023/606, which set these rules from 10 January 2024, ELTIFs authorised under the earlier rules are deemed compliant until 11 January 2029, or without end if they raise no additional capital, unless they opt into the new rules by notifying their competent authority."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-eu-sii-dr-sfcr-publication",
+      "title": "Correct obl-eu-sii-dr-sfcr-publication: the 2027 rules come from Delegated Regulation (EU) 2026/269",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/2024-11-14/eng#art_301",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 301, consolidated text of 2024-11-14 (CELEX 02015R0035-20241114). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Articles 300 and 301 in force today have no two-part report and no duty to tell the supervisor where it is published; both come from Delegated Regulation (EU) 2026/269, Article 1(92) and (93), from 30 January 2027 (read in its Official Journal text), and the summary now says so plainly.",
+      "payload": {
+        "summaries": {
+          "en": "Insurers must disclose their solvency and financial condition report within 14 weeks after the financial year end, on their own website or, where permitted, their trade association's, keep it there for at least five years, send copies on request, and submit it and any update electronically to the supervisor. Delegated Regulation (EU) 2026/269 amends these articles from 30 January 2027: the report then has two parts, both of which must be disclosed and easily accessible, and the insurer must tell the supervisor where on the website they are published."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-eu-sii-dr-system-of-governance",
+      "title": "Correct obl-eu-sii-dr-system-of-governance: the 2027 evaluation of the body's composition comes from Delegated Regulation (EU) 2026/269",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/2024-11-14/eng#art_258",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 258, consolidated text of 2024-11-14 (CELEX 02015R0035-20241114). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 258(6) in force today requires only the regular evaluation of the system of governance; the assessment of the body's composition, gender balance, diversity, effectiveness and internal governance is added by Delegated Regulation (EU) 2026/269, Article 1(80), from 30 January 2027 (read in its Official Journal text), and the summary now says so plainly.",
+      "payload": {
+        "summaries": {
+          "en": "Insurance and reinsurance undertakings must organise clear decision-making, reporting lines and allocation of responsibilities, have a management body that is qualified both collectively and member by member, employ competent staff, keep reliable information systems and orderly records, and ensure at least two persons effectively run the undertaking. They must regularly evaluate whether the system of governance is adequate and effective and remedy deficiencies. Delegated Regulation (EU) 2026/269 adds from 30 January 2027 that the evaluation also assesses the composition, including gender balance and diversity, the effectiveness and the internal governance of the administrative, management or supervisory body."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-eu-sii-dr-variable-pay-malus-clawback",
+      "title": "Correct obl-eu-sii-dr-variable-pay-malus-clawback: these rules are inserted into Article 275 by Delegated Regulation (EU) 2026/269",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/2024-11-14/eng#art_275",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 275, consolidated text of 2024-11-14 (CELEX 02015R0035-20241114). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 275 in force today has no point (ea) and no paragraphs 2a or 2b; every rule of this duty is inserted by Delegated Regulation (EU) 2026/269, Article 1(83), from 30 January 2027 (read in its Official Journal text, which bears the summary out), and the summary now says where the rules come from.",
+      "payload": {
+        "summaries": {
+          "en": "Under the changes Delegated Regulation (EU) 2026/269 makes to Article 275, from 30 January 2027 insurers may pay or vest variable remuneration, including deferred parts, only if it is sustainable given the undertaking's overall financial situation and justified by performance; deferred pay may vest no faster than pro rata, and variable pay must generally shrink markedly when performance is subdued or negative. Up to 100% of variable pay must be open to malus or clawback under set criteria covering conduct that caused significant losses and loss of fitness and propriety. Deferral need not apply where a person's annual variable pay is at most EUR 50 000 and at most one third of total annual pay, unless the supervisor decides otherwise."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-eu-esma-lmt-selection",
+      "title": "Correct obl-eu-esma-lmt-selection: the guidelines' start hangs on the RTS date of application",
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 4, guidelines as published. Source: ESMA",
+      "why": "Paragraphs 3 and 4 tie the start to the date of application of the regulatory technical standards and give funds existing before it twelve more months, without a calendar date; the summary now says what the dates hang on, and that those standards (Delegated Regulations (EU) 2026/466 and 2026/465, Article 11) apply from 16 April 2026.",
+      "payload": {
+        "summaries": {
+          "en": "Fund managers remain responsible for liquidity risk and should choose the liquidity management tools for each UCITS or open-ended AIF, at least the two the Directives require, considering the merit of one quantitative tool and one anti-dilution tool, after weighing the fund's structure, strategy, dealing terms, liquidity profile, stress test results, investor base and operational constraints. They should be able to show the authority that activation and calibration serve all investors, and prevent investors from gaining an edge from knowing a tool may be activated. The guidelines apply from the date of application of the regulatory technical standards under Article 18a(3) of the UCITS Directive and Article 16(2g) of the AIFMD (16 April 2026 under Delegated Regulations (EU) 2026/466 and 2026/465), and for a fund that existed before that date twelve months later."
+        },
+        "originalLanguage": "en"
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "tranche": "eu-investment-services",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-mifir-transaction-report-accuracy",
+      "title": "Correct obl-eu-mifir-transaction-report-accuracy: the firm is not responsible for reporting failures caused by an ARM or a trading venue",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/600/2025-11-23/eng#art_26",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, Article 26, consolidated text of 2025-11-23 (CELEX 02014R0600-20251123). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 26(7) relieves the firm of responsibility for reporting failures attributable to an ARM acting on its behalf or to a trading venue and makes them responsible instead; the old summary said the firm stays responsible in those cases.",
+      "payload": {
+        "summaries": {
+          "en": "The firm is responsible for the completeness, accuracy and timely submission of its transaction reports, except for failures caused by an approved reporting mechanism (ARM) acting on its behalf or by the trading venue that reports for it, which are theirs. It must still take reasonable steps to verify the completeness, accuracy and timeliness of reports submitted on its behalf. Whoever reports a transaction must correct any errors or omissions and submit a corrected report to the competent authority."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-eu-best-ex-rts-policy-content",
+      "title": "Correct obl-eu-best-ex-rts-policy-content: cite Article 11 for the start date of 12 February 2028",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj#art_11",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "why": "The start date of 12 February 2028 is in Article 11, which says when the Regulation applies; Article 2 gives no date, so Article 11 is added to the citation.",
+      "payload": {
+        "summaries": {
+          "en": "From 12 February 2028 the order execution policy must describe the internal governance for selecting execution venues and the checks that each venue is authorised. The firm must keep an internal list of selected venues showing, for each, who approved it and when, and for which instrument classes and transaction types it may be used."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 2, Art. 11",
+        "provisions": [
+          "celex-32026r0825/002",
+          "celex-32026r0825/011"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-best-ex-rts-venue-selection",
+      "title": "Correct obl-eu-best-ex-rts-venue-selection: cite Article 11 for the start date of 12 February 2028",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj#art_11",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "why": "The start date of 12 February 2028 is in Article 11, which says when the Regulation applies; Article 3 gives no date, so Article 11 is added to the citation.",
+      "payload": {
+        "summaries": {
+          "en": "From 12 February 2028, when choosing venues for its execution policy the firm must take account of its clients' characteristics and needs and the best execution factors, in particular available order types, typical order sizes and frequencies, execution prices compared with reference data, and the fees and costs charged to the firm."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 3, Art. 11",
+        "provisions": [
+          "celex-32026r0825/003",
+          "celex-32026r0825/011"
+        ]
+      }
+    }
+  ]
+}

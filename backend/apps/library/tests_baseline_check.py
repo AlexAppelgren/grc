@@ -281,7 +281,6 @@ class TheBaselinesCorrections(SimpleTestCase):
             ("a provision of another instrument", payload(provisions=["dk-act/001", "dk-other/001"]), "'dk-other/001' is not a provision of 'dk-act' in the provisions files"),
             ("a provision nobody extracted", payload(provisions=["dk-act/099"]), "'dk-act/099' is not a provision of 'dk-act'"),
             ("a provision named twice", payload(provisions=["dk-act/001", "dk-act/001"]), ".payload.provisions: names a provision twice"),
-            ("the provisions that cite it already", payload(provisions=["dk-act/001"]), ".payload.provisions: are the provisions that already cite the duty"),
             ("a source for a field it does not set", correction(fieldSources={"terms": "https://www.retsinformation.dk/"}), ".fieldSources.terms: names no field this correction sets"),
         ]
         for case, entry, expected in cases:

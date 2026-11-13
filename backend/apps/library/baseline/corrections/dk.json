@@ -1,0 +1,82 @@
+{
+  "tranche": "dk",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-dk-betl-framework-contract-information",
+      "title": "Correct obl-dk-betl-framework-contract-information: cite § 65 for the burden of proof",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+      "sourceLabel": "Retsinformation, LOV nr 652 af 08/06/2017, § 65, consolidated text, lovbekendtgørelse nr. 463 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "The provider's burden of proving that it gave the required information is in § 65, which the obligation did not cite; § 65 is now cited beside § 72, which carries the information list, its timing and the durable medium.",
+      "payload": {
+        "summaries": {
+          "en": "A payment service provider must give the user the information the Act lists about the provider, the use of the service, charges, interest and exchange rates, communication, safeguards and corrective measures, changes to and termination of the contract, and complaints and redress, on paper or another durable medium and no later than when the framework contract is concluded. The provider bears the burden of proving that it met the information requirements (§ 65)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§§ 65 and 72",
+        "provisions": [
+          "dk-lov-2017-652/065",
+          "dk-lov-2017-652/072"
+        ]
+      }
+    },
+    {
+      "key": "obl-dk-betl-refund-unauthorised",
+      "title": "Correct obl-dk-betl-refund-unauthorised: cite §§ 97 and 100 for the payer's limits and the objection period",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+      "sourceLabel": "Retsinformation, LOV nr 652 af 08/06/2017, § 100, consolidated text, lovbekendtgørelse nr. 463 of 2026. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "The DKK 375 limit on the payer's liability is in § 100 and the 13-month time limit for objections is in § 97; § 99, the only section cited, has neither, so both sections are now cited.",
+      "payload": {
+        "summaries": {
+          "en": "The payer's provider is liable to the payer for losses from unauthorised payment transactions and must refund the amount immediately and no later than the end of the following working day, unless it has reasonable grounds to suspect fraud and reports those grounds to the Danish FSA. How far the payer bears losses from unauthorised use by others is set by § 100, for example up to DKK 375 where the personalised security credential was used and without limit where the payer acted fraudulently, and under § 97 objections must reach the provider as soon as possible and no later than 13 months after the debit."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 97, § 99, stk. 1, and § 100",
+        "provisions": [
+          "dk-lov-2017-652/097",
+          "dk-lov-2017-652/099",
+          "dk-lov-2017-652/100"
+        ]
+      }
+    },
+    {
+      "key": "obl-dk-nis2-incident-notification",
+      "title": "Correct obl-dk-nis2-incident-notification: cite § 1, stk. 3, for the sector-specific exclusion",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/434",
+      "sourceLabel": "Retsinformation, LOV nr 434 af 06/05/2025, § 1, text as enacted, lov nr. 434 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "The exclusion of entities whose sector-specific EU acts have at least the same effect is in § 1, stk. 3, which the obligation did not cite; § 1 is now cited beside §§ 12 and 13, which carry the notification duty and its deadlines.",
+      "payload": {
+        "summaries": {
+          "en": "Essential and important entities must notify the competent authority and the CSIRT of every significant incident: an early warning without undue delay and within 24 hours of becoming aware of it, an incident notification within 72 hours, and a final report no later than one month after the incident notification. Under § 1, stk. 3, the Act does not apply to entities for which sector-specific EU acts and their national implementation have at least the same effect as its rules on risk management and incident notification (§§ 6, 12, 13 and 15), which financial entities under DORA, Regulation (EU) 2022/2554, should check first."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1, stk. 3, and §§ 12-13",
+        "provisions": [
+          "dk-lov-2025-434/001",
+          "dk-lov-2025-434/012",
+          "dk-lov-2025-434/013"
+        ]
+      }
+    },
+    {
+      "key": "obl-dk-nis2-risk-management",
+      "title": "Correct obl-dk-nis2-risk-management: cite § 1, stk. 3, for the sector-specific exclusion",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/434",
+      "sourceLabel": "Retsinformation, LOV nr 434 af 06/05/2025, § 1, text as enacted, lov nr. 434 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "The exclusion of entities whose sector-specific EU acts have at least the same effect is in § 1, stk. 3, which the obligation did not cite; § 1 is now cited beside §§ 6 and 7, which carry the measures, management approval, oversight and training.",
+      "payload": {
+        "summaries": {
+          "en": "Essential and important entities must take appropriate and proportionate technical, operational and organisational measures to manage the risks to their network and information systems, covering at least the areas § 6 lists, among them risk analysis and information system security policies, incident handling, business continuity and supply-chain security, and management must approve and oversee them and attend cybersecurity training. Under § 1, stk. 3, the Act does not apply to entities for which sector-specific EU acts and their national implementation have at least the same effect as its rules on risk management and incident notification (§§ 6, 12, 13 and 15), which financial entities under DORA, Regulation (EU) 2022/2554, should check first."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1, stk. 3, and §§ 6-7",
+        "provisions": [
+          "dk-lov-2025-434/001",
+          "dk-lov-2025-434/006",
+          "dk-lov-2025-434/007"
+        ]
+      }
+    }
+  ]
+}

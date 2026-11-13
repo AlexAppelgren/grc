@@ -1,0 +1,176 @@
+{
+  "tranche": "fi",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-fi-aifml-reporting",
+      "title": "Correct obl-fi-aifml-reporting: leverage, delegation, marketing states and identifiers apply from 16 April 2027",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162#part_3__chp_7__sec_3",
+      "sourceLabel": "Finlex, 162/2014, 7 luku 3 §, consolidated text fin@20260261 of 2026-04-17, Swedish swe@20260261. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "In the section as Act 1444/2025 worded it from 16 April 2026, items 3 and 6 to 8 (positions and assets, leverage, delegation, EEA marketing states) and the identifier rule apply only from 16 April 2027; the old summary presented leverage reporting as already applying and dated only positions and assets.",
+      "payload": {
+        "summaries": {
+          "en": "For each fund it manages, the manager must regularly report sufficient information to FIN-FSA on the markets in which it participates or actively trades, the instruments it trades, its principal investments, its most significant risk concentrations, other factors material to systemic risk and other information and documents needed for supervision. From 16 April 2027 the report must also cover each fund's positions and assets, its leverage and total amount of leverage, any delegation of portfolio or risk management and the EEA States where its units are marketed, and the information on markets, instruments and positions and assets must carry the identifiers FIN-FSA needs to link it with other supervisory or public data."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-fi-kryptol-secrecy",
+      "title": "Correct obl-fi-kryptol-secrecy: cite 7 § for disclosure to authorities",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402#chp_3__sec_7",
+      "sourceLabel": "Finlex, 402/2024, 7 §, consolidated text fin@ of 2024-06-28, Swedish swe@. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "6 § allows disclosure only with the protected person's consent; the duty to give the information to prosecutors, pre-trial investigators and other authorities entitled to it by law is in 7 §, which is now cited. The summary also now carries 6 §'s ban on disclosure to the general meeting and its extension to offerors and issuers.",
+      "payload": {
+        "summaries": {
+          "en": "Anyone who, as a member of a governing body or an employee of a crypto-asset service provider, its group company or a firm acting for it, or while performing a task for one of them, learns information about a customer's financial position or personal circumstances or a business secret must keep it secret unless the person it protects consents, freely, expressly and knowing how the information may be used, and must not give it to the general meeting either. The same secrecy binds offerors, persons seeking admission to trading, authorised issuers and the persons referred to in Articles 16(1) and 48(1) of MiCA. The information must, however, be given to prosecutors and pre-trial investigators for investigating an offence and to other authorities entitled to it by law (7 §)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "6–7 §",
+        "provisions": [
+          "fi-sd-2024-402/006",
+          "fi-sd-2024-402/007"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-ksl-creditworthiness",
+      "title": "Correct obl-fi-ksl-creditworthiness: the stricter assessment comes with Act 31/2026",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_14",
+      "sourceLabel": "Finlex, 38/1978, 7 luku 14 §, consolidated text fin@20260835 of 2026-09-04, Swedish swe@20260835. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "7 luku 14 § as in force today requires sufficient register and other information on income and other financial circumstances; the stricter assessment the summary described is the section as Act 31/2026 rewrites it from 20 November 2026, which the cited text cannot show before then, so the summary now names that act as its source.",
+      "payload": {
+        "summaries": {
+          "en": "Before concluding a credit agreement the creditor must assess whether the consumer can meet the obligations under it, using sufficient information on income and other financial circumstances from the credit information register and other sources; before agreeing to raise a credit amount or limit it must make sure the information is up to date, and reassess creditworthiness if the increase is significant. Act 31/2026 rewrites this section from 20 November 2026: the assessment must then be thorough and in the consumer's interest, based on information on income, expenses and other financial circumstances that is necessary and proportionate to the credit, obtained from the consumer, the credit information register and other sources and duly verified."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-fi-kybl-risk-management",
+      "title": "Correct obl-fi-kybl-risk-management: cite 5 § for equivalent sector rules",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124#chp_1__sec_5",
+      "sourceLabel": "Finlex, 124/2025, 5 §, consolidated text fin@20260785 of 2026-09-04, Swedish swe@20260785. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "The rule that equivalent requirements in other law or in an EU regulation apply instead is in 5 §, which the obligation did not cite; 5 § is now cited, and the summary now also names the national rules it covers.",
+      "payload": {
+        "summaries": {
+          "en": "An entity within the Act's scope must identify, assess and manage the risks to the security of the network and information systems it uses, under an up-to-date cybersecurity risk-management framework and with up-to-date, proportionate and adequate measures that prevent or minimise the impact of incidents. Under 5 §, where other national legislation, an EU regulation or a Commission regulation under the NIS 2 Directive sets requirements on cybersecurity risk management or incident notification that are at least equivalent in effect, those apply instead of the corresponding rules of the Act."
+        },
+        "originalLanguage": "en",
+        "refLabel": "5 §, 7–9 §",
+        "provisions": [
+          "fi-sd-2025-124/005",
+          "fi-sd-2025-124/007",
+          "fi-sd-2025-124/008",
+          "fi-sd-2025-124/009"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-lll-fit-proper",
+      "title": "Correct obl-fi-lll-fit-proper: cite 7 luku 4 a and 4 b § for competence and notification",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_7__sec_4a",
+      "sourceLabel": "Finlex, 610/2014, 7 luku 4 a §, consolidated text fin@20260714 of 2026-07-09, Swedish swe@20260714. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "7 luku 4 § carries reliability, the exclusions and the duty to verify; the knowledge and experience requirements are in 4 a § and the suitability assessment and notification of management changes to FIN-FSA in 4 b §, both now cited. The extension to key function holders is in force, so the summary no longer presents it as coming.",
+      "payload": {
+        "summaries": {
+          "en": "Members of a credit institution's senior management and its key function holders must be reliable and of good repute and act honestly, board members must act independently, and none may be a minor, have a guardian, have restricted legal capacity, be bankrupt or be under a business ban; the board and the business management must each collectively, and each business manager and key function holder individually, have the knowledge and experience their role requires. The institution must assess and ensure their suitability before they take up their duties and regularly throughout their term, keep the information up to date and notify FIN-FSA without undue delay of changes or new information concerning its senior management. An institution referred to in Article 91(1d) of the Capital Requirements Directive must notify FIN-FSA of a new board chair or business manager at least 30 days before they start."
+        },
+        "originalLanguage": "en",
+        "refLabel": "7 luku 4–4 b §",
+        "provisions": [
+          "fi-sd-2014-610/007-004",
+          "fi-sd-2014-610/007-004a",
+          "fi-sd-2014-610/007-004b"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-lll-governance",
+      "title": "Correct obl-fi-lll-governance: cite 9 luku 3 § and state the chair ban as it stands",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_3__chp_9__sec_3",
+      "sourceLabel": "Finlex, 610/2014, 9 luku 3 §, consolidated text fin@20260714 of 2026-07-09, Swedish swe@20260714. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "The board's approval of the risk strategies is in 9 luku 3 §, which is now cited; 7 luku 1 § as in force today forbids the chair of the board from also being managing director with no permission route, which the old summary still offered.",
+      "payload": {
+        "summaries": {
+          "en": "A credit institution must have governance arrangements that are comprehensive and proportionate to the nature, scale and complexity of its business, so that it is managed effectively and prudently and its board can effectively oversee management. The board ensures reliable internal control over financial reporting, finances, operations, compliance and disclosure, approves the strategies and procedures for the institution's risks and reviews them at least every other year (9 luku 3 §); duties are segregated to avoid conflicts of interest, and the board must regularly assess the effectiveness of the arrangements and remedy deficiencies. The chair of the board may not at the same time be the managing director."
+        },
+        "originalLanguage": "en",
+        "refLabel": "7 luku 1 §, 9 luku 3 §",
+        "provisions": [
+          "fi-sd-2014-610/007-001",
+          "fi-sd-2014-610/009-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-lrl-registration",
+      "title": "Correct obl-fi-lrl-registration: cite 1 § for the exclusion of credit institutions",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186#sec_1",
+      "sourceLabel": "Finlex, 186/2023, 1 §, consolidated text fin@20260353 of 2026-05-08, Swedish swe@20260353. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "The exclusion of credit institutions that the summary states is in 1 §, which the obligation did not cite; 1 § is now cited, and the summary now lists the other exclusions it makes.",
+      "payload": {
+        "summaries": {
+          "en": "A trader may grant consumer credit or housing company loans only if registered as a creditor under the Act, and may intermediate peer-to-peer loans only if registered as a peer-to-peer lending intermediary or as a creditor; it must file a registration notification with FIN-FSA, which keeps the register. Credit institutions, branches of third-country credit institutions, foreign EEA credit institutions, pawnbroking institutions, traders that lend only to finance their own sales and public bodies are outside the Act (1 §); from 20 November 2026 Act 32/2026 narrows the own-sales exclusion to micro, small and medium-sized traders that, alongside their main business, defer payment only for their own sales and charge no interest or fees beyond those due under the Interest Act or the Debt Collection Act."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 §, 3–4 §",
+        "provisions": [
+          "fi-sd-2023-186/001",
+          "fi-sd-2023-186/003",
+          "fi-sd-2023-186/004"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-rfl-annual-reporting",
+      "title": "Correct obl-fi-rfl-annual-reporting: cite 107 § for the first year of application",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042#chp_4__sec_107",
+      "sourceLabel": "Finlex, 1042/2025, 107 §, consolidated text fin@ of 2025-11-28, Swedish swe@. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "That the Act applies first to calendar year 2026 is set by 107 §, its entry-into-force and transitional section, which is now cited beside 104 §.",
+      "payload": {
+        "summaries": {
+          "en": "Each calendar year a reporting financial institution must report the prescribed information on reportable accounts, or that it had none, to the Tax Administration by the end of the following January, using the electronic filing method the Tax Administration publishes. The Act applies for the first time to calendar year 2026, and reporting for earlier years follows the rules in force before it (107 §)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "104 §, 107 §",
+        "provisions": [
+          "fi-sd-2025-1042/104",
+          "fi-sd-2025-1042/107"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-rpl-suspend-transaction",
+      "title": "Correct obl-fi-rpl-suspend-transaction: cite 4 luku 1 § for the report",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_4__sec_1",
+      "sourceLabel": "Finlex, 444/2017, 4 luku 1 §, consolidated text fin@20260818 of 2026-09-04, Swedish swe@20260818. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "4 luku 5 § allows a transaction that cannot be stopped to be completed but says nothing about reporting; the duty to report a suspicious transaction to the Financial Intelligence Unit, whether completed, suspended or refused, is in 4 luku 1 §, which is now cited.",
+      "payload": {
+        "summaries": {
+          "en": "An obliged entity must suspend a transaction for further checks or refuse it if the transaction is suspicious or it suspects the funds are meant for terrorist financing. If the transaction cannot be halted, or suspending or refusing it would likely make it harder to establish the beneficial owner, it may be completed; the suspicious transaction must in every case be reported to the Financial Intelligence Unit without delay, whether it was completed, suspended or refused (4 luku 1 §)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "4 luku 1 §, 5 §",
+        "provisions": [
+          "fi-sd-2017-444/004-001",
+          "fi-sd-2017-444/004-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-fi-vyl-orsa",
+      "title": "Correct obl-fi-vyl-orsa: the annual rule and its relief come with Act 600/2026",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_2__chp_6__sec_12a",
+      "sourceLabel": "Finlex, 521/2008, 6 luku 12 a §, consolidated text fin@20260600 of 2026-06-26, Swedish swe@20260600. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "The section in force requires the assessment regularly; the annual rule is the wording Act 600/2026 gives subsection 1 from 30 January 2027, which the cited text cannot show before then, and from the same date subsections 6 and 7 let small and non-complex companies and qualifying captives assess at least every other year.",
+      "payload": {
+        "summaries": {
+          "en": "An insurance company must carry out its own risk and solvency assessment regularly and without delay after any significant change in its risk profile, report the results to FIN-FSA and take the assessment into account in its strategic decisions. Act 600/2026 makes the assessment annual from 30 January 2027, but from that date a small and non-complex company, a company with FIN-FSA's approval under chapter 2a, section 14, and a qualifying captive insurer may make it at least every other year, unless FIN-FSA decides that a small and non-complex company must make it more often."
+        },
+        "originalLanguage": "en"
+      }
+    }
+  ]
+}

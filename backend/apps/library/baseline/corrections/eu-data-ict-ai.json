@@ -1,0 +1,104 @@
+{
+  "tranche": "eu-data-ict-ai",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-aiact-deployer-duties",
+      "title": "Correct obl-eu-aiact-deployer-duties: cite Article 113 for the date Chapter III applies",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng#art_113",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689, Article 113, consolidated text of 2026-07-27 (CELEX 02024R1689-20260727). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 111(2) ties the cut-off for systems already on the market to the date Chapter III applies under Article 113, which sets 2 December 2027 for Annex III systems and 2 August 2028 for Annex I systems; Article 113 is added to the citation and the summary gives both dates.",
+      "payload": {
+        "summaries": {
+          "en": "As a deployer of a high-risk AI system the firm must use it in line with the provider's instructions, assign human oversight to competent, trained persons with authority, ensure input data it controls are relevant and representative, monitor operation, suspend use and inform the provider and authority of risks and serious incidents, keep the logs it controls for at least six months, and inform workers' representatives and affected workers before workplace use. A financial institution meets the monitoring duty through its internal governance rules and keeps the logs within its financial-services documentation. A system placed on the market or put into service before Chapter III applies to it (2 December 2027 for Annex III systems, 2 August 2028 for Annex I systems) is caught only if its design changes significantly from that date."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 26(1), (2) and (4) to (7), Art. 111(2) and Art. 113, third paragraph, point (c)",
+        "provisions": [
+          "celex-32024r1689/026",
+          "celex-32024r1689/111",
+          "celex-32024r1689/113"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-aiact-fundamental-rights-impact-assessment",
+      "title": "Correct obl-eu-aiact-fundamental-rights-impact-assessment: cite Article 113 for the date of 2 December 2027",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng#art_113",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689, Article 113, consolidated text of 2026-07-27 (CELEX 02024R1689-20260727). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 111(2) ties the cut-off for systems already on the market to the date Chapter III applies under Article 113, which sets 2 December 2027 for Annex III systems such as credit scoring and life and health insurance pricing; Article 113 is added to the citation.",
+      "payload": {
+        "summaries": {
+          "en": "Before first using a high-risk AI system to evaluate creditworthiness or credit scores of natural persons, or for risk assessment and pricing in life and health insurance, the firm must assess the impact on fundamental rights: the processes and period of use, the people affected, the specific risks of harm, human oversight and the measures if risks materialise. It notifies the market surveillance authority of the results on the template, updates the assessment when elements change, and may cross-refer to its GDPR data protection impact assessment. Systems placed on the market or put into service before 2 December 2027, when Chapter III applies to these Annex III systems, are caught only if their design changes significantly from that date."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 27(1) to (4), Art. 111(2) and Art. 113, third paragraph, point (c)(i)",
+        "provisions": [
+          "celex-32024r1689/027",
+          "celex-32024r1689/111",
+          "celex-32024r1689/113"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-aiact-high-risk-provider",
+      "title": "Correct obl-eu-aiact-high-risk-provider: cite Article 113 for the date of 2 December 2027",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng#art_113",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689, Article 113, consolidated text of 2026-07-27 (CELEX 02024R1689-20260727). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 111(2) ties the cut-off for systems already on the market to the date Chapter III applies under Article 113, which sets 2 December 2027 for Annex III systems such as credit scoring and life and health insurance pricing; Article 113 is added to the citation.",
+      "payload": {
+        "summaries": {
+          "en": "Where the firm places on the market or puts into service a high-risk AI system, such as one that evaluates the creditworthiness of natural persons or sets their credit score (fraud detection excepted) or one for risk assessment and pricing in life and health insurance, it must meet the Chapter III Section 2 requirements, run a quality management system, keep documentation and logs, complete the conformity assessment, EU declaration of conformity and CE marking, and register the system. A financial institution meets most of the quality management, documentation and log duties through its financial-services governance rules. Systems placed on the market or put into service before 2 December 2027, when Chapter III applies to these Annex III systems, are caught only if their design changes significantly from that date."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 16, Art. 17(4), Art. 18(3), Art. 19(2), Art. 111(2), Art. 113, third paragraph, point (c)(i), and Annex III point 5(b) and (c)",
+        "provisions": [
+          "celex-32024r1689/016",
+          "celex-32024r1689/017",
+          "celex-32024r1689/018",
+          "celex-32024r1689/019",
+          "celex-32024r1689/111",
+          "celex-32024r1689/113",
+          "celex-32024r1689/annex-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-aiact-prohibited-practices",
+      "title": "Correct obl-eu-aiact-prohibited-practices: cite Article 113 for the dates the bans apply",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng#art_113",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689, Article 113, consolidated text of 2026-07-27 (CELEX 02024R1689-20260727). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 113, third paragraph, point (a) applies the bans from 2 February 2025 and the two added bans in Article 5(1)(ba) and (bb) from 2 December 2026; it is added to the citation.",
+      "payload": {
+        "summaries": {
+          "en": "The firm must not place on the market, put into service or use AI systems for the practices Article 5 bans, among them manipulative or deceptive techniques, exploiting vulnerabilities due to age, disability or a social or economic situation, social scoring that leads to unjustified or unrelated detrimental treatment, predicting criminal offending based solely on profiling, and inferring emotions at the workplace. Two bans added by Regulation (EU) 2026/1744, on AI-generated intimate imagery and child sexual abuse material, apply from 2 December 2026; the others have applied since 2 February 2025."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 5(1) and Art. 113, third paragraph, point (a)",
+        "provisions": [
+          "celex-32024r1689/005",
+          "celex-32024r1689/113"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-dora-cyber-threat-notification",
+      "title": "Correct obl-eu-dora-cyber-threat-notification: cite Article 20 for the content and form of the notification",
+      "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_20",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 20, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "why": "Article 19 ties only incident reports to templates; the content of a cyber-threat notification and its standard form are set by the technical standards Article 20 provides for, so Article 20 is added to the citation.",
+      "payload": {
+        "summaries": {
+          "en": "The firm may, on a voluntary basis, notify a significant cyber threat to its competent authority when it considers the threat relevant to the financial system, service users or clients. When it does, the notification follows the content and the standard form set by the technical standards adopted under Article 20."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 19(2), Art. 20",
+        "provisions": [
+          "celex-32022r2554/019",
+          "celex-32022r2554/020"
+        ]
+      }
+    }
+  ]
+}

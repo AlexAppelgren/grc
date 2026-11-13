@@ -1,0 +1,33 @@
+{
+  "tranche": "eu-market-abuse",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-mar-bb-rts-buyback-disclosure",
+      "title": "Correct obl-eu-mar-bb-rts-buyback-disclosure: the reports go to each trading venue's authority here, and MAR now names another",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj#art_2",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052, Article 2, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "why": "Article 2(2) sends the reports to the competent authority of each trading venue where the shares are admitted or traded, while the old summary named only the authority of the most relevant market, which comes from Article 5(3) of the Market Abuse Regulation as it now reads, not from this Regulation; the summary now gives both and where each comes from.",
+      "payload": {
+        "summaries": {
+          "en": "Before trading under a buy-back programme the issuer must publicly disclose its purpose, maximum amount, maximum number of shares and duration, and any later changes. It must record each transaction, report the transactions in detailed and aggregated form and publish them no later than the end of the seventh daily market session after execution, and keep them on its website for at least five years. This Regulation sends the reports to the authority of each trading venue where the shares are admitted to trading or traded, while Article 5(3) of the Market Abuse Regulation as it now reads sends them to the authority of the most relevant market in terms of liquidity, which forwards them to the venues' authorities on request."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-eu-mar-2016-522-manipulation-indicators",
+      "title": "Correct obl-eu-mar-2016-522-manipulation-indicators: the duty to take the indicators into account is in MAR, the practices are here",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/522/2026-08-05/eng#art_4",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522, Article 4, consolidated text of 2026-08-05 (CELEX 02016R0522-20260805). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 4 and Annex II only lay down the practices that specify the indicators of Annex I to the Market Abuse Regulation; the duty to take those indicators into account when examining orders and transactions is in Annex I to that Regulation, so the summary now says so.",
+      "payload": {
+        "summaries": {
+          "en": "Under Annex I to the Market Abuse Regulation, the firm must take its indicators of manipulative behaviour into account when examining orders and transactions; Annex II to this Regulation lays down the practices that specify those indicators, such as layering and spoofing or pump and dump. Since 5 August 2026 the annex states that the indicators and practices may be assessed over time frames longer or shorter than a day or trading session, particularly for less liquid instruments and algorithmic trading."
+        },
+        "originalLanguage": "en"
+      }
+    }
+  ]
+}

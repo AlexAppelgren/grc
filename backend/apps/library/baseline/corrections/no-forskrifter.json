@@ -1,0 +1,28 @@
+{
+  "tranche": "no-forskrifter",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-no-doraf-tlpt",
+      "title": "Correct obl-no-doraf-tlpt: cite § 14, which makes Norges Bank the test coordinator",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-24-1296/%C2%A714",
+      "sourceLabel": "Lovdata, FOR-2025-06-24-1296, § 14, consolidated text as amended up to forskrift/2026-08-20-1657 fra 2026-09-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "None of §§ 12, 13, 15 and 16 gives Norges Bank the role of coordinating the test; § 14, in force since 1 September 2026, makes Norges Bank the TLPT cyber team responsible for coordinating it, so the citation now names § 14.",
+      "payload": {
+        "summaries": {
+          "en": "Finanstilsynet decides, after hearing Norges Bank, which firms must carry out threat-led penetration testing under Article 26 of the Digital Operational Resilience Act and how often. A designated firm must have its proposal of the functions to be tested approved by Norges Bank, which acts as the TLPT cyber team, coordinates the test and issues the attestation of completion, while Finanstilsynet follows up the findings and remediation plan; Norges Bank's costs for this work are shared among the designated firms."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 12, § 13, § 14, § 15, § 16",
+        "provisions": [
+          "no-for-2025-06-24-1296/012",
+          "no-for-2025-06-24-1296/013",
+          "no-for-2025-06-24-1296/014",
+          "no-for-2025-06-24-1296/015",
+          "no-for-2025-06-24-1296/016"
+        ]
+      }
+    }
+  ]
+}

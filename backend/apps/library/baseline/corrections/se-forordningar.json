@@ -1,0 +1,133 @@
+{
+  "tranche": "se-forordningar",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-se-cybersakerhetsforordning-registration-to-fra",
+      "title": "Correct obl-se-cybersakerhetsforordning-registration-to-fra: drop the supervisor sentence the cited text does not carry",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetsforordning-20251507_sfs-2025-1507/#P5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1507, 5 §, consolidated text as amended up to SFS 2026:623. Källa: Sveriges riksdag",
+      "why": "5 and 23 §§ carry the filing duty and name the National Defence Radio Establishment, but not Finansinspektionen's role. That role is in 7 §, a table the source does not give as running text, and it is not part of this filing duty, so the sentence is removed rather than cited.",
+      "payload": {
+        "summaries": {
+          "en": "An operator covered by the Cybersecurity Act (2025:1506) must file the notification required by 2 kap. 2 § of that act with the single point of contact, which 23 § names as the National Defence Radio Establishment (Försvarets radioanstalt)."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-se-effektivrantaforordning-apr-calculation",
+      "title": "Correct obl-se-effektivrantaforordning-apr-calculation: drop the wording that applies only from 20 November 2026",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/#P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, 2 §, consolidated text as amended up to SFS 2026:1031. Källa: Sveriges riksdag",
+      "why": "The cited 2 to 4 §§ in force today give the formula of Directive 2008/48/EC; the 2023/2225 rule (SFS 2026:1031) applies only from 20 November 2026, so it is removed until that wording is held. The exclusion of mortgage credit is in 1 §, now cited.",
+      "payload": {
+        "summaries": {
+          "en": "For consumer credit other than residential mortgage credit, the creditor computes the annual percentage rate of charge with the formula in Part I of Annex I to Directive 2008/48/EC. Charges for the consumer's breach of contract are left out of the credit cost; account and payment-instrument costs are included unless the account is optional and its costs are shown clearly and separately; the calculation assumes the agreed term, treats unforeseeable rate and fee changes as fixed, and applies the assumptions in the directive annex."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1, 2, 3 och 4 §§",
+        "provisions": [
+          "sfs-2010-1855/001",
+          "sfs-2010-1855/002",
+          "sfs-2010-1855/003",
+          "sfs-2010-1855/004"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-forhandsinformationsforordning-secci-form",
+      "title": "Correct obl-se-forhandsinformationsforordning-secci-form: drop the wording that applies only from 20 November 2026",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101856-om-formular-for_sfs-2010-1856/#P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1856, 1 §, consolidated text as amended up to SFS 2026:1032. Källa: Sveriges riksdag",
+      "why": "The cited 1 § in force today names the form in Annex II to Directive 2008/48/EC; the form under the Consumer Credit Act (2026:1011), Annex I to Directive (EU) 2023/2225 made available by Konsumentverket, is a new wording (SFS 2026:1032) that applies only from 20 November 2026, so it is removed until that wording is in the library.",
+      "payload": {
+        "summaries": {
+          "en": "The form the Consumer Credit Act (2010:1846) refers to for pre-contractual information on consumer credit is the one in Annex II to Directive 2008/48/EC."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-se-sff-control-statement-identifiers",
+      "title": "Correct obl-se-sff-control-statement-identifiers: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P11",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 11 §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Every income statement filed with Skatteverket gives the name, personal identity, coordination or organisation number and postal address of the filer and of the person it concerns. Where a statement under chapter 17 of the Tax Procedure Act concerns a person without a Swedish personal or coordination number, it gives that person's date and place of birth instead."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Give the required identification details in every income statement to Skatteverket"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sff-fatca-crs-identifiers",
+      "title": "Correct obl-se-sff-fatca-crs-identifiers: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P11a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 11 a §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "A FATCA income statement gives the holder's US tax identification number, or for a pre-existing account without one the date of birth and the reason the number is missing, and the institution's Global Intermediary Identification Number. A CRS income statement gives the holder's foreign tax identification number and date of birth, and the place of birth where it is held in the institution's electronically searchable data."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Report tax numbers, birth details and the GIIN in FATCA and CRS income statements"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sff-crs-controlling-person-role",
+      "title": "Correct obl-se-sff-crs-controlling-person-role: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 5 kap. 8 §",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Where a CRS income statement must show how a controlling person exercises control, the institution uses the prescribed categories: for a legal person ownership, a position with it or other actual control; for a trust settlor, trustee, protector, beneficiary or other actual control; and the equivalent positions for other legal arrangements."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "State how each controlling person exercises control in CRS income statements"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sff-crs-account-type",
+      "title": "Correct obl-se-sff-crs-account-type: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P8a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 8 a §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Where a CRS income statement must give the type of financial account, the institution states whether it is a depository account, a custodial account, a cash-value insurance or annuity contract, or an equity interest in an investment entity."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "State the type of financial account in CRS income statements"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sff-foreign-tin-income-statements",
+      "title": "Correct obl-se-sff-foreign-tin-income-statements: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/#K5P11c",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, 5 kap. 11 c §, consolidated text as amended up to SFS 2026:1570. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Income statements under the chapters of the Tax Procedure Act listed in the section, among them chapter 20 on disposals of fund units, must give the foreign tax identification number of a recipient who is fully taxable in Sweden but resident in another state or jurisdiction; statements under 23 kap. 2-3 b §§ must give it for a recipient with limited tax liability in Sweden."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Give the recipient's foreign tax number in income statements on income paid to persons resident abroad"
+        }
+      }
+    }
+  ]
+}

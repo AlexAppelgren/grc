@@ -219,6 +219,30 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fi-sd-2012-1020/001",
+      "instrument": "fi-sd-2012-1020",
+      "provisionKind": "section",
+      "refLabel": "1 §",
+      "path": "001",
+      "heading": "Soveltamisala",
+      "texts": {
+        "fi": "Tämä asetus koskee arvopaperimarkkinalain (746/2012) 7 luvussa tarkoitetun säännöllisen tiedonantovelvollisuuden, kuten puolivuosikatsauksen, tilinpäätöksen ja toimintakertomuksen julkistamista, sisältöä ja näissä annettavien tietojen esittämistä.\n\nLuottolaitostoiminnasta annetussa laissa (610/2014) tarkoitetun luotto- ja rahoituslaitoksen sekä vakuutusyhtiölaissa (521/2008) tarkoitetun vakuutusyhtiön puolivuosikatsaukseen, tilinpäätökseen ja toimintakertomukseen sovelletaan tätä asetusta, jollei mainituissa laeissa tai niiden nojalla annetuissa säännöksissä ja määräyksissä toisin säädetä.\n\nTämän asetuksen 2 luvun 7 §:n 1 momentin 4 kohtaa ei sovelleta kirjanpitolain (1336/1997) 1 luvun 4 a ja 4 c §:ssä tarkoitettuihin pieniin ja keskisuuriin yrityksiin, joiden kohdalla vain yksi seuraavista raja-arvoista ylittyy:\n1) taseen loppusumma 20 000 000 euroa,\n2) liikevaihto 40 000 000 euroa, ja\n3) tilikauden aikana palveluksessa keskimäärin 250 henkilöä.\n\nTämän asetuksen 2 luvun 7 §:n 1 momentin 1 ja 4 kohtia ei sovelleta yrityksiin, jotka ovat laskeneet liikkeeseen yksinomaan muita arvopapereita kuin arvopaperimarkkinalain 2 luvun 5 §:ssä tarkoitetulla säännellyllä markkinalla kaupankäynnin kohteeksi otettavia osakkeita, paitsi jos tällaiset yritykset ovat laskeneet liikkeeseen arvopaperimarkkinalain 2 luvun 9 §:ssä tarkoitetussa monenkeskisessä kaupankäyntijärjestelmässä kaupankäynnin kohteeksi otettavia osakkeita.\n\nTämän asetuksen 7 §:n 1 momentin 5 kohtaa sovelletaan osakeyhtiölain (624/2006) 6 luvun 9 a §:n soveltamisalaan kuuluviin liikkeeseenlaskijoihin.",
+        "en": "This Decree concerns the publication and the content of the periodic disclosures referred to in chapter 7 of the Securities Markets Act (746/2012), such as half-yearly reports, financial statements and management reports, and the presentation of the information given in them.\n\nThis Decree applies to the half-yearly reports, financial statements and management reports of credit and financial institutions referred to in the Act on Credit Institutions (610/2014) and of insurance companies referred to in the Insurance Companies Act (521/2008), unless otherwise provided in those Acts or in the provisions and regulations issued under them.\n\nChapter 2, section 7, subsection 1, paragraph 4 of this Decree does not apply to small and medium-sized undertakings referred to in chapter 1, sections 4a and 4c of the Accounting Act (1336/1997) that exceed only one of the following thresholds:\n1) a balance sheet total of EUR 20,000,000,\n2) a turnover of EUR 40,000,000, and\n3) an average of 250 employees during the financial year.\n\nChapter 2, section 7, subsection 1, paragraphs 1 and 4 of this Decree do not apply to undertakings that have issued only securities other than shares admitted to trading on a regulated market referred to in chapter 2, section 5 of the Securities Markets Act, unless such undertakings have issued shares admitted to trading on a multilateral trading facility referred to in chapter 2, section 9 of the Securities Markets Act.\n\nSection 7, subsection 1, paragraph 5 of this Decree applies to issuers within the scope of chapter 6, section 9a of the Limited Liability Companies Act (624/2006).",
+        "sv": "Denna förordning gäller den regelbundna informationsskyldighet som avses i 7 kap. i värdepappersmarknadslagen (746/2012), såsom offentliggörande av och innehållet i halvårsrapporter, bokslut och verksamhetsberättelser, och hur informationen i dem läggs fram.\n\nDenna förordning ska tillämpas på halvårsrapporter, bokslut och verksamhetsberättelser för kreditinstitut och finansiella institut enligt kreditinstitutslagen (610/2014) och för försäkringsbolag enligt försäkringsbolagslagen (521/2008), om inte något annat bestäms i nämnda lagar eller de bestämmelser och föreskrifter som utfärdats med stöd av dem.\n\nFörordningens 2 kap. 7 § 1 mom. 4 punkt tillämpas inte på sådana små och medelstora företag som avses i 1 kap. 4 a och 4 c § i bokföringslagen (1336/1997) och där endast ett av följande gränsvärden överskrids:\n1) balansomslutning 20 000 000 euro,\n2) omsättning 40 000 000 euro och\n3) genomsnittligt antal anställda under räkenskapsperioden 250 personer.\n\nFörordningens 2 kap. 7 § 1 mom. 1 och 4 punkt tillämpas inte på företag som endast har emitterat andra värdepapper än aktier som tagits upp till handel på en reglerad marknad som avses i 2 kap. 5 § i värdepappersmarknadslagen, såvida inte dessa företag har emitterat aktier som är upptagna till handel på en i 2 kap. 9 § i värdepappersmarknadslagen avsedd multilateral handelsplattform.\n\nFörordningens 7 § 1 mom. 5 punkt tillämpas på sådana emittenter som omfattas av tillämpningsområdet för 6 kap. 9 a § i aktiebolagslagen (624/2006)."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-issuer-disclosure-decree-governance-statement"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020#chp_1__sec_1",
+      "sourceLabel": "Finlex, 1020/2012, 1 §, consolidated text fin@20240776 of 2024-12-11, Swedish swe@20240776. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fi-sd-2012-1021/002",
       "instrument": "fi-sd-2012-1021",
       "provisionKind": "section",

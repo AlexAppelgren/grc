@@ -6244,6 +6244,78 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fi-sd-2014-610/007-004a",
+      "instrument": "fi-sd-2014-610",
+      "provisionKind": "section",
+      "refLabel": "7 luku 4 a §",
+      "path": "007-004a",
+      "heading": "Luottolaitoksen ylimmän johdon ja avainhenkilöiden pätevyysvaatimukset",
+      "texts": {
+        "fi": "Luottolaitoksen hallituksella on oltava kokonaisuutena riittävä osaaminen ja kokemus ymmärtääkseen luottolaitoksen toimintaa ja luottolaitoksen ottamia riskejä sekä luottolaitostoiminnan ja riskien vaikutuksia lyhyellä, keskipitkällä ja pitkällä aikavälillä, huomioiden myös 9 luvun 17 a §:ssä tarkoitetut ESG-tekijät. Osaamisen ja kokemuksen on oltava riittävän monipuolista.\n\nLuottolaitoksen liiketoiminnasta vastaavalla johdolla on kokonaisuutena oltava riittävä osaaminen ja kokemus ymmärtääkseen luottolaitoksen toimintaa ja luottolaitoksen ottamia riskejä sekä luottolaitostoiminnan ja riskien vaikutuksia lyhyellä, keskipitkällä ja keskipitkällä aikavälillä huomioiden myös 9 luvun 17 a §:ssä tarkoitetut ESG-tekijät. Luottolaitoksen liiketoiminnasta vastaavaan johtoon kuuluvalla ja avainhenkilöllä on oltava tehtäviensä kannalta riittävä osaaminen ja kokemus.\n\nLuottolaitoksen on varmistettava, että sen ylin johto ja avainhenkilöt täyttävät ennen tehtävässä aloittamista ja koko tehtävässäoloajan tässä pykälässä säädetyt vaatimukset lukuun ottamatta 11 luvun 10 a §:ssä tarkoitettua asiamiestä ja luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta annetun lain 7 luvun 7 §:ssä tarkoitettua kriisinratkaisuviranomaisen nimittämää asiamiestä.",
+        "en": "The board of directors of a credit institution must collectively have sufficient knowledge and experience to understand the credit institution's activities and the risks it takes, and the effects of its credit institution business and of those risks over the short, medium and long term, taking into account also the ESG factors referred to in chapter 9, section 17a. The knowledge and experience must be sufficiently diverse.\n\nThe management responsible for the business of a credit institution must collectively have sufficient knowledge and experience to understand the credit institution's activities and the risks it takes, and the effects of its credit institution business and of those risks over the short, medium and medium term, taking into account also the ESG factors referred to in chapter 9, section 17a. Members of the management responsible for the business of a credit institution and its key function holders must have sufficient knowledge and experience for their duties.\n\nA credit institution must ensure that its senior management and key function holders meet the requirements laid down in this section before taking up their duties and throughout their term of office, with the exception of an agent referred to in chapter 11, section 10a and an agent appointed by the resolution authority as referred to in chapter 7, section 7 of the Act on the Resolution of Credit Institutions and Investment Firms.",
+        "sv": "Kreditinstitutets styrelse ska som helhet betraktat ha tillräckliga kunskaper och erfarenheter för att kunna förstå kreditinstitutets verksamhet och de tillhörande risker som kreditinstitutet står inför och den påverkan som kreditinstitutsverksamheten och riskerna har på kort, medellång och lång sikt och med beaktande av de ESG-faktorer som avses i 9 kap. 17 a §. Kunskaperna och erfarenheterna ska vara tillräckligt mångsidiga.\n\nDen ledning som ansvarar för kreditinstitutets affärsverksamhet ska som helhet betraktat ha tillräckliga kunskaper och erfarenheter för att kunna förstå kreditinstitutets verksamhet och de tillhörande risker som kreditinstitutet står inför och den påverkan kreditinstitutsverksamheten och riskerna har på kort, medellång och lång sikt, även med beaktande av de ESG-faktorer som avses i 9 kap. 17 a §. De som hör till den ledning som ansvarar för kreditinstitutets affärsverksamhet samt nyckelpersoner ska ha tillräckliga kunskaper och erfarenheter med hänsyn till deras uppdrag.\n\nKreditinstitutet ska säkerställa att dess högsta ledning och nyckelpersoner, med undantag för ombud som avses i 11 kap. 10 a § och av resolutionsmyndigheten tillsatta ombud som avses i 7 kap. 7 § i lagen om resolution av kreditinstitut och värdepappersföretag, uppfyller kraven i denna paragraf innan de inleder ett uppdrag och under hela den tid som de innehar uppdraget."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-lll-fit-proper"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_7__sec_4a",
+      "sourceLabel": "Finlex, 610/2014, 7 luku 4 a §, consolidated text fin@20260714 of 2026-07-09, Swedish swe@20260714. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-2014-610/007-004b",
+      "instrument": "fi-sd-2014-610",
+      "provisionKind": "section",
+      "refLabel": "7 luku 4 b §",
+      "path": "007-004b",
+      "heading": "Kelpoisuusvaatimusten arviointi",
+      "texts": {
+        "fi": "Luottolaitoksen on arvioitava ylimpään johtoon kuuluvan ja avainhenkilön kelpoisuus ennen tehtävässä aloittamista ja säännöllisesti tehtävässäoloaikana. Kelpoisuusvaatimusten arvioinnissa on otettava huomioon 4 ja 4 a §:ssä ja muualla lainsäädännössä säädettyjen kelpoisuuskriteerien ohella luottolaitoksen sisäiset toimintaperiaatteet, luottolaitosvalvontaan liittyvät valvonnalliset odotukset sekä sääntelyn soveltamista koskevat ohjeet.\n\nLuottolaitoksen on ilmoitettava ilman aiheetonta viivytystä Finanssivalvonnalle 4 §:n 1 momentissa tarkoitettua ylimpää johtoa koskevista muutoksista tai uusista tiedoista, jos ilmoitusta ei tehdä 4 momentin perusteella, sekä 4 §:n 1 momentissa tarkoitettua avainhenkilöä koskevista muutoksista tai uusista tiedoista, jos kyseessä on luottolaitosdirektiivin 91 a artiklan 5 kohdassa tarkoitettu yhteisö. Jos luottolaitos kuuluu talletuspankkien yhteenliittymään ja jäsenluottolaitokset tekevät ilmoitukset keskusyhteisölle, Finanssivalvonta voi sallia, että talletuspankkien yhteenliittymän keskusyhteisö ilmoittaa ainoastaan Finanssivalvonnan määrittelemät keskeisimmät jäsenluottolaitoksien johtoa koskevat tiedot neljännesvuosittain Finanssivalvonnalle. Luottolaitoksen on pidettävä henkilön kelpoisuuteen liittyvät tiedot ajan tasalla. Luottolaitoksen on salassapitosäännösten estämättä toimitettava Finanssivalvonnalle sen pyynnöstä kelpoisuuteen liittyvät tiedot, jotka ovat välttämättömiä kelpoisuussäännösten noudattamisen valvonnassa. Finanssivalvonta voi antaa tarkempia määräyksiä tietojen toimittamisesta ja tietojen toimittamistavasta.\n\nEdellä 1 momentissa säädetystä poiketen luottolaitos saa arvioida hallituksen jäsenen kelpoisuuden vasta tehtävässä aloittamisen tai tehtävään nimittämisen jälkeen, jos hallituksen jäsenten enemmistö vaihtuu samanaikaisesti ja kelpoisuusarvion tekeminen ennen tehtävässä aloittamista tai nimittämistä jäisi hallituksesta eroavien jäsenten tehtäväksi.\n\nLuottolaitosdirektiivin 91 artiklan 1 d kohdassa tarkoitetun luottolaitoksen tai muun yhteisön on toimitettava hallituksen puheenjohtajaksi tai liiketoiminnasta vastaavaan johtoon lukeutuvaan tehtävään nimitettävää henkilöä koskeva ilmoitus Finanssivalvonnalle ilman aiheetonta viivytystä, kuitenkin viimeistään 30 päivää ennen tehtävässä aloittamista tai toimikauden alkamista. Ilmoitusmenettelystä ja ilmoitukseen liitettävistä selvityksistä annetaan tarkempia säännöksiä valtiovarainministeriön asetuksella. Jos tässä momentissa tarkoitetut ja valtiovarainministeriön asetuksella tarkemmin säädetyt Finanssivalvonnalle toimitetut tiedot eivät ole riittävät kelpoisuusvaatimusten täyttämisen valvomiseksi, Finanssivalvonta voi lykätä nimitettävän henkilön tehtävässä aloittamista, kunnes riittävät tiedot on toimitettu. Lykkäystä ei kuitenkaan voi tehdä, jos Finanssivalvonta arvioi, että tällaisia tietoja ei ole mahdollista toimittaa.",
+        "en": "A credit institution must assess the suitability of members of its senior management and of its key function holders before they take up their duties and regularly during their term of office. In assessing the suitability requirements, account must be taken, in addition to the suitability criteria laid down in sections 4 and 4a and elsewhere in legislation, of the credit institution's internal policies, the supervisory expectations relating to the supervision of credit institutions and the guidelines on the application of the regulation.\n\nA credit institution must notify Finanssivalvonta (Financial Supervisory Authority) without undue delay of changes or new information concerning the senior management referred to in section 4, subsection 1, where notification is not made under subsection 4, and of changes or new information concerning a key function holder referred to in section 4, subsection 1, where the entity is one referred to in Article 91a(5) of the Capital Requirements Directive. Where the credit institution belongs to an amalgamation of deposit banks and the member credit institutions make their notifications to the central institution, Finanssivalvonta may allow the central institution of the amalgamation of deposit banks to notify Finanssivalvonta quarterly only of the most essential information on the management of the member credit institutions, as specified by Finanssivalvonta. A credit institution must keep the information relating to a person's suitability up to date. Notwithstanding the provisions on secrecy, a credit institution must, at the request of Finanssivalvonta, provide it with the information relating to suitability that is necessary for supervising compliance with the suitability provisions. Finanssivalvonta may issue further regulations on the provision of information and on the manner in which it is provided.\n\nBy way of derogation from subsection 1, a credit institution may assess the suitability of a member of the board of directors only after the member has taken up the duties or been appointed to them, if the majority of the members of the board of directors changes at the same time and the suitability assessment before the taking up of the duties or the appointment would fall to the members leaving the board of directors.\n\nA credit institution or other entity referred to in Article 91(1d) of the Capital Requirements Directive must notify Finanssivalvonta of a person to be appointed as chair of the board of directors or to a position within the management responsible for the business without undue delay, and no later than 30 days before the person takes up the duties or the term of office begins. Further provisions on the notification procedure and on the documents to be attached to the notification are issued by decree of the Ministry of Finance. If the information provided to Finanssivalvonta as referred to in this subsection and specified further by decree of the Ministry of Finance is not sufficient for supervising compliance with the suitability requirements, Finanssivalvonta may postpone the date on which the appointed person takes up the duties until sufficient information has been provided. A postponement cannot, however, be made if Finanssivalvonta considers that it is not possible to provide such information.",
+        "sv": "Kreditinstitutet ska bedöma behörigheten hos personer som hör till den högsta ledningen och hos nyckelpersoner innan dessa inleder ett uppdrag och regelbundet under den tid som de innehar uppdraget. Vid bedömningen av behörighetskraven ska utöver de behörighetskrav som anges i 4 och 4 a § och annanstans i lagstiftningen beaktas kreditinstitutets interna riktlinjer, förväntningarna vad gäller tillsynen över kreditinstitutet samt anvisningarna för tillämpningen av bestämmelserna.\n\nKreditinstitutet ska utan obefogat dröjsmål till Finansinspektionen anmäla ändringar eller ny information som gäller den högsta ledning som avses i 4 § 1 mom., om anmälan inte görs med stöd av 4 mom., samt ändringar eller ny information som gäller en nyckelperson som avses i 4 § 1 mom., om det är fråga om en enhet som avses i artikel 91a.5 i kreditinstitutsdirektivet. Om kreditinstitutet hör till en sammanslutning av inlåningsbanker och medlemskreditinstituten gör anmälan till ett centralinstitut, kan Finansinspektionen tillåta att centralinstitutet till den kvartalsvis endast anmäler den information om medlemskreditinstitutens ledning som enligt vad Finansinspektion bestämmer är viktigast. Kreditinstitutet ska hålla informationen om en persons behörighet uppdaterad. Kreditinstitutet ska trots sekretessbestämmelserna på Finansinspektionens begäran lämna Finansinspektionen sådana uppgifter om behörigheten som är nödvändiga för tillsynen över efterlevnaden av behörighetsbestämmelserna. Finansinspektionen får meddela närmare föreskrifter om lämnande av information och om hur informationen ska lämnas.\n\nMed avvikelse från vad som föreskrivs i 1 mom. får ett kreditinstitut bedöma en styrelsemedlems behörighet först efter det att personen inlett uppdraget eller utsetts till uppdraget, om majoriteten av styrelsemedlemmarna byts ut samtidigt och bedömningen av behörigheten innan personen inleder uppdraget eller utses till uppdraget skulle göras av de avgående styrelsemedlemmarna.\n\nEtt kreditinstitut eller en annan enhet som avses i artikel 91.1d i kreditinstitutsdirektivet ska utan obefogat dröjsmål, dock senast 30 dagar innan personen inleder uppdraget eller mandatperioden inleds, till Finansinspektionen anmäla personer som utses till styrelseordförande eller till ett uppdrag inom den ledning som ansvarar för affärsverksamheten. Närmare bestämmelser om anmälningsförfarandet och om de utredningar som ska fogas till anmälan utfärdas genom förordning av finansministeriet. Om den i detta moment avsedda information som närmare föreskrivs genom förordning av finansministeriet och som lämnats till Finansinspektionen inte är tillräcklig för tillsynen över efterlevnaden av behörighetskraven, kan Finansinspektionen skjuta upp tidpunkten då den utsedda personen inleder sitt uppdrag till dess att tillräcklig information har lämnats. Uppskov kan dock inte beviljas om Finansinspektionen bedömer att sådan information inte kan lämnas."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-lll-fit-proper"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_7__sec_4b",
+      "sourceLabel": "Finlex, 610/2014, 7 luku 4 b §, consolidated text fin@20260714 of 2026-07-09, Swedish swe@20260714. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-2014-610/009-003",
+      "instrument": "fi-sd-2014-610",
+      "provisionKind": "section",
+      "refLabel": "9 luku 3 §",
+      "path": "009-003",
+      "heading": "Hallituksen tehtävät riskien hallinnassa",
+      "texts": {
+        "fi": "Luottolaitoksen hallituksen on hyväksyttävä luottolaitokseen ja sen toimintaan kohdistuvia riskejä koskevat strategiat ja menettelytavat sekä arvioitava niitä uudelleen vähintään joka toinen vuosi. Hallituksen on myös huolehdittava, että niiden noudattamista valvotaan luotettavasti. Kaikki olennaiset riskit, riskienhallintaa koskevat ohjeet sekä näiden muutokset on raportoitava hallitukselle. Riskeihin kuuluvat myös luottolaitoksen makrotaloudellisesta toimintaympäristöstä johtuvat riskit suhteutettuina luottolaitoksen liiketoimintasykliin sekä riskit, jotka johtuvat ympäristöön, yhteiskuntaan ja hyvään hallintotapaan liittyvien tekijöiden nykyisistä sekä lyhyen, keskipitkän ja pitkän aikavälin vaikutuksista.\n\nLuottolaitoksen hallituksen on käytettävä riittävästi aikaa luottolaitoksen riskejä koskevien asioiden käsittelyyn sekä varmistuttava siitä, että luottolaitoksella on riittävät voimavarat riskien hallintaa koskevien tässä laissa ja EU:n vakavaraisuusasetuksessa tarkoitettujen tehtävien hoitamiseen.\n\nJos luottolaitoksella on hallintoneuvosto, tässä luvussa säädetyistä hallituksen tehtävistä vastaa hallintoneuvosto siinä laajuudessa kuin sille on yhtiöjärjestyksen tai sääntöjen mukaan annettu hallitukselle kuuluvia tehtäviä.",
+        "en": "The board of directors of a credit institution must approve the strategies and procedures concerning the risks to which the credit institution and its operations are exposed, and review them at least every other year. The board of directors must also ensure that compliance with them is reliably monitored. All material risks, the guidelines on risk management and any changes to them must be reported to the board of directors. The risks also include the risks arising from the macroeconomic environment in which the credit institution operates, in relation to the credit institution's business cycle, and the risks arising from the current, short-term, medium-term and long-term effects of environmental, social and governance factors.\n\nThe board of directors of a credit institution must devote sufficient time to the consideration of matters relating to the credit institution's risks and must ensure that the credit institution has adequate resources for carrying out the risk management tasks referred to in this Act and in the EU Capital Requirements Regulation.\n\nIf a credit institution has a supervisory board, the supervisory board is responsible for the duties of the board of directors laid down in this chapter to the extent that it has been assigned duties belonging to the board of directors under the articles of association or the rules.",
+        "sv": "Kreditinstitutets styrelse ska godkänna strategierna och riktlinjerna för hantering av de risker som kreditinstitutet och dess verksamhet exponeras för och se över dem åtminstone vartannat år. Styrelsen ska också se till att efterlevnaden av strategierna och riktlinjerna övervakas på ett tillförlitligt sätt. Alla väsentliga risker, alla anvisningar om riskhantering och alla förändringar i dessa avseenden ska rapporteras till styrelsen. Dessa risker omfattar även sådana risker som är en följd av de makroekonomiska klimat i vilket kreditinstitutet verkar i förhållande till kreditinstitutets konjunkturcykel samt sådana risker i dagsläget samt på kort, medellång och lång sikt som följer av verkningarna av faktorer som rör miljö, samhällsansvar och bolagsstyrning.\n\nKreditinstitutets styrelse ska ägna tillräcklig tid till beaktande av riskfrågor samt se till att tillräckliga resurser avsätts för hantering av de risker som avses i denna lag och i EU:s tillsynsförordning.\n\nOm kreditinstitutet har ett förvaltningsråd ska detta svara för styrelsens uppgifter enligt detta kapitel i den utsträckning som förvaltningsrådet i enlighet med bolagsordningen och stadgarna har anvisats uppgifter som hör till styrelsen."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-lll-governance"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_3__chp_9__sec_3",
+      "sourceLabel": "Finlex, 610/2014, 9 luku 3 §, consolidated text fin@20260714 of 2026-07-09, Swedish swe@20260714. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fi-sd-2017-444/002-003",
       "instrument": "fi-sd-2017-444",
       "provisionKind": "section",
@@ -7373,6 +7445,30 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fi-sd-2023-186/001",
+      "instrument": "fi-sd-2023-186",
+      "provisionKind": "section",
+      "refLabel": "1 §",
+      "path": "001",
+      "heading": "Soveltamisala",
+      "texts": {
+        "fi": "Tämä laki koskee elinkeinonharjoittajia, jotka myöntävät kuluttajansuojalain (38/1978) 7 tai 7 a luvun soveltamisalaan kuuluvia kuluttajaluottoja. Laki koskee myös elinkeinonharjoittajia, jotka välittävät luottoja kuluttajille, jos luoton myöntää jokin muu kuin kuluttajansuojalain 7 tai 7 a luvussa tarkoitettu luotonantaja (vertaislaina).\n\nLisäksi laki koskee elinkeinonharjoittajia, jotka myöntävät luottoja asunto-osakeyhtiöille tai muille asuntoyhteisöille (asuntoyhteisöluotto).\n\nTämä laki ei koske:\n1) Finanssivalvonnasta annetun lain (878/2008) 4 §:n 2 momentin 1 kohdassa tarkoitettuja luottolaitoksia ja kolmannen maan luottolaitosten sivuliikkeitä;\n2) luottolaitostoiminnasta annetun lain (610/2014) 1 luvun 7 §:n 3 momentissa tarkoitettuja ulkomaisia ETA-luottolaitoksia;\n3) panttilainauslaitoksia;\n4) elinkeinonharjoittajia, jotka myöntävät kuluttajaluottoja vain myymiensä kulutushyödykkeiden oston rahoittamiseksi;\n5) valtiota, kuntaa eikä muuta julkisyhteisöä.",
+        "en": "This Act applies to traders that grant consumer credit within the scope of chapter 7 or 7a of the Consumer Protection Act (38/1978). The Act also applies to traders that intermediate credit to consumers where the credit is granted by someone other than a creditor referred to in chapter 7 or 7a of the Consumer Protection Act (peer-to-peer loan).\n\nThe Act also applies to traders that grant credit to limited-liability housing companies or other housing entities (housing company loan).\n\nThis Act does not apply to:\n1) credit institutions and branches of third-country credit institutions referred to in section 4, subsection 2, paragraph 1 of the Act on the Financial Supervisory Authority (878/2008);\n2) foreign EEA credit institutions referred to in chapter 1, section 7, subsection 3 of the Act on Credit Institutions (610/2014);\n3) pawnbroking institutions;\n4) traders that grant consumer credit only to finance the purchase of consumer goods that they themselves sell;\n5) the State, a municipality or any other public body.",
+        "sv": "Denna lag gäller näringsidkare som lämnar konsumentkrediter som omfattas av tillämpningsområdet för 7 eller 7 a kap. i konsumentskyddslagen (38/1978). Lagen gäller också näringsidkare som förmedlar krediter till konsumenter, om krediten lämnas av någon annan än en i 7 eller 7 a kap. i konsumentskyddslagen avsedd kreditgivare (person-till-person-lån).\n\nDessutom gäller lagen näringsidkare som beviljar bostadsaktiebolag eller andra bostadssammanslutningar krediter (krediter till bostadssammanslutningar).\n\nDenna lag gäller inte\n1) kreditinstitut och filialer till tredjeländers kreditinstitut enligt 4 § 2 mom. 1 punkten i lagen om Finansinspektionen (878/2008),\n2) utländska EES-kreditinstitut enligt 1 kap. 7 § 3 mom. i kreditinstitutslagen (610/2014),\n3) pantlåneinrättningar,\n4) näringsidkare som lämnar konsumentkrediter endast för finansiering av köp av konsumtionsnyttigheter som de själva säljer,\n5) staten, kommunerna eller andra offentliga samfund."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-lrl-registration"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186#sec_1",
+      "sourceLabel": "Finlex, 186/2023, 1 §, consolidated text fin@20260353 of 2026-05-08, Swedish swe@20260353. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fi-sd-2024-402/006",
       "instrument": "fi-sd-2024-402",
       "provisionKind": "section",
@@ -7418,6 +7514,30 @@
       ],
       "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402#chp_3__sec_9",
       "sourceLabel": "Finlex, 402/2024, 9 §, consolidated text fin@ of 2024-06-28, Swedish swe@. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-2024-402/007",
+      "instrument": "fi-sd-2024-402",
+      "provisionKind": "section",
+      "refLabel": "7 §",
+      "path": "007",
+      "heading": "Salassa pidettävien tietojen luovuttaminen viranomaisille",
+      "texts": {
+        "fi": "Kryptovarapalvelun tarjoajalla, liikkeeseenlaskijalla, tarjoajalla, kaupankäynnin kohteeksi ottamista hakevalla henkilöllä, toimiluvan saaneella liikkeeseenlaskijalla tai sen kanssa samaan konserniin kuuluvalla yrityksellä taikka yhteenliittymällä on velvollisuus antaa 6 §:ssä tarkoitettuja tietoja syyttäjä- ja esitutkintaviranomaiselle rikoksen selvittämiseksi sekä muulle viranomaiselle, jolla on lain nojalla oikeus saada sellaisia tietoja.",
+        "en": "A crypto-asset service provider, an issuer, an offeror, a person seeking admission to trading, an authorised issuer, and an undertaking or amalgamation belonging to the same group as the authorised issuer are obliged to provide the information referred to in section 6 to the prosecutor and the pre-trial investigation authority for the investigation of an offence, and to any other authority entitled by law to receive such information.",
+        "sv": "En leverantör av kryptotillgångstjänster, en utgivare, en erbjudare, en person som ansöker om upptagande till handel, en utgivare som beviljats auktorisation eller ett företag eller en sammanslutning som hör till samma koncern som utgivaren som beviljats auktorisation är skyldig att lämna uppgifter som avses i 6 § till åklagar- och förundersökningsmyndigheterna för utredning av brott samt till andra myndigheter som med stöd av lag har rätt att få sådana uppgifter."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-kryptol-secrecy"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402#chp_3__sec_7",
+      "sourceLabel": "Finlex, 402/2024, 7 §, consolidated text fin@ of 2024-06-28, Swedish swe@. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
       "readOn": "2026-11-13"
     },
     {
@@ -8190,6 +8310,30 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fi-sd-2025-1042/107",
+      "instrument": "fi-sd-2025-1042",
+      "provisionKind": "section",
+      "refLabel": "107 §",
+      "path": "107",
+      "heading": "Voimaantulo ja siirtymäsäännös",
+      "texts": {
+        "fi": "Tämä laki tulee voimaan 1 päivänä tammikuuta 2026.\n\nLakia sovelletaan ensimmäisen kerran 1 päivänä tammikuuta 2026 alkavaan kalenterivuoteen.\n\nKalenterivuotta 2026 edeltäviä kalenterivuosia koskevien tietojen ilmoittamisessa ja muiden velvoitteiden noudattamisessa sovelletaan tämän lain voimaan tullessa voimassa olleita säännöksiä.",
+        "en": "This Act enters into force on 1 January 2026.\n\nThe Act applies for the first time to the calendar year beginning on 1 January 2026.\n\nThe provisions in force when this Act enters into force apply to the reporting of information and the fulfilment of other obligations relating to calendar years before calendar year 2026.",
+        "sv": "Denna lag träder i kraft den 1 januari 2026.\n\nLagen tillämpas för första gången på det kalenderår som börjar den 1 januari 2026.\n\nDe bestämmelser som gällde vid ikraftträdandet av denna lag tillämpas på anmälning av upplysningar och fullgörande av andra skyldigheter i fråga om upplysningar som gäller kalenderåren före kalenderåret 2026."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-rfl-annual-reporting"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042#chp_4__sec_107",
+      "sourceLabel": "Finlex, 1042/2025, 107 §, consolidated text fin@ of 2025-11-28, Swedish swe@. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fi-sd-2025-124/007",
       "instrument": "fi-sd-2025-124",
       "provisionKind": "section",
@@ -8355,6 +8499,30 @@
       ],
       "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124#chp_2__sec_13",
       "sourceLabel": "Finlex, 124/2025, 13 §, consolidated text fin@20260785 of 2026-09-04, Swedish swe@20260785. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fi-sd-2025-124/005",
+      "instrument": "fi-sd-2025-124",
+      "provisionKind": "section",
+      "refLabel": "5 §",
+      "path": "005",
+      "heading": "Suhde muuhun lainsäädäntöön",
+      "texts": {
+        "fi": "Jos muussa laissa tai sen nojalla annetuissa säännöksissä tai määräyksissä on tästä laista poikkeavia vaatimuksia kyberturvallisuusriskien hallinnasta tai merkittävistä poikkeamista ilmoittamisesta ja vaatimukset ovat vaikutuksiltaan vähintään tässä laissa säädettyjä velvoitteita vastaavia, niitä sovelletaan tämän lain vastaavien säännösten asemasta.\n\nJos Euroopan unionin asetuksessa tai NIS 2 -direktiivin nojalla säädetyssä komission asetuksessa edellytetään, että toimija ottaa käyttöön kyberturvallisuutta koskevien riskien hallitsemiseksi toimenpiteitä tai ilmoittaa merkittävistä poikkeamista, ja vaatimukset ovat vaikutuksiltaan vähintään tässä laissa säädettyjä velvoitteita vastaavia, säännöksiä sovelletaan tämän lain 2, 4 ja 5 luvun sekä 41 §:n asemasta.\n\nHenkilötietojen käsittelyn tietoturvallisuudesta säädetään luonnollisten henkilöiden suojelusta henkilötietojen käsittelyssä sekä näiden tietojen vapaasta liikkuvuudesta ja direktiivin 95/46/EY kumoamisesta (yleinen tietosuoja-asetus) annetun Euroopan parlamentin ja neuvoston asetuksessa (EU) 2016/679, jäljempänä yleinen tietosuoja-asetus, ja tietosuojalaissa (1050/2018).\n\nSen lisäksi mitä tässä laissa säädetään valvovan viranomaisen toimivaltuuksista, luvan peruuttamiseen sovelletaan sähkö- ja maakaasumarkkinoiden valvonnasta annetun lain (590/2013) 23 §:n 6 kohdassa, vaarallisten kemikaalien ja räjähteiden käsittelyn turvallisuudesta annetun lain (390/2005) 109 a §:ssä sekä maa-asemista ja eräistä tutkista annetun lain (96/2023) 8 §:n 1 momentin 3 kohdassa säädettyä.",
+        "en": "If other legislation, or provisions or regulations issued under it, contain requirements on cybersecurity risk management or on the notification of significant incidents that differ from this Act, and those requirements are at least equivalent in effect to the obligations laid down in this Act, they apply instead of the corresponding provisions of this Act.\n\nIf an EU regulation, or a Commission regulation adopted under the NIS 2 Directive, requires an entity to take measures to manage cybersecurity risks or to notify significant incidents, and the requirements are at least equivalent in effect to the obligations laid down in this Act, those provisions apply instead of chapters 2, 4 and 5 and section 41 of this Act.\n\nProvisions on the security of the processing of personal data are laid down in Regulation (EU) 2016/679 of the European Parliament and of the Council on the protection of natural persons with regard to the processing of personal data and on the free movement of such data, and repealing Directive 95/46/EC (General Data Protection Regulation), hereinafter the General Data Protection Regulation, and in the Data Protection Act (1050/2018).\n\nIn addition to the provisions of this Act on the powers of the supervisory authority, section 23, paragraph 6 of the Act on the Supervision of the Electricity and Natural Gas Market (590/2013), section 109a of the Act on the Safety of Handling Dangerous Chemicals and Explosives (390/2005) and section 8, subsection 1, paragraph 3 of the Act on Ground Stations and Certain Radars (96/2023) apply to the revocation of a licence.",
+        "sv": "Om det i någon annan lag eller i bestämmelser eller föreskrifter som utfärdats med stöd av någon annan lag finns krav som avviker från denna lag och som gäller hantering av cybersäkerhetsrisker eller anmälan av betydande incidenter, och kraven har minst samma verkan som motsvarande skyldigheter som fastställs i denna lag, ska de tillämpas i stället för motsvarande bestämmelser i denna lag.\n\nOm det i en EU-förordning eller i en förordning av kommissionen som antagits med stöd av NIS 2-direktivet förutsätts att en aktör inför åtgärder för hantering av cybersäkerhetsrisker eller anmäler betydande incidenter, och kraven har minst samma verkan som motsvarande skyldigheter som fastställs i denna lag, ska dessa bestämmelser tillämpas i stället för 2, 4 och 5 kap. samt 41 § i denna lag.\n\nBestämmelser om datasäkerhet vid behandling av personuppgifter finns i Europaparlamentets och rådets förordning (EU) 2016/679 om skydd för fysiska personer med avseende på behandling av personuppgifter och om det fria flödet av sådana uppgifter och om upphävande av direktiv 95/46/EG (allmän dataskyddsförordning), nedan den allmänna dataskyddsförordningen och i dataskyddslagen (1050/2018).\n\nUtöver vad som i denna lag föreskrivs om tillsynsmyndighetens befogenheter tillämpas bestämmelserna i 23 § 6 punkten i lagen om tillsyn över el- och naturgasmarknaden (590/2013), 109 a § i lagen om säkerhet vid hantering av farliga kemikalier och explosiva varor (390/2005) och 8 § 1 mom. 3 punkten i lagen om markstationer och vissa radaranläggningar (96/2023) på återkallande av tillstånd."
+      },
+      "originalLanguage": "fi",
+      "isMachine": true,
+      "officialLanguages": [
+        "sv"
+      ],
+      "obligations": [
+        "obl-fi-kybl-risk-management"
+      ],
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124#chp_1__sec_5",
+      "sourceLabel": "Finlex, 124/2025, 5 §, consolidated text fin@20260785 of 2026-09-04, Swedish swe@20260785. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
       "readOn": "2026-11-13"
     }
   ],

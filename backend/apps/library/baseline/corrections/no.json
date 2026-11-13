@@ -1,0 +1,184 @@
+{
+  "tranche": "no",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-no-fsal-general-duties",
+      "title": "Correct obl-no-fsal-general-duties: the duties reach insurance intermediaries through § 1-4",
+      "source": "https://lovdata.no/dokument/NL/lov/1989-06-16-69/%C2%A71-4",
+      "sourceLabel": "Lovdata, LOV-1989-06-16-69, § 1-4, consolidated text as amended up to lov/2024-06-21-41 fra 2025-04-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1-5 names only the insurance undertaking; it is § 1-4 first paragraph that applies Part One of the Act, § 1-5 included, to insurance intermediaries, so the citation now names it and the summary says so.",
+      "payload": {
+        "summaries": {
+          "en": "To safeguard its customers' interests and the integrity of the market, an insurance undertaking must take reasonable steps to identify its own conflicts of interest and act honestly, fairly and professionally, act with professional care, and give information that is clear and not misleading, in the agreed form of communication and in Norwegian or another agreed language, with prices in Norwegian kroner unless another currency is agreed. Under § 1-4 these duties apply correspondingly to insurance intermediaries."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1-4 første ledd, § 1-5",
+        "provisions": [
+          "no-lov-1989-06-16-69/001-004",
+          "no-lov-1989-06-16-69/001-005"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-ffl-remuneration",
+      "title": "Correct obl-no-ffl-remuneration: the specific rules are for elected officers and material risk-takers",
+      "source": "https://lovdata.no/dokument/NL/lov/2015-04-10-17/%C2%A715-1",
+      "sourceLabel": "Lovdata, LOV-2015-04-10-17, § 15-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-40 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 15-1 requires specific rules for elected officers and for employees whose duties have a material impact on the firm's risk exposure; it does not name senior management or staff in control roles, so the summary now uses the Act's own categories.",
+      "payload": {
+        "summaries": {
+          "en": "The financial institution must have and apply a remuneration scheme for the whole undertaking covering all employees and elected officers, with specific rules for elected officers and for employees whose duties have a material impact on its risk exposure. The scheme must be consistent with its overall objectives, risk tolerance and long-term interests, promote good management and control of risk and not encourage excessive risk-taking, and the institution must have appropriate guidelines and procedures to implement, monitor and regularly review it; the detailed requirements are set by regulation."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-priips-kid-manufacturer",
+      "title": "Correct obl-no-priips-kid-manufacturer: the duty to draw up and publish the document is Article 5(1) of the PRIIPs Regulation",
+      "source": "https://lovdata.no/dokument/NL/lov/2024-06-21-40/%C2%A72",
+      "sourceLabel": "Lovdata, LOV-2024-06-21-40, § 2, consolidated text of 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 2 only makes the PRIIPs Regulation Norwegian law; the duty to draw up and publish the key information document is Article 5(1) of the Regulation, which the library holds under the EU act, so the summary now says where the duty comes from.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 5(1) of the PRIIPs Regulation, which § 2 makes Norwegian law, the manufacturer of a packaged retail or insurance-based investment product must draw up a key information document that meets the Regulation and publish it on its website before the product is made available to retail investors. A key information document distributed in Norway must be in Norwegian, unless the Ministry makes an exception by regulation (§ 4)."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-vphl-inside-information-disclosure",
+      "title": "Correct obl-no-vphl-inside-information-disclosure: the disclosure duty is Article 17 of the Market Abuse Regulation",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75/%C2%A73-1",
+      "sourceLabel": "Lovdata, LOV-2007-06-29-75, § 3-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-39 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 3-1 only makes the Market Abuse Regulation Norwegian law, names Finanstilsynet and gives the Ministry powers; the disclosure duty, the five-year website rule and the conditions for delay are Article 17 of the Regulation, so the summary now says where they come from.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 17 of the Market Abuse Regulation, which § 3-1 makes Norwegian law, an issuer whose financial instruments are admitted to trading on a regulated market, or traded on an MTF or OTF at its request or with its approval, must make inside information that directly concerns it public as soon as possible, in a way that allows fast access and a complete, correct and timely assessment. It must not combine the disclosure with marketing, must keep the disclosed information on its website for at least five years, and may delay disclosure only on its own responsibility when all the conditions of Article 17(4) are met."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-vphl-insider-lists",
+      "title": "Correct obl-no-vphl-insider-lists: the insider list duty is Article 18 of the Market Abuse Regulation",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75/%C2%A73-1",
+      "sourceLabel": "Lovdata, LOV-2007-06-29-75, § 3-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-39 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 3-1 only makes the Market Abuse Regulation Norwegian law and names Finanstilsynet as the competent authority; the insider list, its contents and the written acknowledgement are Article 18 of the Regulation, so the summary now says where they come from.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 18 of the Market Abuse Regulation, which § 3-1 makes Norwegian law, an issuer, and anyone acting on its behalf, must draw up a list of all persons working for it who have access to inside information, update it promptly and provide it to the competent authority, Finanstilsynet, as soon as possible on request. The list must show at least each person's identity, why they are on it, when they got access and when the list was drawn up, and the issuer must take reasonable steps to make listed persons acknowledge their duties in writing."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-vphl-investment-recommendations",
+      "title": "Correct obl-no-vphl-investment-recommendations: the duty is Article 20(1) of the Market Abuse Regulation",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75/%C2%A73-1",
+      "sourceLabel": "Lovdata, LOV-2007-06-29-75, § 3-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-39 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 3-1 only makes the Market Abuse Regulation Norwegian law; the duties to present recommendations objectively and to disclose interests are Article 20(1) of the Regulation, so the summary now says where they come from.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 20(1) of the Market Abuse Regulation, which § 3-1 makes Norwegian law, anyone who produces or disseminates investment recommendations or other information recommending or suggesting an investment strategy must take reasonable care that the information is objectively presented and must disclose their interests or conflicts of interest concerning the financial instruments it relates to."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-vphl-managers-transactions",
+      "title": "Correct obl-no-vphl-managers-transactions: the duty is Article 19 of the Market Abuse Regulation, and the closed period binds managers only",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75/%C2%A73-1",
+      "sourceLabel": "Lovdata, LOV-2007-06-29-75, § 3-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-39 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 3-1 only makes the Market Abuse Regulation Norwegian law and § 3-3 adds the cohabitant rule; the duty is Article 19, whose 30-day closed period binds persons discharging managerial responsibilities, not their closely associated persons as the old summary said.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 19 of the Market Abuse Regulation, which § 3-1 makes Norwegian law, persons discharging managerial responsibilities in an issuer, and persons closely associated with them, must notify the issuer and the competent authority of their own-account transactions in the issuer's shares, debt instruments and linked instruments promptly and no later than three business days after the transaction, once the yearly threshold is reached. Persons discharging managerial responsibilities must also not deal in those instruments, for themselves or for others, in the 30 calendar days before the issuer announces an interim or year-end report it must publish, unless the issuer permits it in a case the Regulation allows. The issuer must tell persons discharging managerial responsibilities of their duties in writing and keep a list of them and the persons closely associated with them; in Norway a cohabitant in a marriage-like relationship counts as a spouse (§ 3-3)."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-vphl-suspicious-order-reporting",
+      "title": "Correct obl-no-vphl-suspicious-order-reporting: the duty is Article 16(2) of the Market Abuse Regulation",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75/%C2%A73-1",
+      "sourceLabel": "Lovdata, LOV-2007-06-29-75, § 3-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-39 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 3-1 makes the Market Abuse Regulation Norwegian law and names Finanstilsynet as the competent authority, but the duty to detect and report suspicious orders and transactions is Article 16(2) of the Regulation, so the summary now says where it comes from.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 16(2) of the Market Abuse Regulation, which § 3-1 makes Norwegian law, a firm that professionally arranges or executes transactions must have effective arrangements, systems and procedures to detect and report suspicious orders and transactions. When it reasonably suspects that an order or transaction in any financial instrument, on or off a trading venue, could be insider dealing or market manipulation or an attempt at either, it must notify the competent authority, which in Norway is Finanstilsynet (§ 3-1), without delay."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-no-vphl-net-short-positions",
+      "title": "Correct obl-no-vphl-net-short-positions: cite § 19-1 for Finanstilsynet, and Article 5 of the Short Selling Regulation for the duty",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75/%C2%A719-1",
+      "sourceLabel": "Lovdata, LOV-2007-06-29-75, § 19-1, consolidated text as amended up to lov/2026-02-06-2 fra 2026-08-01, lov/2026-06-19-39 fra 2026-07-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 3-5 only makes the Short Selling Regulation Norwegian law and does not name Finanstilsynet; § 19-1 first paragraph makes Finanstilsynet the supervisor of compliance with the rules laid down in or under the Act, so the citation now names it, and the summary says the notification duty is Article 5 of the Regulation.",
+      "payload": {
+        "summaries": {
+          "en": "Under Article 5 of the Short Selling Regulation (EU) No 236/2012, which § 3-5 makes Norwegian law, a natural or legal person holding a net short position in the issued share capital of a company whose shares are admitted to trading on a trading venue must notify the competent authority each time the position reaches or falls below a notification threshold. In Norway Finanstilsynet supervises compliance with the rules laid down in or under the Act, the Regulation included (§ 19-1)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 3-5 (Regulation (EU) No 236/2012 Art. 5), § 19-1 første ledd",
+        "provisions": [
+          "no-lov-2007-06-29-75/003-005",
+          "no-lov-2007-06-29-75/019-001"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-popl-records-of-processing",
+      "title": "Correct obl-no-popl-records-of-processing: cite Article 30 of the GDPR as printed in the Act",
+      "source": "https://lovdata.no/dokument/NL/lov/2018-06-15-38/gdpr/a30",
+      "sourceLabel": "Lovdata, LOV-2018-06-15-38, Artikkel 30 of the General Data Protection Regulation as printed in the Act, consolidated text as amended up to lov/2021-06-18-124 fra 2022-01-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes the GDPR Norwegian law; the record-keeping duty is Article 30, which Lovdata prints as part of the Act, so the citation now names that article, and the summary adds what it also says: the record is written, shown to the supervisory authority on request, and not required of firms under 250 employees save in the cases it lists.",
+      "payload": {
+        "summaries": {
+          "en": "As a controller, the firm must keep a written record, which may be electronic, of the processing activities it is responsible for, giving its name and contact details and those of any joint controller, representative and data protection officer, the purposes of processing, the categories of data subjects, personal data and recipients, any transfers to third countries or international organisations and, where possible, the time limits for erasure and a description of its security measures. It must make the record available to the supervisory authority on request; a firm with fewer than 250 employees is exempt unless its processing is likely to result in a risk to people's rights and freedoms, is not occasional, or includes special categories of data or data on criminal convictions and offences. The General Data Protection Regulation applies as Norwegian law through § 1."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1, personvernforordningen artikkel 30",
+        "provisions": [
+          "no-lov-2018-06-15-38/001",
+          "no-lov-2018-06-15-38/gdpr-article-030"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-popl-breach-notification",
+      "title": "Correct obl-no-popl-breach-notification: cite Article 33 of the GDPR as printed in the Act",
+      "source": "https://lovdata.no/dokument/NL/lov/2018-06-15-38/gdpr/a33",
+      "sourceLabel": "Lovdata, LOV-2018-06-15-38, Artikkel 33 of the General Data Protection Regulation as printed in the Act, consolidated text as amended up to lov/2021-06-18-124 fra 2022-01-01, read 2026-11-11, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "why": "§ 1 only makes the GDPR Norwegian law and § 20 only names Datatilsynet; the notification duty, the 72 hours and the risk exception are Article 33, which Lovdata prints as part of the Act, so the citation now names that article.",
+      "payload": {
+        "summaries": {
+          "en": "When a personal data breach occurs, the controller must notify the supervisory authority, which in Norway is Datatilsynet (§ 20), without undue delay and where possible within 72 hours of becoming aware of it, unless the breach is unlikely to result in a risk to people's rights and freedoms; a later notification must give the reasons for the delay. The notification must at least describe the breach, its likely consequences and the measures taken or proposed and name a contact point, and the controller must document every breach."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§ 1, § 20, personvernforordningen artikkel 33",
+        "provisions": [
+          "no-lov-2018-06-15-38/001",
+          "no-lov-2018-06-15-38/020",
+          "no-lov-2018-06-15-38/gdpr-article-033"
+        ]
+      }
+    },
+    {
+      "key": "obl-no-hvvl-transfer-information",
+      "title": "Correct obl-no-hvvl-transfer-information: transfers carry the payee's details too",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_4",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 4, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "why": "Article 4(2) of Regulation (EU) 2023/1113 also requires the payer's provider to send the payee's name and payment account number, and Article 4(1) asks for the payer's address together with an official document number and a customer number, or else the date and place of birth; the old summary named payer information only and treated the address as interchangeable with an identifier.",
+      "payload": {
+        "summaries": {
+          "en": "As the payer's payment service provider the firm must ensure that a transfer of funds carries the payer's name, the payer's address with official personal document number and customer identification number (or instead the payer's date and place of birth) and the payee's name, with both parties' payment account numbers or, where no payment account is used, a unique transaction identifier, unless Articles 5 and 6 allow less, as they do when every provider in the chain is in the EEA. As the payee's provider it must have effective procedures to detect whether required information on the payer or payee is missing. These duties are Articles 4 and 7 of Regulation (EU) 2023/1113, which also covers certain crypto-asset transfers and applies as Norwegian law through § 52."
+        },
+        "originalLanguage": "en"
+      }
+    }
+  ]
+}

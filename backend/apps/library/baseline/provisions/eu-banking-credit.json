@@ -617,6 +617,60 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "eba-gl-2015-18/guideline-003-001",
+      "instrument": "eba-gl-2015-18",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.1",
+      "path": "guideline-003-001",
+      "heading": "Guideline 3: Target market",
+      "texts": {
+        "en": "Manufacturers should include, in their product oversight and governance arrangements, steps and features that need to be followed to identify, and update when necessary, the relevant target market of a product."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-gl-pog-target-market"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/1141044/d84c9682-4f0b-493a-af45-acbb79c75bfa/EBA-GL-2015-18%20Final%20report%20on%20Guidelines%20on%20product%20oversight%20and%20governance.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2015/18, Guideline 3.1, guidelines as published in 2015, the wording that applies until the amending guidelines EBA/GL/2026/07 apply on 11 January 2027. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2015-18/guideline-003-002",
+      "instrument": "eba-gl-2015-18",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.2",
+      "path": "guideline-003-002",
+      "heading": "Guideline 3: Target market",
+      "texts": {
+        "en": "The manufacturer should, having first identified the target market, ensure that the product is deemed appropriate for the interests, objectives and characteristics of the identified target market(s)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-gl-pog-target-market"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/1141044/d84c9682-4f0b-493a-af45-acbb79c75bfa/EBA-GL-2015-18%20Final%20report%20on%20Guidelines%20on%20product%20oversight%20and%20governance.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2015/18, Guideline 3.2, guidelines as published in 2015, the wording that applies until the amending guidelines EBA/GL/2026/07 apply on 11 January 2027. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2015-18/guideline-003-003",
+      "instrument": "eba-gl-2015-18",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.3",
+      "path": "guideline-003-003",
+      "heading": "Guideline 3: Target market",
+      "texts": {
+        "en": "The manufacturer should only design and bring to the market products with features, charges and risks, that meet the interests, objectives and characteristics of, and are of benefit to, the particular target market identified for the product."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-gl-pog-target-market"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/1141044/d84c9682-4f0b-493a-af45-acbb79c75bfa/EBA-GL-2015-18%20Final%20report%20on%20Guidelines%20on%20product%20oversight%20and%20governance.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2015/18, Guideline 3.3, guidelines as published in 2015, the wording that applies until the amending guidelines EBA/GL/2026/07 apply on 11 January 2027. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "eba-gl-2019-02/paragraph-041",
       "instrument": "eba-gl-2019-02",
       "provisionKind": "paragraph",
@@ -4628,6 +4682,42 @@
       ],
       "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
       "sourceLabel": "European Banking Authority, EBA/GL/2021/05, Paragraph 224, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-05/paragraph-120",
+      "instrument": "eba-gl-2021-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 120",
+      "path": "paragraph-120",
+      "heading": "12.1 Conflict of interest policy in the context of loans and other transactions with members of the management body and their related parties",
+      "texts": {
+        "en": "As part of their conflicts of interest policies for staff (Section 12) and the management of conflicts of interest of members of the management body as set out in Paragraph 117, the management body should set out a framework for identifying and managing conflicts of interest in the context of granting loans and entering into other transactions (e.g. factoring, leasing, property transactions, etc.) with members of the management body and their related parties."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-gl-internal-governance-conflicts-of-interest"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/05, Paragraph 120, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-05/paragraph-122",
+      "instrument": "eba-gl-2021-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 122",
+      "path": "paragraph-122",
+      "heading": "12.1 Conflict of interest policy in the context of loans and other transactions with members of the management body and their related parties",
+      "texts": {
+        "en": "The conflicts of interest framework should ensure that decisions regarding the granting of loans and entering into other transactions with members of the management body and their related parties are taken objectively, without undue influence by conflicts of interests and are as a general principle conducted at arm’s length."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-gl-internal-governance-conflicts-of-interest"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/05, Paragraph 122, guidelines as published. Source: European Banking Authority",
       "readOn": "2026-11-13"
     }
   ],

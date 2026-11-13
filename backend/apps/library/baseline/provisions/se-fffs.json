@@ -403,6 +403,26 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fffs-2004-4/001-002",
+      "instrument": "fffs-2004-4",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 2 §",
+      "path": "001-002",
+      "heading": null,
+      "texts": {
+        "sv": "Dessa föreskrifter och allmänna råd gäller för näringsidkare som står under Finansinspektionens tillsyn och som lämnar sådan finansiell rådgivning som avses i lagen (2003:862) om finansiell rådgivning till konsumenter.\n\nFöreskrifterna och de allmänna råden gäller dock inte finansiell rådgivning som tillhandhålls av\n1. fondbolag och förvaltningsbolag enligt lagen (2004:46) om värdepappersfonder,\n2. värdepappersinstitut och utländska värdepappersföretag enligt lagen (2007:528) om värdepappersmarknaden, eller\n3. AIF-förvaltare enligt lagen (2013:561) om förvaltare av alternativa investeringsfonder.\n\nNäringsidkares rådgivningsverksamhet är av varierande storlek och karaktär och de tillhandhåller olika slag av finansiell rådgivning. Dessa föreskrifter och allmänna råd är avsedda att ge utrymme för anpassningar till den enskilde näringsidkarens storlek och inriktning samt till rådgivningsverksamhetens inriktning och svårighetsgrad. (FFFS 2018:11)",
+        "en": "These regulations and general guidelines apply to traders that are under the supervision of Finansinspektionen (the Swedish Financial Supervisory Authority) and that provide financial advice referred to in the Act (2003:862) on Financial Advice to Consumers.\n\nThe regulations and the general guidelines do not, however, apply to financial advice provided by\n1. fund management companies and management companies under the Swedish UCITS Act (2004:46),\n2. securities institutions and foreign investment firms under the Securities Market Act (2007:528), or\n3. alternative investment fund managers (AIFMs) under the Alternative Investment Fund Managers Act (2013:561).\n\nTraders' advisory businesses vary in size and character, and they provide different kinds of financial advice. These regulations and general guidelines are intended to leave room for adaptation to the size and focus of the individual trader and to the focus and complexity of its advisory business. (FFFS 2018:11)"
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fffs-2004-4-adviser-competence"
+      ],
+      "source": "https://www.fi.se/contentassets/3f0fdf1cfd954076934ab383c48873d5/fs0404k.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2004:4, 1 kap. 2 §, Finansinspektionen's consolidated version, last updated 2018-10-01, latest amending regulation listed FFFS 2018:11. Källa: Finansinspektionen",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fffs-2008-25/002-001",
       "instrument": "fffs-2008-25",
       "provisionKind": "section",
@@ -1220,6 +1240,26 @@
       ],
       "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf#page=7",
       "sourceLabel": "Finansinspektionen, FFFS 2011:1, 4 kap. 8 §, Finansinspektionen's consolidated version, last updated 2021-12-21, latest amending regulation listed FFFS 2021:17. Källa: Finansinspektionen",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fffs-2011-1/001-002a",
+      "instrument": "fffs-2011-1",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 2 a §",
+      "path": "001-002a",
+      "heading": null,
+      "texts": {
+        "sv": "Bestämmelserna i 2 kap. 5 § samt 4 kap. 6 och 7 §§ gäller inte för ett företag\n1. som inte är ett stort institut enligt definitionen i artikel 4.1.146 i tillsynsförordningen, och\n2. vars tillgångar i genomsnitt och på enskild nivå är lika med eller mindre än fem miljarder euro för de fyra närmast föregående räkenskapsåren. (FFFS 2020:30)",
+        "en": "The provisions in Chapter 2, Section 5 and Chapter 4, Sections 6 and 7 do not apply to an undertaking\n1. that is not a large institution as defined in Article 4(1)(146) of the Capital Requirements Regulation, and\n2. whose assets, on average and on an individual basis, are equal to or less than five billion euros for the four immediately preceding financial years. (FFFS 2020:30)"
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fffs-2011-1-deferral"
+      ],
+      "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2011:1, 1 kap. 2 a §, Finansinspektionen's consolidated version, last updated 2021-12-21, latest amending regulation listed FFFS 2021:17. Källa: Finansinspektionen",
       "readOn": "2026-11-13"
     },
     {
@@ -2843,6 +2883,26 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fffs-2013-9/001-001",
+      "instrument": "fffs-2013-9",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 1 §",
+      "path": "001-001",
+      "heading": "1 kap. Föreskrifternas innehåll och tillämpningsområde",
+      "texts": {
+        "sv": "Dessa föreskrifter gäller för fondbolag. För förvaltningsbolags och fondföretags verksamhet i Sverige gäller bestämmelser som anges särskilt i dessa föreskrifter. Förvaringsinstitut ska i förekommande fall följa 26 kap. 1 §.\n\nBestämmelserna i 10 kap. gäller inte för sådana allvarliga IKT-relaterade incidenter som omfattas av artikel 19 i Dora-förordningen. Bestämmelserna i 14 kap. gäller inte för sådana uppdragsavtal som omfattas av kapitel V i Dora-förordningen. (FFFS 2024:26)",
+        "en": "These regulations apply to fund management companies. For the activities in Sweden of management companies and foreign UCITS, the provisions specifically indicated in these regulations apply. Depositaries must, where applicable, comply with Chapter 26, Section 1.\n\nThe provisions in Chapter 10 do not apply to major ICT-related incidents covered by Article 19 of the DORA Regulation. The provisions in Chapter 14 do not apply to outsourcing agreements covered by Chapter V of the DORA Regulation. (FFFS 2024:26)"
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fffs-2013-9-significant-events"
+      ],
+      "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fs20139k2628.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2013:9, 1 kap. 1 §, Finansinspektionen's consolidated version, last updated 2026-09-30, latest amending regulation listed FFFS 2026:26. Källa: Finansinspektionen",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fffs-2014-1/002-001",
       "instrument": "fffs-2014-1",
       "provisionKind": "section",
@@ -3523,6 +3583,26 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "fffs-2014-1/001-001a",
+      "instrument": "fffs-2014-1",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 1 a §",
+      "path": "001-001a",
+      "heading": null,
+      "texts": {
+        "sv": "Bestämmelserna i 2 och 3 kap. gäller inte för hantering av IKT-risker enligt kapitel II i Dora-förordningen.\n\nBestämmelserna i 5 kap. gäller inte för hantering av IKT-risker enligt kapitel II–V i Dora-förordningen.\n\nBestämmelserna i 10 kap. gäller inte för sådana uppdragsavtal som omfattas av kapitel V i Dora-förordningen. (FFFS 2024:28)",
+        "en": "The provisions in Chapters 2 and 3 do not apply to the management of ICT risks under Chapter II of the DORA Regulation.\n\nThe provisions in Chapter 5 do not apply to the management of ICT risks under Chapters II to V of the DORA Regulation.\n\nThe provisions in Chapter 10 do not apply to outsourcing agreements covered by Chapter V of the DORA Regulation. (FFFS 2024:28)"
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fffs-2014-1-outsourcing"
+      ],
+      "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf#page=2",
+      "sourceLabel": "Finansinspektionen, FFFS 2014:1, 1 kap. 1 a §, Finansinspektionen's consolidated version, last updated 2025-03-24, latest amending regulation listed FFFS 2024:28. Källa: Finansinspektionen",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "fffs-2014-12/004-003",
       "instrument": "fffs-2014-12",
       "provisionKind": "section",
@@ -4200,6 +4280,26 @@
       ],
       "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf#page=8",
       "sourceLabel": "Finansinspektionen, FFFS 2014:4, 5 kap. 20 §, Finansinspektionen's consolidated version, last updated 2025-06-19, latest amending regulation listed FFFS 2025:11. Källa: Finansinspektionen",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fffs-2014-4/001-002",
+      "instrument": "fffs-2014-4",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 2 §",
+      "path": "001-002",
+      "heading": null,
+      "texts": {
+        "sv": "Föreskrifterna gäller för\n1. bankaktiebolag,\n2. sparbanker,\n3. medlemsbanker,\n4. kreditmarknadsbolag,\n5. kreditmarknadsföreningar, och\n6. värdepappersbolag som avses i 1 kap. 2 § första stycket 7 c–g lagen (2014:968) om särskild tillsyn över kreditinstitut och värdepappersbolag.\n\nFöreskrifterna ska, i enlighet med 3 kap. 4 § lagen om särskild tillsyn över kreditinstitut och värdepappersbolag, tillämpas på grupp- eller undergruppsnivå.\n\nBestämmelserna i dessa föreskrifter gäller inte för hantering av sådana IKT-risker som avses i Dora-förordningen. (FFFS 2024:29)",
+        "en": "These regulations apply to\n1. banking companies,\n2. savings banks,\n3. members' banks,\n4. credit market companies,\n5. credit market associations, and\n6. investment firms referred to in Chapter 1, Section 2, first paragraph, point 7(c) to (g) of the Special Supervision of Credit Institutions and Investment Firms Act (2014:968).\n\nThe regulations must, in accordance with Chapter 3, Section 4 of the Special Supervision of Credit Institutions and Investment Firms Act, be applied on a consolidated or sub-consolidated basis.\n\nThe provisions of these regulations do not apply to the management of ICT risks referred to in the DORA Regulation. (FFFS 2024:29)"
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fffs-2014-4-appetite-limits"
+      ],
+      "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2014:4, 1 kap. 2 §, Finansinspektionen's consolidated version, last updated 2025-06-19, latest amending regulation listed FFFS 2025:11. Källa: Finansinspektionen",
       "readOn": "2026-11-13"
     },
     {
@@ -6800,6 +6900,26 @@
       ],
       "source": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf#page=7",
       "sourceLabel": "Finansinspektionen, FFFS 2018:16, 8 kap. 5 §, the regulation as published. Källa: Finansinspektionen",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "fffs-2018-16/001-003",
+      "instrument": "fffs-2018-16",
+      "provisionKind": "section",
+      "refLabel": "1 kap. 3 §",
+      "path": "001-003",
+      "heading": null,
+      "texts": {
+        "sv": "Bestämmelserna i 4 och 5 kap. gäller endast för krediter till andra kredittagare än konsumenter och för sådana krediter till konsumenter som utgör bostadskrediter enligt 2 § konsumentkreditlagen (2010:1846).",
+        "en": "The provisions in Chapters 4 and 5 apply only to credits to borrowers other than consumers and to such credits to consumers as are residential mortgage credits under Section 2 of the Consumer Credit Act (2010:1846)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-fffs-2018-16-credit-assessment"
+      ],
+      "source": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf#page=1",
+      "sourceLabel": "Finansinspektionen, FFFS 2018:16, 1 kap. 3 §, the regulation as published. Källa: Finansinspektionen",
       "readOn": "2026-11-13"
     },
     {

@@ -303,6 +303,26 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "sfs-2010-1855/001",
+      "instrument": "sfs-2010-1855",
+      "provisionKind": "section",
+      "refLabel": "1 §",
+      "path": "001",
+      "heading": null,
+      "texts": {
+        "sv": "Denna förordning innehåller bestämmelser om beräkning av effektiv ränta enligt konsumentkreditlagen (2010:1846).\n\nFörordningen gäller inte bostadskrediter enligt konsumentkreditlagen. Bestämmelser om beräkning av den effektiva räntan vid sådana konsumentkrediter finns i förordningen (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter.\nFörordning (2016:1039).",
+        "en": "This Ordinance contains provisions on the calculation of the annual percentage rate of charge under the Consumer Credit Act (2010:1846).\n\nThe Ordinance does not apply to residential mortgage credit under the Consumer Credit Act. Provisions on the calculation of the annual percentage rate of charge for such consumer credit are set out in the Ordinance (2016:1034) on the European Standardised Information Sheet and the Calculation of the Annual Percentage Rate of Charge for Residential Mortgage Credit.\nOrdinance (2016:1039)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-effektivrantaforordning-apr-calculation"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/#P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, 1 §, consolidated text as amended up to SFS 2026:1031. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "sfs-2010-1856/001",
       "instrument": "sfs-2010-1856",
       "provisionKind": "section",

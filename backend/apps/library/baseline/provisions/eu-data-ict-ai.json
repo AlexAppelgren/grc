@@ -799,6 +799,24 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "celex-32022r2554/020",
+      "instrument": "celex-32022r2554",
+      "provisionKind": "article",
+      "refLabel": "Article 20",
+      "path": "020",
+      "heading": "Harmonisation of reporting content and templates",
+      "texts": {
+        "en": "The ESAs, through the Joint Committee, and in consultation with ENISA and the ECB, shall develop:\n(a) common draft regulatory technical standards in order to:\n(i) establish the content of the reports for major ICT-related incidents in order to reflect the criteria laid down in Article 18(1) and incorporate further elements, such as details for establishing the relevance of the reporting for other Member States and whether it constitutes a major operational or security payment-related incident or not;\n(ii) determine the time limits for the initial notification and for each report referred to in Article 19(4);\n(iii) establish the content of the notification for significant cyber threats.\nWhen developing those draft regulatory technical standards, the ESAs shall take into account the size and the overall risk profile of the financial entity, and the nature, scale and complexity of its services, activities and operations, and in particular, with a view to ensuring that, for the purposes of this paragraph, point (a), point (ii), different time limits may reflect, as appropriate, specificities of financial sectors, without prejudice to maintaining a consistent approach to ICT-related incident reporting pursuant to this Regulation and to Directive (EU) 2022/2555. The ESAs shall, as applicable, provide justification when deviating from the approaches taken in the context of that Directive;\n(b) common draft implementing technical standards in order to establish the standard forms, templates and procedures for financial entities to report a major ICT-related incident and to notify a significant cyber threat.\n\nThe ESAs shall submit the common draft regulatory technical standards referred to in the first paragraph, point (a), and the common draft implementing technical standards referred to in the first paragraph, point (b), to the Commission by 17 July 2024.\n\nPower is delegated to the Commission to supplement this Regulation by adopting the common regulatory technical standards referred to in the first paragraph, point (a), in accordance with Articles 10 to 14 of Regulations (EU) No 1093/2010, (EU) No 1094/2010 and (EU) No 1095/2010.\n\nPower is conferred on the Commission to adopt the common implementing technical standards referred to in the first paragraph, point (b), in accordance with Article 15 of Regulations (EU) No 1093/2010, (EU) No 1094/2010 and (EU) No 1095/2010."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-dora-cyber-threat-notification"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_20",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 20, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "celex-32023r2854/014",
       "instrument": "celex-32023r2854",
       "provisionKind": "article",
@@ -1052,6 +1070,27 @@
       ],
       "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng#anx_III",
       "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689, ANNEX III, consolidated text of 2026-07-27 (CELEX 02024R1689-20260727). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "celex-32024r1689/113",
+      "instrument": "celex-32024r1689",
+      "provisionKind": "article",
+      "refLabel": "Article 113",
+      "path": "113",
+      "heading": "Entry into force and application",
+      "texts": {
+        "en": "This Regulation shall enter into force on the twentieth day following that of its publication in the Official Journal of the European Union.\n\nIt shall apply from 2 August 2026.\n\nHowever:\n(a) Chapters I and II shall apply from 2 February 2025, with the exception of Article 5(1), first subparagraph, points (ba) and (bb), and Article 5(1a) and (1b) which shall apply from 2 December 2026;\n(b) Chapter III Section 4, Chapter V, Chapter VII and Chapter XII and Article 78 shall apply from 2 August 2025, with the exception of Article 101;\n(c) Chapter III, Sections 1, 2, and 3, with the exception of Article 6(5), shall apply from:\n(i) 2 December 2027 as regards AI systems classified as high-risk pursuant to Article 6(2) and Annex III; and\n(ii) 2 August 2028 as regards AI systems classified as high-risk pursuant to Article 6(1) and Annex I;\n(d) Articles 102 to 110 shall apply from 27 July 2026."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-aiact-prohibited-practices",
+        "obl-eu-aiact-high-risk-provider",
+        "obl-eu-aiact-deployer-duties",
+        "obl-eu-aiact-fundamental-rights-impact-assessment"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng#art_113",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689, Article 113, consolidated text of 2026-07-27 (CELEX 02024R1689-20260727). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
       "readOn": "2026-11-13"
     },
     {

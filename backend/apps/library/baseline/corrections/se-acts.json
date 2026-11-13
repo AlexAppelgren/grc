@@ -1,0 +1,234 @@
+{
+  "tranche": "se-acts",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-se-ptl-pep-measures",
+      "title": "Correct obl-se-ptl-pep-measures: approval comes before deciding to enter into or end the relationship",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2017630-om-atgarder-mot-penningtvatt-och_sfs-2017-630/#K3P19",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2017:630, 3 kap. 19 §, consolidated text as amended up to SFS 2026:1075. Källa: Sveriges riksdag",
+      "why": "3 kap. 19 § requires approval from an authorised decision-maker (behörig beslutsfattare, which the act does not limit to senior management) before a decision to enter into or end a business relationship, not before establishing or continuing it. The extra measures apply to a family member or close associate only where that person is the customer.",
+      "payload": {
+        "summaries": {
+          "en": "The firm must assess whether the customer or the customer's beneficial owner is a politically exposed person, or a family member or known close associate of one. Where the customer or its beneficial owner is a politically exposed person, or the customer is a family member or known close associate of one, the firm must also take appropriate measures to establish the source of the assets involved, apply enhanced ongoing monitoring, and obtain approval from an authorised decision-maker before deciding to enter into or end the business relationship."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-se-crs-preexisting-account-review",
+      "title": "Correct obl-se-crs-preexisting-account-review: cite the high value and entity account review",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K4P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 4 kap. 6 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
+      "why": "The review of high value accounts is in 4 kap. 6 and 9 §§ and that of entity accounts in 6 kap. 2, 3 and 4 §§; the old citation gave only 4 kap. 5 § (the electronic search) and 6 kap. 1 § (when an entity account is reportable).",
+      "payload": {
+        "summaries": {
+          "en": "The institution must review its pre-existing accounts held by natural persons: lower value accounts by a residence address test based on documentary evidence or a search of its electronically searchable data for indications of residence abroad, and high value accounts by that electronic search, extended to the customer master file and, failing that, to the non-searchable account documents of the last five years where the electronic data are not sufficient, and by treating the account as reportable where the officer responsible for the customer knows that the holder is resident in another State or jurisdiction. For pre-existing entity accounts it must review the information it holds to determine whether the entity is resident in another State or jurisdiction, determine whether it is a passive non-financial entity (by a self-certification unless the information available shows it is an active non-financial entity, or a financial institution other than a managed investment entity in a non-participating jurisdiction), and if so determine where its controlling persons are resident."
+        },
+        "originalLanguage": "en",
+        "refLabel": "4 kap. 1, 2, 5, 6 och 9 §§ och 6 kap. 1, 2, 3 och 4 §§",
+        "provisions": [
+          "sfs-2015-911/004-001",
+          "sfs-2015-911/004-002",
+          "sfs-2015-911/004-005",
+          "sfs-2015-911/004-006",
+          "sfs-2015-911/004-009",
+          "sfs-2015-911/006-001",
+          "sfs-2015-911/006-002",
+          "sfs-2015-911/006-003",
+          "sfs-2015-911/006-004"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-dac8-crypto-user-due-diligence",
+      "title": "Correct obl-se-dac8-crypto-user-due-diligence: cite the transitional rule for existing users",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20251377-om-inhamtande-av-vissa-uppgifter_sfs-2025-1377/#overgang",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1377, punkt 3 övergångsbestämmelserna, text as issued, no amendment recorded. Källa: Sveriges riksdag",
+      "why": "The 1 January 2027 deadline for existing users is in point 3 of the act's own transitional provisions, not in 7 kap. 2 and 3 §§, which cover new customer relationships only; the citation now includes that point, and the summary adds that the review must be done before any reportable transaction, as 7 kap. 2 and 3 §§ say.",
+      "payload": {
+        "summaries": {
+          "en": "When establishing a relationship with an individual or entity user, a reporting crypto-asset service provider must obtain a self-certification allowing it to determine the user's tax residence and verify that it is reasonable against the other information it holds, and must complete this before it carries out any reportable transaction. For users it already had, it must obtain and verify the self-certification no later than 1 January 2027."
+        },
+        "originalLanguage": "en",
+        "refLabel": "7 kap. 2 och 3 §§ och punkt 3 övergångsbestämmelserna",
+        "provisions": [
+          "sfs-2025-1377/007-002",
+          "sfs-2025-1377/007-003",
+          "sfs-2025-1377/overgangsbestammelser-003"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-kkrl2026-pre-contract-information",
+      "title": "Correct obl-se-kkrl2026-pre-contract-information: cite the rule on the form the information takes",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/konsumentkreditlag-20261011_sfs-2026-1011/#K3P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2026:1011, 3 kap. 4 §, text as issued, no amendment recorded. Källa: Sveriges riksdag",
+      "why": "The rule that the pre-contract information is given in a document or another readable and durable form of the consumer's choosing is in 3 kap. 4 §, which the citation left out; the 3 kap. 2 § rule on the form covers only the repeated withdrawal information.",
+      "payload": {
+        "summaries": {
+          "en": "Before a credit agreement is concluded, the trader must give the consumer the prescribed information in reasonable time, on the Standard European Consumer Credit Information form, in a document or in another readable and durable form accessible to the consumer that the consumer chooses. If the information is given later than one day before the agreement is concluded, the trader must give a consumer who has a right of withdrawal the information on that right, and on how to use it, again within seven days after the agreement is concluded."
+        },
+        "originalLanguage": "en",
+        "refLabel": "3 kap. 1, 2, 3 och 4 §§",
+        "provisions": [
+          "sfs-2026-1011/003-001",
+          "sfs-2026-1011/003-002",
+          "sfs-2026-1011/003-003",
+          "sfs-2026-1011/003-004"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-laif-liquidity-management-tools",
+      "title": "Correct obl-se-laif-liquidity-management-tools: the 30 December 2026 deadline comes from the amending act",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2013561-om-forvaltare-av-alternativa_sfs-2013-561/#K8P3a",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2013:561, 8 kap. 3 a §, consolidated text as amended up to SFS 2026:1070. Källa: Sveriges riksdag",
+      "why": "8 kap. 3 a and 3 d §§ set no date; the 30 December 2026 deadline is in the transitional provisions of the amending Act (2026:910), and the summary now says so. 3 d § requires notice when a tool is started or stopped in a way that departs from the fund's normal operation, not on every activation.",
+      "payload": {
+        "summaries": {
+          "en": "For each open-ended alternative investment fund it manages, the AIF manager must choose at least two of the liquidity management tools listed in the act that can be used in the investors' interest, suited to the fund and set out in its rules, and must tell Finansinspektionen in writing which tools it has chosen. It must notify Finansinspektionen as soon as possible when it starts or stops using a tool in a way that departs from the fund's normal operation under its rules. Under the transitional provisions of the amending Act (2026:910), a manager must tell Finansinspektionen of the tools chosen no later than 30 December 2026."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-se-sfl-crs-reporting",
+      "title": "Correct obl-se-sfl-crs-reporting: cite who files, and say income statement",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22bP4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 b kap. 4 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "22 b kap. 4 §, which the citation left out, names the filer: a reporting financial institution under the Act (2015:911). Skatteverket's own English for kontrolluppgift is \"income statement\", which replaces \"control statement\".",
+      "payload": {
+        "summaries": {
+          "en": "Reporting financial institutions must file income statements on accounts that are reportable, and on undocumented accounts, under the act on identification of reportable accounts for automatic exchange, and the statements must reach Skatteverket by 15 May of the following year."
+        },
+        "originalLanguage": "en",
+        "refLabel": "22 b kap. 2, 3 och 4 §§ och 24 kap. 2 a §",
+        "provisions": [
+          "sfs-2011-1244/022b-002",
+          "sfs-2011-1244/022b-003",
+          "sfs-2011-1244/022b-004",
+          "sfs-2011-1244/024-002a"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-sfl-crypto-reporting",
+      "title": "Correct obl-se-sfl-crypto-reporting: cite whom and what the statement covers, and say income statement",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22dP5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 d kap. 5 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "Whom the statement covers (reportable crypto-asset users and controlling persons) is in 22 d kap. 5 § and what it reports on their transactions in 22 d kap. 7 §; the old citation gave only the filer and the deadline. Skatteverket's own English for kontrolluppgift is \"income statement\", which replaces \"control statement\".",
+      "payload": {
+        "summaries": {
+          "en": "A reporting crypto-asset service provider must file income statements on reportable crypto-asset users, and on controlling persons who are reportable persons, giving for each user the reportable crypto-assets with which it carried out reportable transactions in the calendar year, broken down by kind of transaction. The statements must reach Skatteverket by 1 April of the following year."
+        },
+        "originalLanguage": "en",
+        "refLabel": "22 d kap. 3, 5 och 7 §§ och 24 kap. 2 b §",
+        "provisions": [
+          "sfs-2011-1244/022d-003",
+          "sfs-2011-1244/022d-005",
+          "sfs-2011-1244/022d-007",
+          "sfs-2011-1244/024-002b"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-sfl-fatca-reporting",
+      "title": "Correct obl-se-sfl-fatca-reporting: cite who files, and say income statement",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22aP4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 a kap. 4 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "22 a kap. 4 §, which the citation left out, names the filer: a reporting financial institution under the Act (2015:62). Skatteverket's own English for kontrolluppgift is \"income statement\", which replaces \"control statement\".",
+      "payload": {
+        "summaries": {
+          "en": "Reporting financial institutions must file income statements on accounts that are reportable under the FATCA identification act, and the statements must reach Skatteverket by 15 May of the following year."
+        },
+        "originalLanguage": "en",
+        "refLabel": "22 a kap. 2, 3 och 4 §§ och 24 kap. 2 a §",
+        "provisions": [
+          "sfs-2011-1244/022a-002",
+          "sfs-2011-1244/022a-003",
+          "sfs-2011-1244/022a-004",
+          "sfs-2011-1244/024-002a"
+        ]
+      }
+    },
+    {
+      "key": "obl-se-sfl-withholding-interest-dividends",
+      "title": "Correct obl-se-sfl-withholding-interest-dividends: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K10P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 10 kap. 2 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Whoever pays out taxable interest, dividends or other returns must withhold preliminary tax at each payment, and tax must be withheld from cash interest and dividends that are reported under the income statement rules, subject to the exceptions the act lists, for example for small amounts of account interest and for persons with limited tax liability."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-se-sfl-interest-income-statement",
+      "title": "Correct obl-se-sfl-interest-income-statement: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K17P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 17 kap. 1 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Legal persons that credit or pay interest or other returns on claims to individuals or estates must file an income statement with Skatteverket for each calendar year, by 31 January of the following year."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "File income statements on interest paid or credited to individuals by 31 January"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sfl-interest-expense-statement",
+      "title": "Correct obl-se-sfl-interest-expense-statement: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, Skatteförfarandelag (2011:1244), 18 kap. 1, 2 och 3 §§ och 24 kap. 1 §",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Legal persons that receive interest from individuals or estates, such as mortgage interest, must file an income statement on those interest expenses with Skatteverket by 31 January of the following year."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "File income statements on interest received from individual borrowers by 31 January"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sfl-dividend-statement",
+      "title": "Correct obl-se-sfl-dividend-statement: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K19P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 19 kap. 1 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Whoever credits or pays interest, dividends or other returns on shares and similar equity rights to individuals or estates must file an income statement with Skatteverket by 31 January of the following year, except for assets on an investment savings account or pension savings account."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "File income statements on interest and dividends on shares paid to individuals"
+        }
+      }
+    },
+    {
+      "key": "obl-se-sfl-disposal-statements",
+      "title": "Correct obl-se-sfl-disposal-statements: say income statement, Skatteverket's English for kontrolluppgift",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K20P1",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 20 kap. 1 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "why": "\"Control statement\" is replaced by \"income statement\", Skatteverket's own English for kontrolluppgift, which the provision translations already use; nothing else changes.",
+      "payload": {
+        "summaries": {
+          "en": "Fund companies, depositaries and securities institutions that take part in disposals must file income statements on redemptions and disposals of fund units and on disposals of other shares, debt claims and derivative transactions as the act allocates the duty, except for holdings on an investment savings account."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "File income statements on disposals of fund units, shares, debt instruments and derivatives"
+        }
+      }
+    }
+  ]
+}

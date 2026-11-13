@@ -3225,6 +3225,86 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "sfs-2011-1244/022a-004",
+      "instrument": "sfs-2011-1244",
+      "provisionKind": "section",
+      "refLabel": "22 a kap. 4 §",
+      "path": "022a-004",
+      "heading": null,
+      "texts": {
+        "sv": "Kontrolluppgift ska lämnas av ett sådant rapporteringsskyldigt finansiellt institut som avses i 2 kap. 19 § lagen (2015:62) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet. Lag (2015:69).",
+        "en": "An income statement must be submitted by a reporting financial institution referred to in Chapter 2, Section 19 of the Act (2015:62) on the Identification of Reportable Accounts in Connection with the FATCA Agreement. Act (2015:69)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sfl-fatca-reporting"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22aP4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 a kap. 4 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1244/022b-004",
+      "instrument": "sfs-2011-1244",
+      "provisionKind": "section",
+      "refLabel": "22 b kap. 4 §",
+      "path": "022b-004",
+      "heading": null,
+      "texts": {
+        "sv": "Kontrolluppgift ska lämnas av ett sådant rapporteringsskyldigt finansiellt institut som avses i 2 kap. 21 § lagen (2015:911) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton. Lag (2015:918).",
+        "en": "An income statement must be submitted by a reporting financial institution referred to in Chapter 2, Section 21 of the Act (2015:911) on the Identification of Reportable Accounts for the Automatic Exchange of Financial Account Information. Act (2015:918)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sfl-crs-reporting"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22bP4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 b kap. 4 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1244/022d-005",
+      "instrument": "sfs-2011-1244",
+      "provisionKind": "section",
+      "refLabel": "22 d kap. 5 §",
+      "path": "022d-005",
+      "heading": null,
+      "texts": {
+        "sv": "Kontrolluppgift ska lämnas för den som har, eller skulle ha, identifierats som rapporteringspliktig användare av kryptotillgångar enligt 7 kap. lagen (2025:1377) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar.\n\nKontrolluppgift ska även lämnas för den eller de fysiska personer som har, eller skulle ha, identifierats som en person med bestämmande inflytande och som är en rapporteringspliktig person enligt 7 kap. lagen om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar. Lag (2025:1382).",
+        "en": "An income statement must be submitted for any person who has been, or would have been, identified as a reportable crypto-asset user under Chapter 7 of the Act (2025:1377) on the Collection of Certain Information on Crypto-Assets in the Field of Taxation.\n\nAn income statement must also be submitted for the natural person or persons who have been, or would have been, identified as a controlling person and who are a reportable person under Chapter 7 of the Act on the Collection of Certain Information on Crypto-Assets in the Field of Taxation. Act (2025:1382)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sfl-crypto-reporting"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22dP5",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 d kap. 5 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2011-1244/022d-007",
+      "instrument": "sfs-2011-1244",
+      "provisionKind": "section",
+      "refLabel": "22 d kap. 7 §",
+      "path": "022d-007",
+      "heading": "Uppgifter som ska lämnas om kryptotillgångar",
+      "texts": {
+        "sv": "En rapporteringsskyldig leverantör av kryptotillgångstjänster ska lämna uppgifter om varje rapporteringspliktig användare i fråga om de rapporteringspliktiga kryptotillgångar med vilka leverantören har genomfört rapporteringspliktiga transaktioner under det relevanta kalenderåret. Uppgift ska lämnas om\n1. fullständig benämning på typen av rapporteringspliktig kryptotillgång,\n2. det sammanlagda bruttobelopp som betalats, det sammanlagda antalet kryptoenheter samt antalet rapporteringspliktiga transaktioner som avser förvärv mot fiatvaluta,\n3. det sammanlagda bruttobelopp som mottagits, det sammanlagda antalet kryptoenheter samt antalet rapporteringspliktiga transaktioner som avser avyttringar mot fiatvaluta,\n4. det sammanlagda skäliga marknadsvärdet, det sammanlagda antalet kryptoenheter samt antalet rapporteringspliktiga transaktioner som avser förvärv mot andra rapporteringspliktiga kryptotillgångar,\n5. det sammanlagda skäliga marknadsvärdet, det sammanlagda antalet kryptoenheter samt antalet rapporteringspliktiga transaktioner som avser avyttringar mot andra rapporteringspliktiga kryptotillgångar,\n6. det sammanlagda skäliga marknadsvärdet, det sammanlagda antalet kryptoenheter samt antalet rapporteringspliktiga massbetalningstransaktioner,\n7. det sammanlagda skäliga marknadsvärdet, det sammanlagda antalet kryptoenheter och antalet rapporteringspliktiga transaktioner, uppdelade efter typ av överföring om denna är känd av leverantören, som avser överföringar till den rapporteringspliktiga användaren som inte omfattas av 2 och 4,\n8. det sammanlagda skäliga marknadsvärdet, det sammanlagda antalet kryptoenheter och antalet rapporteringspliktiga transaktioner uppdelade efter typ av överföring om denna är känd av leverantören, som avser överföringar gjorda av den rapporteringspliktiga användaren som inte omfattas av 3, 5 och 6, och\n9. det sammanlagda skäliga marknadsvärdet samt det sammanlagda antalet kryptoenheter som överförts av leverantören till adresser i distribuerade liggare som inte är kända av denne som förknippade med en tjänsteleverantör av virtuella tillgångar eller ett finansiellt institut. Lag (2025:1382).",
+        "en": "A reporting crypto-asset service provider must provide information on each reportable user in respect of the reportable crypto-assets with which the provider has carried out reportable transactions during the relevant calendar year. Information must be provided on\n1. the full name of the type of reportable crypto-asset,\n2. the aggregate gross amount paid, the aggregate number of units and the number of reportable transactions in respect of acquisitions against fiat currency,\n3. the aggregate gross amount received, the aggregate number of units and the number of reportable transactions in respect of disposals against fiat currency,\n4. the aggregate fair market value, the aggregate number of units and the number of reportable transactions in respect of acquisitions against other reportable crypto-assets,\n5. the aggregate fair market value, the aggregate number of units and the number of reportable transactions in respect of disposals against other reportable crypto-assets,\n6. the aggregate fair market value, the aggregate number of units and the number of reportable retail payment transactions,\n7. the aggregate fair market value, the aggregate number of units and the number of reportable transactions, broken down by type of transfer where the type is known to the provider, in respect of transfers to the reportable user not covered by points 2 and 4,\n8. the aggregate fair market value, the aggregate number of units and the number of reportable transactions, broken down by type of transfer where the type is known to the provider, in respect of transfers by the reportable user not covered by points 3, 5 and 6, and\n9. the aggregate fair market value and the aggregate number of units transferred by the provider to distributed ledger addresses not known by it to be associated with a virtual asset service provider or a financial institution. Act (2025:1382)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-sfl-crypto-reporting"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/#K22dP7",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, 22 d kap. 7 §, consolidated text as amended up to SFS 2026:1305. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "sfs-2011-1268/009",
       "instrument": "sfs-2011-1268",
       "provisionKind": "section",
@@ -4502,6 +4582,106 @@
       ],
       "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K8P10",
       "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 8 kap. 10 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-911/004-006",
+      "instrument": "sfs-2015-911",
+      "provisionKind": "section",
+      "refLabel": "4 kap. 6 §",
+      "path": "004-006",
+      "heading": null,
+      "texts": {
+        "sv": "Om det rapporteringsskyldiga finansiella institutets elektroniskt sökbara databaser typiskt sett inte är tillräckliga för att bedöma om sådana omständigheter som anges i 2 § första stycket 1-6 föreligger, ska sådana uppgifter också eftersökas i gällande huvudkundregister, när det gäller granskning av högvärdekonton som innehas av fysiska personer.\n\nOm sådan information inte finns i det gällande huvudkundregistret, ska uppgifterna också eftersökas bland följande handlingar med koppling till kontot som det rapporteringsskyldiga finansiella institutet har inhämtat under de senaste fem åren och som inte är elektroniskt sökbara:\n1. den senast inhämtade styrkande dokumentation som avses i 8 kap. 7 § med avseende på kontot,\n2. det senaste avtalet eller den senaste av annan dokumentation avseende öppnande av kontot,\n3. den senaste dokumentation som inhämtats med stöd av lagen (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism eller för att uppfylla annan lagstiftning,\n4. gällande fullmakter eller handlingar avseende underteckningsrätt, och\n5. gällande stående instruktioner att överföra medel avseende andra konton än inlåningskonton. Lag (2017:662).",
+        "en": "If the reporting financial institution's electronically searchable databases are typically not sufficient to determine whether any of the circumstances set out in Section 2, first paragraph, points 1 to 6 exist, such information must also be searched for in the current customer master file, in the case of the review of high value accounts held by natural persons.\n\nIf such information is not held in the current customer master file, the information must also be searched for among the following documents associated with the account that the reporting financial institution has obtained during the last five years and that are not electronically searchable:\n1. the most recently obtained documentary evidence referred to in Chapter 8, Section 7 with respect to the account,\n2. the most recent contract or other documentation concerning the opening of the account,\n3. the most recent documentation obtained pursuant to the Act (2017:630) on Measures against Money Laundering and Terrorist Financing or to comply with other legislation,\n4. current powers of attorney or documents concerning signatory authority, and\n5. current standing instructions to transfer funds in respect of accounts other than depository accounts. Act (2017:662)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-preexisting-account-review"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K4P6",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 4 kap. 6 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-911/004-009",
+      "instrument": "sfs-2015-911",
+      "provisionKind": "section",
+      "refLabel": "4 kap. 9 §",
+      "path": "004-009",
+      "heading": null,
+      "texts": {
+        "sv": "Oavsett vad som sägs i 5-8 §§ ska ett högvärdekonto som innehas av en fysisk person, om något annat inte anges i 2 kap. 20 §, anses vara ett rapporteringspliktigt konto om det finns en tjänsteman som har särskilt ansvar för kontakterna med kontohavaren och den tjänstemannen har eller får kännedom om att kontohavaren har hemvist i en annan stat eller jurisdiktion. Ett rapporteringsskyldigt finansiellt institut ska ha processer och rutiner så att en sådan tjänsteman kan upptäcka om och när omständigheterna ändras på ett sådant sätt att kontot blir rapporteringspliktigt enligt 5-8 §§ eller denna paragraf samt att den ändrade omständigheten beaktas vid tillämpningen av 5-8 §§. Exempel på en sådan ändrad omständighet är om tjänstemannen underrättas om att kontohavaren har en ny postadress i en annan stat eller jurisdiktion. Lag (2018:2036).",
+        "en": "Notwithstanding Sections 5 to 8, a high value account held by a natural person is, unless otherwise provided in Chapter 2, Section 20, deemed to be a reportable account if there is an officer with special responsibility for the contacts with the account holder and that officer has, or acquires, knowledge that the account holder is resident in another State or jurisdiction. A reporting financial institution must have processes and procedures enabling such an officer to detect whether and when circumstances change in such a way that the account becomes reportable under Sections 5 to 8 or this Section, and ensuring that the changed circumstance is taken into account in applying Sections 5 to 8. An example of such a changed circumstance is the officer being informed that the account holder has a new mailing address in another State or jurisdiction. Act (2018:2036)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-preexisting-account-review"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K4P9",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 4 kap. 9 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-911/006-002",
+      "instrument": "sfs-2015-911",
+      "provisionKind": "section",
+      "refLabel": "6 kap. 2 §",
+      "path": "006-002",
+      "heading": "Förfarande för identifiering av rapporteringspliktiga konton",
+      "texts": {
+        "sv": "För att utreda om en enhet har hemvist i en annan stat eller jurisdiktion, ska det rapporteringsskyldiga finansiella institutet granska den information som inhämtats för att kunna upprätthålla kontakterna med kontohavaren eller på grund av bestämmelser i lagen (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism eller i annan författning. Om det finns skäl att anta att kontohavaren har hemvist i en annan stat eller jurisdiktion, ska kontohavaren anses ha hemvist i den staten eller jurisdiktionen om det rapporteringsskyldiga finansiella institutet inte\n1. inhämtar ett intygande från kontohavaren om att kontohavaren inte har hemvist i denna stat eller jurisdiktion, eller\n2. utifrån den övriga information som det rapporteringsskyldiga finansiella institutet har tillgång till eller information som är allmänt tillgänglig kan fastställa att kontohavaren inte har hemvist i denna stat eller jurisdiktion.\n\nDet finns skäl att anta att kontohavaren har hemvist i en annan stat eller jurisdiktion enligt första stycket om det finns\n1. uppgift om att kontohavaren bildats i en annan stat eller jurisdiktion eller i enlighet med lagstiftningen där,\n2. uppgift om att kontohavaren har en adress i en annan stat eller jurisdiktion, eller\n3. annan uppgift som talar för att kontohavaren har hemvist i en annan stat eller jurisdiktion. Lag (2018:2036).",
+        "en": "To determine whether an entity is resident in another State or jurisdiction, the reporting financial institution must review the information obtained in order to maintain contact with the account holder or under provisions of the Act (2017:630) on Measures against Money Laundering and Terrorist Financing or of any other enactment. If there is reason to believe that the account holder is resident in another State or jurisdiction, the account holder is deemed to be resident in that State or jurisdiction unless the reporting financial institution\n1. obtains a self-certification from the account holder stating that the account holder is not resident in that State or jurisdiction, or\n2. can determine, on the basis of the other information available to the reporting financial institution or of publicly available information, that the account holder is not resident in that State or jurisdiction.\n\nThere is reason to believe under the first paragraph that the account holder is resident in another State or jurisdiction if there is\n1. information that the account holder was formed in another State or jurisdiction or under its legislation,\n2. information that the account holder has an address in another State or jurisdiction, or\n3. other information indicating that the account holder is resident in another State or jurisdiction. Act (2018:2036)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-preexisting-account-review"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K6P2",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 6 kap. 2 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-911/006-003",
+      "instrument": "sfs-2015-911",
+      "provisionKind": "section",
+      "refLabel": "6 kap. 3 §",
+      "path": "006-003",
+      "heading": null,
+      "texts": {
+        "sv": "För att fastställa om en enhet är en passiv icke-finansiell enhet, ska det rapporteringsskyldiga finansiella institutet inhämta ett intygande om detta från kontohavaren. Ett sådant intygande behöver dock inte inhämtas, om det utifrån den information som det rapporteringsskyldiga finansiella institutet har tillgång till eller information som är allmänt tillgänglig kan antas att kontohavaren är\n1. en aktiv icke-finansiell enhet, eller\n2. ett annat finansiellt institut än en sådan investeringsenhet som avses i 2 kap. 9 § första stycket 2 i en stat eller jurisdiktion som inte är en deltagande jurisdiktion.\n\nVid tillämpning av första stycket 2 ska ett finansiellt instituts fasta driftställe i en annan stat eller jurisdiktion anses vara ett finansiellt institut i den staten eller jurisdiktionen. Lag (2017:190).",
+        "en": "To determine whether an entity is a passive non-financial entity, the reporting financial institution must obtain a self-certification to that effect from the account holder. Such a self-certification need not, however, be obtained if, on the basis of the information available to the reporting financial institution or of publicly available information, it can be assumed that the account holder is\n1. an active non-financial entity, or\n2. a financial institution other than an investment entity referred to in Chapter 2, Section 9, first paragraph, point 2 in a State or jurisdiction that is not a participating jurisdiction.\n\nIn applying the first paragraph, point 2, a financial institution's permanent establishment in another State or jurisdiction is deemed to be a financial institution in that State or jurisdiction. Act (2017:190)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-preexisting-account-review"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K6P3",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 6 kap. 3 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2015-911/006-004",
+      "instrument": "sfs-2015-911",
+      "provisionKind": "section",
+      "refLabel": "6 kap. 4 §",
+      "path": "006-004",
+      "heading": null,
+      "texts": {
+        "sv": "För att fastställa vilka personer som är personer med bestämmande inflytande över en enhet, får det rapporteringsskyldiga finansiella institutet förlita sig på den information som inhämtats på grund av bestämmelser i lagen (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism.\n\nFör att fastställa om en person med bestämmande inflytande har hemvist i en annan stat eller jurisdiktion, ska det rapporteringsskyldiga finansiella institutet\n1. när det gäller konton vars saldo eller värde uppgår till 1 000 000 US-dollar eller mindre, granska den information som inhämtats på grund av bestämmelser i lagen om åtgärder mot penningtvätt och finansiering av terrorism, och\n2. när det gäller andra konton än som avses i 1, inhämta ett intygande från kontohavaren eller personerna med bestämmande inflytande. Lag (2017:662).",
+        "en": "To determine which persons are controlling persons of an entity, the reporting financial institution may rely on the information obtained under provisions of the Act (2017:630) on Measures against Money Laundering and Terrorist Financing.\n\nTo determine whether a controlling person is resident in another State or jurisdiction, the reporting financial institution must\n1. in the case of accounts whose balance or value is USD 1,000,000 or less, review the information obtained under provisions of the Act on Measures against Money Laundering and Terrorist Financing, and\n2. in the case of accounts other than those referred to in point 1, obtain a self-certification from the account holder or from the controlling persons. Act (2017:662)."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-crs-preexisting-account-review"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/#K6P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, 6 kap. 4 §, consolidated text as amended up to SFS 2025:1386. Källa: Sveriges riksdag",
       "readOn": "2026-11-13"
     },
     {
@@ -6325,6 +6505,26 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "sfs-2025-1377/overgangsbestammelser-003",
+      "instrument": "sfs-2025-1377",
+      "provisionKind": "paragraph",
+      "refLabel": "punkt 3 övergångsbestämmelserna",
+      "path": "overgangsbestammelser-003",
+      "heading": "Övergångsbestämmelser",
+      "texts": {
+        "sv": "Vid tillämpning av 7 kap. ska den rapporteringsskyldiga leverantören av kryptotillgångstjänster senast den 1 januari 2027 från en befintlig användare av kryptotillgångar hämta in ett intygande som ger leverantören möjlighet att fastställa användarens skatterättsliga hemvist och verifiera att intygandet är rimligt, baserat på de övriga upplysningar som finns tillgängliga.",
+        "en": "In applying Chapter 7, the reporting crypto-asset service provider must, no later than 1 January 2027, obtain from an existing crypto-asset user a self-certification that allows the provider to determine the user's tax residence, and verify that the self-certification is reasonable on the basis of the other information available."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-dac8-crypto-user-due-diligence"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20251377-om-inhamtande-av-vissa-uppgifter_sfs-2025-1377/#overgang",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1377, punkt 3 övergångsbestämmelserna, text as issued, no amendment recorded. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "sfs-2025-1506/001-004",
       "instrument": "sfs-2025-1506",
       "provisionKind": "section",
@@ -6702,6 +6902,26 @@
       ],
       "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/konsumentkreditlag-20261011_sfs-2026-1011/#K6P12",
       "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2026:1011, 6 kap. 12 §, text as issued, no amendment recorded. Källa: Sveriges riksdag",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "sfs-2026-1011/003-004",
+      "instrument": "sfs-2026-1011",
+      "provisionKind": "section",
+      "refLabel": "3 kap. 4 §",
+      "path": "003-004",
+      "heading": null,
+      "texts": {
+        "sv": "Informationen enligt 1 § ska lämnas i en handling eller i någon annan läsbar och varaktig form som är tillgänglig för konsumenten och som konsumenten får välja.",
+        "en": "The information under Section 1 must be provided in a document or in some other readable and durable form that is accessible to the consumer and that the consumer may choose."
+      },
+      "originalLanguage": "sv",
+      "isMachine": true,
+      "obligations": [
+        "obl-se-kkrl2026-pre-contract-information"
+      ],
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/konsumentkreditlag-20261011_sfs-2026-1011/#K3P4",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2026:1011, 3 kap. 4 §, text as issued, no amendment recorded. Källa: Sveriges riksdag",
       "readOn": "2026-11-13"
     },
     {

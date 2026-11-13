@@ -1,0 +1,46 @@
+{
+  "tranche": "eu-markets-infrastructure",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-eugb-allocation-impact-reports",
+      "title": "Correct obl-eu-eugb-allocation-impact-reports: only the report after full allocation needs an external review, unless the proceeds go to a portfolio",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/2024-01-09/eng#art_11",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631, Article 11, consolidated text of 2024-01-09 (CELEX 02023R2631-20240109). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 11(4) requires an external post-issuance review only of the allocation report drawn up after full allocation, and of an amended report under 11(5); every report needs one only under the portfolio approach of 11(6). The old summary and title had every yearly report reviewed.",
+      "payload": {
+        "summaries": {
+          "en": "For every 12 months until the proceeds are fully allocated, and any CapEx plan completed, the issuer must draw up an allocation report on the Annex II template showing the proceeds were allocated in line with Articles 4 to 8, and make it public within 270 days of the period's end. An external reviewer must review the report drawn up after full allocation and any report amended because the allocation was corrected; an issuer that allocates to a portfolio of assets needs a review of every report unless nothing in the portfolio changed. After full allocation, and at least once in the bond's life, the issuer must publish an impact report on the Annex III template."
+        },
+        "originalLanguage": "en",
+        "titles": {
+          "en": "Publish yearly allocation reports, have the final one reviewed externally, and publish an impact report"
+        },
+        "refLabel": "Art. 11(1) and (4) to (7); Art. 12(1)",
+        "provisions": [
+          "celex-32023r2631/011",
+          "celex-32023r2631/012"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-emir-clearing",
+      "title": "Correct obl-eu-emir-clearing: cite Article 5(2) for the classes and dates of the clearing obligation",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng#art_5",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, Article 5, consolidated text of 2025-01-17 (CELEX 02012R0648-20250117). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 4(1) points to Article 5(2), under which regulatory technical standards set the classes subject to the clearing obligation and the dates it takes effect; that article is added to the citation, and the first start date, which no cited text gives, is left to the obligation's effective date.",
+      "payload": {
+        "summaries": {
+          "en": "Where both counterparties are in scope (financial and non-financial counterparties that exceed a clearing threshold or do not calculate their positions, or equivalent third-country entities), every OTC derivative in a class declared subject to the clearing obligation and entered into or novated on or after the date the obligation takes effect must be cleared at a CCP authorised or recognised under EMIR for that class. The firm must become a clearing member or a client, or set up indirect clearing arrangements; intragroup transactions can be exempted after notifying, or with the approval of, the competent authorities. The classes, the dates from which the obligation takes effect, any phase-in and the categories of counterparties it covers are set in regulatory technical standards adopted under Article 5(2)."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Art. 4(1) to (3), Art. 5(2)",
+        "provisions": [
+          "celex-32012r0648/004",
+          "celex-32012r0648/005"
+        ]
+      }
+    }
+  ]
+}

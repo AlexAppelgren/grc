@@ -1269,6 +1269,25 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "celex-32026r0825/011",
+      "instrument": "celex-32026r0825",
+      "provisionKind": "article",
+      "refLabel": "Article 11",
+      "path": "011",
+      "heading": "Entry into force and application",
+      "texts": {
+        "en": "This Regulation shall enter into force on the twentieth day following that of its publication in the Official Journal of the European Union.\n\nIt shall apply from 12 February 2028."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-best-ex-rts-policy-content",
+        "obl-eu-best-ex-rts-venue-selection"
+      ],
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj#art_11",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 11, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "celex-32026r1092/002",
       "instrument": "celex-32026r1092",
       "provisionKind": "article",

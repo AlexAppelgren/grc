@@ -1,0 +1,59 @@
+{
+  "tranche": "eu-banking-credit",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-eba-gl-internal-governance-conflicts-of-interest",
+      "title": "Correct obl-eu-eba-gl-internal-governance-conflicts-of-interest: cite paragraphs 120 and 122 for loans and transactions with management body members",
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/05, Paragraph 120, guidelines as published. Source: European Banking Authority",
+      "why": "The framework for loans and other transactions with members of the management body and their related parties is in Section 12.1, paragraphs 120 and 122, which are added to the citation; paragraphs 105 to 119 do not deal with them.",
+      "payload": {
+        "summaries": {
+          "en": "The management body should establish and oversee policies to identify, assess, manage and mitigate or prevent actual and potential conflicts of interest, both at institutional level and for staff. As part of them it should set a framework for conflicts in granting loans and entering into other transactions with members of the management body and their related parties, so that decisions on them are taken objectively and the transactions are, as a general principle, at arm's length."
+        },
+        "originalLanguage": "en",
+        "refLabel": "Paras 105, 106, 108 to 120 and 122",
+        "provisions": [
+          "eba-gl-2021-05/paragraph-105",
+          "eba-gl-2021-05/paragraph-106",
+          "eba-gl-2021-05/paragraph-108",
+          "eba-gl-2021-05/paragraph-109",
+          "eba-gl-2021-05/paragraph-110",
+          "eba-gl-2021-05/paragraph-111",
+          "eba-gl-2021-05/paragraph-112",
+          "eba-gl-2021-05/paragraph-113",
+          "eba-gl-2021-05/paragraph-114",
+          "eba-gl-2021-05/paragraph-115",
+          "eba-gl-2021-05/paragraph-116",
+          "eba-gl-2021-05/paragraph-117",
+          "eba-gl-2021-05/paragraph-118",
+          "eba-gl-2021-05/paragraph-119",
+          "eba-gl-2021-05/paragraph-120",
+          "eba-gl-2021-05/paragraph-122"
+        ]
+      }
+    },
+    {
+      "key": "obl-eu-eba-gl-pog-target-market",
+      "title": "Correct obl-eu-eba-gl-pog-target-market: add Guidelines 3.1 to 3.3 in the wording that applies until 11 January 2027",
+      "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/1141044/d84c9682-4f0b-493a-af45-acbb79c75bfa/EBA-GL-2015-18%20Final%20report%20on%20Guidelines%20on%20product%20oversight%20and%20governance.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2015/18, Guideline 3.1, guidelines as published in 2015, the wording that applies until the amending guidelines EBA/GL/2026/07 apply on 11 January 2027. Source: European Banking Authority",
+      "why": "The main duty of the summary is in Guidelines 3.1 to 3.3, which the citation names but the library did not hold because the consolidated version prints an amendment that applies only from 11 January 2027; they are now added in the wording in force today, from the guidelines as published in 2015.",
+      "payload": {
+        "summaries": {
+          "en": "Manufacturers should identify the target market of each retail banking product, and the segments it does not suit, and only design and bring to market products whose features, charges and risks meet the interests, objectives and characteristics of, and benefit, that target market."
+        },
+        "originalLanguage": "en",
+        "provisions": [
+          "eba-gl-2015-18/guideline-003-001",
+          "eba-gl-2015-18/guideline-003-002",
+          "eba-gl-2015-18/guideline-003-003",
+          "eba-gl-2015-18/guideline-003-004",
+          "eba-gl-2015-18/guideline-003-005"
+        ]
+      }
+    }
+  ]
+}

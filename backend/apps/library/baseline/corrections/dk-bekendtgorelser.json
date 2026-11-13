@@ -7,16 +7,104 @@
       "key": "obl-dk-afvplan-financial-contracts-register",
       "title": "Correct obl-dk-afvplan-financial-contracts-register: every firm keeps the register",
       "source": "https://www.retsinformation.dk/eli/lta/2021/2018",
-      "sourceLabel": "Retsinformation, BEK nr 2018 af 26/10/2021 (afviklingsplanlægning og afviklingsberedskab), § 12",
-      "why": "§ 12 obliges every firm to keep a register of financial contracts; only what the register must hold, the information Commission Delegated Regulation (EU) 2016/1712 sets out, depends on the resolution plan or group resolution plan showing that the firm is to be resolved. The old title and summary made the register itself depend on the plan.",
+      "sourceLabel": "Retsinformation, BEK nr 2018 af 26/10/2021, § 12, text as issued, bekendtgørelse nr. 2018 of 2021. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "§ 12 requires every firm to keep a register of financial contracts; only the content set out in Delegated Regulation (EU) 2016/1712 depends on the resolution plan showing that the firm is to be resolved. The old title and summary made the register itself conditional.",
       "payload": {
         "summaries": {
-          "en": "The firm must keep a register of financial contracts. Where its resolution plan or group resolution plan shows that the firm is to be resolved, the register must hold the information set out in Commission Delegated Regulation (EU) 2016/1712."
+          "en": "A firm covered by the order must keep a register of financial contracts. Where its resolution plan or group resolution plan shows that the firm is to be resolved, the register must contain the information set out in Commission Delegated Regulation (EU) 2016/1712."
         },
         "originalLanguage": "en",
         "titles": {
           "en": "Keep a register of financial contracts"
         }
+      }
+    },
+    {
+      "key": "obl-dk-kompbolig-training",
+      "title": "Correct obl-dk-kompbolig-training: two years' employment alone no longer suffices",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1425",
+      "sourceLabel": "Retsinformation, BEK nr 1425 af 27/11/2025, § 5, text as issued, bekendtgørelse nr. 1425 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "§ 5, stk. 3, says that since 21 March 2019 the necessary competence cannot be based on two years' employment alone; the old summary offered employment as a route on its own.",
+      "payload": {
+        "summaries": {
+          "en": "A housing credit lender or intermediary must have a procedure for systematic training that gives the staff who grant, intermediate or advise on housing credit the necessary competence, describe in it how they keep that competence up to date, and ensure they have completed the training before they start. Competence may come from passing a theoretical course relevant to the activity, but since 21 March 2019 it can no longer rest on at least two years' employment with a lender or intermediary alone. A lender also ensures that all relevant staff of a tied credit intermediary acting for that lender alone, under its full and unconditional responsibility, meet the same competence and knowledge requirements."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-dk-crs-annual-report",
+      "title": "Correct obl-dk-crs-annual-report: name the amending order that replaced Annex 1",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1160",
+      "sourceLabel": "Retsinformation, BEK nr 1160 af 09/09/2025, § 117, text as issued, bekendtgørelse nr. 1160 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "§§ 111 and 117 carry the reporting duty and the 1 May deadline but say nothing about Annex 1; the replacement of the list of participating jurisdictions comes from the amending order BEK nr 717 of 28 August 2026 (in force 1 September 2026), which the summary now names as its source.",
+      "payload": {
+        "summaries": {
+          "en": "For each reportable account the institution must report the information in § 111, such as identity, residence, tax identification numbers, account number, balance or value and income, to Skatteforvaltningen by 1 May of the year after the calendar year concerned, or the next working day if 1 May falls on a weekend or public holiday; using service providers does not move the responsibility. The participating jurisdictions are listed in Annex 1, which the amending order BEK nr 717 of 28 August 2026 replaced from 1 September 2026."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-dk-forsdist-fair-dealing",
+      "title": "Correct obl-dk-forsdist-fair-dealing: cite § 6 as BEK nr 1637/2024 worded it",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1637",
+      "sourceLabel": "Retsinformation, BEK nr 1557 af 06/12/2024, § 6, text as inserted by the amending order, bekendtgørelse nr. 1637 of 2024. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "The duties on fair, clear and non-misleading information and identifiable marketing are in § 6, which the amending order BEK nr 1637/2024 rewrote whole from 1 January 2025; the citation named § 6 but showed no text for it, and its wording in force is now cited from the amending order.",
+      "payload": {
+        "summaries": {
+          "en": "An insurance distributor must act honestly and loyally towards its customers and show good business practice in its commercial practice towards consumers. Information it gives as part of its commercial practice must be fair, clear and not misleading, and marketing material must make clear that it is marketing."
+        },
+        "originalLanguage": "en",
+        "provisions": [
+          "dk-bek-2024-1557/004",
+          "dk-bek-2024-1557/005",
+          "dk-bek-2024-1557/006"
+        ]
+      }
+    },
+    {
+      "key": "obl-dk-mrel-meet-requirement",
+      "title": "Correct obl-dk-mrel-meet-requirement: the general duty to meet the requirement is in the Financial Business Act",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/913",
+      "sourceLabel": "Retsinformation, BEK nr 913 af 26/06/2025, § 3, text as issued, bekendtgørelse nr. 913 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "§§ 3, 5 and 13 say how Finanstilsynet sets and calibrates the requirement, and § 9 binds only a parent owned from outside the EU; the general duty on a bank to meet the requirement is in § 266 of the Financial Business Act, another instrument, so the summary now says so instead of presenting it as this order's.",
+      "payload": {
+        "summaries": {
+          "en": "Finanstilsynet sets a bank's requirement for eligible liabilities after consulting Finansiel Stabilitet, at an amount that fully absorbs the losses the bank is expected to incur and recapitalises the resolution entity and its subsidiaries that are not resolution entities, as a percentage both of the total risk exposure amount and of the total exposure measure, calculated under Annex 1 for resolution entities and for other entities; the bank's duty to meet the requirement at all times follows from § 266 of the Financial Business Act. Under this order, a parent that is not itself a resolution entity and is a subsidiary of an undertaking in a non-EU country without an EU agreement in the financial area must meet the requirement on a consolidated basis. Such a parent, and a subsidiary of such a non-EU parent that is not itself a resolution entity, must meet it with liabilities issued to the non-EU parent, its subsidiaries in the same country or the other undertakings the Financial Business Act names."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-dk-prisinfo-fees-fx-website",
+      "title": "Correct obl-dk-prisinfo-fees-fx-website: name the amending order that narrows the scope",
+      "source": "https://www.retsinformation.dk/eli/lta/2020/147",
+      "sourceLabel": "Retsinformation, BEK nr 147 af 25/02/2020, § 3, text as issued, bekendtgørelse nr. 147 of 2020. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "§§ 2-3 carry the website duty for fees and banknote rates but say nothing about a change of scope; the narrowing from 20 November 2026 comes from the amending order BEK nr 1601 of 11 December 2025 (§ 1, nr. 1), which the summary now names as its source.",
+      "payload": {
+        "summaries": {
+          "en": "A bank offering products to consumers must state clearly on its website the amount of the fees it sets and charges itself and, for the foreign banknotes it most commonly trades, its buying rate, selling rate and handling fee. Under the amending order BEK nr 1601 of 11 December 2025, from 20 November 2026 the order applies only when a bank offers consumers deposit products, currency exchange or housing credit agreements."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-dk-sysbuf-calculate",
+      "title": "Correct obl-dk-sysbuf-calculate: cite § 3 for the buffer rates the Minister sets",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/441",
+      "sourceLabel": "Retsinformation, BEK nr 441 af 25/04/2025, § 3, text as issued, bekendtgørelse nr. 441 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "why": "§ 2 only requires the calculation under Annex 1; the buffer rates and the groups of exposures they apply to come from § 3, which is now cited. Annex 1 holds its formula as an image that cannot be given as text, so the summary no longer describes the formula's terms.",
+      "payload": {
+        "summaries": {
+          "en": "A bank must calculate its systemic risk buffer with the formula in Annex 1. Under § 3 the Minister for Industry, Business and Financial Affairs may set systemic risk buffer rates, in steps of 0.5 percentage points, for all exposures in Denmark, for sectoral exposures there and subsets of them, for exposures in other EU countries or countries with an EU agreement in the financial area, and for exposures in other non-EU countries."
+        },
+        "originalLanguage": "en",
+        "refLabel": "§§ 2-3",
+        "provisions": [
+          "dk-bek-2025-441/002",
+          "dk-bek-2025-441/003"
+        ]
       }
     }
   ]

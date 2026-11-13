@@ -2839,6 +2839,27 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "dk-bek-2024-1557/006",
+      "instrument": "dk-bek-2024-1557",
+      "provisionKind": "section",
+      "refLabel": "§ 6",
+      "path": "006",
+      "heading": null,
+      "texts": {
+        "da": "Oplysninger, der afgives som led i en forsikringsdistributørs handelspraksis, skal være reelle, klare og ikke vildledende.\n\nStk. 2. Det skal tydeligt fremgå af markedsføringsmateriale, at der er tale om markedsføring.",
+        "en": "Information provided as part of an insurance distributor's commercial practice must be fair, clear and not misleading.\n\n(2) It must be clearly apparent from marketing material that it is marketing.",
+        "sv": "Uppgifter som lämnas som ett led i en försäkringsdistributörs affärsmetoder ska vara korrekta, tydliga och inte vilseledande.\n\nStk. 2. Det ska tydligt framgå av marknadsföringsmaterial att det rör sig om marknadsföring."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-forsdist-fair-dealing"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1637",
+      "sourceLabel": "Retsinformation, BEK nr 1557 af 06/12/2024, § 6, text as inserted by the amending order, bekendtgørelse nr. 1637 of 2024. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "dk-bek-2024-1558/003",
       "instrument": "dk-bek-2024-1558",
       "provisionKind": "section",
@@ -4181,6 +4202,27 @@
       ],
       "source": "https://www.retsinformation.dk/eli/lta/2025/441",
       "sourceLabel": "Retsinformation, BEK nr 441 af 25/04/2025, § 5, text as issued, bekendtgørelse nr. 441 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "dk-bek-2025-441/003",
+      "instrument": "dk-bek-2025-441",
+      "provisionKind": "section",
+      "refLabel": "§ 3",
+      "path": "003",
+      "heading": null,
+      "texts": {
+        "da": "Erhvervsministeren kan fastsætte systemiske buffersatser for følgende grupper af eksponeringer:\n1) Alle eksponeringer, der befinder sig i Danmark.\n2) Følgende sektoreksponeringer, der befinder sig i Danmark:\na) Alle detaileksponeringer over for fysiske personer, der er stillet sikkerhed for ved pant i beboelsesejendom.\nb) Alle eksponeringer over for juridiske personer, der er stillet sikkerhed for ved pant i erhvervsejendom.\nc) Alle eksponeringer over for juridiske personer, bortset fra dem, der er angivet i litra b.\nd) Alle eksponeringer over for fysiske personer, bortset fra dem, der er angivet i litra a.\n3) Undergrupper af sektoreksponeringerne i nr. 2.\n4) Alle eksponeringer, der befinder sig i et andet land inden for Den Europæiske Union eller i et land, som Unionen har indgået en aftale med på det finansielle område, jf. dog § 4.\n5) De sektoreksponeringer, der er identificeret i nr. 2, og en eller flere undergrupper heraf i nr. 3, som befinder sig i et andet land inden for Den Europæiske Union eller i et land, som Unionen har indgået en aftale med på det finansielle område alene med det formål at kunne få anerkendt en buffersats, der er fastsat af det pågældende land, jf. § 125 h, stk. 2 og 3, i lov om finansiel virksomhed.\n6) Eksponeringer, der befinder sig i et land uden for den Europæiske Union, som Unionen ikke har indgået aftale med på det finansielle område.\n\nStk. 2. En systemisk buffersats skal gælde for alle eksponeringer, en eller flere sektoreksponeringer eller undergrupper af eksponeringer, og for alle virksomheder eller en eller flere undergrupper af disse virksomheder, i tilpasningstrin på 0,5 procentpoint.",
+        "en": "The Minister for Industry, Business and Financial Affairs may set systemic risk buffer rates for the following groups of exposures:\n1) All exposures located in Denmark.\n2) The following sectoral exposures located in Denmark:\na) All retail exposures to natural persons that are secured by residential property.\nb) All exposures to legal persons that are secured by mortgages on commercial immovable property.\nc) All exposures to legal persons, excluding those specified in point (b).\nd) All exposures to natural persons, excluding those specified in point (a).\n3) Subsets of the sectoral exposures in no. 2.\n4) All exposures located in another country within the European Union or in a country with which the Union has entered into an agreement in the financial area, subject to section 4.\n5) The sectoral exposures identified in no. 2, and one or more subsets of them in no. 3, located in another country within the European Union or in a country with which the Union has entered into an agreement in the financial area, solely for the purpose of having a buffer rate set by that country recognised, see section 125h(2) and (3) of the Financial Business Act.\n6) Exposures located in a country outside the European Union with which the Union has not entered into an agreement in the financial area.\n\n(2) A systemic risk buffer rate must apply to all exposures, to one or more sectoral exposures or subsets of exposures, and to all undertakings or to one or more subsets of those undertakings, in adjustment steps of 0.5 percentage points.",
+        "sv": "Erhvervsministeren (näringsministern) får fastställa systemriskbuffertvärden för följande grupper av exponeringar:\n1) Alla exponeringar som finns i Danmark.\n2) Följande sektorsexponeringar som finns i Danmark:\na) Alla exponeringar mot fysiska personer i hushållssegmentet som har säkerhet i bostadsfastighet.\nb) Alla exponeringar mot juridiska personer som har säkerhet i kommersiell fastighet.\nc) Alla exponeringar mot juridiska personer, utom dem som anges i led b.\nd) Alla exponeringar mot fysiska personer, utom dem som anges i led a.\n3) Delmängder av sektorsexponeringarna i 2.\n4) Alla exponeringar som finns i ett annat land inom Europeiska unionen eller i ett land som unionen har ingått avtal med på det finansiella området, se dock 4 §.\n5) De sektorsexponeringar som identifieras i 2 och en eller flera delmängder av dem i 3, som finns i ett annat land inom Europeiska unionen eller i ett land som unionen har ingått avtal med på det finansiella området, enbart i syfte att få ett buffertvärde som har fastställts av det landet erkänt, se 125 h § andra och tredje styckena i lov om finansiel virksomhed (lagen om finansiell verksamhet).\n6) Exponeringar som finns i ett land utanför Europeiska unionen som unionen inte har ingått avtal med på det finansiella området.\n\nStk. 2. Ett systemriskbuffertvärde ska gälla för alla exponeringar, en eller flera sektorsexponeringar eller delmängder av exponeringar, och för alla företag eller en eller flera delmängder av dessa företag, i justeringssteg om 0,5 procentenheter."
+      },
+      "originalLanguage": "da",
+      "isMachine": true,
+      "obligations": [
+        "obl-dk-sysbuf-calculate"
+      ],
+      "source": "https://www.retsinformation.dk/eli/lta/2025/441",
+      "sourceLabel": "Retsinformation, BEK nr 441 af 25/04/2025, § 3, text as issued, bekendtgørelse nr. 441 of 2025. Kilde: Retsinformation (Civilstyrelsen)",
       "readOn": "2026-11-13"
     },
     {

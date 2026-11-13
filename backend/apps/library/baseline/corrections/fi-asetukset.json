@@ -1,0 +1,51 @@
+{
+  "tranche": "fi-asetukset",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-fi-holdings-decree-notification-content",
+      "title": "Correct obl-fi-holdings-decree-notification-content: a disposal notice carries all of 4 §, subsection 1",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/208#sec_1",
+      "sourceLabel": "Finlex, 208/2014, 1 §, consolidated text fin@20190256 of 2019-02-28, Swedish swe@20190256. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "1 § exempts a disposal notice only from 3 §, 4 §, subsections 2 and 3, and 5 §, so a disposal notice still needs everything in 4 §, subsection 1, including close links, non-financial relationships and the disposal agreements; the old summary said it needed only the identity, the target and the holdings.",
+      "payload": {
+        "summaries": {
+          "en": "A notice of a planned acquisition of a qualifying holding in a credit institution, fund management company, depositary, insurer, conglomerate holding company or AIF manager, including one a bank makes, must carry the information the decree lists, given on FIN-FSA's model forms: the notifier's identity, business or occupation, management and financial standing, its record of insolvencies, criminal and administrative sanctions and removals from regulated posts, the target and the holding and votes before and after the transaction, close links and other connections to the target and its owners, the agreements on the acquisition, how the acquisition is financed and, above 20 %, its strategic objectives. A notice of a disposal needs the notifier's identity details or register extract and all the target information in 4 §, subsection 1 (the target, the holdings and votes before and after, close links, non-financial relationships and the agreements on the disposal), but not the further details in 3 §, the financing information or the strategy information."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-fi-credit-info-decree-standard-form",
+      "title": "Correct obl-fi-credit-info-decree-standard-form: the new layout comes with Decree 163/2026",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789#sec_1",
+      "sourceLabel": "Finlex, 789/2010, 1 §, consolidated text fin@20260163 of 2026-03-12, Swedish swe@20260163. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "1 § as in force today carries the actor, the timing, Annex 1 items 1 to 4, item 5 in distance selling and the separate document; the layout rules from 20 November 2026 are the section as Decree 163/2026 rewrites it, which the cited text cannot show before then, so the summary now names that decree as their source.",
+      "payload": {
+        "summaries": {
+          "en": "A creditor, and a credit intermediary other than a seller or service provider acting as one only alongside its main business, must give the consumer the information in Annex 1, items 1 to 4, in good time before a consumer credit agreement is concluded, with the item 5 information added in distance selling and any other information in a separate document. Decree 163/2026 rewrites this section from 20 November 2026: the form must then open with the Annex 1 part I and II information, shown prominently on one page or at most two with part I on the first, followed and clearly set apart by items 1 to 3, with all information on the form equally prominent."
+        },
+        "originalLanguage": "en"
+      }
+    },
+    {
+      "key": "obl-fi-issuer-disclosure-decree-governance-statement",
+      "title": "Correct obl-fi-issuer-disclosure-decree-governance-statement: cite 1 § for the exemptions",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020#chp_1__sec_1",
+      "sourceLabel": "Finlex, 1020/2012, 1 §, consolidated text fin@20240776 of 2024-12-11, Swedish swe@20240776. Lähde: Finlex (oikeusministeriö), CC BY 4.0",
+      "why": "The exemptions for smaller companies and for issuers of securities other than shares, and the reach of the gender-balance item, are in 1 §, which is now cited. The start for financial years from 1 January 2025 came from the amending decree's entry into force, not from this decree, and is dropped because it no longer affects any statement still to be given.",
+      "payload": {
+        "summaries": {
+          "en": "An issuer must publish a corporate governance statement naming the governance code it follows and the website where it is available, explaining any departures from it, and describing the internal control and risk management of financial reporting, the composition and work of the board, supervisory board and committees, and its board diversity policy, objectives and results; an issuer within the scope of the Limited Liability Companies Act's board gender balance rule must also report the gender split of its board and, if the 40 per cent target is not met, why and what it is doing about it. A separate statement is published together with the management report, and the auditor checks that it has been given. Under 1 §, a small or medium-sized company that exceeds only one of the size thresholds need not report on diversity, and an issuer of only securities other than shares on a regulated market need not name a code or report on diversity unless it has shares on a multilateral trading facility."
+        },
+        "originalLanguage": "en",
+        "refLabel": "1 §, 7 §",
+        "provisions": [
+          "fi-sd-2012-1020/001",
+          "fi-sd-2012-1020/007"
+        ]
+      }
+    }
+  ]
+}

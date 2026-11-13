@@ -1,0 +1,20 @@
+{
+  "tranche": "eu-sanctions",
+  "readOn": "2026-11-13",
+  "reading": "docs/reviews/law-text-2026-11-13/duty-reading.json",
+  "obligations": [
+    {
+      "key": "obl-eu-by765-crypto-payment-services",
+      "title": "Correct obl-eu-by765-crypto-payment-services: drop the phase-in history, which Article 1u does not give",
+      "source": "https://eur-lex.europa.eu/eli/reg/2006/765/2026-10-15/eng#art_1u",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 765/2006, Article 1u, consolidated text of 2026-10-15 (CELEX 02006R0765-20261015). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
+      "why": "Article 1u gives no date or phase-in for the service ban in paragraph 2 (its only dates, in paragraph 3, concern ownership and posts in crypto-asset providers), so the history sentence is dropped and the exemption is stated as paragraph 4 gives it.",
+      "payload": {
+        "summaries": {
+          "en": "Do not provide, directly or indirectly, Belarusian nationals, natural persons residing in Belarus or entities established in Belarus with crypto-asset services, the issuing of payment instruments, the acquiring of payment transactions, payment initiation services or the issuing of electronic money. Nationals of a Member State, an EEA country or Switzerland, and natural persons with a temporary or permanent residence permit in one of them, are exempt."
+        },
+        "originalLanguage": "en"
+      }
+    }
+  ]
+}

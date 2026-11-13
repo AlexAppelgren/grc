@@ -2272,6 +2272,27 @@
       "readOn": "2026-11-13"
     },
     {
+      "key": "no-for-2025-06-24-1296/014",
+      "instrument": "no-for-2025-06-24-1296",
+      "provisionKind": "section",
+      "refLabel": "§ 14",
+      "path": "014",
+      "heading": "TLPT-cyberteam og koordinering av TLPT",
+      "texts": {
+        "nb": "Norges Bank skal ha rollen som TLPT-cyberteam (TCT) ved gjennomføring av TLPT-tester og være ansvarlig for å koordinere testgjennomføringen.",
+        "en": "Norges Bank (the central bank of Norway) must have the role of TLPT cyber team (TCT) when TLPT tests are carried out and must be responsible for coordinating the conduct of the tests.",
+        "sv": "Norges Bank (Norges centralbank) ska ha rollen som TLPT-cyberteam (TCT) vid genomförandet av TLPT-tester och vara ansvarig för att samordna genomförandet av testerna."
+      },
+      "originalLanguage": "nb",
+      "isMachine": true,
+      "obligations": [
+        "obl-no-doraf-tlpt"
+      ],
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-24-1296/%C2%A714",
+      "sourceLabel": "Lovdata, FOR-2025-06-24-1296, § 14, consolidated text as amended up to forskrift/2026-08-20-1657 fra 2026-09-01, read 2026-11-12, text unchanged. Kilde: Lovdata, lisensiert under NLOD 2.0 (https://data.norge.no/nlod/no/2.0)",
+      "readOn": "2026-11-13"
+    },
+    {
       "key": "no-for-2025-06-25-1311/003",
       "instrument": "no-for-2025-06-25-1311",
       "provisionKind": "section",

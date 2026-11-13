@@ -418,12 +418,9 @@ class Checker:
         in the provisions files, and which changes what it names."""
         tranches = {path.stem: path for path in folder.glob("*.json") if path.name != SOURCES_FILE}
         provision_of: dict[str, str] = {}
-        cited_by: dict[str, set[str]] = {}
         for path in (folder / PROVISIONS_DIR).glob("*.json"):
             for item in json.loads(path.read_text(encoding="utf-8")).get("provisions", []):
                 provision_of[item["key"]] = item["instrument"]
-                for duty in item.get("obligations", []):
-                    cited_by.setdefault(duty, set()).add(item["key"])
         corrected: dict[str, str] = {}
         for path in sorted((folder / CORRECTIONS_DIR).glob("*.json")):
             where = f"{CORRECTIONS_DIR}/{path.name}"
@@ -465,12 +462,11 @@ class Checker:
                 else:
                     corrected[key] = spot
                 instrument, duty = duties.get(key, ("", {}))
-                self.correction(spot, item, instrument, duty, provision_of, cited_by.get(key, set()))
+                self.correction(spot, item, instrument, duty, provision_of)
 
-    def correction(self, where: str, item: dict, instrument: str, duty: dict, provision_of: dict[str, str], cited: set[str]) -> None:
+    def correction(self, where: str, item: dict, instrument: str, duty: dict, provision_of: dict[str, str]) -> None:
         """One correction as the filer hands it to the door, a `new_obligation_version` of the
-        duty under `instrument` whose baseline payload is `duty` and whose provisions files
-        cite it with `cited`."""
+        duty under `instrument` whose baseline payload is `duty`."""
         for stray in sorted(set(item) - CORRECTION_FIELDS):
             self.fail(where, f"unknown field {stray!r}")
         title, why = item.get("title"), item.get("why")
@@ -510,8 +506,9 @@ class Checker:
             for key in provisions:
                 if provision_of.get(key) != instrument:
                     self.fail(f"{where}.payload.provisions", f"{key!r} is not a provision of {instrument!r} in the provisions files")
-            if set(provisions) == cited:
-                self.fail(f"{where}.payload.provisions", "are the provisions that already cite the duty: leave it out")
+            # A list equal to the provisions the files tie to the duty is kept, never refused: a
+            # library that approved a provision before the duty cited it holds no such tie, and
+            # only the correction makes it. Where the tie is held, the same list changes nothing.
         sources = item.get("fieldSources", {})
         if not isinstance(sources, dict):
             self.fail(f"{where}.fieldSources", "must be an object of field -> https link")

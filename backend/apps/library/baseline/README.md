@@ -241,8 +241,11 @@ confirmer applies the corrections too.
   the reviewer has to read why. `source`, `sourceLabel` and `fieldSources` read as on a duty.
 - `payload` is a `new_obligation_version` payload (`ProposalObligationVersionPayload`):
   `summaries` and `originalLanguage` always, the summary one to three sentences; `titles`,
-  `refLabel` and `provisions` only when they change, and the checker refuses one equal to
-  what the duty already has. Each one given replaces that part of the duty whole. Never
+  `refLabel` and `provisions` only when they change, and the checker refuses a title or a
+  citation equal to what the duty already has. A `provisions` list equal to the provisions
+  the files tie to the duty is kept: a library that approved a provision before the duty
+  cited it holds no such tie, and only the correction makes it. Each one given replaces that
+  part of the duty whole. Never
   `isMachine`, `effectiveFrom` or `terms` (the scope is not corrected here): a correction is
   in force from the duty's start, so the filer gives it the duty's own `effectiveFrom`, when
   the duty has one, and the correction is the later version of that day.
