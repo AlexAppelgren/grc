@@ -910,92 +910,1082 @@
       "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_77",
       "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 77, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
       "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-02/annex",
+      "instrument": "eba-gl-2021-02",
+      "provisionKind": "annex",
+      "refLabel": "Annex",
+      "path": "annex",
+      "heading": "Annex: Customers that are NPOs",
+      "texts": {
+        "en": "1. When assessing the risk profile of a customer or prospective customer that is an NPO for the first time, firms should ensure that they obtain a good understanding of the NPO’s governance, how it is funded, its activities, where it operates and who its beneficiaries are. Not all NPOs are exposed in a similar way to ML/TF risk, and firms should take risk-sensitive measures to understand:\na) who controls the customer and who its beneficial owners are. As part of this, firms should identify the NPO’s trustees or equivalent, its governing body and any other individual who has control or influence over the NPO. For this purpose, firms should refer to information such as the legal status of the NPO, a description of the NPO’s governance set-up and/or a list of the legal representative(s).\nb) how the NPO is funded (private donations, government funds, etc.). For this purpose, firms should refer to information about the donor base, funding sources and fundraising methods, such as annual reports and financial statements.\nc) what the objectives of the customer’s operations are. For this purpose, firms should refer to information such as the customer’s mission statement, a list of its programmes and associated budgets, activities, and services delivered.\nd) which categories of beneficiaries benefit from the customer’s activities (for example, refugees, legal entities that receive assistance through the services of the NPO or similar). Documentation gathered for this purpose may include mission statements or campaign-related documents.\ne) what transactions the NPO is likely to request, based on its objectives and activity profile, including payment of staff or providers posted abroad, and the expected frequency, size, and geographical destination of such transactions. For this purpose, firms should refer to information such as organisational charts, explanations of the organisational structure of the NPO, a list of jurisdictions where the staff is paid and the number of employees to be paid in each of them.\nf) where the NPO conducts its programmes and/or operations, in particular whether the NPO conducts its activities only at domestic level, or in other jurisdictions associated with higher ML/TF risks and in high-risk third countries. For this purpose, firms should refer to information such as a list of all programmes, activities and services delivered by the NPO, as well as a list of geographical locations served, including its headquarters and operational areas. Firms should also assess, for the purposes of Guideline 8, whether the NPO’s transactions are likely to involve the execution of payments with a third-country institution.\n\nRisk factors\n\n2. When identifying the risk associated with customers that are NPOs, firms should consider at least the following risk factors and assess them on a risk-sensitive basis:\n\nGovernance and exertion of control\na) Does the NPO have a legal status under national law or the national law of another Member State? Is there any documentation that sets out its modalities of governance and identifies the NPO’s trustees, members of the governing body or any other individuals who exert control over the NPO?\nb) Does the legal structure of the NPO require, for its set up, the demonstration of the management capability of its treasurer or managers?\nc) Does the legal structure of the NPO require the annual disclosure of financial statements?\n\nReputation/adverse media findings\nd) To what extent is it difficult for firms to establish the good reputation of the NPO and its managers? Is there a good reason why this may be difficult, for example because the NPO has been established only recently, for instance in the last 12 months?\ne) Has the NPO been linked by relevant, reliable and independent sources to extremism, extremist propaganda or terrorist sympathies and activities?\nf) Has the NPO been involved in misconduct or criminal activities, including ML/TF-related cases, according to relevant, reliable and independent sources?\n\nFunding methods\ng) Is the NPO’s funding transparent and accountable or difficult to trace? Does it publicly document its funding sources and are these subject to external audits?\nh) Do the NPO’s funding methods carry ML/TF risks? Does it rely entirely or largely on cash donations, crypto assets or crowdfunding? Or are the NPO’s sources of funds channelled through the payments system?\ni) Is the NPO funded partly or largely by private donors or donors from jurisdictions associated with higher ML/TF risks or high-risk third countries identified as having strategic deficiencies in their AML/CFT regime?\n\nOperations in jurisdictions associated with higher ML/TF risks and high-risk third countries\nj) Does the NPO operate or deliver assistance in jurisdictions associated with higher ML/TF risks (as assessed based on risk factors presented in Title I of these guidelines) or in high-risk third countries (as identified by the Commission pursuant to Article 9(2) of Directive (EU) 2015/849) or in conflict zones?\nk) In such situations, does the NPO rely on third parties or intermediaries to perform its activities and is it able to explain the nature of the discharge? In this context, is the NPO able to monitor and have adequate oversight of the discharge by these third parties?\nl) Is the business relationship with the NPO likely to involve the execution of transactions with a respondent institution located in jurisdictions associated with higher ML/TF risks or in high-risk third countries?\n\n3. Firms should also consider at least the following factors that may contribute to reducing risks:\na) The roles and responsibilities of the NPO’s governing body and its managers are clearly documented.\nb) The NPO is legally required to annually disclose its financial statements or to issue an annual report that identifies the sources of funds, the main purpose of the NPO’s activities and the categories of beneficiaries of its programmes.\nc) The NPO can demonstrate it is or has been subject to independent reviews or external audits.\nd) The NPO has a good public reputation according to relevant, reliable and independent sources.\ne) The NPO receives fundings from governments, supranational or international organisations that are not associated with high-risk third countries or with jurisdictions with higher ML/TF risks, and the source of its funds can be clearly established.\nf) The NPO does not have any links with high-risk third countries, or if it has, the NPO can demonstrate that it has taken appropriate steps to mitigate the ML/TF risks (for instance, with the designation of staff responsible for AML/CFT compliance or the design of procedures to identify the NPO’s categories of beneficiaries and assess the ML/TF risks associated therewith).\ng) The NPO’s activities and beneficiaries do not expose it to higher ML/TF risks.\nh) The NPO only delivers assistance and support to individuals through direct material help, such as providing IT equipment or medical devices.\n\n4. In the event the NPO is conducting activities in jurisdictions subject to EU or UN sanctions, firms should establish whether the NPO benefits from any provisions related to humanitarian aid and derogations in EU/UN financial sanctions regimes, such as humanitarian exemptions or derogations. When deciding how to service these customers and in accordance with their own asset freezing obligations, firms should obtain evidence that provide reasonable assurance that the NPO conducts its activities in these jurisdictions in line with the exemptions provided in the regime, or that it benefits from a derogation granted by a relevant competent authority.\n\n5. For initial screening purposes and throughout the business relationship once it is established, firms should take the steps necessary to understand how the NPO operates and conducts its operations. Firms that are likely to have NPO customers, for example because they provide money transfer services or current account services, should consider establishing a dedicated contact point for this specific category of customers to have a good understanding of the way the sector is set up and operates."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rfgl-npo-customers"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054143/Amending%20GLs%20to%20the%20RFGLs%20in%20relation%20to%20NPOs.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02, Annex, as amended by EBA/GL/2023/03, read from the amending guidelines. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-02/guideline-002-007-d",
+      "instrument": "eba-gl-2021-02",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.7(d)",
+      "path": "guideline-002-007-d",
+      "heading": "4. Guideline on customers that are NPOs",
+      "texts": {
+        "en": "Where the customer is a not-for-profit organisation (NPO), the firms should apply the criteria set out in the annex."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rfgl-npo-customers"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054143/Amending%20GLs%20to%20the%20RFGLs%20in%20relation%20to%20NPOs.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02, Guideline 2.7(d), as amended by EBA/GL/2023/03, read from the amending guidelines. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-02/guideline-004-069",
+      "instrument": "eba-gl-2021-02",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.69",
+      "path": "guideline-004-069",
+      "heading": "Monitoring",
+      "texts": {
+        "en": "Pursuant to Article 13 of Directive (EU) 2015/849, firms should monitor their business relationships with their customers."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rfgl-monitoring"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02, Guideline 4.69, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-02/guideline-004-070",
+      "instrument": "eba-gl-2021-02",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.70",
+      "path": "guideline-004-070",
+      "heading": "Monitoring",
+      "texts": {
+        "en": "Monitoring should include:\na. Monitoring of transactions to ensure that these are in line with the customer’s risk profile, their financial situation, and the firm’s wider knowledge of the customer to detect unusual or suspicious transactions; and\nb. keeping the documents, data or information they hold up to date, with a view to understanding whether the risk associated with the business relationship has changed and to ascertain that the information that forms the basis for ongoing monitoring is accurate."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rfgl-monitoring"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02, Guideline 4.70, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-02/guideline-004-071",
+      "instrument": "eba-gl-2021-02",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.71",
+      "path": "guideline-004-071",
+      "heading": "Monitoring",
+      "texts": {
+        "en": "Firms should determine the frequency and intensity of monitoring on a risk-sensitive basis, taking into account the nature, size and complexity of their business and the level of risk to which they are exposed."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rfgl-monitoring"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02, Guideline 4.71, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2021-02/guideline-004-072",
+      "instrument": "eba-gl-2021-02",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.72",
+      "path": "guideline-004-072",
+      "heading": "Transaction monitoring",
+      "texts": {
+        "en": "Firms should ensure that their approach to transaction monitoring is effective and appropriate."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rfgl-monitoring"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02, Guideline 4.72, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-013",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "4.1.1 The role of the management body in its supervisory function in the AML/CFT framework",
+      "texts": {
+        "en": "In addition to the provisions set out in the ESAs’ guidelines on internal governance¹⁴, as applicable, a credit or financial institution’s management body in its supervisory function should:\na) be informed of the results of the business-wide ML/TF risk assessment;\nb) oversee and monitor the extent to which the AML/CFT policies and procedures are adequate and effective in light of the ML/TF risks to which the credit or financial institution is exposed and take appropriate steps to ensure remedial measures are taken where necessary;\nc) at least once a year, review the activity report of the AML/CFT compliance officer and obtain interim updates more frequently for activities that expose the credit or financial institution to higher ML/TF risks;\nd) at least once a year, assess the effective functioning of the AML/CFT compliance function, including by taking into account the conclusions of any AML/CFT-related internal and/or external audits that may have been carried out, including with regard to the appropriateness of the human and technical resources allocated to the AML/CFT compliance officer.\n\n¹⁴ EBA guidelines on internal governance under Directive 2013/36/EU: EBA/GL/2021/05; ESMA guidelines on certain aspects of the MiFID II compliance function requirements: ESMA35-36-1946; EIOPA guidelines on system of governance: EIOPA-BoS-14/253 EN"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-activity-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 13, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-017",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "4.1.3. Identification of the member of the management body responsible for AML/CFT",
+      "texts": {
+        "en": "The member of the management body to be identified in accordance with Article 46(4) of Directive (EU) 2015/849 should, in particular, have sufficient knowledge, skills and experience regarding ML/TF risks, and the implementation of AML/CFT policies, controls and procedures, with a good understanding of the credit or financial institution’s business model and the sector in which the credit or financial institution operates."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-management-body-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 17, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-018",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "4.1.3. Identification of the member of the management body responsible for AML/CFT",
+      "texts": {
+        "en": "The member of the management body referred to in Article 46(4) of Directive (EU) 2015/849 should commit sufficient time and have sufficient resources to perform his/her AML/CFT duties effectively. He/she should report comprehensively about his/her tasks as mentioned in section 4.1.5. and regularly inform, where necessary and without undue delay, the management body in its supervisory function."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-management-body-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 18, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-024",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 24",
+      "path": "paragraph-024",
+      "heading": "4.2.1 Appointment of the AML/CFT compliance officer",
+      "texts": {
+        "en": "When deciding whether to appoint the AML/CFT compliance officer in accordance with Article 8(4) of Directive (EU) 2015/849, the management body should take into account the scale and complexity of the credit or financial institution’s operations and its risk exposure to ML/TF pursuant to the criteria set out in section 4.2.2."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-appointment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 24, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-025",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 25",
+      "path": "paragraph-025",
+      "heading": "4.2.1 Appointment of the AML/CFT compliance officer",
+      "texts": {
+        "en": "The AML/CFT compliance officer should be appointed at management level. He/she should have sufficient authority to propose, on his/her own initiative, all necessary or appropriate measures to ensure the compliance and effectiveness of the internal AML/CFT measures to the management body in its supervisory and management function."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-appointment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 25, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-026",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 26",
+      "path": "paragraph-026",
+      "heading": "4.2.1 Appointment of the AML/CFT compliance officer",
+      "texts": {
+        "en": "Where the AML/CFT compliance officer is appointed in accordance with Article 8(4) of Directive (EU) 2015/849, the management body should determine whether that role will be carried out on a full-time basis or whether it may be carried out by an employee or an officer in addition to his/her existing functions within the credit or financial institution."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-appointment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 26, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-027",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 27",
+      "path": "paragraph-027",
+      "heading": "4.2.1 Appointment of the AML/CFT compliance officer",
+      "texts": {
+        "en": "Where the functions of the AML/CFT compliance officer are to be entrusted to an officer or employee who already has other duties or functions within the credit or financial institution, the management body should identify and consider possible conflicts of interest and take the steps necessary to avoid or, where this is not possible, manage these. The management body should ensure that that person can allocate sufficient time to the functions of AML/CFT compliance officer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-appointment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 27, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-048",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 48",
+      "path": "paragraph-048",
+      "heading": "e. Reporting to the management body",
+      "texts": {
+        "en": "The AML/CFT compliance officer should bring to the attention of the member of the management body or the senior manager responsible for AML/CFT:\na) the areas where the operation of AML/CFT controls should be implemented or improved;\nb) the appropriate improvements suggested in relation to point (a) above;\nc) a progress report of any significant remedial programmes, at least once a year as part of the activity report referred to in paragraph 50 and on an ad hoc basis or periodically, depending on the improvements, to provide information about the level of exposure to the ML/TF risks, and the measures taken or recommended to reduce and effectively manage these risks;\nd) whether the human and technical resources allocated to the AML/CFT compliance function are insufficient and should be reinforced."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-activity-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 48, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-049",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 49",
+      "path": "paragraph-049",
+      "heading": "e. Reporting to the management body",
+      "texts": {
+        "en": "The credit or financial institution needs to stand ready to share a copy of the activity report referred to in paragraph 50 with the competent authority."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-activity-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 49, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-050",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 50",
+      "path": "paragraph-050",
+      "heading": "e. Reporting to the management body",
+      "texts": {
+        "en": "The AML/CFT compliance officer should produce an activity report on at least an annual basis. The activity report should be proportionate to the scale and nature of the activities of the credit or financial institution. The activity report may, where appropriate, be based on information already sent to the national competent authorities in the form of other reports. The activity report should contain at least the following information:\n1) On the ML/TF risk assessment:\na) a summary of the main findings of the business-wide ML/TF risk assessment as referred to in Article 8 of Directive (EU) 2015/849, where such an update has been performed in the past year, and a confirmation of whether it was required by the competent authority to be submitted for the reporting year;²⁰\nb) a description of any changes related to the method used by the credit or financial institution to assess the individual customer risk profile, highlighting how such change is aligned to the credit or financial institution’s business-wide ML/TF risk assessment;\nc) the classification of customers by risk category, including the number of customer files by risk category for whom CDD reviews and updates are outstanding;\nd) information and statistical data on:\ni) the number of unusual transactions detected;\nii) the number of unusual transactions analysed;\niii) the number of reports of suspicious transactions or activity to the FIU (distinguished by country of operations);\niv) the number of customer relationships ceased by the credit or financial institution due to AML/CFT concerns;\nv) the number of requests for information received from the FIU, courts and law enforcement agencies.\n2) On resources:\ne) a brief description of the AML/CFT organisation structure and, where appropriate, of any significant changes made in the past year and of the underlying reasoning;\nf) a brief description of the human and technical resources allocated to the AML/CFT compliance function by the credit or financial institution;\ng) where applicable, the list of AML/CFT processes outsourced with a description of the oversight performed by the credit or financial institution on those activities.\n3) On policies and procedures:\nh) a summary of important measures taken and procedures adopted during the year, including a brief description of the recommendations, problems, shortcomings and irregularities identified in the year of the reporting;\ni) a description of the compliance monitoring actions undertaken to assess application of the credit or financial institution’s AML/CFT policies, controls and procedures by the credit or financial institution’s employees, agents, distributors and service providers, as well as the adequacy of any monitoring tools employed by the credit or financial institution for AML/CFT purposes;\nj) a description of the AML/CFT training activities completed, and of the training plan for next year;\nk) a plan of activities of the AML/CFT compliance officer function for the subsequent year;\nl) findings of internal and external audits relevant to AML/CFT and any progress made by the credit or financial institution to address these findings;\nm) supervisory activities, including communications with the credit or financial institution, carried out by the competent authority, reports submitted, breaches identified and sanctions imposed together with how the credit or financial institution is undertaking to remedy the breaches identified and the stage at which the remedial action is, without prejudice to any other periodical report that may be required in the case of supervisory activity or remedial action.\n\n²⁰ Please refer to the EBA guidelines on ML/TF risk factors on conducting risk assessments (EBA/GL/2021/02)"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-activity-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 50, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-077",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 77",
+      "path": "paragraph-077",
+      "heading": "4.3.2 Role of the management body in respect of AML/CFT at group level",
+      "texts": {
+        "en": "Where the parent is a credit or financial institution and thus an obliged entity under Directive (EU) 2015/849, its management body should carry out at a minimum the following tasks:\na) in order to have a cartography of the ML/TF risks to which each group entity is exposed, ensure that the group entities perform their own business-wide ML/TF risk assessments in a coordinated way and based on a common methodology, yet reflecting their own specificities, taking into account Article 8(1) of Directive (EU) 2015/849 and the EBA revised guidelines on ML/TF risk factors²⁷;\nb) when being informed, by members of the group management body or senior manager responsible for AML/CFT or directly by the group AML/CFT compliance officer, of supervisory activities carried out in entities of the group by a competent authority, or deficiencies identified therein, ensure that remediation measures are completed by the subsidiary or branch in a timely and effective manner.\n\n²⁷ EBA revised guidelines on ML/TF risk factors: EBA/GL/2021/02"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-group-structure"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 77, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-078",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 78",
+      "path": "paragraph-078",
+      "heading": "4.3.3 Organisational requirements at group level",
+      "texts": {
+        "en": "When implementing group-wide policies and procedures as referred to in Article 45 of Directive (EU) 2015/849, conflicting interests, meaning ML/TF risk-generating tasks such as the commercial function, between a parent credit or financial institution, which is an obliged entity under Directive (EU) 2015/849, and a subsidiary or branch, should not jeopardise the compliance with AML/CFT requirements, and should be mitigated."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-group-structure"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 78, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-05/paragraph-079",
+      "instrument": "eba-gl-2022-05",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 79",
+      "path": "paragraph-079",
+      "heading": "4.3.3 Organisational requirements at group level",
+      "texts": {
+        "en": "The parent credit or financial institution should:\na) designate a member of its management body or senior manager responsible for AML/CFT among the senior managers at the level of the parent undertaking, as well as a group AML/CFT compliance officer;\nb) set up an organisational and operational coordination structure at group level with sufficient decision-making power for the group AML/CFT management to make this position effective at managing and preventing ML/TF risks, in line with the proportionality principle and applicable domestic legislation;\nc) approve the group's internal AML/CFT policies and procedures and ensure that these are consistent with the group's structure and with the size and characteristics of the credit or financial institutions belonging to it;\nd) set up internal AML/CFT control mechanisms at group level;\ne) regularly evaluate the effectiveness of the AML/CFT policies and procedures at group level; and\nf) for a credit or financial institution that operates branches or subsidiaries domestically, or in another Member State or a third country, appoint a group AML/CFT compliance officer as a coordinator, for ensuring the implementation by all the entities of the group, which are engaged in financial activities, of the group policy and the adequate and appropriate systems and procedures for the effective prevention of ML/TF."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-co-group-structure"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05, Paragraph 79, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-009",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 9",
+      "path": "paragraph-009",
+      "heading": "4.1.1 Policies and procedures relating to remote customer onboarding",
+      "texts": {
+        "en": "Credit and financial institutions should put in place and maintain policies and procedures to comply with their obligations under Article 13(1) (a) and (c) of Directive (EU) 2015/849 in situations where the customer is onboarded remotely. These policies and procedures should be risk-sensitive and set out at least:\na) a general description of the solution credit and financial institutions have put in place to collect, verify, and record information throughout the remote customer onboarding process. This should include an explanation of the features and functioning of the solution;\nb) the situations where the remote customer onboarding solution can be used, taking into account the risk factors identified and assessed in accordance with Article 8 (1) of the Directive (EU) 2015/849 and in the business-wide risk assessment, including a description of the category of customers, products and services that are eligible for remote onboarding;\nc) which steps are fully autonomized and which steps require human intervention;\nd) the controls in place to ensure that the first transaction with a newly onboarded customer is executed only once all initial customer due diligence (CDD) measures, have been applied;\ne) a description of the induction and regular training programs to ensure staff awareness and up-to-date knowledge of the functioning of the remote customer onboarding solution, the associated risks, and of the remote customer onboarding policies and procedures aimed at mitigating such risks."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-policies"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 9, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-010",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 10",
+      "path": "paragraph-010",
+      "heading": "4.1.1 Policies and procedures relating to remote customer onboarding",
+      "texts": {
+        "en": "The policies and procedures, when implemented, should enable credit and financial institutions to ensure compliance with the provisions in Section 4.2 to 4.7 of these Guidelines."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-policies"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 10, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-011",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 11",
+      "path": "paragraph-011",
+      "heading": "4.1.2 Governance",
+      "texts": {
+        "en": "In addition to the provisions set out in the Section 4.2.4 of the EBA Compliance Officer Guidelines¹¹, the AML/CFT Compliance Officer¹² should, as part of their general duty to prepare policies and procedures to comply with the CDD requirements, make sure that remote customer onboarding policies and procedures are implemented effectively, reviewed regularly and amended where necessary.\n\n¹¹ Draft Guidelines on policies and procedures in relation to compliance management and the role and responsibilities of the AML/CFT Compliance Officer under Article 8 and Chapter VI of Directive\n\n¹² In accordance with the Proportionality criteria set out in Section 4.2.2 of the Compliance Officer Guidelines"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-policies"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 11, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-012",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 12",
+      "path": "paragraph-012",
+      "heading": "4.1.2 Governance",
+      "texts": {
+        "en": "The management body of the credit and financial institution should approve remote customer onboarding policies and procedures and oversee their correct implementation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-policies"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 12, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-013",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "4.1.3 The pre-implementation assessment of the remote customer onboarding solution",
+      "texts": {
+        "en": "When considering whether to adopt a new remote customer onboarding solution, credit and financial institutions should carry out a pre-implementation assessment of the remote customer onboarding solution."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 13, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-014",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "4.1.3 The pre-implementation assessment of the remote customer onboarding solution",
+      "texts": {
+        "en": "Credit and financial institutions should set out the scope, steps and record keeping requirements of the pre-implementation assessment in their policies and procedures, which should include at least:\na) an assessment of the adequacy of the solution regarding the completeness and accuracy of the data and documents to be collected, as well as of the reliability and independence of the sources of information it uses;\nb) an assessment of the impact of the use of the remote customer onboarding solution on its business-wide risks, including ML/TF, operational, reputational and legal risks;\nc) the identification of possible mitigating measures and remedial actions for each risk identified in the assessment under letter b);\nd) tests to assess fraud risks including impersonation fraud risks and other information and communications technology (“ICT”) and security risks, in accordance with the provision 43 of the EBA Guidelines on ICT and security risk management¹³;\ne) an end-to-end testing of the functioning of the solution targeting customer(s), product(s) and service(s) identified in the remote customer onboarding policies and procedures.\n\n¹³ EBA/GL/2019/04"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 14, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-015",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "4.1.3 The pre-implementation assessment of the remote customer onboarding solution",
+      "texts": {
+        "en": "Credit and financial institutions should consider the criteria in paragraph 14 (a) (d) and (e) to be met where the solution uses one of the following:\na) electronic identification schemes notified in accordance with Article 9 of Regulation (EU) No 910/2014 and meeting the requirements of assurance levels ‘substantial’ or ‘high’ in accordance with Article 8 of that Regulation;\nb) relevant qualified trust services that meet the requirements of Regulation (EU) No 910/2014, in particular Chapter III, Section 3 and Article 24 (1), subparagraph 2, point (b) of that Regulation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 15, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-016",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "4.1.3 The pre-implementation assessment of the remote customer onboarding solution",
+      "texts": {
+        "en": "Credit and financial institutions should be able to demonstrate to their competent authority which assessments they carried out before implementation of the remote customer onboarding solution, the outcome of their assessment and how its use is appropriate in light of the ML/TF risks identified for the types of customer(s), service(s), geographies and product(s) in its scope."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 16, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-017",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "4.1.3 The pre-implementation assessment of the remote customer onboarding solution",
+      "texts": {
+        "en": "Credit and financial institutions should start using a remote customer onboarding solution only once they are satisfied that it can be integrated into the institution’s wider internal control system, thereby allowing the institution to adequately manage the ML/TF risks that may arise from the use of the remote customer onboarding solution."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 17, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-018",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "4.1.4 Ongoing monitoring of the remote customer onboarding solution",
+      "texts": {
+        "en": "Credit and financial institutions should monitor the remote customer onboarding solution on an ongoing basis to ensure that it operates in line with the credit and financial institutions expectations. They should complement their policies and procedures described in paragraph 9 with a description of at least:\na) the steps they will take to be satisfied of the ongoing quality, completeness, accuracy and adequacy of data collected during the remote customer onboarding process, which should be commensurate to the ML/TF risks to which the credit and financial institution is exposed to;\nb) the scope and frequency of such regular reviews; and\nc) the circumstances that will trigger ad hoc reviews, which should include at least:\na. changes to the ML/TF risk exposure of the credit and financial institution;\nb. deficiencies on the functioning of the solution detected in the course of monitoring, audit or supervisory activities;\nc. A perceived increase in fraud attempts;\nd. changes to the legal or regulatory framework."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 18, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-019",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 19",
+      "path": "paragraph-019",
+      "heading": "4.1.4 Ongoing monitoring of the remote customer onboarding solution",
+      "texts": {
+        "en": "Credit and financial institutions should set out in their procedures and processes remedial measures where a risk has materialised, or where errors have been identified that have an impact on the efficiency and effectiveness of the general remote customer onboarding solution. These measures should include at least:\na) a review of all affected business relationships, to assess whether sufficient initial CDD has been applied by the credit and financial institutions in order to comply with article 13 (1), (a), (b) and (c) of the AMLD. Credit and financial institutions should prioritise those business relationships that carry the highest ML/TF risk;\nb) taking into account the information obtained in the above-mentioned review, an assessment of whether an affected business relationships should be:\na. subject to additional due diligence measures;\nb. subject to limitations, such as limits on the volume of transaction, where permitted under national law, until such time as a review has taken place;\nc. terminated;\nd. reported to the FIU;\ne. reclassified into a different risk category."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-pre-implementation"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 19, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-033",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 33",
+      "path": "paragraph-033",
+      "heading": "4.3 Document authenticity & integrity",
+      "texts": {
+        "en": "Where credit and financial institutions accept reproductions of an original document and do not examine the original document, they should take steps to ascertain that the reproduction is reliable. Credit and financial institutions should establish at least the following:\na) if the reproduction includes security features embedded in the original document and if the specifications of the original document that are being reproduced are valid and acceptable, in particular, type, size of characters and structure of the document, by comparing them with official databases, such as PRADO¹⁵;\nb) whether personal data has been altered or otherwise tampered with or, where applicable, whether the picture of the customer embedded in the document was not replaced;\nc) whether the integrity of the algorithm used to generate the unique identification number of the original document, in case the official document has been issued with machine-readable zone (MRZ);\nd) whether the provided reproduction is of sufficient quality and definition so as to ensure that relevant information is unambiguous;\ne) that the provided reproduction has not been displayed on a screen based on a photograph or scan of the original identity document.\n\n¹⁵ https://www.consilium.europa.eu/prado/en/prado-start-page.html"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 33, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-034",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 34",
+      "path": "paragraph-034",
+      "heading": "4.3 Document authenticity & integrity",
+      "texts": {
+        "en": "Where credit and financial institutions use features to automatically read information from documents, such as Optical Character Recognition (OCR) algorithms or Machine Readable Zone (MRZ) verifications, they should take the steps necessary to ensure that that these tools capture information in an accurate and consistent manner."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 34, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-035",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 35",
+      "path": "paragraph-035",
+      "heading": "4.3 Document authenticity & integrity",
+      "texts": {
+        "en": "In situations where the device the customers use to prove their identity allows the collection of relevant data, for example because the data is contained in the chip of a national identity card, and it is technically feasible for the credit and financial institutions to access this data, credit and financial institutions should consider using this information to verify its consistency with the information obtained through other sources, such as the submitted data or other documents submitted by the customer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 35, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-036",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 36",
+      "path": "paragraph-036",
+      "heading": "4.3 Document authenticity & integrity",
+      "texts": {
+        "en": "Where available, during the verification process, credit and financial institutions should verify the security features embedded in the official document, if any, such as holograms, as a proof of their authenticity."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 36, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-037",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 37",
+      "path": "paragraph-037",
+      "heading": "4.3 Document authenticity & integrity",
+      "texts": {
+        "en": "Credit and financial institutions should set out in their policies and procedures how they will adjust their documentation requests for the purposes of financial inclusion. Where weaker or non-traditional forms of documentation are accepted as a result, credit and financial institutions should carry out in addition to measures as set out in paragraph 4.10 of the EBA Risk Factors Guidelines, controls or increased human intervention to satisfy themselves that they understand the ML/TF risk associated with the business relationship."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 37, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-038",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 38",
+      "path": "paragraph-038",
+      "heading": "4.4 Matching customer identity as part of the verification process",
+      "texts": {
+        "en": "Remote customer onboarding solutions implemented by a credit and financial institutions should, as a minimum, allow for the following, as part of their verification process:\na) there is a match between the visible information of the natural person and the documentation provided;\nb) where the customer is a legal entity, it is publicly registered, where applicable;\nc) where the customer is a legal entity, the natural person that represents it is entitled to act on its behalf."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 38, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-039",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 39",
+      "path": "paragraph-039",
+      "heading": "4.4 Matching customer identity as part of the verification process",
+      "texts": {
+        "en": "Where the remote customer onboarding solution involves the use of biometric data to verify the customer’s identity, credit and financial institutions should make sure that the biometric data is sufficiently unique to be unequivocally linked to a single natural person. Credit and financial institutions should use strong and reliable algorithms to verify the match between the biometric data provided on the submitted identity document and the customer being onboarded. In situations where the solution does not provide the required level of confidence, additional controls should be applied."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 39, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-040",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 40",
+      "path": "paragraph-040",
+      "heading": "4.4 Matching customer identity as part of the verification process",
+      "texts": {
+        "en": "In situations where the evidence provided is of insufficient quality resulting in ambiguity or uncertainty so that the performance of remote checks is affected, the individual remote customer onboarding process should be interrupted and restarted or redirected to a face-to-face verification."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 40, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-041",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 41",
+      "path": "paragraph-041",
+      "heading": "4.4 Matching customer identity as part of the verification process",
+      "texts": {
+        "en": "Where credit and financial institutions use unattended remote onboarding solutions, in which the customer does not interact with an employee to perform the verification process, they should:\na) ensure that any photograph(s) or video is taken under adequate lighting conditions and that the required properties are captured with necessary clarity to allow the proper verification of the customer’s identity;\nb) ensure that any photograph(s) or video is taken at the time the customer is performing the verification process;\nc) perform liveness detection verifications, which may include procedures where a specific action from the customer is required to verify that he/she is present in the communication session or which can be based on the analysis of the received data and does not require a specific action by the customer;\nd) use strong and reliable algorithms to verify if the photograph(s) or video taken matches the picture(s) retrieved from the official document(s) belonging to the customer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-identity-verification"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 41, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-046",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 46",
+      "path": "paragraph-046",
+      "heading": "4.5 Reliance on third parties and outsourcing",
+      "texts": {
+        "en": "In addition to the points set out in paragraph 9, credit and financial institutions should include in their policies and procedures specifications setting out which remote customer onboarding functions and activities will be carried out or performed by the credit and financial institution, by third parties or by another outsourced service provider."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-third-parties"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 46, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2022-15/paragraph-047",
+      "instrument": "eba-gl-2022-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 47",
+      "path": "paragraph-047",
+      "heading": "4.5.1 Reliance on Third Party Providers in accordance with Chapter II, Section 4 of Directive (EU) 2015/849",
+      "texts": {
+        "en": "In addition to the EBA Risk Factors Guidelines¹⁶, in particular to guidelines 2.20 to 2.21 and 4.32 to 4.37 of those Guidelines, they should apply the following criteria:\na) take the steps necessary to be satisfied that the third party’s own CDD remote customer onboarding processes and procedures and the information and data they collect in this context, are sufficient and consistent with requirements laid down in these Guidelines;\nb) ensure the continuity of the business relationships established between the customer and the credit and financial institution to guard against events that might reveal shortcomings on the remote customer onboarding process carried out by the third party.\n\n¹⁶ EBA/GL/2021/02"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rco-third-parties"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15, Paragraph 47, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-009",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 9",
+      "path": "paragraph-009",
+      "heading": "RISK ASSESSMENT",
+      "texts": {
+        "en": "Credit and financial institutions should set up their policies, controls and procedures in a way that enables them to identify relevant risk factors and to assess ML/TF risks associated with individual business relationships in line with the EBA ML/TF risk factors guidelines.⁷ As part of this, credit and financial institutions should differentiate between the risks associated with a particular category of customers and the risks associated with individual customers that belong to this category.\n\n⁷ Guidelines on customer due diligence and the factors credit and financial institutions should consider when assessing the money laundering and terrorist financing risk associated with individual business relationships and occasional transactions (‘The ML/TF Risk Factors Guidelines’) under Articles 17 and 18(4) of Directive (EU) 2015/849, EBA/GL/2021/02."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-no-blanket-refusal"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 9, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-010",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 10",
+      "path": "paragraph-010",
+      "heading": "RISK ASSESSMENT",
+      "texts": {
+        "en": "Credit and financial institutions should ensure that the implementation of these policies, procedures and controls does not result in the blanket refusal or termination of business relationships with entire categories of customers that they have assessed as presenting higher ML/TF risk."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-no-blanket-refusal"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 10, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-011",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 11",
+      "path": "paragraph-011",
+      "heading": "CDD MEASURES",
+      "texts": {
+        "en": "Credit and financial institutions should put in place risk-sensitive policies and procedures to ensure that their approach to applying customer due diligence (CDD) measures does not result in them unduly denying customers legitimate access to financial services. To comply with their obligations under Article 14(4) of Directive (EU) 2015/849, credit and financial institutions should set out in their policies and procedures the criteria they will use to determine on which grounds they will decide that a business relationship may be rejected or terminated or that a transaction may be denied. As part of this, they should set out in their policies, procedures and controls all options for mitigating higher ML/TF risks that they will consider applying before deciding to reject a customer on ML/TF risk grounds. These options should at least include adjusting the level and intensity of monitoring and, where this is permitted under national law, the application of targeted restrictions to products or services. Institutions’ policies and procedures should set out clearly in which situations the application of these mitigating measures may be appropriate."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-mitigate-before-refusal"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 11, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-012",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 12",
+      "path": "paragraph-012",
+      "heading": "CDD MEASURES",
+      "texts": {
+        "en": "Before taking a decision to reject or to terminate a business relationship, credit and financial institutions should satisfy themselves that they have considered and rejected all possible mitigating measures that could reasonably be applied in the particular case, taking into account the ML/TF risk associated with the existing or prospective business relationship."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-mitigate-before-refusal"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 12, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-014",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "REPORTING AND RECORD KEEPING",
+      "texts": {
+        "en": "Credit and financial institutions should document any decision to refuse or terminate a business relationship and the reason for doing so, and should be prepared to make this documentation available to their competent authority upon request."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-document-refusals"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 14, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-015",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "PROVISIONS SPECIFIC TO THE INTERPLAY WITH DIRECTIVE 2014/92/EU",
+      "texts": {
+        "en": "In relation to the right of access to a payment account with basic features in accordance with Articles 16(2) and 17 of Directive 2014/92/EU, credit institutions obliged to offer such basic accounts should set out in their account opening policies and procedures how they can adjust their customer due diligence requirements to account for the fact that the limited functionalities of a basic payment account help mitigate the risk that the customer could abuse these products and services for financial crime purposes."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-basic-payment-accounts"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 15, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2023-04/paragraph-016",
+      "instrument": "eba-gl-2023-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "PROVISIONS SPECIFIC TO THE INTERPLAY WITH DIRECTIVE 2014/92/EU",
+      "texts": {
+        "en": "When ensuring non-discriminatory access to a basic payment account under Article 15 of Directive 2014/92/EU, credit institutions should make sure that where digital onboarding solutions are in place, these also comply with the aforementioned directive and with these guidelines and that the digital solutions do not produce automated rejections, which would conflict with the directive and these guidelines."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-access-basic-payment-accounts"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04, Paragraph 16, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-021",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 21",
+      "path": "paragraph-021",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs, IPSPs, CASPs and ICASPs should use infrastructures and services for the transmission and reception of information that are technically capable of the full transmission and reception of information without gaps or errors in the presentation of the information as specified in these Guidelines."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-messaging-systems"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 21, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-022",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 22",
+      "path": "paragraph-022",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs, IPSPs, CASPs and ICASPs should ensure that their systems are able to maintain data integrity, in particular where information has to be converted into a different format before transmitting it or after receiving it. PSPs, IPSPs, CASPs and ICASPs that cannot ensure that their systems are able to transmit, receive or convert the information without error or omission should change to a system which is capable of that."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-messaging-systems"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 22, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-046",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 46",
+      "path": "paragraph-046",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "Payees’ PSPs, IPSPs, beneficiary’s CASPs or ICASPs should set out in their policies and procedures how they will determine which transfers will be monitored during or after the transfer in accordance with Articles 7(2), 11(2), 16 (1) and 20 of Regulation (EU) 2023/1113. PSPs, IPSPs, CASPs and ICASPs should at least set out:\na) which risk factors they will take into account in this assessment; and\nb) which risk-increasing factors, or combination of risk-increasing factors, will always trigger monitoring during the transfer, and which will trigger a targeted review after the transfer has taken place."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-monitoring-criteria"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 46, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-047",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 47",
+      "path": "paragraph-047",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs, IPSPs, CASPs and ICASPs should determine the risk factors based on those set out in the EBA’s ML/TF Risk Factors Guidelines, as well as relevant risk factors from their business-wide risk assessment, and the sectoral or national risk assessment to the extent that this is available. The risk factors should at least include:\na) transfers that exceed a predefined value threshold taking into account the average value of transfers they routinely process and what constitutes an unusually large transfer, based on their particular business model;\nb) transfers where the payer, originator, payee, beneficiary, payer’s PSP, originator’s CASP, payee’s PSP or beneficiary’s CASP are located in countries or territories that are subject to restrictive measures including targeted financial sanctions, or countries or territories that present a high risk of circumvention of restrictive measures or targeted financial sanctions;\nc) transfers where the payer, originator, payee, beneficiary, payer’s PSP, originator’s CASP, payee’s PSP or beneficiary’s CASP are based in a country associated with high ML/TF risk, including, but not limited to:\ni) countries identified as high risk by the European Commission in accordance with Article 9 of Directive (EU) 2015/849; and\nii) countries which, on the basis of credible sources such as evaluations, mutual evaluations, assessment reports or published follow-up reports, have AML/CFT requirements that are not consistent with Directive (EU) 2015/849 or the FATF Recommendations and countries that have not effectively implemented those requirements;\nd) transfers where the payer’s PSP, originator’s CASP, IPSP, ICASP, payee’s PSP or beneficiary’s CASP are located in a country that, based on publicly available information, has not yet implemented the obligation to obtain, hold and transmit information on the originator and beneficiary when conducting wire and virtual asset transfers;\ne) transfers with entities based in a third country that does not have licensing regimes or does not regulate PSP activity in the case of funds transfers and CASP activities in the case of crypto-asset transfers;\nf) transfers with self-hosted addresses;\ng) transfers from or to accounts, addresses or wallets known to be linked with suspicious activity;\nh) a negative AML/CFT compliance record of the prior PSP, IPSP, CASP or ICASP in the transfer chain, based on public information;\ni) transfers from a PSP, IPSP, CASP or ICASP identified as repeatedly failing to provide required information without a justified reason, or from a PSP, IPSP, CASP or ICASP that has previously been known to fail to provide required information on a number of occasions without good reason, even if it did not repeatedly fail to do so;\nj) use of other techniques to perform layering of transactions that hinders the tracing of crypto-assets by concealing the trail leading back to the originator, including, but not limited to:\ni) funds and crypto-assets received and rapidly transferred further, thus artificially extending the transfer chain;\nii) anonymity-enhancing techniques, products or services, including, but not limited to, mixers or tumblers, Internet Protocol (IP) anonymisers and stealth addresses."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-monitoring-criteria"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 47, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-052",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 52",
+      "path": "paragraph-052",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs and CASPs should set out in their policies and procedures how they will determine whether to reject, suspend or execute a transfer in accordance with Articles 8(1), 12, 17(1) and 21 of Regulation (EU) 2023/1113. As part of this, PSPs and CASPs should list the risk factors that they will consider for each transfer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-missing-information-decisions"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 52, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-053",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 53",
+      "path": "paragraph-053",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs, IPSPs, CASPs, and ICASPs should consider in their assessment before deciding on the appropriate course of action whether or not:\na) the information allows for determination of the subjects of the transfer; and\nb) one or more risk-increasing factors have been identified that may suggest that the transfer presents a high ML/TF risk or gives rise to suspicion of ML/TF."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-missing-information-decisions"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 53, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-067",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 67",
+      "path": "paragraph-067",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs and CASPs should set out in their policies and procedures the quantitative and qualitative criteria they will use to determine whether a PSP, IPSP, CASP or ICASP is ‘repeatedly failing’ and document all transfers with missing or incomplete information."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-repeatedly-failing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 67, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-068",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 68",
+      "path": "paragraph-068",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "Quantitative criteria should include at least:\na) the percentage of transfers with missing or incomplete information sent by a specific PSP, IPSP, CASP or ICASP within a specific timeframe; and\nb) the percentage of follow-up requests that were left unanswered or were not adequately answered by a certain deadline."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-repeatedly-failing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 68, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-069",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 69",
+      "path": "paragraph-069",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "Qualitative criteria should include at least:\na) the level of cooperation of the requested PSP, IPSP, CASP or ICASP relating to previous requests for missing information;\nb) the existence of an agreement with the PSP, IPSP, CASP or ICASP requiring more time to provide the information;\nc) the type of information missing or incomplete and the reason given by the PSP, IPSP, CASP or ICASP for not providing the information."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-repeatedly-failing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 69, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-074",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 74",
+      "path": "paragraph-074",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "The report to the competent authority referred to in Articles 8(2), 12(2), 17(2) and 21 of Regulation (EU) 2023/1113 should be submitted by the PSPs, IPSPs, CASPs and ICASPs without undue delay, and no later than three months after identifying the repeatedly failing PSP, IPSP, CASP or ICASP. Reporting should take place regardless of the reasons given by the ‘repeatedly failing’ PSP, IPSP, CASP or ICASP, if any, to justify that breach, or their location in the Union or outside."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-repeatedly-failing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 74, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-11/paragraph-075",
+      "instrument": "eba-gl-2024-11",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 75",
+      "path": "paragraph-075",
+      "heading": "Transfer of funds and crypto-assets",
+      "texts": {
+        "en": "The report should include:\na) the name of the PSP, IPSP, CASP or ICASP identified as repeatedly failing to provide the required information;\nb) the country in which the PSP, IPSP, CASP or ICASP is authorised;\nc) the nature of the breach, including:\ni. the frequency of transfers with missing information;\nii. the period of time during which the breaches were identified; and\niii. any reasons the PSP, IPSP, CASP or ICASP may have given to justify their repeated failure to provide the required information;\nd) details of the steps the reporting PSP, IPSP, CASP or ICASP took."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-trgl-repeatedly-failing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11, Paragraph 75, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
     }
   ],
   "withoutProvision": [
     {
-      "obligation": "obl-eu-eba-access-basic-payment-accounts",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-access-document-refusals",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-access-mitigate-before-refusal",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-access-no-blanket-refusal",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-co-activity-report",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-co-appointment",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-co-group-structure",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-co-management-body-member",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rco-identity-verification",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rco-policies",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rco-pre-implementation",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rco-third-parties",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
       "obligation": "obl-eu-eba-rfgl-enhanced-due-diligence",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rfgl-monitoring",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rfgl-npo-customers",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     },
     {
       "obligation": "obl-eu-eba-rfgl-risk-assessments",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     },
     {
       "obligation": "obl-eu-eba-rfgl-risk-based-cdd",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-trgl-messaging-systems",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-trgl-missing-information-decisions",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-trgl-monitoring-criteria",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-trgl-repeatedly-failing",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     }
   ]
 }

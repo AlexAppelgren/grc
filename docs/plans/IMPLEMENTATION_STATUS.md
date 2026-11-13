@@ -369,12 +369,13 @@ they are.
   machine translation (INV-S22); the same three labels in the provision tree and both
   queues, and the kind "New provision" in the library queue's filter. Components are Radix
   and shadcn-pattern, coloured by the Green tokens (D-139).
-- **Content:** 2,721 provisions in 24 files give 1,728 of the baseline's 1,894 obligations
-  their text. How each was read and checked: `docs/reviews/LAW_TEXT_REVIEW_2026-11-13.md`.
+- **Content:** 3,222 provisions in 24 files give 1,816 of the baseline's 1,894 obligations
+  their text: Nordic statutes and supervisory regulations, EU acts, and the guidelines of
+  EBA, ESMA and EIOPA. How each was read and checked:
+  `docs/reviews/LAW_TEXT_REVIEW_2026-11-13.md`.
 - **Left, deliberately:** a model drafting or rewording a reason (D-143, the owner's call);
-  the text of the EBA, ESMA and EIOPA guidelines, whose check against the printed pages
-  found faults (98 obligations say so); 68 more obligations whose text waits for a reason
-  the file states. The corrections the reading of duty beside text proposes for 172
-  obligations are listed in `docs/reviews/law-text-2026-11-13/duty-reading.json` and
-  nothing in the baseline's obligations was changed. `docs/TODO_FOR_alex.md` has what needs
+  78 obligations whose text waits for a reason the file states. The corrections the reading
+  of duty beside text proposes for 175 obligations are listed in
+  `docs/reviews/law-text-2026-11-13/duty-reading.json` and nothing in the baseline's
+  obligations was changed. `docs/TODO_FOR_alex.md` has what needs
   the owner.

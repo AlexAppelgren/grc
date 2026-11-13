@@ -1303,96 +1303,944 @@
       "source": "https://eur-lex.europa.eu/eli/reg_del/2026/1092/oj#anx_1",
       "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/1092, ANNEX, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
       "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-014",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "Guideline 1",
+      "texts": {
+        "en": "In accordance with Article 22(2) of the MiFID II Delegated Regulation, the compliance function shall, as part of its tasks, conduct a risk assessment to ensure that compliance risks are comprehensively monitored. The compliance function shall establish a risk-based monitoring programme on the basis of this compliance risk assessment to determine its priorities and the focus of the monitoring, advisory and assistance activities."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-risk-based-monitoring"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 14, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-015",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "Guideline 1",
+      "texts": {
+        "en": "The findings of the compliance risk assessment should be used to set the work programme of the compliance function and to allocate the functions resources efficiently. The compliance risk assessment should be reviewed on a regular basis, and, when necessary, updated to ensure that the objectives, focus and the scope of compliance monitoring and advisory activities remain valid."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-risk-based-monitoring"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 15, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-019",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 19",
+      "path": "paragraph-019",
+      "heading": "Guideline 2",
+      "texts": {
+        "en": "The aim of the risk-based monitoring programme should be to evaluate whether the firm’s business is conducted in compliance with its obligations under MiFID II as well as whether its internal policies and procedures, organisation and control measures remain effective and appropriate to ensure that compliance risk is comprehensively monitored."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-risk-based-monitoring"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 19, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-020",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 20",
+      "path": "paragraph-020",
+      "heading": "Guideline 2",
+      "texts": {
+        "en": "Where a firm is part of a group, responsibility for the compliance function rests with each firm in that group. A firm should therefore ensure that its compliance function remains responsible for monitoring its own compliance risk. This includes where a firm outsources compliance tasks to another firm within the group. The compliance function within each firm should, however, take into account the group of which it is a part - for example, by working closely with audit, legal, regulatory and compliance staff in other parts of the group."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-risk-based-monitoring"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 20, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-027",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 27",
+      "path": "paragraph-027",
+      "heading": "Guideline 3",
+      "texts": {
+        "en": "The mandatory compliance reports according to paragraphs (2)(c) and (3)(c) of Article 22 and paragraphs (2) and (3) of Article 25 of the MiFID II Delegated Regulation are suitable tools to warrant the necessary management attention. The mandatory compliance reports should cover all business units involved in the provision of investment services, activities and ancillary services provided by a firm. Where the report does not cover all of these activities and services of the firm, it should clearly state the reasons."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-management-reports"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 27, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-028",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 28",
+      "path": "paragraph-028",
+      "heading": "Guideline 3",
+      "texts": {
+        "en": "The mandatory compliance reports should, inter alia, contain information on the following matters, where relevant:\n(a) General information:\n• information on the adequacy and effectiveness of the firm’s policies and procedures designed to ensure that the firm and its staff comply with the obligations under MiFID II;\n• relevant changes and developments in the applicable requirements over the period covered by the report;\n• a summary of the compliance function’s structure, including the overall personnel employed, their qualifications and reporting lines and in following reports, any change thereto;\n(b) Manner of monitoring and reviewing\n• how the compliance-function monitors the development and review of the obligations under MiFID II and how possible risks of failure by the firm or its staff to comply with these obligations are identified at an early stage;\n• a summary of on-site inspections or desk-based reviews performed by the compliance function;\n• a summary of the planned monitoring activities for the subsequent review;\n(c) Findings\n• a summary of major findings of the review of the policies and procedure, including risks identified in the scope of the compliance function’s monitoring activities;\n• breaches and deficiencies in the firm’s organisation and compliance process;\n• the number of complaints received in the period under review if not already reported through other sources. Where, as a result of the review of clients’ complaints, specific compliance or risk issues are identified in relation to the policies or procedures adopted by the firm for the provision of investment services and activities, these aspects should be specifically reported;\n(d) Actions taken\n• a summary of any action taken to address any significant risk of failure by the firm or its staff to comply with the obligations under MiFID II;\n• measures taken and to be taken to ensure compliance with changed applicable requirements;\n• reaction to complaints received and any pay-out performed based on the complaint, if not already reported through other sources. Actions regarding specific compliance or risk issues identified in relation to the policies or procedures adopted by the firm for the provision of investment services and activities as a result of the review of clients’ complaints;\n(e) Others\n• other significant compliance issues that have occurred since the last report;\n• overview of material correspondence with competent authorities; and\n• information as regards any deviation by senior management from important recommendations or assessments issued by the compliance function;\n• information in relation to any deviation from the principle that the other business units must not issue instructions or otherwise influence compliance staff and their activities; and\n• where a firm makes use of the exemption to avoid appointing a compliance officer whose sole responsibility within the firm is the compliance function, assessment of the continuing appropriateness of the arrangements to minimize conflicts of interest."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-management-reports"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 28, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-043",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 43",
+      "path": "paragraph-043",
+      "heading": "Guideline 5",
+      "texts": {
+        "en": "When ensuring that appropriate human and other resources are allocated to the compliance function, firms should take into account the scale and types of investment services, activities and ancillary services undertaken by the firm."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-resources-independence"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 43, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-049",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 49",
+      "path": "paragraph-049",
+      "heading": "Guideline 6",
+      "texts": {
+        "en": "Firm’s compliance staff shall have the necessary skills, knowledge and expertise to discharge their obligations pursuant to Articles 21(1)(d) of the MiFID II Delegated Regulation. Furthermore, the compliance function shall have the necessary authority pursuant to Article 22(3)(a) of the MiFID II Delegated Regulation. These requirements should in particular be taken into account by firms when appointing the compliance officer. Having regard to the function and tasks assigned to the compliance officer, he or she should demonstrate high professional ethical standards and personal integrity."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-resources-independence"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 49, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-36-1952/paragraph-059",
+      "instrument": "esma-35-36-1952",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 59",
+      "path": "paragraph-059",
+      "heading": "Guideline 8",
+      "texts": {
+        "en": "Firms should ensure that the compliance function holds a position in their organisational structure that ensures that the compliance officer and other compliance staff act independently when performing their tasks."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-compliance-gl-resources-independence"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-36-1952, Paragraph 59, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-012",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 12",
+      "path": "paragraph-012",
+      "heading": "Guideline 1",
+      "texts": {
+        "en": "Firms should, in good time before the provision of non-advised services, inform their clients, by using clear and simple language, about the appropriateness assessment and its purpose which is to enable the firm to act in the client’s best interest."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-explain-purpose"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 12, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-013",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "Guideline 1",
+      "texts": {
+        "en": "ESMA considers that this should include the following:\n• A clear explanation that it is the firm’s responsibility to conduct the assessment, so that clients understand the reason why they are asked by the firm to provide certain information and the importance of providing information that is up-to-date, accurate and complete;\n• A reminder that it is in the client’s interest to provide accurate and complete answers to the questions asked by the firm for the purpose of the appropriateness assessment;\n• Information regarding the situations where no assessment will be done (i.e., where the client does not provide the information requested or such information is not sufficient to conduct the appropriateness assessment or where services are provided under the execution-only exemption⁵) and the consequences thereof. However, such information should not give the impression that as a default option the client could refrain from submitting his/her information⁶;\n• A short explanation of the main differences between advised and non-advised investment services taking into account the applicable requirements, to avoid any confusion between the two.\n\n⁵ Investment services that only consist of execution or reception and transmission of client orders relating to investment products defined under MiFID II as being ‘non-complex’.\n\n⁶ See also paragraph 28."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-explain-purpose"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 13, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-038",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 38",
+      "path": "paragraph-038",
+      "heading": "Guideline 4",
+      "texts": {
+        "en": "Firms should take reasonable steps and have appropriate tools to ensure that the information provided by their clients is reliable and consistent, without unduly relying on clients’ self-assessment."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-reliable-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 38, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-039",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 39",
+      "path": "paragraph-039",
+      "heading": "Guideline 4",
+      "texts": {
+        "en": "If the information collected is not sufficiently reliable and consistent, this would amount to not having received sufficient information to conduct the appropriateness assessment and firms shall issue a warning to the client in accordance with the third subparagraph of Article 25(3) of MiFID II."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-reliable-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 39, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-085",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 85",
+      "path": "paragraph-085",
+      "heading": "Guideline 12",
+      "texts": {
+        "en": "Firms should adopt appropriate arrangements to ensure that they are able to determine situations where an appropriateness assessment needs to be performed and avoid performing one in situations where a suitability assessment needs to be performed."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-right-test"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 85, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-086",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 86",
+      "path": "paragraph-086",
+      "heading": "Guideline 12",
+      "texts": {
+        "en": "Firms should have procedures and controls in place regarding the interaction between sales staff and clients to guide and record¹⁶ the interaction and ensure that there is a clear distinction between advised and non-advised transactions on the one hand, and, on the other, between transactions falling within the execution-only exemption and other non-advised transactions.\n\n¹⁶ While taking into account guideline 11."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-right-test"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 86, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-091",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 91",
+      "path": "paragraph-091",
+      "heading": "Guideline 13",
+      "texts": {
+        "en": "Firms should have appropriate monitoring arrangements and controls in place to ensure compliance with the appropriateness requirements."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-controls"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 91, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3006/paragraph-092",
+      "instrument": "esma-35-43-3006",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 92",
+      "path": "paragraph-092",
+      "heading": "Guideline 13",
+      "texts": {
+        "en": "When firms rely on automated systems or tools in the appropriateness assessment process (e.g., client-profiling tools based on knowledge and experience, automatic warnings, or controls on complexity of investment products), these systems or tools should be fit for purpose and should be monitored periodically. Firms should keep records of this monitoring.¹⁸\n\n¹⁸ See also guideline 11"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-appropriateness-gl-controls"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3006, Paragraph 92, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-011",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 11",
+      "path": "paragraph-011",
+      "heading": "General guideline 1",
+      "texts": {
+        "en": "Firms should inform their clients clearly and simply about the suitability assessment and its purpose which is to enable the firm to act in the client’s best interest. This should include a clear explanation that it is the firm’s responsibility to conduct the assessment, so that clients understand the reason why they are asked to provide certain information and the importance that such information is up-to-date, accurate and complete. Such information may be provided in a standardised format."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-explain-purpose"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 11, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-019",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 19",
+      "path": "paragraph-019",
+      "heading": "General guideline 2",
+      "texts": {
+        "en": "Firms must establish, implement and maintain adequate policies and procedures (including appropriate tools) to enable them to understand the essential facts and characteristics about their clients. Firms should ensure that the assessment of information collected about their clients is done in a consistent way irrespective of the means used to collect such information."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-reliable-client-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 19, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-026",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 26",
+      "path": "paragraph-026",
+      "heading": "Supporting guidelines",
+      "texts": {
+        "en": "The information on the sustainability preferences of the client should include all aspects mentioned in the definition of “sustainability preferences” according to Article 2(7) of the MiFID II Delegated Regulation and should be sufficiently granular to allow for a matching of the client’s sustainability preferences with the sustainability-related features of financial instruments. Firms should collect the following information from clients:\n• Whether the client has any sustainability preferences (yes/no).\n• If the client answers “yes” to the previous question, whether the client has sustainability preferences with regard to one or more of points (a), (b) or (c) of the definition according to Article 2(7) MiFID II Delegated Regulation.\n• For aspects (a) and (b), the minimum proportion.\n• For aspect (c), which principal adverse impacts (PAI) should be considered including quantitative or qualitative criteria demonstrating that consideration.\n\nThroughout the process, firms should adopt a neutral and unbiased approach as to not influence clients’ answers."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-reliable-client-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 26, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-033",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 33",
+      "path": "paragraph-033",
+      "heading": "General guideline 3",
+      "texts": {
+        "en": "Before providing investment advice or portfolio management services, firms need to collect all ‘necessary information’¹³ about the client’s knowledge and experience, financial situation and investment objectives. The extent of ‘necessary’ information may vary and has to take into account the features of the investment advice or portfolio management services to be provided, the type and characteristics of the investment products to be considered and the characteristics of the clients.\n\n¹³ ‘Necessary information’ should be understood as meaning the information that firms must collect to comply with the suitability requirements under MiFID II."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-reliable-client-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 33, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-044",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 44",
+      "path": "paragraph-044",
+      "heading": "General guideline 4",
+      "texts": {
+        "en": "Firms should take reasonable steps and have appropriate tools to ensure that the information collected about their clients is reliable and consistent, without unduly relying on clients’ self-assessment."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-reliable-client-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 44, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-053",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 53",
+      "path": "paragraph-053",
+      "heading": "General guideline 5",
+      "texts": {
+        "en": "Where a firm has an ongoing relationship with the client (such as by providing ongoing advice or portfolio management services), in order to be able to perform the suitability assessment, it should adopt procedures defining:\n(a) what part of the client information collected should be subject to updating and at which frequency;\n(b) how the updating should be done and what action should be undertaken by the firm when additional or updated information is received or when the client fails to provide the information requested."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-update-information"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 53, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-076",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 76",
+      "path": "paragraph-076",
+      "heading": "General guideline 8",
+      "texts": {
+        "en": "In order to match clients with suitable investments, firms should establish policies and procedures to ensure that they consistently take into account:\n• all available information about the client necessary to assess whether an investment is suitable, including the client’s current portfolio of investments (and asset allocation within that portfolio);\n• all material characteristics of the investments considered in the suitability assessment, including all relevant risks and any direct or indirect costs to the client.²⁷\n\n²⁷ See Articles 50 and 51 of MiFID II Delegated Regulation regarding the obligation to inform clients about costs."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-matching-alternatives"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 76, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-091",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 91",
+      "path": "paragraph-091",
+      "heading": "General guideline 9",
+      "texts": {
+        "en": "Suitability policies and procedures should ensure that, before a firm makes a decision on the investment product(s) that will be recommended, or invested in the portfolio managed on behalf of the client, a thorough assessment of the possible investment alternatives is undertaken, taking into account products’ cost and complexity."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-matching-alternatives"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 91, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3172/paragraph-109",
+      "instrument": "esma-35-43-3172",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 109",
+      "path": "paragraph-109",
+      "heading": "General guideline 12",
+      "texts": {
+        "en": "Firms should at least:\n(a) maintain adequate recording and retention arrangements to ensure orderly and transparent record-keeping regarding the suitability assessment, including the collection of information from the client, any investment advice provided and all investments (and disinvestments) made following the suitability assessment made, and the related suitability reports provided to the client;\n(b) ensure that record-keeping arrangements are designed to enable the detection of failures regarding the suitability assessment (such as mis-selling);\n(c) ensure that records kept, including the suitability reports provided to clients, are accessible for the relevant persons in the firm, and for competent authorities;\n(d) have adequate processes to mitigate any shortcomings or limitations of the record-keeping arrangements."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-suitability-gl-records"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3172, Paragraph 109, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-014",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "The potential target market identification by manufacturers should not solely be conducted on the basis of quantitative criteria but needs to be based on sufficient qualitative considerations as well. In identifying the target market for a product, manufacturers should also take into account the results of the scenario and charging structure analyses⁹ undertaken for the relevant product¹⁰. Services for the mass market in particular, may require automation of processes and this automation is usually based on formulas or algorithmic methodologies that process quantitative criteria for products and clients. Such numerical data is usually generated through scoring systems (for example, by using product features like volatility of financial instruments, ratings of issuers, etc. or through “conversion” of factual data into numerical systems). With regard to the target market identification, firms should not exclusively rely on such quantitative criteria but sufficiently balance them with qualitative considerations.\n\n⁹ The terms “scenario” analyses and “charging structure” refer to the analyses required under respectively Article 9(10) and (12) of the MiFID II Delegated Directive.\n\n¹⁰ For example, the scenario analyses performed by the firm may reveal that a product’s value is particularly sensitive to negative market conditions, leading to the identification of a narrower target market in terms of clients’ risk tolerance. As another example, the charging structure analysis performed by the firm may reveal that the charging structure of the product is not compatible with the identified target market, leading the firm to modify the charging structure of the product and/or reassess the target market. ESMA provided guidance on the application of the charging structure analysis requirement in Q&A 16.2-4 of its Questions and Answers on MiFID II and MiFIR investor protection and intermediaries topics (https://www.esma.europa.eu/sites/default/files/library/esma35-43-349_mifid_ii_qas_on_investor_protection_topics.pdf)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 14, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-015",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "Manufacturers should use the list of categories set out in these guidelines as a basis for identifying the target market for their products. The list of the categories is cumulative: when assessing the target market, each manufacturer should use each of those categories. In doing so, a manufacturer should analyse the relevance of each category for a certain product and then align the depth of the identification in proportion to the type, nature and other features of the product (as described in paragraph 19-31 of the guidelines)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 15, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-016",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "Manufacturers should detail/describe each of these categories, without merging categories, while taking into account their relationship and ensuring the consistency between different categories since they all contribute to the definition of the target market for a given product."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 16, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-017",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "Manufacturers should not exclude any of the five below mentioned categories. If, in the manufacturers’ view, these five categories are too restrictive to identify a meaningful target market, additional categories may be added. In the decision, whether to use such additional categories or not, manufacturers may take into account the characteristics of the information-channels with distributors. For example, in order to facilitate the exchange of information with distributors and to foster open architecture, manufacturers may limit the use of additional categories to cases where these are essential to define a meaningful target market for the product."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 17, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-018",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "Manufacturers need to identify a potential target market¹¹. As they usually do not have direct client contact, and in accordance with subparagraph 2 of Article 9(9) of the MiFID II Delegated Directive, this means that their target market identification may be based inter alia on their theoretical knowledge and experience of the product.\n\n¹¹ See Article 9(9) of the MiFID Delegated Directive."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 18, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-019",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 19",
+      "path": "paragraph-019",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "Manufacturers should use the following list of five categories:\na) The type of clients to whom the product is targeted: The firm should specify to which type of client the product is targeted. This specification should be made according to the MiFID II client categorisation of “retail client”, “professional client” and/or “eligible counterparty”. To avoid possible misuse of the exemption provided in Article 16a MiFID II¹², the decision to market or distribute a product exclusively to eligible counterparties should clearly be made ex ante (either when performing the initial target market assessment or when performing periodic reviews), based on the firm’s internal processes.\nb) Knowledge and experience: The firm should specify the knowledge that the target clients should have about elements such as: the relevant product type, product features and/or knowledge in thematically related areas that help to understand the product. For example, for structured products with complicated return profiles, firms could specify that target investors should have knowledge of how this type of product works and the likely outcomes from the product. Regarding experience, the firm could describe how much practical experience target clients should have with elements such as: relevant product type, relevant product features and/or experience in thematically related areas. The firm could specify, for example, a time period for which clients should have been active in the financial markets. Knowledge and experience may be dependent on each other in some cases (i.e., an investor with limited or no experience could be a valid target client if they compensate missing experience with extensive knowledge).\nc) Financial situation with a focus on the ability to bear losses: The firm should specify the percentage of losses target clients should be able and willing to afford (for example, from minor losses to total loss) and if there are any additional payment obligations that might exceed the amount invested (for example, margin calls). This could also be phrased as a maximum proportion of assets that should be invested.\nd) Risk tolerance and compatibility of the risk/reward profile of the product with the target market: The firm should specify the general attitude that target clients should have in relation to the risks of investment. Basic risk-attitudes should be categorised (for example, “risk oriented or speculative”, “balanced”, “conservative”) and clearly described. Since different firms in the chain may have different approaches to defining risk, the firm should be explicit about the criteria that must be met in order to categorise a client in this way. Firms should use the risk indicator stipulated by the PRIIPs Regulation¹³ or the UCITS Directive, where applicable, to fulfil this requirement. Where relevant, firms should also consider the risks included in the narrative below the PRIIPs summary risk indicator, such as currency and/or liquidity risk.\ne) Clients’ Objectives and Needs: The firm should specify the investment objectives and needs of target clients that a product is compatible with, including the wider financial goals of target clients or the overall strategy they follow when investing. Those objectives can be “fine-tuned” by specifying particular aspects of the investment and expectations of targeted clients. The particular clients’ objectives and needs a product is intended to fulfil may vary from specific to more generic. For example, a product may be designed to meet the needs of a specific age demographic, to achieve tax efficiency based on clients’ country of tax residence, or be designed with special product features to achieve specific investment objectives such as “currency protection”, “regular payments”, etc., as relevant. In addition, reference should be made to the expected investment horizon/recommended holding period (e.g., number of years the investment is to be held), duly considering the potential impacts for clients of an early exit (for example in terms of costs).\n\n¹² According to Article 16a of MiFID II, a firm is, inter alia, exempted from the product governance requirements where the financial instruments are marketed or distributed exclusively to eligible counterparties.\n\n¹³ Regulation (EU) No 1286/2014 of the European Parliament and of the Council of 26 November 2014 on key information documents for packaged retail and insurance-based investment products (PRIIPs) (OJ 352, 09.12.2014, p. 1–23)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 19, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-020",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 20",
+      "path": "paragraph-020",
+      "heading": "Identification of the potential target market by the manufacturer: categories to be considered",
+      "texts": {
+        "en": "Within the broad category of clients’ objectives and needs, the firm should also specify any sustainability-related objectives the product is compatible with. To ensure a sufficient level of granularity of the target market, when identifying sustainability-related objectives, firms may specify, where relevant, the following aspects (in line with the definition of “sustainability preferences” according to Article 2(7) of the MiFID II Delegated Regulation¹⁴ and as further detailed in the ESMA guidelines on certain aspects of the MiFID II suitability requirements):\na) The minimum proportion of the product that is invested in environmentally sustainable investments as defined in Article 2, point (1), of Regulation (EU) 2020/852¹⁵;\nb) The minimum proportion of the product that is invested in sustainable investments as defined in Article 2, point (17), of Regulation (EU) 2019/2088¹⁶;¹⁷\nc) Which principal adverse impacts (PAI) on sustainability factors are considered by the product, including quantitative or qualitative criteria demonstrating that consideration. Firms could use the categories presented in the SFDR RTS¹⁸ (instead of an approach based on each PAI indicator) such as “emissions”, “energy performance”, “water & waste”, etc.\nd) Whether, where relevant, the product has a focus on either environmental, social or governance criteria or a combination of them¹⁹;\n\n¹⁴ Commission Delegated Regulation (EU) 2017/565 of 25 April 2016 supplementing Directive 2014/65/EU of the European Parliament and of the Council as regards organisational requirements and operating conditions for investment firms and defined terms for the purposes of that Directive (OJ L 87, 31.3.2017, p. 1).\n\n¹⁵ Regulation (EU) 2020/852 of the European Parliament and of the Council of 18 June 2020 on the establishment of a framework to facilitate sustainable investment, and amending Regulation (EU) 2019/2088 (OJ L 198, 22.6.2020, p. 13).\n\n¹⁶ Regulation (EU) 2019/2088 of the European Parliament and of the Council of 27 November 2019 on sustainability‐related disclosures in the financial services sector (OJ L 317, 9.12.2019, p. 1).\n\n¹⁷ The product’s minimum proportion referred in the two bullet points above is the one published in the product’s binding contractual documentation such as the one referred to in Article 6 of Regulation (EU) 2019/2088 or any other relevant legal document.\n\n¹⁸ Commission Delegated Regulation (EU) 2022/1288 of 6 April 2022 supplementing Regulation (EU) 2019/2088 of the European Parliament and of the Council with regard to regulatory technical standards specifying the details of the content and presentation of the information in relation to the principle of ‘do no significant harm’, specifying the content, methodologies and presentation of information in relation to sustainability indicators and adverse sustainability impacts, and the content and presentation of the information in relation to the promotion of environmental or social characteristics and sustainable investment objectives in pre-contractual documents, on websites and in periodic reports (OJ L 196, 25.7.2022, p. 1–72)\n\n¹⁹ As referred to in paragraph 27, second bullet point, of the ESMA Guidelines on certain aspects of the MiFID II suitability requirements (Ref. ESMA35-43-3172)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-manufacturer-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 20, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-034",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 34",
+      "path": "paragraph-034",
+      "heading": "Timing and relationship of target market assessment of the distributor with other product governance processes",
+      "texts": {
+        "en": "The distributor’s target market identification (i.e., the identification of the ‘actual’ target market for that product) should be conducted as part of the general decision-making process about the range of services and products the distributor is going to distribute. Hence, the actual target market identification should occur at an early stage on an ex-ante basis (i.e., before going into daily business and/or before deciding whether the product should be included in the firm’s offer), based on the firm’s business policies and distribution strategies as defined by the management body. In particular, the identification of the target market of products intended for distribution should ensure that the decisions undertaken to define the distributor’s product assortment are based on the consideration of the characteristics, objectives and needs of the distributor’s client base."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-distributor-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 34, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-035",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 35",
+      "path": "paragraph-035",
+      "heading": "Timing and relationship of target market assessment of the distributor with other product governance processes",
+      "texts": {
+        "en": "In particular, distributors should take responsibility to ensure, from the very beginning, the general consistency of the products and investment and/or ancillary services that are going to be offered, and to choose which products are to be offered under the different services, to ensure compatibility with the needs, characteristics, and objectives of target clients. The aspects related to this general consistency of products, services and distribution strategies with target clients should be addressed and formalised in the firm’s policy as to the services, activities, products and operations offered or provided.²¹\n\n²¹ In line with Article 9(3)(b) of MiFID II."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-distributor-target-market"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 35, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-065",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 65",
+      "path": "paragraph-065",
+      "heading": "Portfolio management, portfolio approach, hedging and diversification",
+      "texts": {
+        "en": "The distributor is not required to report sales outside of the positive target market to the manufacturer if these sales are for diversification and hedging purposes and if these sales are still suitable given the client’s total portfolio or the risk being hedged."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-negative-target-market-sales"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 65, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-066",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 66",
+      "path": "paragraph-066",
+      "heading": "Portfolio management, portfolio approach, hedging and diversification",
+      "texts": {
+        "en": "Sales of products into the negative target market should always be reported to the manufacturer and disclosed to the client, even if those sales are for diversification or hedging purposes. Moreover, even if for diversification purposes, sales into the negative target market should be a rare occurrence (see also paragraphs 80-88)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-negative-target-market-sales"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 66, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-067",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 67",
+      "path": "paragraph-067",
+      "heading": "Regular review by the manufacturer and distributor to respectively assess whether products and services are reaching the target market",
+      "texts": {
+        "en": "Article 16(3) MiFID II and Articles 9 and 10 of the MiFID II Delegated Directive require manufacturers and distributors to review products on a regular basis to assess whether the product remains consistent with the needs, characteristics and objectives, including any sustainability-related objectives, of the identified target market and whether the intended distribution strategy remains appropriate."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-product-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 67, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-068",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 68",
+      "path": "paragraph-068",
+      "heading": "Regular review by the manufacturer and distributor to respectively assess whether products and services are reaching the target market",
+      "texts": {
+        "en": "Firms should use both quantitative and qualitative criteria to review products, relating to the product’s characteristics (e.g., changes in the product’s risk factors, investment strategy, cost structure (e.g., level and types of costs)), market conditions (e.g., adverse market conditions, regulatory developments) and distribution (e.g., client complaints, sales outside the target market, results from client surveys, online client trading behaviour). Firms should determine the frequency and depth of product reviews while taking into account the nature of the product and, where appropriate, the service. For example, for certain simpler products distributed under the execution-only exemption, product reviews can be less frequent and require less depth, and ad-hoc reviews can in such cases to a large extent be driven by client complaints and/or market events that significantly affect the product’s risk-return profile. A manufacturer that has advised a corporate issuer on the launch of a new product, may also apply the review obligation for that product in a proportionate manner, irrespective of whether it concerns a simpler or more complex product."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-product-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 68, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-069",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 69",
+      "path": "paragraph-069",
+      "heading": "Regular review by the manufacturer and distributor to respectively assess whether products and services are reaching the target market",
+      "texts": {
+        "en": "Manufacturers should consider, on a proportionate basis, what information they need in order to complete their review and how to gather that information. In line with Recital 20 of the MiFID II Delegated Directive, relevant information could include, for example, information on which distribution channels have been employed, the proportion of sales made outside the target market, summary information of the types of clients, a summary of any complaints received, and questions suggested by the manufacturer to a sample of clients for feedback. Such information may be in an aggregated form and does not need to be on an instrument-by-instrument or sales-by-sales basis."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-product-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 69, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-070",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 70",
+      "path": "paragraph-070",
+      "heading": "Regular review by the manufacturer and distributor to respectively assess whether products and services are reaching the target market",
+      "texts": {
+        "en": "To support reviews by manufacturers, distributors must provide them with information on sales and, where appropriate, any other relevant information that may be the outcome of the distributor’s own periodic review. Whenever distributors have relevant information to support reviews by manufacturers, they should proactively provide it to the manufacturer and not provide such information only at the manufacturer’s request. Furthermore, distributors should consider data and information that may give an indication that they have wrongly identified the target market for a specific product or service or that the product or service no longer meets the circumstances of the identified target market, such as where the product becomes illiquid or very volatile due to market changes. Any such information is subject to the proportionality principle and may generally be in an aggregated form and does not generally need to be on an instrument-by-instrument or sale-by-sale basis. However, instrument-specific information should be provided in cases with particular relevance for certain individual instruments (e.g., if the distributor comes to the conclusion that a target market for a specific product was wrongly determined)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-product-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 70, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3448/paragraph-073",
+      "instrument": "esma-35-43-3448",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 73",
+      "path": "paragraph-073",
+      "heading": "Regular review by the manufacturer and distributor to respectively assess whether products and services are reaching the target market",
+      "texts": {
+        "en": "Distributors are required to review products as long as they are offered, sold or recommended. For example, where a distributor no longer offers²⁸, sells or recommends²⁹ a product, the distributor is no longer obliged to review the target market of that product, despite that a client may still have investments in that product. Where a distributor recommends to its clients to hold a product it no longer offers or sells, it should still undertake a review of the target market of that product prior to making that recommendation.\n\n²⁸ In this context, ‘offered’ has a wide application and should be read in a broad sense.\n\n²⁹ A firm recommends a product to a client if it recommends a client to either buy, hold or sell a product."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-pg-gl-product-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3448, Paragraph 73, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3565/paragraph-016",
+      "instrument": "esma-35-43-3565",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "Guideline 1",
+      "texts": {
+        "en": "When designing remuneration policies and practices in accordance with the requirements under Article 27 of the MiFID II Delegated Regulation and, especially, where remuneration comprises variable components, firms should define appropriate criteria to align the interests of the relevant persons and of the firms with that of the clients. Such criteria aligning the interests of the relevant persons and of the firms with that of the clients should allow the firms to assess the performance of relevant persons."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-remuneration-gl-client-aligned-criteria"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3565, Paragraph 16, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3565/paragraph-017",
+      "instrument": "esma-35-43-3565",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "Guideline 1",
+      "texts": {
+        "en": "In order to do so and in accordance with Article 27(4) of the MiFID II Delegated Regulation, firms shall consider qualitative criteria that encourage the relevant persons to act in the best interests of the client. Examples of appropriate qualitative criteria include compliance with regulatory requirements such as conduct of business rules (in particular, the review of the suitability of instruments sold by relevant persons to clients, if relevant) and internal procedures, fair treatment of clients and client satisfaction."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-remuneration-gl-client-aligned-criteria"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3565, Paragraph 17, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3565/paragraph-041",
+      "instrument": "esma-35-43-3565",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 41",
+      "path": "paragraph-041",
+      "heading": "Guideline 2",
+      "texts": {
+        "en": "In addition to the periodic review of their written remuneration policy¹¹, firms should also review it upon any relevant and significant amendment to their business activities or structure. Where the review reveals that the remuneration policy does not operate as intended or that there is a residual risk of detriment to the firm’s clients stemming from it (crystallised or not), the remuneration policy should be amended in a timely and efficient manner.\n\n¹¹ In accordance with Article 9(3) of MiFID II and Article 27(3) of the MiFID II Delegated Regulation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-remuneration-gl-policy-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3565, Paragraph 41, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3565/paragraph-042",
+      "instrument": "esma-35-43-3565",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 42",
+      "path": "paragraph-042",
+      "heading": "Guideline 2",
+      "texts": {
+        "en": "Proper documentation on the remuneration policy as well as the decision-making process and procedures that lead to its approval or amendment should be maintained in a clear and transparent manner and made available to the management body and senior management as well as other control functions involved in the design, monitoring and/or review of the remuneration policy and procedures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-remuneration-gl-policy-review"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3565, Paragraph 42, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3565/paragraph-048",
+      "instrument": "esma-35-43-3565",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 48",
+      "path": "paragraph-048",
+      "heading": "Guideline 3",
+      "texts": {
+        "en": "Firms should set up adequate controls to assess compliance with their remuneration policies and practices and to ensure that these deliver the intended outcomes. The controls should be implemented throughout the firm and be subject to periodic review. Such controls should include assessing the quality of the service provided to the client - for example, monitoring calls for telephone sales, sampling of advice and client portfolios provided to check suitability or going through other client documentation on a periodic basis."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-remuneration-gl-outcome-controls"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3565, Paragraph 48, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-35-43-3565/paragraph-049",
+      "instrument": "esma-35-43-3565",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 49",
+      "path": "paragraph-049",
+      "heading": "Guideline 3",
+      "texts": {
+        "en": "To carry out such controls in an effective and risk-based manner, firms should use a wide range of information on business quality monitoring and sales patterns, including trend and root-cause analysis, to identify areas of increased risk and to support a risk-based approach to sales monitoring, with particular focus on high performing relevant persons (regarding sales for instance)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-remuneration-gl-outcome-controls"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA, ESMA35-43-3565, Paragraph 49, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-71-1154262120-153/paragraph-013",
+      "instrument": "esma-71-1154262120-153",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "V.I General",
+      "texts": {
+        "en": "The level and intensity of knowledge and competence expected for those providing investment advice should be of a higher standard than those that only give information on investment products and services."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-kc-gl-staff-knowledge"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+      "sourceLabel": "ESMA, ESMA71-1154262120-153, Paragraph 13, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-71-1154262120-153/paragraph-017",
+      "instrument": "esma-71-1154262120-153",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "V.II Criteria for knowledge and competence for staff giving information about investment products, investment services or ancillary services",
+      "texts": {
+        "en": "Firms should ensure that staff giving information about investment products, investment services or ancillary services that are available through the firm have the necessary knowledge and competence to:\na. understand the key characteristics, risk and features of those investment products available through the firm, including any general tax implications and costs to be incurred by the client in the context of transactions. Particular care should be taken when giving information with respect to products characterised by higher levels of complexity;\nb. understand the total amount of costs and charges to be incurred by the client in the context of transactions in an investment product, or investment services or ancillary services;\nc. understand the characteristics and scope of investment services or ancillary services;\nd. understand how financial markets function and how they affect the value and pricing of investment products on which they provide information to clients;\ne. understand the impact of economic figures, national/regional/global events on markets and on the value of investment products on which they provide information;\nf. understand the difference between past performance and future performance scenarios as well as the limits of predictive forecasting;\ng. understand issues relating to market abuse and anti-money laundering;\nh. assess data relevant to the investment products on which they provide information to clients such as Key Investor Information Documents, prospectuses, financial statements, or financial data;\ni. understand specific market structures for the investment products on which they provide information to clients and, where relevant, their trading venues or the existence of any secondary markets;\nj. have a basic knowledge of valuation principles for the type of investment products in relation to which the information is provided."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-kc-gl-staff-knowledge"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+      "sourceLabel": "ESMA, ESMA71-1154262120-153, Paragraph 17, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-71-1154262120-153/paragraph-018",
+      "instrument": "esma-71-1154262120-153",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "V.III Criteria for knowledge and competence for staff giving investment advice",
+      "texts": {
+        "en": "Firms should ensure that staff giving investment advice have the necessary knowledge and competence to:\na. understand the key characteristics, risk and features of the investment products being offered or recommended, including any general tax implications to be incurred by the client in the context of transactions. Particular care should be taken when providing advice with respect to products characterised by higher levels of complexity;\nb. understand the total costs and charges to be incurred by the client in the context of the type of investment product being offered or recommended and the costs related to the provision of the advice and any other related services being provided;\nc. fulfil the obligations required by firms in relation the suitability requirements including the obligations as set out in the Guidelines on certain aspects of the MiFID suitability requirements¹;\nd. understand how the type of investment product provided by the firm may not be suitable for the client, having assessed the relevant information provided by the client against potential changes that may have occurred since the relevant information was gathered;\ne. understand how financial markets function and how they affect the value and pricing investment products offered or recommended to clients;\nf. understand the impact of economic figures, national/regional/global events on markets and on the value of investment products being offered or recommended to clients;\ng. understand the difference between past performance and future performance scenarios as well as the limits of predictive forecasting;\nh. understand issues relating to market abuse and anti-money laundering;\ni. assess data relevant to the type investment products offered or recommended to clients such as Key Investor Information Documents, prospectuses, financial statements, or financial data;\nj. understand specific market structures for the type investment products offered or recommended to clients and where relevant their trading venues or the existence of any secondary markets;\nk. have a basic knowledge of valuation principles for the type of investment products offered or recommended to clients;\nl. understand the fundamentals of managing a portfolio, including being able to understand the implications of diversification regarding individual investment alternatives.\n\n¹ http://www.esma.europa.eu/system/files/2012-387.pdf"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-kc-gl-staff-knowledge"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+      "sourceLabel": "ESMA, ESMA71-1154262120-153, Paragraph 18, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-71-1154262120-153/paragraph-020",
+      "instrument": "esma-71-1154262120-153",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 20",
+      "path": "paragraph-020",
+      "heading": "V.IV Organisational requirements for assessment, maintenance and updating of knowledge and competence",
+      "texts": {
+        "en": "Firms should:\na. ensure that staff providing relevant services to clients are assessed through the successful completion of an appropriate qualification and having gained appropriate experience in the provision of relevant services to clients;\nb. carry out an internal or external review, on at least an annual basis, of staff members’ development and experience needs, assess regulatory developments and take action necessary to comply with these requirements. This review should also ensure that staff possess an appropriate qualification and maintain and update their knowledge and competence by undertaking continuous professional development or training for the appropriate qualification as well as specific training required in advance of any new investment products being offered by the firm;\nc. ensure that they submit to their CA, on request, records concerning knowledge and competence of staff providing relevant services to clients. These records shall contain information that enables the CA to assess and verify compliance with these guidelines;\nd. ensure that when a member of staff has not acquired the necessary knowledge and competence in the provision of the relevant services, this staff member cannot provide the relevant services. However, where this member of staff has not acquired the appropriate qualification or the appropriate experience to provide the relevant services or both, this staff member can only provide the relevant services under supervision. The level and intensity of supervision should reflect the relevant qualification and experience of the staff member being supervised and this could include, where appropriate, supervision during clients meeting and other forms of communication such as telephone calls and e-mails;\ne. ensure that, in situations under letter d., the staff member supervising other staff has the necessary knowledge and competence required by these guidelines and the necessary skills and resources to act as a competent supervisor;\nf. ensure that the supervision provided is tailored to the services to be provided by that staff member and cover the requirements of these guidelines relevant to those services;\ng. ensure that the supervisor takes responsibility for the provision of the relevant services when the staff member under supervision is providing relevant services to a client, as if the supervisor is providing the relevant services to the client, including signing-off the suitability report where advice is being provided;\nh. ensure that the staff member, who has not acquired the necessary knowledge or competence in the provision of the relevant services, cannot provide those relevant services under supervision for a period exceeding 4 years (or shorter if required by the CA)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-kc-gl-qualification-review",
+        "obl-eu-esma-kc-gl-supervised-staff"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+      "sourceLabel": "ESMA, ESMA71-1154262120-153, Paragraph 20, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
     }
   ],
-  "withoutProvision": [
-    {
-      "obligation": "obl-eu-esma-appropriateness-gl-controls",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-appropriateness-gl-explain-purpose",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-appropriateness-gl-reliable-information",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-appropriateness-gl-right-test",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-compliance-gl-management-reports",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-compliance-gl-resources-independence",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-compliance-gl-risk-based-monitoring",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-kc-gl-qualification-review",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-kc-gl-staff-knowledge",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-kc-gl-supervised-staff",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-pg-gl-distributor-target-market",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-pg-gl-manufacturer-target-market",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-pg-gl-negative-target-market-sales",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-pg-gl-product-review",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-remuneration-gl-client-aligned-criteria",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-remuneration-gl-outcome-controls",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-remuneration-gl-policy-review",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-suitability-gl-explain-purpose",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-suitability-gl-matching-alternatives",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-suitability-gl-records",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-suitability-gl-reliable-client-information",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-suitability-gl-update-information",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    }
-  ]
+  "withoutProvision": []
 }

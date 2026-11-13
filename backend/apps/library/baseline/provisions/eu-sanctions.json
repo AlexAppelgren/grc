@@ -2153,6 +2153,1176 @@
       "source": "https://eur-lex.europa.eu/eli/reg/2024/2642/2026-10-09/eng#art_8",
       "sourceLabel": "EUR-Lex, Council Regulation (EU) 2024/2642, Article 8, consolidated text of 2026-10-09 (CELEX 02024R2642-20261009). Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Consolidated text, re-used under CC BY 4.0; a consolidated text is a documentation tool only, and only the Official Journal text is authentic. Changes: consolidation marks (▼, ►, ◄) taken out of the text and kept apart; whitespace normalised.",
       "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-003",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 3",
+      "path": "paragraph-003",
+      "heading": "Reporting requirements",
+      "texts": {
+        "en": "According to Article 16(3) of Regulation (EU) No 1093/2010, competent authorities must notify the EBA as to whether they comply or intend to comply with these guidelines, or otherwise with reasons for non-compliance, by [dd.mm.yyyy]. In the absence of any notification by this deadline, competent authorities will be considered by the EBA to be non-compliant. Notifications should be sent by submitting the form available on the EBA website with the reference ‘EBA/GL/2024/14’. Notifications should be submitted by persons with appropriate authority to report compliance on behalf of their competent authorities. Any change in the status of compliance must also be reported to EBA."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 3, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-004",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 4",
+      "path": "paragraph-004",
+      "heading": "Reporting requirements",
+      "texts": {
+        "en": "Notifications will be published on the EBA website, in line with Article 16(3)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 4, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-005",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 5",
+      "path": "paragraph-005",
+      "heading": "Subject matter and scope of application",
+      "texts": {
+        "en": "These guidelines specify the internal policies, procedures and controls financial institutions that are subject to regulation and supervision pursuant to Directive 2013/36/EU, Directive (EU) 2015/2366 and Directive 2009/110/EC should put in place in accordance with Article 74(1) of Directive 2013/36/EU, Article 11(4) of Directive (EU) 2015/2366 and Article 3(1) of Directive 2009/110/EC to ensure the effective implementation of Union and national restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 5, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-006",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 6",
+      "path": "paragraph-006",
+      "heading": "Addressees",
+      "texts": {
+        "en": "These guidelines are addressed to:\n(i) competent authorities as defined in legislative acts referred to in Article 4, point (2)(i) of Regulation (EU) No 1093/2010;\n(ii) competent authorities as defined in Article 4, point (2)(vi) of Regulation (EU) No 1093/2010 with regard to Directive (EU) 2015/2366 and Directive 2009/110/EC;\n(iii) financial institutions that are subject to regulation and supervision pursuant to Directive 2013/36/EU, Directive (EU) 2015/2366 and Directive 2009/110/EC."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 6, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-007",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 7",
+      "path": "paragraph-007",
+      "heading": "Addressees",
+      "texts": {
+        "en": "Competent authorities that are responsible for assessing internal policies, procedures and controls adopted by financial institutions to ensure the implementation of Union and national restrictive measures, according to the domestic legal framework, may refer to these guidelines when assessing such internal policies, procedures and controls."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 7, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-008",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 8",
+      "path": "paragraph-008",
+      "heading": "Date of application",
+      "texts": {
+        "en": "These Guidelines apply from 30 December 2025."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 8, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-009",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 9",
+      "path": "paragraph-009",
+      "heading": "4.1.1 The role of the management body in its supervisory function",
+      "texts": {
+        "en": "In addition to the provisions set out in the Guidelines EBA/GL/2021/05⁹, the management body of a financial institution in its supervisory function should:\na. be informed of the results of the latest restrictive measures exposure assessment, pursuant to Section 4.2;\nb. oversee and monitor, through the internal controls function, the extent to which the restrictive measures policies and procedures are adequate and effective, pursuant to Section 4.3, in light of the restrictive measures exposure and risks of circumvention of restrictive measures to which the financial institution is exposed and take appropriate steps to ensure remedial measures are taken where necessary;\nc. at least once a year, assess the effective functioning of the restrictive measures compliance function, including internal policies, procedures and controls, including the appropriateness of the human and technical resources allocated to compliance with restrictive measures.\n\n⁹ Guidelines EBA/GL/2021/05 on internal governance under Directive 2013/36/EU."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 9, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-010",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 10",
+      "path": "paragraph-010",
+      "heading": "4.1.1 The role of the management body in its supervisory function",
+      "texts": {
+        "en": "Where a financial institution is the parent undertaking of a group, the management body of that parent undertaking should also perform all the tasks referred to in paragraph 9 at group level. The ultimate responsibility for compliance with restrictive measures lies with each entity of the group."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 10, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-011",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 11",
+      "path": "paragraph-011",
+      "heading": "4.1.2 The role of the management body in its management function",
+      "texts": {
+        "en": "In addition to the provisions set out in the Guidelines EBA/GL/2021/05, the financial institution’s management body in its management function should:\na. ensure that it is informed of the results of the latest restrictive measures exposure assessment, pursuant to Section 4.2;\nb. adopt an appropriate risk management framework and internal control system that is sufficiently independent from the business it controls;\nc. approve policies, procedures and controls that are proportionate to the financial institution’s restrictive measures exposure and adequate to ensure the financial institution’s compliance with restrictive measures;\nd. ensure the effective implementation of the financial institution’s processes to comply with restrictive measures;\ne. implement the organisational and operational structure necessary to comply effectively with the restrictive measures strategy adopted by the management body;\nf. ensure that the human and technical resources allocated to the compliance with restrictive measures are appropriate and commensurate with the institutions’ exposure to restrictive measures;\ng. where operational functions of the compliance with restrictive measures are outsourced, ensure that these arrangements comply with Guidelines EBA/GL/2019/02¹⁰, and receive regular reports on the effectiveness of the system from the service provider to inform the management body.\n\n¹⁰ Guidelines EBA/GL/2019/02 on outsourcing arrangements, to be replaced by Guidelines EBA/GL/XXXX/XX on sound management of third party risks."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 11, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-012",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 12",
+      "path": "paragraph-012",
+      "heading": "4.1.2 The role of the management body in its management function",
+      "texts": {
+        "en": "Where the financial institution is the parent undertaking of a group, the management body of that parent undertaking should ensure that all the tasks referred to in paragraph 11 are also performed at the level of subsidiaries and that policies and procedures put in place are aligned with the group’s procedures and policies, to the extent permitted under applicable national law."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-management-body"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 12, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-013",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "4.1.3.1 Appointing the senior staff member",
+      "texts": {
+        "en": "Financial institutions should appoint a senior staff member in charge of performing the functions and tasks set out in paragraphs 19 to 21. The management body should ensure that the senior staff member has the knowledge and understanding of restrictive measures necessary to fulfil their functions effectively."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 13, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-014",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "4.1.3.1 Appointing the senior staff member",
+      "texts": {
+        "en": "The management body may assign this role to a senior staff member who already has other duties or functions within the financial institution (such as the AML/CFT compliance officer or the chief compliance officer) provided that:\na. this is justified by the size and complexity of the financial institution and the outcome of the restrictive measures exposure assessment;\nb. this does not affect the ability of this senior staff member to carry out their duties or functions effectively; and\nc. this combination of tasks does not raise any conflicts of interest, such as conflicts between operational and control tasks assigned to this staff member."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 14, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-015",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "4.1.3.1 Appointing the senior staff member",
+      "texts": {
+        "en": "The management body should allow the senior staff member to assign and delegate the tasks stipulated in paragraphs 19 to 21 to other staff acting under the direction and supervision of the senior staff member, provided that the ultimate responsibility for the effective fulfilment of those tasks remains with the senior staff member."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 15, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-016",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "4.1.3.1 Appointing the senior staff member",
+      "texts": {
+        "en": "Irrespective of the institutional arrangements, financial institutions should ensure that:\na. the senior staff member can coordinate and cooperate effectively with internal control functions; and\nb. the senior staff member is able to report and has direct access to the management body in the management and supervisory function."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 16, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-017",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "4.1.3.1 Appointing the senior staff member",
+      "texts": {
+        "en": "Where the financial institution is part of a group, the management body of the parent financial institution should appoint a group-level senior staff member."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 17, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-018",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "4.1.3.2 The role of the senior staff member",
+      "texts": {
+        "en": "The senior staff member should develop, put in place and maintain policies, procedures and controls that are adequate to ensure the financial institution’s compliance with restrictive measures and proportionate to the financial institution’s restrictive measures exposure."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 18, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-019",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 19",
+      "path": "paragraph-019",
+      "heading": "4.1.3.2 The role of the senior staff member",
+      "texts": {
+        "en": "The senior staff member should:\na. take the measures necessary to ensure compliance with Section 4.2 on the restrictive measures exposure assessment;\nb. take the measures necessary to ensure compliance with Section 4.3 on effective restrictive measures policies and procedures;\nc. provide regular and adequate information to the management body to enable it to carry out its functions as defined in Section 4.1.1 and Section 4.1.2 Management information should at least include:\ni) changes to the financial institution’s restrictive measures exposure and the outcome of the financial institution’s restrictive measures exposure assessment;\nii) changes to restrictive measures regimes and their impact on the financial institution;\niii) statistics and information relating to:\n▪ the number of alerts generated;\n▪ the number of alerts awaiting analysis;\n▪ the number of reports submitted to the relevant national authority competent for the implementation of restrictive measures¹¹ and/or to the competent supervisory authority as required by the applicable laws;\n▪ the average time between the true positive match and the report submitted to the relevant national authority competent for the implementation of restrictive measures and/or to the competent supervisory authority as required by the applicable laws;\n▪ the value of frozen funds, frozen economic resources¹² and the nature of those assets, held at the financial institution;\niv) information on human and technical resources and the adequacy of those resources in light of the financial institution’s restrictive measures exposure;\nv) deficiencies or shortcomings identified in relation to the financial institution’s restrictive measures policies, procedures and controls, including observations provided by competent authorities for the supervision of policies, procedures and controls for the implementation of restrictive measures;\nvi) cases of violation and of circumvention of restrictive measures and the reasons for those violation and circumvention;\nvii) proposals on how to address any changes in regulatory requirements or in restrictive measures exposure, or any deficiencies or shortcomings in the financial institution’s restrictive measures policies, procedures or controls that have been identified and cases of violation and circumvention of restrictive measures that have been identified.\nd. report all violations of restrictive measures to the relevant national authorities competent for the implementation of restrictive measures and/or to the competent supervisory authority as required by the applicable laws;\ne. cooperate effectively and constructively with relevant national authorities competent for the implementation of restrictive measures and competent supervisory authority as required by the applicable laws.\n\n¹¹ https://finance.ec.europa.eu/eu-and-world/sanctions-restrictive-measures/overview-sanctions-and-related-resources_en#contact.\n\n¹² See Article 2, point (5) and (6) of Directive (EU) 2024/1226."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 19, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-020",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 20",
+      "path": "paragraph-020",
+      "heading": "4.1.3.2 The role of the senior staff member",
+      "texts": {
+        "en": "Where the financial institution is part of a group, the group-level senior staff member should assess the effectiveness of policies, procedures and controls for compliance with relevant restrictive measures across branches, subsidiaries, intermediaries, distributors and agents where applicable. The ultimate responsibility for compliance with restrictive measures lies with each entity of the group."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 20, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-021",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 21",
+      "path": "paragraph-021",
+      "heading": "4.1.3.2 The role of the senior staff member",
+      "texts": {
+        "en": "The senior staff member should oversee the preparation and implementation of the training programme as specified in Section 4.4."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-senior-staff-member"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 21, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-022",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 22",
+      "path": "paragraph-022",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "Internal procedures of financial institutions should cover the assessment of restrictive measures exposure to understand the extent to which each area of their business is exposed to restrictive measures and vulnerable to circumvention of restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 22, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-023",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 23",
+      "path": "paragraph-023",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "The restrictive measures exposure assessment should enable the financial institutions to identify and assess:\na. which restrictive measures regimes apply to them;\nb. the likelihood of non-implementation of restrictive measures;\nc. the likelihood of circumvention of restrictive measures;\nd. the impact of any breaches of restrictive measures; and\ne. the following risk factors:\na) geographic risk, including:\ni. where the financial institution conducts its business, i.e. the jurisdictions and territories in which the financial institution is established or operates;\nii. the extent to which those jurisdictions and territories are exposed to restrictive measures or are known to be used to circumvent restrictive measures;\niii. origin and destination of transactions.\nb) customer risk, including:\ni. links of customers and, if applicable, their beneficial owners and controlling shareholders, to countries for which restrictive measures are in place due to a situation affecting this country, or known to be used to circumvent restrictive measures;\nii. the number of customers, type of customers and the complexity of those customers, such as the issues with identification of the beneficial owner;\niii. activity of its customer base, and complexity of the activity, including any links to industries or sectors that may be subject to economic or any other restrictive measures, as well as frequency and types of transactions.\nc) products and services risk, including:\ni. the nature of the financial institution’s products and services;\nii. the extent to which providing these products and services exposes the financial institution to the risk of breaches of restrictive measures and circumvention of restrictive measures.\nd) delivery channels risk, including whether the use of intermediaries, agents, third parties, correspondent banking relationships or other delivery channels creates vulnerabilities, including by:\ni. limiting the visibility the financial institution has on the parties involved;\nii. making the financial institution dependent on the screening processes of third parties;\niii. increasing the financial institution’s exposure to geographic risks because they are operating, or based in, countries for which restrictive measures are in place due to a situation affecting this country or countries known to be used to circumvent restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 23, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-024",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 24",
+      "path": "paragraph-024",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "The assessment referred to in paragraph 22 should be based on a sufficiently diverse range of information sources, including at least the following:\na. information obtained as part of the application of the financial institution’s customer due diligence measures, in compliance with the provisions of Article 13 of Directive (EU) 2015/849;\nb. information from international bodies, government, national competent authorities including AML/CFT supervisors, financial intelligence units (FIUs) and law enforcement authorities (LEAs), such as up-to-date typologies on the circumvention of restrictive measures;\nc. information from credible and reliable open sources, such as reports in reputable newspapers and other reputable media outlets;\nd. information from credible and reliable commercial organisations, such as risk reports;\ne. where this is available, an analysis of previous restrictive measures alerts concerning true positive and false positive matches in order to identify situations where true positive matches are most likely to occur."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 24, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-025",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 25",
+      "path": "paragraph-025",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "When performing a restrictive measures exposure assessment, financial institutions should consider whether retroactive screening of their customer database and past transaction records could be useful and proportionate. This may be the case where the financial institution has identified or has reasonable grounds to suspect that its previous screening system was inadequate or ineffective."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 25, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-026",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 26",
+      "path": "paragraph-026",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "Financial institutions should ensure that their restrictive measures exposure assessment remains up to date and relevant. To achieve this, financial institutions should review it at least once a year and where necessary, update it. In addition, as necessary, financial institutions should review their restrictive measures exposure assessment in the following situations:\na. adoption of new restrictive measures and significant changes to existing restrictive measures;\nb. before providing new products, offering new product delivery channels, servicing new client groups, entering new geographical areas;\nc. significant changes to the institution’s activity profile, customer base, organisational structure or business model;\nd. identification of non-implementation of restrictive measures and circumvention of restrictive measures, which reveals the inappropriateness of the restrictive measures exposure assessment;\ne. deficiencies in existing restrictive measures exposure assessment as identified by the financial institution or the competent authority responsible for the supervision of internal policies, procedures and controls to ensure the implementation of Union and national restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 26, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-027",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 27",
+      "path": "paragraph-027",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "Financial institutions should document their methodology for conducting and reviewing their restrictive measures exposure assessment and the outcome of that assessment and make them available to their competent authority upon request."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 27, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-028",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 28",
+      "path": "paragraph-028",
+      "heading": "4.2 Conducting a restrictive measures exposure assessment",
+      "texts": {
+        "en": "Where the financial institution is the parent undertaking of a group, the group management body should ensure that the subsidiaries of the group perform its own restrictive measures exposure assessment in a coordinated way and based on a common methodology while reflecting its own specificities."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-exposure-assessment"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 28, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-029",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 29",
+      "path": "paragraph-029",
+      "heading": "4.3 Ensuring the ongoing effectiveness of restrictive measures policies, procedures and controls",
+      "texts": {
+        "en": "To be effective, a financial institution’s policies, procedures and controls for the implementation of restrictive measures should enable it to fully and properly implement all applicable restrictive measures without delay."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-policies-controls"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 29, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-030",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 30",
+      "path": "paragraph-030",
+      "heading": "4.3 Ensuring the ongoing effectiveness of restrictive measures policies, procedures and controls",
+      "texts": {
+        "en": "Policies, procedures and controls should at least cover:\na. processes to ensure that the financial institutions have all up-to-date information concerning the applicable restrictive measures;\nb. processes to ensure the update of lists and requirements of applicable restrictive measures as soon as they enter into force;\nc. processes to ensure that the restrictive measures exposure assessment remains relevant and up to date;\nd. processes to ensure that policies, procedures and controls are commensurate with the restrictive measures exposure assessment;\ne. processes to ensure that restrictive measures policies and procedures are:\ni. regularly reviewed;\nii. regularly amended and updated when and where necessary;\niii. implemented effectively; and\niv. designed in a manner that they trigger needed action once shortcomings are identified.\nf. procedures for starting to investigate without delay all potential matches;\ng. if there are true positive matches, procedures that trigger follow-up actions in order to ensure compliance with the applicable restricted measures, including immediate rejection suspension, or freezing, and reporting to relevant national authorities competent for the implementation of restrictive measures or to the competent supervisory authority as required by the applicable laws within the timelines specified by those authorities or the applicable restrictive measures Regulation;\nh. a documented internal organisation that clearly sets out the tasks and responsibilities in relation to restrictive measures, including when outsourcing;\ni. other aspects as specified in Guidelines EBA/GL/2024/15 on internal policies, procedures and controls to ensure the implementation of restrictive measures under Regulation (EU) 2023/1113."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-policies-controls"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 30, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-031",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 31",
+      "path": "paragraph-031",
+      "heading": "4.4 Training",
+      "texts": {
+        "en": "Financial institutions should provide training to their staff members on a regular basis to ensure that they are, and remain, aware of:\na. applicable restrictive measures;\nb. the outcome of the restrictive measures exposure assessment; and\nc. policies, procedures and controls to comply with applicable restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-training"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 31, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-032",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 32",
+      "path": "paragraph-032",
+      "heading": "4.4 Training",
+      "texts": {
+        "en": "Training should be tailored to staff members and their specific role. It should be timely and adequate to enable the financial institution to comply with restrictive measures. Within a group this activity can be performed – fully or partially – by the parent company."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-training"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 32, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-14/paragraph-033",
+      "instrument": "eba-gl-2024-14",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 33",
+      "path": "paragraph-033",
+      "heading": "4.4 Training",
+      "texts": {
+        "en": "Financial institutions should document their training plan and stand ready to demonstrate upon request to their competent authority that their training is adequate and effective."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-training"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14, Paragraph 33, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-014",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "4.1.4 Screening the customer base",
+      "texts": {
+        "en": "PSPs and CASPs should set out in their policies and procedures how they will screen their customer base."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-customer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 14, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-015",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "4.1.4 Screening the customer base",
+      "texts": {
+        "en": "PSPs and CASPs should screen their entire customer database regularly and determine the frequency of that customer screening based on their restrictive measures exposure assessment."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-customer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 15, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-016",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "4.1.4 Screening the customer base",
+      "texts": {
+        "en": "PSPs and CASPs should stipulate in an internal decision trigger events when screening of their customers should always take place and keep such decisions up to date. Trigger events should include at least:\na. a change in any of the existing designations or restrictive measures, a new designation or the entry into force of a new restrictive measure;\nb. at customer onboarding or before a business relationship has been established;\nc. if significant changes in the customer due diligence data of an existing customer occur, such as change of name, residence, nationality or change of business operations;\nd. if reasonable grounds exist to suspect that the customer, or any person purporting or being authorised to act on behalf of the customer, is attempting to circumvent restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-customer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 16, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-017",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "4.1.4 Screening the customer base",
+      "texts": {
+        "en": "PSPs and CASPs should screen at least the following customer information, in line with the applicable restrictive measures:\na. in the case of a natural person:\na. the first name and surname, in the original and/or transliteration of such data; and\nb. date of birth.\nb. in the case of a legal person: the name of the legal person, in the original and/or transliteration of such data;\nc. in the case of a natural person, legal person, body or entity: any other names, aliases, trade names, wallet addresses, where available in the restrictive measures related lists. PSPs and CASPs should duly justify through the restrictive measures exposure assessment the choice of not screening such information when available."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-customer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 17, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-018",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "4.1.4 Screening the customer base",
+      "texts": {
+        "en": "When screening customers that are legal persons, natural persons, bodies or entities, PSPs and CASPs should, to the extent that this information is available, also screen:\na. beneficial owners through ownership interest;\nb. beneficial owners through control;\nc. any person purporting or being authorised to act on behalf of the customer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-customer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 18, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-019",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 19",
+      "path": "paragraph-019",
+      "heading": "4.1.5 Screening of transfers of funds and crypto-assets",
+      "texts": {
+        "en": "Except in cases covered in Article 5d of Regulation (EU) No.260/2012, PSPs should screen transfers of funds before making the funds available to the payee, and CASPs should screen all transfers of crypto-assets before making the crypto-assets available to the beneficiary, whether they are carried out as part of a business relationship or as part of a one-off transaction."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-transfer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 19, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-020",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 20",
+      "path": "paragraph-020",
+      "heading": "4.1.5 Screening of transfers of funds and crypto-assets",
+      "texts": {
+        "en": "PSPs and CASPs should screen all parties to transfers of funds or crypto-assets against applicable restrictive measures. PSPs and CASPs should pay special attention in their restrictive measures exposure assessment to the soundness and reliability of the restrictive measures policies and procedures put in place by PSPs and CASPs with which they are doing business to ensure compliance with restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-transfer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 20, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-021",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 21",
+      "path": "paragraph-021",
+      "heading": "4.1.5 Screening of transfers of funds and crypto-assets",
+      "texts": {
+        "en": "All data that may be relevant for assessing whether a transaction could be affected by applicable restrictive measures should be screened against applicable restrictive measures. Data to be screened should include at least:\na. information on the payer and payee pursuant to Article 4 of Regulation (EU) 2023/1113;\nb. information on the originator and beneficiary pursuant to Article 14 of Regulation (EU) 2023/1113;\nc. the purpose of the transfer of funds or crypto-assets and if information available and subject to restrictive measures exposure assessment, other free-text fields that provide further information on the actual sender/recipient of funds or crypto-assets;\nd. details of PSPs and CASPs involved in the transfer of funds or crypto-assets, including intermediate institutions, correspondents, with screening of identification codes such as BIC, SWIFT and other;\ne. other details of the transfer of funds or crypto-assets, depending on the nature, type of the operation, the supporting documentation received, if information available and subject to restrictive measures exposure assessment;\nf. wallet addresses of the originator and of the beneficiary of a transfer of crypto-assets, to the extent that this information is available in official lists of wallet addresses linked to restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-transfer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 21, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-022",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 22",
+      "path": "paragraph-022",
+      "heading": "4.1.5 Screening of transfers of funds and crypto-assets",
+      "texts": {
+        "en": "In line with the provisions in Section 4.6 of the Guidelines EBA/GL/2024/11 on information requirements in relation to transfers of funds and certain crypto-assets transfers under Regulation (EU) 2023/1113 (‘The Travel Rule Guidelines’) any new information obtained subsequently, before or after executing the transfer, should also be screened."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-transfer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 22, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-023",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 23",
+      "path": "paragraph-023",
+      "heading": "4.1.5 Screening of transfers of funds and crypto-assets",
+      "texts": {
+        "en": "Where appropriate based on the volume and number of transfers of crypto-assets, CASPs should consider incorporating blockchain analysis for transaction monitoring purposes into the existing framework."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-transfer-screening"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 23, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-031",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 31",
+      "path": "paragraph-031",
+      "heading": "4.2.1 Policies and procedures for the management and analysis of alerts",
+      "texts": {
+        "en": "PSPs and CASPs should have in place policies and procedures to investigate alerts in relation to restrictive measures. These policies and procedures should enable PSPs and CASPs to confirm whether an alert is a true positive match and, if so, determine the action needed in order to comply with the applicable restrictive measure."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 31, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-032",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 32",
+      "path": "paragraph-032",
+      "heading": "4.2.1 Policies and procedures for the management and analysis of alerts",
+      "texts": {
+        "en": "Such policies and procedures should include:\na. steps for starting to investigate without delay all potential matches, for each transfer of funds or transfer of crypto-assets;\nb. rules following the general record-keeping policy of the PSPs and CASPs, for the documentation of any decision taken in respect of alerts;\nc. measures to comply with Section 4.2.2 of these guidelines;\nd. different levels of review to be carried out in line with the restrictive measures exposure assessment, by implementing at least a review by two people in relation to higher exposure situations."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 32, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-033",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 33",
+      "path": "paragraph-033",
+      "heading": "4.2.2 Due diligence measures for alert analysis",
+      "texts": {
+        "en": "The alert generated by the screening system should indicate the element of the respective restrictive measure. Alerts should be analysed by staff members with the needed expertise and who are sufficiently trained⁵.\n\n⁵ See Section 4.4 of Guidelines on internal policies, procedures and controls to ensure the implementation of Union and national restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 33, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-034",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 34",
+      "path": "paragraph-034",
+      "heading": "4.2.2 Due diligence measures for alert analysis",
+      "texts": {
+        "en": "When in doubt about the trueness of a match, PSPs and CASPs should use additional information they may hold and/or obtain to support the analysis of alerts to the extent that this information is available, such as:\na. identification data of a natural person, legal person, entity or body that was not used at the screening stage;\nb. information on residence of natural person and information on seat or registered address of legal person, entity or body not used at the screening stage;\nc. information on nationalities, citizenships of natural persons not used at the screening stage;\nd. representative, management and organisational structure of legal persons not used at the screening stage;\ne. contact details not used at the screening stage."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 34, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-035",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 35",
+      "path": "paragraph-035",
+      "heading": "4.2.2 Due diligence measures for alert analysis",
+      "texts": {
+        "en": "PSPs and CASPs should set out in their policies and procedures how to deal with cases where it is not possible to conclude an unambiguous identification after additional due diligence, that a match is a true positive match, a false positive match or a situation of homonyms. PSPs and CASPs should refrain from providing financial services to a party to a transfer before coming to an informed decision."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 35, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-036",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 36",
+      "path": "paragraph-036",
+      "heading": "4.2.3 Assessing whether an entity is owned or controlled by a designated person",
+      "texts": {
+        "en": "PSPs and CASPs should set out in their policies and procedures how they will assess whether a legal person or entity is owned or controlled by a designated person or entity."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 36, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-037",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 37",
+      "path": "paragraph-037",
+      "heading": "4.2.3 Assessing whether an entity is owned or controlled by a designated person",
+      "texts": {
+        "en": "PSPs and CASPs should:\na. apply the criteria set out in EU Council Sanctions Guidelines⁶ and in Section VIII EU Council Best Practices⁷ to determine whether a legal entity is owned or controlled by another person or entity;\nb. apply the criteria used for the identification of a beneficial owner under the applicable legislation⁸;\nc. use available public sources of information, such as registers of owned and controlled entities and beneficial ownership registers.\n\n⁶ https://data.consilium.europa.eu/doc/document/ST-11618-2024-INIT/en/pdf, Brussels, 2 July 2024, 11618/24 (update).\n\n⁷ Update of the EU Best Practices for the effective implementation of restrictive measures (doc. 11623/24).\n\n⁸ Article 3, point (6) of the Directive (EU) 2015/849."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 37, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-038",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 38",
+      "path": "paragraph-038",
+      "heading": "4.2.3 Assessing whether an entity is owned or controlled by a designated person",
+      "texts": {
+        "en": "If an assessment remains inconclusive, PSPs and CASPs should consider engaging with the national authority competent for the implementation of restrictive measures. The ultimate responsibility for complying with the restrictive measures lies with the PSPs and CASPs."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 38, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-039",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 39",
+      "path": "paragraph-039",
+      "heading": "4.2.4 Controls and due diligence measures to comply with sectoral restrictive measures",
+      "texts": {
+        "en": "PSPs and CASPs should take into account the restrictive measures exposure assessment when defining the types of controls they will apply to comply with restrictive measures. As part of this, PSPs and CASPs should determine what available information connected to a transaction will be screened."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 39, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-040",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 40",
+      "path": "paragraph-040",
+      "heading": "4.2.4 Controls and due diligence measures to comply with sectoral restrictive measures",
+      "texts": {
+        "en": "PSPs and CASPs should pay particular attention to sectoral restrictive measures that are related to a specific jurisdiction or territory. Under such restrictive measures, PSPs and CASPs should screen all underlying information relating to the transfer of funds or crypto-assets to or from that specific jurisdiction or territory or to transfers of funds or crypto-assets initiated by customers who are known to conduct business in that specific jurisdiction or territory. To the extent that this is available, PSPs and CASPs should screen:\na. information on the country (ies) of nationality, place of birth;\nb. information on the usual place of residence or principal place of business through other addresses, in line with the restrictive measures exposure assessment;\nc. information on the country to or from which the transfer of funds is carried out, where the transfer of funds is executed;\nd. purpose of the transfer of funds or crypto-assets and other free-text fields that provide further information on the goods, vessels, country of destination or country of origin of the goods for which the payment is made, in line with the restrictive measures exposure assessment."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 40, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-041",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 41",
+      "path": "paragraph-041",
+      "heading": "4.2.4 Controls and due diligence measures to comply with sectoral restrictive measures",
+      "texts": {
+        "en": "If warranted by the restrictive measures exposure assessment, PSPs and CASPs should consider incorporating in their screening system geolocation tools and tools to detect the use of proxy services to identify and prevent IP addresses that originate from a country for which restrictive measures are taken because of a situation affecting this country from accessing the PSP’s and CASP’s website and services for an activity that is prohibited under restrictive measures regimes."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 41, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-042",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 42",
+      "path": "paragraph-042",
+      "heading": "4.2.4 Controls and due diligence measures to comply with sectoral restrictive measures",
+      "texts": {
+        "en": "According to their restrictive measures exposure assessment, PSPs and CASPs may consider applying specific controls, such as:\na. upon establishing business relations, acquiring the relevant information about the customer’s type of business and countries where the customer is conducting business;\nb. requesting additional information from the customer, such as a description of dual-use goods or any goods subject to sectoral restrictive measures, information about the appropriate licence for dealing with the dual-use goods, country of origin of the goods, information about the end user of the goods;\nc. requesting more detailed information from the customer about the purpose of a transfer of funds or crypto-assets;\nd. using the following data: shipping registers, real estate records and other publicly available datasets (where available)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 42, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-043",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 43",
+      "path": "paragraph-043",
+      "heading": "4.2.4 Controls and due diligence measures to comply with sectoral restrictive measures",
+      "texts": {
+        "en": "Where PSPs and CASPs use features to automatically read information from documents associated with the transfer of funds or crypto-assets, such as optical character recognition algorithms or machine-readable zone verifications, they should take the steps necessary to ensure that these tools capture information in an accurate and consistent manner."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 43, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-044",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 44",
+      "path": "paragraph-044",
+      "heading": "4.2.5 Due diligence measures to detect attempts to circumvent restrictive measures",
+      "texts": {
+        "en": "PSPs and CASPs should stay informed of typologies and trends in the circumvention of restrictive measures. Relevant sources of information to which PSPs and CASPs should always refer include at least reports shared by:\na. relevant national authorities competent for the implementation of restrictive measures⁹ and/or national supervisory authorities;\nb. FIUs and law enforcement authorities;\nc. relevant public-private partnerships on a national or EU level;\nd. EU authorities¹⁰.\n\n⁹ https://finance.ec.europa.eu/eu-and-world/sanctions-restrictive-measures/overview-sanctions-and-related-resources_en#contact.\n\n¹⁰ See for example https://finance.ec.europa.eu/news/sanctions-commission-publishes-guidance-help-european-operators-assess-sanctions-circumvention-risks-2023-09-07_en."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 44, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-045",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 45",
+      "path": "paragraph-045",
+      "heading": "4.2.5 Due diligence measures to detect attempts to circumvent restrictive measures",
+      "texts": {
+        "en": "Due diligence policies and procedures should allow PSPs and CASPs to detect possible attempts to circumvent restrictive measures, such as attempts to:\na. omit, delete or alter information in payment messages;\nb. channel transfers through persons connected with a customer who is subject to restrictive measures;\nc. structure transfers of funds or crypto-assets to conceal the involvement of a designated party;\nd. conceal the beneficial ownership or control of assets;\ne. use counterfeited or fraudulent background documentation for the transfer of funds or crypto-assets."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 45, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-046",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 46",
+      "path": "paragraph-046",
+      "heading": "4.2.5 Due diligence measures to detect attempts to circumvent restrictive measures",
+      "texts": {
+        "en": "PSPs and CASPs that are particularly exposed to the risk of being used for circumvention purposes should also consider carrying out an aggregated analysis of payment flows to or from countries subject to restrictive measures and countries known to be used to circumvent restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-alert-analysis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 46, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-047",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 47",
+      "path": "paragraph-047",
+      "heading": "4.3.1 Suspending the execution of transfers of funds and freezing funds",
+      "texts": {
+        "en": "PSPs should have in place policies and procedures to suspend, without delay, operation triggering an alert of a possible match with a designated person or entity, or owned, held or controlled by a designated person or entity, or whose beneficial owner is a designated person."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 47, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-048",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 48",
+      "path": "paragraph-048",
+      "heading": "4.3.1 Suspending the execution of transfers of funds and freezing funds",
+      "texts": {
+        "en": "If PSPs’ internal analysis of such alert confirms that the possible match is the designated person or entity, or owned, held or controlled by a designated person or entity, or whose beneficial owner is a designated person, PSPs should immediately:\na. freeze the corresponding funds;\nb. stop the execution of transfer of funds that would be in violation of restrictive measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 48, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-049",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 49",
+      "path": "paragraph-049",
+      "heading": "4.3.2 Freezing of transfers of crypto-assets",
+      "texts": {
+        "en": "CASPs should have in place policies and procedures when an internal analysis of an alert confirms that the possible match is the designated person or entity, or owned, held or controlled by a designated person or entity, or whose beneficial owner is a designated person to immediately freeze and block the funds in a suspense account until the relevant national authority competent for the implementation of restrictive measures instructed the CASP on what action to take for those funds. The ultimate responsibility for complying with the restrictive measures lies with the CASP."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 49, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-050",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 50",
+      "path": "paragraph-050",
+      "heading": "4.3.3 Reporting measures",
+      "texts": {
+        "en": "Under applicable Union and national requirements, PSPs and CASPs should have clear processes for reporting without delay, or within specified deadline, to the relevant national authority competent for the implementation of restrictive measures and/or to the competent supervisory authority:\na. any action taken for a specific transfer related to a restrictive measure;\nb. the discovery of a violation of restrictive measures; and\nc. the execution of any transfers of funds or crypto-assets that violates an applicable restrictive measure by providing information on the circumstances, such as an incident in the functioning of the screening system in relation to such transfer."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 50, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-051",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 51",
+      "path": "paragraph-051",
+      "heading": "4.3.3 Reporting measures",
+      "texts": {
+        "en": "When suspecting a possible circumvention of restrictive measures, or detecting an attempted transfer of funds or crypto-assets by or to a natural person, legal person, entity or body, PSPs and CASPs should:\na. report it to the relevant national authority competent for the implementation of restrictive measures if specifically required in an EU Regulation on restrictive measures;\nb. file the suspicious transaction report if required under the applicable legislation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 51, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-052",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 52",
+      "path": "paragraph-052",
+      "heading": "4.3.4 Procedures for exemptions or when restrictive measures are lifted",
+      "texts": {
+        "en": "PSPs and CASPs should have policies and procedures to determine whether exemptions, licence regimes or derogations apply, and if they apply, how to proceed, in order to comply with applicable Union law or national law. PSPs and CASPs should set out in their policies and procedures which information they will provide to customers who would like to request a derogation to use their frozen funds, if such derogation is allowed under the applicable legal framework. This information should include information about the customer’s rights in such a situation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 52, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-053",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 53",
+      "path": "paragraph-053",
+      "heading": "4.3.4 Procedures for exemptions or when restrictive measures are lifted",
+      "texts": {
+        "en": "PSPs and CASPs should have policies and procedures in place that will stipulate action concerning funds and crypto-assets subject to specific restrictive measures once such a measure has been lifted."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 53, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2024-15/paragraph-054",
+      "instrument": "eba-gl-2024-15",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 54",
+      "path": "paragraph-054",
+      "heading": "4.4 Ensuring the ongoing effectiveness of restrictive measures screening policies, procedures and systems",
+      "texts": {
+        "en": "To be effective, a PSP’s and CASP’s restrictive measures screening policies, procedures and systems should enable to:\na. reliably detect positive matches;\nb. upon confirmation of positive matches, immediately suspend the execution of any fund transfers, block any incoming transfers and deposit them in a suspense account, freezing the funds or crypto-assets without delay and reporting such actions to the relevant national authority competent for the implementation of restrictive measures for further instructions;\nc. report frozen assets to the relevant national authorities competent for the implementation of restrictive measures and/or to the competent supervisory authority as required by the applicable laws without delay or within deadlines stipulated by applicable Union law or national law;\nd. report suspicion of circumvention or attempt of circumvention of restrictive measures to the relevant national authority competent for the implementation of restrictive measures or the national FIU if required under the applicable legislation."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-rmgl-psp-freeze-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2024-11/eaeae49d-81a5-4154-8af9-5014f6ee8881/Final%20Report%20Guidelines%20restrictive%20measures%20.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15, Paragraph 54, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
     }
   ],
   "withoutProvision": [
@@ -2161,44 +3331,8 @@
       "reason": "The cited section could not be cut from the official text with certainty, so it is not given until it has been read again: celex-32005r1183/art-6: EUR-Lex lists amending acts or corrigenda in force on 2026-11-13 that the document used."
     },
     {
-      "obligation": "obl-eu-eba-rmgl-exposure-assessment",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-management-body",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-policies-controls",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-psp-alert-analysis",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-psp-customer-screening",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-psp-freeze-report",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
       "obligation": "obl-eu-eba-rmgl-psp-screening-system",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-psp-transfer-screening",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-senior-staff-member",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-rmgl-training",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     }
   ]
 }

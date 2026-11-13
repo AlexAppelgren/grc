@@ -727,33 +727,928 @@
       "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj#anx_II",
       "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, ANNEX II, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
       "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-001-001",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1.1",
+      "path": "guideline-001-001",
+      "heading": "Guideline 1: Payment transactions and fraudulent payment transactions",
+      "texts": {
+        "en": "For the purposes of reporting statistical data on fraud in accordance with these Guidelines, the payment service provider should report for each reporting period:\na. unauthorised payment transactions made, including as a result of the loss, theft or misappropriation of sensitive payment data or a payment instrument, whether detectable or not to the payer prior to a payment and whether or not caused by gross negligence of the payer or executed in the absence of consent by the payer (‘unauthorised payment transactions’); and\nb. payment transactions made as a result of the payer being manipulated by the fraudster to issue a payment order, or to give the instruction to do so to the payment service provider, in good-faith, to a payment account it believes belongs to a legitimate payee (‘manipulation of the payer’)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 1.1, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-001-002",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1.2",
+      "path": "guideline-001-002",
+      "heading": "Guideline 1: Payment transactions and fraudulent payment transactions",
+      "texts": {
+        "en": "For the purposes of Guideline 1.1, the payment service provider (including the payment instrument issuer where applicable) should report only payment transactions that have been initiated and executed (including acquired where applicable). The payment service provider should not report data on payment transactions that, however linked to any of the circumstances referred to in Guideline 1.1, have not been executed and have not resulted in a transfer of funds in accordance with PSD2 provisions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 1.2, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-001-003",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1.3",
+      "path": "guideline-001-003",
+      "heading": "Guideline 1: Payment transactions and fraudulent payment transactions",
+      "texts": {
+        "en": "In the case of money remittance services where funds were transferred from a payer’s payment service provider to a payer’s money remitter payment service provider (as part of a money remittance payment transaction), it is the payer’s payment service provider, rather than the money remitter payment service provider, who should report the payment transactions from the payer’s payment service provider to the money remitter. Such transactions should not be reported by the payment service provider of the beneficiary of the money remittance payment transaction."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 1.3, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-001-004",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1.4",
+      "path": "guideline-001-004",
+      "heading": "Guideline 1: Payment transactions and fraudulent payment transactions",
+      "texts": {
+        "en": "Transactions and fraudulent transactions where funds have been transferred by a money remitter payment service provider from its accounts to a beneficiary account, including through arrangements offsetting the value of multiple transactions (netting arrangements), should be reported by the money remitter payment service provider in accordance with Data Breakdown G in Annex 2."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 1.4, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-001-005",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1.5",
+      "path": "guideline-001-005",
+      "heading": "Guideline 1: Payment transactions and fraudulent payment transactions",
+      "texts": {
+        "en": "Transactions and fraudulent transactions where e-money has been transferred by an e-money provider to a beneficiary account, including where the payer's payment service provider is identical to the payee's payment service provider, should be reported by the e-money provider in accordance with Data Breakdown F in Annex 2. Where the payment service providers are different, payment is only reported by the payer’s payment service provider to avoid double counting."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 1.5, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-001-006",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1.6",
+      "path": "guideline-001-006",
+      "heading": "Guideline 1: Payment transactions and fraudulent payment transactions",
+      "texts": {
+        "en": "Payment service providers should report all payment transactions and fraudulent payment transactions in accordance with the following:\na. ‘Total fraudulent payment transactions’ refer to all transactions mentioned in Guideline 1.1, regardless of whether the amount of the fraudulent payment transaction has been recovered.\nb. ‘Losses due to fraud per liability bearer‘ refers to the losses by the reporting payment service provider, its payment service user or others, reflecting the actual impact of fraud on a cash flow basis. Since the registering of financial losses borne may be disassociated time-wise from the actual fraudulent transactions and in order to avoid revisions of reported data purely due to this immanent time lag, the final fraud losses should be reported in the period when they are recorded in the payment service provider’s books. The final fraud loss figures should not take into account refunds by insurance agencies because they are not related to fraud prevention for the purposes of PSD2.\nc. ‘Modification of a payment order by the fraudster’ is a type of unauthorised transaction as defined in Guideline 1.1(a) and refers to a situation where the fraudster intercepts and modifies a legitimate payment order at some point during the electronic communication between the payer’s device and the payment service provider (for instance through malware or attacks allowing attackers to eavesdrop on the communication between two legitimately communicating hosts (man-in-the middle attacks)) or modifies the payment instruction in the payment service provider’s system before the payment order is cleared and settled.\nd. ‘Issuance of a payment order by the fraudster’ is a type of unauthorised transaction as defined in Guideline 1.1(a) and refers to a situation where a fake payment order is issued by the fraudster after having obtained the payer/payee's sensitive payment data through fraudulent means."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 1.6, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-001",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.1",
+      "path": "guideline-002-001",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should report statistical information on:\na. total payment transactions in line with the different breakdowns in Annex 2 and in accordance with Guideline 1; and\nb. total fraudulent payment transactions in line with the different breakdowns in Annex 2 and as defined in Guideline 1.6(a)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.1, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-002",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.2",
+      "path": "guideline-002-002",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should report the statistical information specified in Guideline 2.1 in terms of both volume (i.e. number of transactions or fraudulent transactions) and value (i.e. amount of transactions or fraudulent transactions). They should report volumes and values in actual units, with two decimals for values."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.2, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-003",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.3",
+      "path": "guideline-002-003",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "A payment service provider authorised, or a branch established, in a Member State of the euro area should report the values in euro currency, whereas a payment service provider authorised, or a branch established, in a Member State not participating in the euro area should report in the currency of that Member State. The reporting payment service providers should convert data for values of transactions or fraudulent transactions denominated in a currency other than the euro currency or the relevant Member State’s official currency into the currency they should report in, using the relevant exchange rates applied to these transactions or the average ECB reference exchange rate for the applicable reporting period."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.3, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-004",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.4",
+      "path": "guideline-002-004",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should report only payment transactions that have been executed, including those transactions that have been initiated by a payment initiation service provider. Prevented fraudulent transactions that are blocked before they are executed due to suspicion of fraud should not be included."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.4, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-005",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.5",
+      "path": "guideline-002-005",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should report the statistical information with a breakdown in accordance with the breakdowns specified in Guideline 7 and compiled in Annex 2."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.5, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-006",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.6",
+      "path": "guideline-002-006",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should identify the applicable data breakdown(s), depending on the payment service(s) and payment instrument(s) provided, and submit the applicable data to the competent authority."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.6, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-007",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.7",
+      "path": "guideline-002-007",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should ensure that all data reported to the competent authority can be cross-referenced in accordance with Annex 2."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.7, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-008",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.8",
+      "path": "guideline-002-008",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider should allocate each transaction to only one sub-category for each row of each data breakdown."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.8, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-009",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.9",
+      "path": "guideline-002-009",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "In the case of a series of payment transactions being executed, or fraudulent payment transactions being executed, the payment service provider should consider each payment transaction or fraudulent payment transaction in the series to count as one."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.9, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-010",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.10",
+      "path": "guideline-002-010",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "The payment service provider can report zero (‘0’) where there were no transactions or fraudulent transactions taking place for a particular indicator in the reporting period established. Where the payment service provider cannot report data for a specific breakdown because that particular data breakdown is not applicable to that PSP, the data should be reported as ‘NA’."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.10, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-011",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.11",
+      "path": "guideline-002-011",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "For the purpose of avoiding double-counting, the payer’s payment service provider should submit data in its issuing (or initiating) capacity. As an exception, data for card payments should be reported both by the payer’s payment service provider and by the payee’s payment service provider acquiring the payment transaction. The two perspectives should be reported separately, with different breakdowns as detailed in Annex 2. In the event that there is more than one acquiring payment service provider involved, the provider that has the contractual relationship with the payee should report. In addition, for direct debits, transactions must be reported by the payee’s payment service provider only, given that these transactions are initiated by the payee."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.11, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-002-012",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.12",
+      "path": "guideline-002-012",
+      "heading": "Guideline 2: General data requirements",
+      "texts": {
+        "en": "In order to avoid double counting when calculating the total transactions and fraudulent transactions across all payment instruments, the payment service provider that executes credit transfers initiated by a payment initiation service provider should indicate the breakdown for the volume and value of the total transactions and fraudulent payment transactions that have been initiated via a payment initiation service provider when reporting under Data Breakdown A."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 2.12, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-003-001",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.1",
+      "path": "guideline-003-001",
+      "heading": "Guideline 3: Frequency, reporting timelines and reporting period",
+      "texts": {
+        "en": "The payment service provider should report data every six months based on the applicable data breakdown(s) in Annex 2."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 3.1, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-003-002",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.2",
+      "path": "guideline-003-002",
+      "heading": "Guideline 3: Frequency, reporting timelines and reporting period",
+      "texts": {
+        "en": "The payment service provider that benefit from an exemption under Article 32 PSD2 and e-money institutions that benefit from the exemption under Article 9 Directive 2009/110/EC on the taking up, pursuit and prudential supervision of the business of electronic money institutions should only report the set of data requested under the applicable form(s) in Annex 2 on an annual basis with data broken down in two periods of six months."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 3.2, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-003-003",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.3",
+      "path": "guideline-003-003",
+      "heading": "Guideline 3: Frequency, reporting timelines and reporting period",
+      "texts": {
+        "en": "The payment service provider should submit their data within the timelines set by the respective competent authorities."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 3.3, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-001",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.1",
+      "path": "guideline-004-001",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "The payment service provider should report data for transactions that are domestic, cross border within the European Economic Area (EEA), and cross-border outside the EEA."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.1, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-002",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.2",
+      "path": "guideline-004-002",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "For non-card based payment transactions, and remote card based payment transactions, ‘domestic payment transactions’ refer to payment transactions initiated by a payer, or by or through a payee, where the payer’s payment service provider and the payee’s payment service provider are located in the same Member State."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.2, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-003",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.3",
+      "path": "guideline-004-003",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "For non-remote card-based payment transactions, ‘domestic payment transactions’ refer to payment transactions where the payer’s payment service provider (issuer), the payee’s payment service provider (acquirer) and the point of sale (POS) or automated teller machine (ATM) used are located in the same Member State."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.3, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-004",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.4",
+      "path": "guideline-004-004",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "For EEA branches, domestic payment transactions refer to the payment transactions where both the payer’s and the payee’s payment service providers are in the host Member State where the branch is established."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.4, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-005",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.5",
+      "path": "guideline-004-005",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "For non-card based payment transactions and remote card based payment transactions, ‘cross-border payment transaction within the EEA’ refers to a payment transaction initiated by a payer, or by or through a payee, where the payer’s payment service provider and the payee’s payment service provider are located in different Member States."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.5, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-006",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.6",
+      "path": "guideline-004-006",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "For non-remote card-based payment transactions, ‘cross-border payment transactions within the EEA’ refer to payment transactions where the payer’s payment service provider (issuer) and the payee’s payment service provider (acquirer) are in different member states or the payer’s payment service provider (issuer) is located in a Member State different from that of the POS or ATM."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.6, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-007",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.7",
+      "path": "guideline-004-007",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "‘Cross-border payment transactions outside the EEA’ refer to payment transactions initiated by a payer, or by or through a payee, where either the payer’s or the payee’s payment service provider is located outside the EEA while the other is located within the EEA."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.7, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-004-008",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.8",
+      "path": "guideline-004-008",
+      "heading": "Guideline 4: Geographical breakdown",
+      "texts": {
+        "en": "A payment service provider offering payment initiation services should report the executed payment transactions it initiated and the executed fraudulent transactions it initiated in accordance with the following:\na. ‘Domestic payment transactions’ refer to payment transactions, where the payment initiation service provider and the account servicing payment service provider are located in the same Member State;\nb. ‘Cross-border payment transactions within the EEA’ refer to payment transactions, where the payment initiation service provider and the account servicing payment service provider are located in different Member States;\nc. ‘Cross-border payment transactions outside the EEA’ refer to payment transactions, where the payment initiation service provider is within the EEA and the account servicing payment service provider is located outside the EEA."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 4.8, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-005-001",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 5.1",
+      "path": "guideline-005-001",
+      "heading": "Guideline 5: Reporting to the competent authority",
+      "texts": {
+        "en": "The payment service provider shall report to the competent authority of the home Member State."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 5.1, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-005-002",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 5.2",
+      "path": "guideline-005-002",
+      "heading": "Guideline 5: Reporting to the competent authority",
+      "texts": {
+        "en": "The payment service provider should record data from all its agents, providing payment services in the EEA and aggregate these data with the rest of the data before reporting to the home competent authority. When doing so, the location of the agent is irrelevant for determining the geographical perspective."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 5.2, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-005-003",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 5.3",
+      "path": "guideline-005-003",
+      "heading": "Guideline 5: Reporting to the competent authority",
+      "texts": {
+        "en": "Within the framework of the monitoring and reporting set out in Article 29(2) PSD2 and in Article 40 of Directive 2013/36/EU of the European Parliament and of the Council on access to the activity of credit institutions and the prudential supervision of credit institutions and investment firms, an established branch of an EEA’s payment service provider should report to the competent authority of the host Member State where it is established, separately from the reporting data of the payment service provider in the home Member State."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report",
+        "obl-eu-eba-fraud-gl-branches-and-revisions"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 5.3, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-005-004",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 5.4",
+      "path": "guideline-005-004",
+      "heading": "Guideline 5: Reporting to the competent authority",
+      "texts": {
+        "en": "When reporting data to the corresponding competent authority, a payment service provider should mention the identification details mentioned in Annex 1."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-semi-annual-report"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 5.4, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-006-002",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 6.2",
+      "path": "guideline-006-002",
+      "heading": "Guideline 6: Recording/reference dates",
+      "texts": {
+        "en": "The payment service provider should report all fraudulent payment transactions from the time fraud has been detected, such as through a customer complaint or other means, regardless of whether or not the case related to the fraudulent payment transaction has been closed by the time the data are reported."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-branches-and-revisions"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 6.2, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-05/guideline-006-003",
+      "instrument": "eba-gl-2018-05",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 6.3",
+      "path": "guideline-006-003",
+      "heading": "Guideline 6: Recording/reference dates",
+      "texts": {
+        "en": "The payment service provider should report all adjustments to the data referring to any past reporting period at least up to one year old during the next reporting window after the information necessitating the adjustments is discovered. It should indicate that the data reported are revised figures applicable to the past period and should report this revision according to the methodology established by the relevant competent authority."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-fraud-gl-branches-and-revisions"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/05, Guideline 6.3, consolidated version of 18 July 2018. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-002-001",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.1",
+      "path": "guideline-002-001",
+      "heading": "Guideline 2: Service level, availability and performance",
+      "texts": {
+        "en": "The ASPSP should define key performance indicators (KPIs) and service level targets, including for problem resolution, out of hours support, monitoring, contingency plans and maintenance for its dedicated interface, that are at least as stringent as those for the interface(s) made available to its own payment service users (PSUs) for directly accessing their payment accounts online."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-interface-kpis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 2.1, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-002-002",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.2",
+      "path": "guideline-002-002",
+      "heading": "Guideline 2: Service level, availability and performance",
+      "texts": {
+        "en": "The ASPSP should define at a minimum, the following KPIs of the availability of the dedicated interface:\na. the uptime per day of all interfaces; and\nb. the downtime per day of all interfaces."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-interface-kpis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 2.2, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-002-003",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.3",
+      "path": "guideline-002-003",
+      "heading": "Guideline 2: Service level, availability and performance",
+      "texts": {
+        "en": "In addition to the KPIs on availability in Guideline 2.2, the ASPSP should define, at a minimum, the following KPIs for the performance of the dedicated interface:\na. the daily average time (in milliseconds) taken, per request, for the ASPSP to provide the payment initiation service provider (PISP) with all the information requested in accordance with Article 66(4)(b) of PSD2 and Article 36(1)(b) of the RTS;\nb. the daily average time (in milliseconds) taken, per request, for the ASPSP to provide the account information service provider (AISP) with all the information requested in accordance with Article 36(1)(a) of the RTS;\nc. the daily average time (in milliseconds) taken, per request, for the ASPSP to provide the card-based payment instrument issuer (CBPII) or the PISP with a ‘yes/no’ confirmation in accordance with Article 65(3) of PSD2 and Article 36(1)(c) of the RTS;\nd. the daily error response rate – calculated as the number of error messages concerning errors attributable to the ASPSP sent by the ASPSP to the PISPs, AISPs and CBPIIs in accordance with Article 36(2) of the RTS per day, divided by the number of requests received by the ASPSP from AISPs, PISPs and CBPIIs in the same day."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-interface-kpis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 2.3, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-002-004",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2.4",
+      "path": "guideline-002-004",
+      "heading": "Guideline 2: Service level, availability and performance",
+      "texts": {
+        "en": "For the purpose of calculating the availability indicators set out in Guideline 2.2 for the dedicated interface, the ASPSP should:\na. calculate the percentage uptime as 100% minus the percentage downtime;\nb. calculate the percentage downtime using the total number of seconds the dedicated interface was down in a 24-hour period, starting and ending at midnight;\nc. count the interface as ‘down’ when five consecutive requests for access to information for the provision of payment initiation services, account information services or confirmation of availability of funds are not replied to within a total timeframe of 30 seconds, irrespective of whether these requests originate from one or multiple PISPs, AISPs or CBPIIs. In such a case, the ASPSP should calculate downtime from the moment it has received the first request in the series of five consecutive requests that were not replied to within 30 seconds, provided that there is no successful request in between those five requests to which a reply has been provided."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-interface-kpis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 2.4, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-003-001",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.1",
+      "path": "guideline-003-001",
+      "heading": "Guideline 3: Publication of statistics",
+      "texts": {
+        "en": "For the purpose of Article 32(4) of the RTS, the ASPSP should provide its competent authority with a plan for publication of daily statistics on a quarterly basis on the availability and performance of the dedicated interface as set out in Guidelines 2.2 and 2.3, and of each of the interfaces made available to its own PSUs for directly accessing their payment accounts online, together with information on where these statistics will be published and the date of first publication."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-interface-kpis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 3.1, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-003-002",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3.2",
+      "path": "guideline-003-002",
+      "heading": "Guideline 3: Publication of statistics",
+      "texts": {
+        "en": "The publication referred to in Guideline 3.1 above should enable PISPs, AISPs, CBPIIs and PSUs to compare the availability and performance of the dedicated interface with the availability and performance of each of the interfaces made available by the ASPSP to its PSUs for directly accessing their payment accounts online on a daily basis."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-interface-kpis"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 3.2, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-004-001",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.1",
+      "path": "guideline-004-001",
+      "heading": "Guideline 4: Stress testing",
+      "texts": {
+        "en": "For the purpose of the stress tests referred to in Article 32(2) of the RTS, the ASPSP should have in place processes to establish and assess how the dedicated interface performs when subjected to an extremely high number of requests from PISPs, AISPs and CBPIIs, in terms of the impact that such stresses have on the availability and performance of the dedicated interface and the defined service level targets."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-stress-testing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 4.1, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-004-002",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.2",
+      "path": "guideline-004-002",
+      "heading": "Guideline 4: Stress testing",
+      "texts": {
+        "en": "The ASPSP should undertake adequate stress testing of the dedicated interface including but not limited to:\na. the capability to support access by multiple PISPs, AISPs and CBPIIs;\nb. the capability to deal with an extremely high number of requests from PISPs, AISPs and CBPIIs, in a short period of time without failing;\nc. the use of an extremely high number of concurrent sessions open at the same time for payment initiation, account information and confirmation on the availability of funds requests; and\nd. requests for large volumes of data."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-stress-testing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 4.2, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2018-07/guideline-004-003",
+      "instrument": "eba-gl-2018-07",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4.3",
+      "path": "guideline-004-003",
+      "heading": "Guideline 4: Stress testing",
+      "texts": {
+        "en": "The ASPSP should provide the competent authority with a summary of the results of the stress tests, including the assumptions used as a basis for stress testing each of the elements in letters (a) to (d) of Guideline 4.2 above and how any issues identified have been addressed."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-contingency-gl-stress-testing"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2018/07, Guideline 4.3, guidelines as published. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-092",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 92",
+      "path": "paragraph-092",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "Payment service providers should establish and implement processes to enhance payment service users’ awareness of the security risks linked to the payment services by providing payment service users with assistance and guidance."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-security-awareness"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 92, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-093",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 93",
+      "path": "paragraph-093",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "The assistance and guidance offered to payment service users should be updated in the light of new threats and vulnerabilities, and changes should be communicated to the payment service user."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-security-awareness"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 93, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-094",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 94",
+      "path": "paragraph-094",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "Where product functionality permits, payment service providers should allow payment service users to disable specific payment functionalities related to the payment services offered by the payment service provider to the payment service user."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-controls-and-alerts"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 94, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-095",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 95",
+      "path": "paragraph-095",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "Where, in accordance with Article 68(1) of Directive (EU) 2015/2366, a payment service provider has agreed with the payer spending limits for payment transactions executed through specific payment instruments, the payment service provider should provide the payer with the option to adjust these limits up to the maximum agreed limit."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-controls-and-alerts"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 95, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-096",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 96",
+      "path": "paragraph-096",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "Payment service providers should provide payment service users with the option to receive alerts on initiated and/or failed attempts to initiate payment transactions, enabling them to detect fraudulent or malicious use of their accounts."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-controls-and-alerts"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 96, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-097",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 97",
+      "path": "paragraph-097",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "Payment service providers should keep payment service users informed about updates in security procedures that affect payment service users regarding the provision of payment services."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-security-awareness"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 97, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eba-gl-2019-04/paragraph-098",
+      "instrument": "eba-gl-2019-04",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 98",
+      "path": "paragraph-098",
+      "heading": "3.8. Payment service user relationship management",
+      "texts": {
+        "en": "Payment service providers should provide payment service users with assistance on all questions, requests for support and notifications of anomalies or issues regarding security matters related to payment services. Payment service users should be appropriately informed about how such assistance can be obtained."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eba-ict-gl-psu-security-awareness"
+      ],
+      "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+      "sourceLabel": "European Banking Authority, EBA/GL/2019/04, Paragraph 98, consolidated version of 19 May 2026. Source: European Banking Authority",
+      "readOn": "2026-11-13"
     }
   ],
   "withoutProvision": [
-    {
-      "obligation": "obl-eu-eba-contingency-gl-interface-kpis",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-contingency-gl-stress-testing",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-fraud-gl-branches-and-revisions",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-fraud-gl-semi-annual-report",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-ict-gl-psu-controls-and-alerts",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eba-ict-gl-psu-security-awareness",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
     {
       "obligation": "obl-eu-ipr-charges-parity-euro-area",
       "reason": "The baseline records this duty under the amending act, but the article it cites is in the act that amending act changed; its text is given once the duty is placed under that act."

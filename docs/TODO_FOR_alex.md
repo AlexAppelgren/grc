@@ -8,7 +8,8 @@ Four screens changed and the library gained the words of the law itself. What ne
 most urgent first.
 
 - [ ] **Approve the law's own words in the library queue.** After the deploy the baseline
-      files 2,721 proposals, one per section or article, within the hour, or at once with
+      files 3,222 proposals, one per section, article or guideline paragraph, within the hour,
+      or at once with
       `python manage.py file_library_baseline` in the `api` shell (runbook step 17). In the
       Platform console open Queue, choose the kind "New provision", open a few, then
       "Approve all" with one passkey. Each holds the text as the authority published it and
@@ -29,7 +30,7 @@ most urgent first.
       `obl-fi-aifml-reporting`, `obl-se-ptl-pep-measures` and
       `obl-no-sanksjon-guinea-report` (whose cited section says the article it rests on does
       not apply in Norway: the duty may not exist). The words at issue and what to change
-      are in `docs/reviews/law-text-2026-11-13/duty-reading.json`, with 149 more whose
+      are in `docs/reviews/law-text-2026-11-13/duty-reading.json`, with 152 more whose
       summary holds an element from a section that is not cited. Each is a new version of
       the obligation through the proposal door: say the word and the research agent files
       them for your approval.
@@ -38,11 +39,16 @@ most urgent first.
       regulations). That clause is the Norwegian law's own words, and the EU article is in
       the library under the EU act. Showing the article beside the clause needs a provision
       tied to a duty of another instrument, which the door refuses today. Say if you want it.
-- [ ] **The guidelines of EBA, ESMA and EIOPA are not in yet.** Their text is published as
-      PDF, and the readers who compared every paragraph with a picture of the printed page
-      found 16 faults in 471 units, one of them a paragraph that lost its list. The 98
-      obligations under them say so in one line. The extraction is being repaired and read
-      again in full; it arrives as a second delivery.
+- [ ] **Ten obligations under the guidelines of EBA, ESMA and EIOPA stay without text.**
+      The guidelines are published as PDF. The first reading against pictures of the printed
+      pages found 16 faults, so the extraction was repaired and all 505 units were read
+      again, against the pages' text and against their pictures; 501 are in. Nine obligations
+      cite a paragraph whose list labels, characters or table the PDF does not carry as text
+      (EBA/GL/2021/02 points 1.2, 1.7, 1.9, 4.7, 4.46 to 4.57; EIOPA-BoS-14/253 and
+      EIOPA-BoS-13/164; EBA/GL/2024/15 paragraph 7), and one (`obl-eu-eba-gl-pog-esg-claims`)
+      cites a point of EBA/GL/2015/18 that is published with an amendment that does not
+      apply yet. Nothing to do unless you want them read another way; the rule stays that no
+      one types law text.
 - [ ] **Eleven citations to settle.** No text is shown because the citation could not be
       followed: `obl-se-laif-liquidity-management` (8 kap. 3 § cannot be cut with
       certainty), `obl-se-sfl-interest-expense-statement` (18 kap. 1 § is not in the

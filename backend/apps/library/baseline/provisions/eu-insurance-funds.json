@@ -1677,40 +1677,460 @@
       "source": "https://eur-lex.europa.eu/eli/reg_del/2026/466/oj#art_10",
       "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/466, Article 10, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
       "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-001",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 1",
+      "path": "guideline-001",
+      "heading": "Guideline 1 – Investment exposure",
+      "texts": {
+        "en": "1.13 The insurance intermediary or insurance undertaking should ensure that the insurance-based investment product only provides investment exposure to the financial instruments deemed non-complex under Directive 2014/65/EU. Such non-complex financial instruments include only the following instruments:\n(a) those identified in Article 25(4)(a) of MiFID II;\n(b) those satisfying the criteria in Article 57 of Commission Delegated Regulation (EU) 2017/565 supplementing Directive 2014/65/EU as regards organisational requirements and operating conditions for investment firms and defined terms for the purposes of that Directive;\n(c) those not deemed to be complex in accordance with ESMA Guidelines on complex debt instruments and structured deposits⁶.\n\n⁶ Dated 4 February 2016 (ESMA/2015/1787)"
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 1, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-002",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 2",
+      "path": "guideline-002",
+      "heading": "Guideline 2 – Contractual features concerning changes to the nature of the contract and the ability to surrender the insurance-based investment product",
+      "texts": {
+        "en": "1.14. Where the contract contains any of the following features, the insurance undertaking or insurance intermediary should deem it as incorporating a structure which makes it difficult to understand the risks involved:\n(a) it incorporates a clause, condition or trigger that allows the insurance undertaking to materially alter the nature, risk or pay out profile of the insurance-based investment product;\n(b) there are not options to surrender or otherwise realise the insurance-based investment product at a value that is available to the customer;\n(c) there are explicit or implicit charges which have the effect that, even though there are, technically, options to surrender the insurance-based investment product, doing so may cause unreasonable detriment to the customer, because the charges are disproportionate to the cost to the insurance undertaking of the surrender."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 2, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-003",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 3",
+      "path": "guideline-003",
+      "heading": "Guideline 3 – Contractual features concerning the determination of the maturity or surrender value or pay out upon death",
+      "texts": {
+        "en": "1.15. The insurance intermediary or insurance undertaking should assess the effects of the mechanisms that determine the maturity or surrender value or pay out upon death and whether these make it difficult for the customer to understand the risks involved, unless these mechanisms are based directly on national laws aimed specifically at safeguarding the interests of customers.\n\n1.16. As part of the assessment, where the contract contains any of the features listed below, the insurance undertaking or insurance intermediary should deem it as incorporating a structure which makes it difficult for the customer to understand the risks involved:\n(a) the maturity or surrender value or pay out upon death is dependent on variables set by the insurance undertaking, the effects of which are difficult for the customer to understand;\n(b) the maturity or surrender value or pay out upon death is based on different types of investment exposures or strategies the combined effect of which are difficult for the customer to understand;\n(c) the maturity or surrender value or pay out upon death may vary frequently or markedly at different points of time over the duration of the contract either because certain pre-determined threshold conditions are met or because certain time-points are reached. This does not include changes in the maturity or surrender value or pay out upon death due to the payment of discretionary bonuses;\n(d) there is a guaranteed maturity or surrender value or pay out upon death that is subject to conditions or time limitations the effects of which are difficult for the customer to understand. This does not include changes in the guaranteed maturity or surrender value or pay out upon death due to the payment of discretionary bonuses."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 3, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-004",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 4",
+      "path": "guideline-004",
+      "heading": "Guideline 4 – Contractual features concerning the costs",
+      "texts": {
+        "en": "1.17. As part of the assessment of whether the contract incorporates a structure which makes it difficult for the customer to understand the risks involved, the insurance intermediary or insurance undertaking should assess whether the costs are not likely to be readily understood by the customer, in particular the conditions under which the costs can change significantly during the duration of the contract, including based on the performance of the investment.\n\n1.18. Where the costs are based directly on national laws aimed specifically at safeguarding the interests of customers, they should not be deemed as incorporating a structure which makes it difficult for the customer to understand the risks involved."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 4, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-005",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 5",
+      "path": "guideline-005",
+      "heading": "Guideline 5 – Contractual features concerning the beneficiary of the insurance contract",
+      "texts": {
+        "en": "1.19. Where there are contractual provisions allowing the customer to use a non-standard wording to define the person receiving the benefits at the end of the contractual relationship (beneficiary clause) which can lead to difficulties to identify the beneficiary and may result in difficulties for the beneficiary to effectively receive the pay out when the policyholder dies, the insurance intermediary or insurance undertaking should deem it as incorporating a structure which makes it difficult for the customer to understand the risks involved."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 5, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-006",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 6",
+      "path": "guideline-006",
+      "heading": "Guideline 6 – Contractual features concerning the determination of the maturity or surrender value or pay out upon death",
+      "texts": {
+        "en": "1.20. The insurance intermediary or insurance undertaking should assess the effects of the mechanisms that determine the maturity or surrender value or pay out upon death and whether these make it difficult for the customer to understand the risks involved, unless these mechanisms are based directly on national laws aimed specifically at safeguarding the interests of customers.\n\n1.21. As part of the assessment, where the contract contains any of the following features, the insurance undertaking or insurance intermediary should deem it as incorporating a structure which makes it difficult for the customer to understand the risks involved:\n(a) the maturity or surrender value or pay out upon death is dependent on variables set by the insurance undertaking, the effects of which are difficult for the customer to understand;\n(b) the maturity or surrender value or pay out upon death is based on different types of investment exposures or strategies the combined effect of which are difficult for the customer to understand;\n(c) the maturity or surrender value or pay out upon death may vary frequently or markedly at different points of time over the duration of the contract either because certain pre-determined threshold conditions are met or because certain time-points are reached. This does not include changes in the maturity or surrender value or pay out on death due to the payment of discretionary bonuses;\n(c) there is a guaranteed maturity or surrender value or pay out upon death that is subject to conditions or time limitations the effects of which are difficult for the customer to understand. This does not include changes in the guaranteed maturity or surrender value or pay out upon death due to the payment of discretionary bonuses."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 6, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-007",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 7",
+      "path": "guideline-007",
+      "heading": "Guideline 7 – Contractual features concerning the costs",
+      "texts": {
+        "en": "1.22. As part of the assessment of whether the contract incorporates a structure which makes it difficult for the customer to understand the risks involved, the insurance intermediary or insurance undertaking should assess whether the costs are not likely to be readily understood by the customer, in particular the conditions under which the costs can change significantly during the duration of the contract, including based on the performance of the investment.\n\n1.23. Where the costs are based directly on national laws aimed specifically at safeguarding the interests of customers, they should not be deemed as incorporating a structure which makes it difficult for the customer to understand the risks involved."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 7, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "eiopa-17-651/guideline-008",
+      "instrument": "eiopa-17-651",
+      "provisionKind": "guideline",
+      "refLabel": "Guideline 8",
+      "path": "guideline-008",
+      "heading": "Guideline 8 – Contractual features concerning the beneficiary of the insurance contract",
+      "texts": {
+        "en": "1.24. Where there are contractual provisions allowing the customer to use a non-standard wording to define the person receiving the benefits at the end of the contractual relationship (beneficiary clause) which can lead to difficulties to identify the beneficiary and may result in difficulties for the beneficiary to effectively receive the pay out when the policyholder dies, the insurance intermediary or insurance undertaking should deem it as incorporating a structure which makes it difficult for the customer to understand the risks involved."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-eiopa-ibip-complexity-assessment"
+      ],
+      "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+      "sourceLabel": "EIOPA, EIOPA-17/651, Guideline 8, guidelines as published; the authority's site states no status and lists no revision (checked 2026-11-13). Source: EIOPA - European Insurance and Occupational Pensions Authority.",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-003",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 3",
+      "path": "paragraph-003",
+      "heading": "When?",
+      "texts": {
+        "en": "These guidelines apply on the date of application of the RTS referred to in Article 18a(3) of the UCITS Directive and Article 16(2g) of the AIFMD."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 3, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-004",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 4",
+      "path": "paragraph-004",
+      "heading": "When?",
+      "texts": {
+        "en": "By way of derogation from the first subparagraph, in respect of a fund existing before the date of application referred to in that subparagraph, these guidelines apply twelve months from that date."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 4, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-012",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 12",
+      "path": "paragraph-012",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "The primary responsibility for liquidity risk management, as well as for the selection, calibration, activation and deactivation of LMTs, remains with the fund manager. In the selection of the appropriate LMTs, fund managers should give due consideration that the selected LMTs will allow to effectively manage the fund’s liquidity risk under both normal and stressed market conditions and that the selection is as comprehensive as possible to address different circumstances."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 12, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-013",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "In accordance with Article 18a(2) of the UCITSD and Article 16(2b) of the AIFMD, when selecting LMTs from Annex IIA of the UCITS Directive and Annex V of the AIFMD, fund managers should assess the suitability of those tools in light of all relevant factors, including at least the following:\na) the fund’s legal structure and any specific features associated with the manner in which it is structured (e.g. ETFs, master-feeder structure);\nb) the fund’s investment strategy and investment policy;\nc) the dealing terms of the fund including, inter alia, the minimum duration of the notice period, lock up period, settlement period, redemption policy and dealing frequency;\nd) the liquidity profile of the fund and its underlying assets, including any anticipated liquidity demands, taking into account investors’ redemptions and other potential sources of liquidity risk from the liability side of the fund’s balance sheet (e.g.: margin calls) under normal and stressed market conditions and the impact on the liquidity profile of the fund of the activation of the LMTs;\ne) the results of liquidity stress testing;\nf) the characteristics of the fund’s investor base;\ng) the fund’s distribution policy;\nh) any other relevant operational barriers and complexities that may impact on the feasibility of implementing certain LMTs."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 13, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-014",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "While the UCITSD and AIFMD require the selection of at least two appropriate LMTs from the lists contained in Annex IIA of the UCITS Directive and Annex V of the AIFMD, managers may choose to select more than two LMTs as well as additional liquidity measures, in order to ensure the fund’s overall resilience and ability to manage its liquidity during both normal and stressed market conditions. In selecting additional LMTs or liquidity measures, fund managers should assess their suitability in light of all relevant factors, including at least the factors referred to in the previous paragraph."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 14, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-015",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "In the selection of the two minimum mandatory LMTs, fund managers should consider, where appropriate, the merit of selecting at least one quantitative-based LMT (i.e.: redemption gates, extension of notice period) and at least one ADT (i.e.: redemption fees, swing pricing, dual pricing, ADL), taking into consideration the investment strategy, redemption policy and liquidity profile of the fund and the market conditions under which the LMT could be activated. In this context, fund managers may consider whether to select one LMT to use under normal market conditions and one LMT to be used under stressed market conditions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 15, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-016",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "When considering the activation of LMT(s), fund managers should assess whether to activate LMTs individually or in combination with additional LMTs or other liquidity measures."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 16, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-017",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "Fund managers should be able to demonstrate, at the request of the competent authority, that the activation and calibration(s) of the selected LMTs are in the best interest of all investors and are appropriate and effective in light of market conditions and the relevant characteristics of the fund (e.g.: the liquidity profile, the type of underlying assets, the investor base)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 17, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-018",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "5.1 Guidelines on general principles",
+      "texts": {
+        "en": "Fund managers should ensure that the level of subscription and redemption orders received is treated in a manner which avoids that some investors benefit from information on the probability that LMTs may be activated (e.g.: activation thresholds may be reached in case of redemption gates)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-selection"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 18, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-033",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 33",
+      "path": "paragraph-033",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "Fund managers should consider the selection of ADTs for all types of funds to mitigate material investor dilution and potential first mover advantage."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 33, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-034",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 34",
+      "path": "paragraph-034",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "Fund managers should carefully assess the different levels for the activation of ADTs at fund level and should set in advance and regularly review appropriate and prudent activation thresholds so as to avoid any material dilution impact on investors, in both normal and stressed market conditions and depending on the investment strategy, assets under management, size and portfolio characteristics, estimated cost of liquidity, investor profile, liquidity profile of each fund and historical fund flows."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 34, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-035",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 35",
+      "path": "paragraph-035",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "Fund managers should consider that the activation of ADTs may be more challenging in certain circumstances, for example, when there is limited market liquidity and/or in cases of valuation uncertainty. In those cases, fund managers may consider the use of other LMTs in addition to ADTs (e.g.: quantitative-based LMTs)."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 35, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-036",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 36",
+      "path": "paragraph-036",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "Fund managers should ensure that the activation of ADTs does not affect the fund manager’s duty to value all assets fairly and appropriately at all times."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 36, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-037",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 37",
+      "path": "paragraph-037",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "Fund managers should activate ADTs both under normal and stressed market conditions to impose the estimated costs of liquidity on subscribing and/or redeeming investors. The estimated cost of liquidity should:\na) include explicit transaction costs of subscriptions, repurchases or redemptions;\nb) consider implicit transaction costs, including any significant market impact of asset purchases or sales, only where appropriate to the investment strategy and estimated on a best effort basis. A reasonable input for the estimation of the market impact could be to analyse previous transactions under similar market conditions to compare the difference between the price when the order was placed and the final executed price;\nc) be based, as a starting point, on costs associated with transacting a pro-rata slice of all assets in the portfolio (i.e. “pro-rata approach”), unless this does not represent a fair estimate of the true liquidity cost. Where the pro-rata approach does not represent a fair estimate of the liquidity cost, the estimation can be adjusted to reflect more accurately the expected cost of liquidity when transacting in selected single holdings of the portfolio. Managers may consider using the pro-rata cost in stressed times, when it is most relevant for mitigating the potential dilution impact on the remaining investors."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 37, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-038",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 38",
+      "path": "paragraph-038",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "In order to ensure that the calibration of ADTs effectively reflects the estimated costs of liquidity, as per the previous paragraph, the fund manager should regularly review the calibration and adjust it when needed."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 38, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-34-671404336-1364/paragraph-039",
+      "instrument": "esma-34-671404336-1364",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 39",
+      "path": "paragraph-039",
+      "heading": "5.3 Guidelines on Anti-Dilution Tools (ADTs)",
+      "texts": {
+        "en": "Fund managers should be able to demonstrate, at the request of the relevant NCA, that the calibration of ADTs is fair and reasonable for both normal and stressed market conditions, taking into account the best interests of investors."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-lmt-anti-dilution"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+      "sourceLabel": "ESMA, ESMA34-671404336-1364, Paragraph 39, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
     }
   ],
   "withoutProvision": [
     {
       "obligation": "obl-eu-eiopa-chi-complaint-responses",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     },
     {
       "obligation": "obl-eu-eiopa-chi-complaints-policy",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-eiopa-ibip-complexity-assessment",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     },
     {
       "obligation": "obl-eu-eiopa-sog-fit-proper-policy",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     },
     {
       "obligation": "obl-eu-eiopa-sog-internal-review",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     },
     {
       "obligation": "obl-eu-eiopa-sog-outsourcing-policy",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-lmt-anti-dilution",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-lmt-selection",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
+      "reason": "The authority publishes this text as PDF, and a cited paragraph holds a list label, a character or a table that the file does not carry as text, so it cannot be given whole and unchanged."
     }
   ]
 }

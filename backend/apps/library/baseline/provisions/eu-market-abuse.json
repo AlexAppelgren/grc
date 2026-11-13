@@ -1532,32 +1532,296 @@
       "source": "https://eur-lex.europa.eu/eli/reg_impl/2026/1291/oj#art_1",
       "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2026/1291, Article 1, Official Journal text as adopted. Source: EUR-Lex, © European Union, https://eur-lex.europa.eu. Official Journal text.",
       "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-009",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 9",
+      "path": "paragraph-009",
+      "heading": "1. Internal procedures and staff training",
+      "texts": {
+        "en": "The MSR should establish, implement and maintain internal procedures that are appropriate and proportionate to the scale, size and nature of their business activity, to:\na. ensure that, where the MSR designates a specific person or a contact point to receive market soundings, that information is made available to the DMP;\nb. ensure that the information received in the course of the market sounding is internally communicated only through pre-determined reporting channels and on a need-to-know basis;\nc. ensure that the individual(s), function or body entrusted to assess whether the MSR is in possession of inside information as a result of the market sounding are clearly identified and properly trained to that purpose;\nd. manage and control the flow of inside information arising from the market sounding within the MSR and its staff, in order for the MSR and its staff to comply with Articles 8 and 10 of MAR."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-procedures-training"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 9, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-010",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 10",
+      "path": "paragraph-010",
+      "heading": "1. Internal procedures and staff training",
+      "texts": {
+        "en": "The MSR should ensure that the staff receiving and processing the information obtained in the course of the market sounding are properly trained on the relevant internal procedures and on the prohibitions, under Articles 8 and 10 of MAR, arising from being in possession of inside information. The training should be appropriate and proportionate to the scale, size and nature of MSR’s business activity."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-procedures-training"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 10, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-011",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 11",
+      "path": "paragraph-011",
+      "heading": "2. Communicating the wish not to receive market soundings",
+      "texts": {
+        "en": "After being addressed by a DMP, the MSR should notify it whether they wish not to receive future market soundings in relation to either all potential transactions or particular types of potential transactions."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-own-assessment"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 11, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-012",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 12",
+      "path": "paragraph-012",
+      "heading": "3. MSR’s assessment as to whether they are in possession of inside information as a result of the market sounding and as to when they cease to be in possession of inside information",
+      "texts": {
+        "en": "MSRs should independently assess whether they are in possession of inside information as a result of the market sounding taking into consideration as relevant factors the DMP’s assessment and all the information available to the individual(s), function or body entrusted within the MSR to conduct that assessment, including information obtained from sources other than the DMP. In conducting that assessment, the individual(s), function or body should not be required to access information behind any information barrier established within the MSR."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-own-assessment"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 12, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-013",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "3. MSR’s assessment as to whether they are in possession of inside information as a result of the market sounding and as to when they cease to be in possession of inside information",
+      "texts": {
+        "en": "Further to the DMP’s notification that the information disclosed in the course of the market sounding is no longer inside information, MSRs should independently assess whether they are still in possession of inside information taking into consideration the DMP’s assessment and all the information available to the individual(s), function or body entrusted within the MSR to conduct that assessment, including information obtained from other sources than the DMP. In conducting that assessment, the individual(s), function or body should not be required to access information behind any information barrier established within the MSR."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-own-assessment"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 13, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-014",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "4. Assessment of related financial instruments",
+      "texts": {
+        "en": "Where the MSR has assessed they are in possession of inside information as a result of a market sounding, for the purposes of complying with Article 8 of MAR the MSR should identify all the issuers and financial instruments to which they believe that inside information relates."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-own-assessment"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 14, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-015",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "5. Written minutes or notes",
+      "texts": {
+        "en": "Where in accordance with point (d) of Article 6(2) of the RTS on market soundings the DMP has drawn up written minutes or notes of the unrecorded meetings or unrecorded telephone conversation, the MSRs should, within five working days after receipt:\na. sign those minutes or notes, where they agree upon their content; or\nb. provide the DMP with their own version of those minutes or notes duly signed, where they do not agree upon their content."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-records"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 15, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1477/paragraph-016",
+      "instrument": "esma-gl-2016-1477",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "6. Record keeping",
+      "texts": {
+        "en": "MSRs should keep records in a durable medium that ensures accessibility and readability for a period of at least five years of:\na. the internal procedures referred to in paragraph 1;\nb. the notifications referred to in paragraph 2;\nc. the assessments referred to in paragraph 3 and the reasons therefor;\nd. the assessment of related instruments referred to in paragraph 4;\ne. the persons working for them under a contract of employment or otherwise performing tasks through which they have access to the information communicated in the course of the market soundings, listed in a chronological order for each market sounding."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-ms-gl-records"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, ESMA/2016/1477, Paragraph 16, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-010",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 10",
+      "path": "paragraph-010",
+      "heading": "Guideline 1:",
+      "texts": {
+        "en": "For the purposes of point (a) of Article 17(4) of MAR, the cases where immediate disclosure of the inside information is likely to prejudice the issuers’ legitimate interests could include but are not limited to the following circumstances:\na. the issuer is conducting negotiations, where the outcome of such negotiations would likely be jeopardised by immediate public disclosure. Examples of such negotiations may be those related to mergers, acquisitions, splits and spin-offs, purchases or disposals of major assets or branches of corporate activity, restructurings and reorganisations.\nb. the financial viability of the issuer is in grave and imminent danger, although not within the scope of the applicable insolvency law, and immediate public disclosure of the inside information would seriously prejudice the interests of existing and potential shareholders by jeopardising the conclusion of the negotiations designed to ensure the financial recovery of the issuer;\nc. the inside information relates to decisions taken or contracts entered into by the management body of an issuer which need, pursuant to national law or the issuer’s bylaws, the approval of another body of the issuer, other than the shareholders’ general assembly, in order to become effective, provided that:\ni. immediate public disclosure of that information before such a definitive decision would jeopardise the correct assessment of the information by the public; and\nii. the issuer arranged for the definitive decision to be taken as soon as possible.\nd. the issuer has developed a product or an invention and the immediate public disclosure of that information is likely to jeopardise the intellectual property rights of the issuer;\ne. the issuer is planning to buy or sell a major holding in another entity and the disclosure of such an information would likely jeopardise the implementation of such plan;\nf. a transaction previously announced is subject to a public authority’s approval, and such approval is conditional upon additional requirements, where the immediate disclosure of those requirements will likely affect the ability for the issuer to meet them and therefore prevent the final success of the deal or transaction;\ng. the issuer is an institution subject to the CRR and a decision to carry out a redemption, reduction, repurchase, repayment or call of own funds instruments or a reduction, distribution or reclassification as another own funds item of the share premium accounts related to own funds instruments has been taken but not yet authorised by the competent authority as defined under Article 4(1)(40) of CRR, pursuant to Article 77 of CRR;\nh. the issuer is an institution subject to prudential supervision under the CRD and has received a draft SREP decision or preliminary information related thereto which will become final at a later stage upon completion of the decision-making process of the Prudential Competent Authority. In such case, a premature announcement of any inside information constituting the draft SREP decision or preliminary information related thereto would be in contrast with the SREP procedure and in particular with the institution’s right to be heard, potentially unduly prejudicing the institution´s interest for a fair appreciation of the impact of that information by the market."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-legitimate-interests",
+        "obl-eu-esma-delay-gl-prudential-interests"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 10, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-011",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 11",
+      "path": "paragraph-011",
+      "heading": "Guideline 1:",
+      "texts": {
+        "en": "ESMA recalls that, pursuant to Article 17(7) of MAR, even in those cases where immediate disclosure of the inside information is likely to prejudice the issuers’ legitimate interests, whenever the confidentiality is no longer ensured the issuer shall disclose that inside information to the public as soon as possible."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-legitimate-interests"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 11, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-013",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 13",
+      "path": "paragraph-013",
+      "heading": "Guideline 3:",
+      "texts": {
+        "en": "For the purposes of the assessment of whether draft or final P2R constitutes inside information according to Article 7(1)(a) of MAR, issuers that are institutions subject to prudential supervision under the CRD should verify that their P2R is:\na. non-public information;\nb. directly relating to the institution that has received it;\nc. of precise nature."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-p2r-p2g"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 13, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-014",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 14",
+      "path": "paragraph-014",
+      "heading": "Guideline 3:",
+      "texts": {
+        "en": "P2R is also highly likely to be price sensitive. Institutions should assess the price sensitivity of P2R considering the magnitude of the difference between the institution’s P2R and the current level of capital. Price sensitivity should not be excluded even where the institution’s current level of capital is higher than its P2R."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-p2r-p2g"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 14, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-015",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 15",
+      "path": "paragraph-015",
+      "heading": "Guideline 3:",
+      "texts": {
+        "en": "Except for a very limited number of cases and as a result of a thorough assessment by the institution, P2R is expected to be considered as inside information."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-p2r-p2g"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 15, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-016",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 16",
+      "path": "paragraph-016",
+      "heading": "Guideline 4:",
+      "texts": {
+        "en": "For the purposes of the assessment of whether draft or final P2G constitutes inside information according to Article 7(1)(a) of MAR, issuers that are institutions subject to prudential supervision under the CRD should verify that their P2G is:\na. non-public information;\nb. directly relating to the institution that has received it;\nc. of precise nature."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-p2r-p2g"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 16, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-017",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 17",
+      "path": "paragraph-017",
+      "heading": "Guideline 4:",
+      "texts": {
+        "en": "P2G may also be price sensitive. Institutions should assess the price sensitivity of P2G also considering the magnitude of the difference between the institution’s P2G and the current level of capital, whether a corporate reaction is expected to be necessary to meet the P2G and the relevant timing to launch it and complete it."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-p2r-p2g"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 17, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
+    },
+    {
+      "key": "esma-gl-2016-1478/paragraph-018",
+      "instrument": "esma-gl-2016-1478",
+      "provisionKind": "paragraph",
+      "refLabel": "Paragraph 18",
+      "path": "paragraph-018",
+      "heading": "Guideline 4:",
+      "texts": {
+        "en": "Examples of situations where P2G is expected to be price sensitive are where:\na. the difference between the P2G and the institution’s level of capital is not minor and is likely to involve a major reaction by the institution, such as a capital increase;\nb. the institution’s P2G is not in line with market expectations, so a price impact can be expected."
+      },
+      "originalLanguage": "en",
+      "obligations": [
+        "obl-eu-esma-delay-gl-p2r-p2g"
+      ],
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, ESMA70-159-4966, Paragraph 18, guidelines as published. Source: ESMA",
+      "readOn": "2026-11-13"
     }
   ],
-  "withoutProvision": [
-    {
-      "obligation": "obl-eu-esma-delay-gl-legitimate-interests",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-delay-gl-p2r-p2g",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-delay-gl-prudential-interests",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-ms-gl-own-assessment",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-ms-gl-procedures-training",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    },
-    {
-      "obligation": "obl-eu-esma-ms-gl-records",
-      "reason": "The source publishes this text as PDF only; it is added once it has been checked against the printed pages."
-    }
-  ]
+  "withoutProvision": []
 }

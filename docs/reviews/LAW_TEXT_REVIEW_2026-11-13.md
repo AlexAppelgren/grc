@@ -5,17 +5,17 @@ text was read, what a script was allowed to do to it, every check that was run a
 one found. D-142 is the decision; the format and each source's reuse terms are in the
 baseline README, "The law's own words".
 
-**Result.** 2,721 provisions in 24 files give 1,728 of the baseline's 1,894 obligations the
-text of the sections, articles and paragraphs they cite: 789 in Swedish, 688 in English (EU
-acts), 488 in Finnish, 427 in Danish and 329 in Norwegian, each national text with an English
-translation and the Danish, Norwegian and Finnish ones with Swedish beside it (for Finland
-the authority's own). 166 obligations have no text yet, each with its reason in the file's
-`withoutProvision` (section 6). The supervisory guidelines of EBA, ESMA and EIOPA are not
-in: their check found faults (section 4.2).
+**Result.** 3,222 provisions in 24 files give 1,816 of the baseline's 1,894 obligations the
+text of the sections, articles and paragraphs they cite: 1,189 in English (688 from EU acts,
+501 from the guidelines of EBA, ESMA and EIOPA), 789 in Swedish, 488 in Finnish, 427 in
+Danish and 329 in Norwegian, each national text with an English translation and the Danish,
+Norwegian and Finnish ones with Swedish beside it (for Finland the authority's own). 78
+obligations have no text yet, each with its reason in the file's `withoutProvision`
+(section 6).
 
 No text was typed, tidied or shortened by a person or a model. Every emitted text is
 compared byte for byte with the extraction or the reviewed translation batch it came from
-(5,998 of 5,998 texts identical at the last run), and `check_baseline.py` holds every file
+(6,499 of 6,499 texts identical at the last run), and `check_baseline.py` holds every file
 to the format.
 
 ## 1. Sources
@@ -29,11 +29,13 @@ to the format.
 | Finland, Finlex | open data (Akoma Ntoso), the Finnish and the Swedish expression | 328 | 327 |
 | Finland, Finanssivalvonta's regulations and guidelines | PDF, Finnish and Swedish | 161 | 161 |
 | EU acts, EUR-Lex | HTML: the consolidated version in force where one exists, else the Official Journal text | 695 | 688 |
-| EBA, ESMA, EIOPA guidelines | PDF | 471 | 0 (section 4.2) |
+| EBA, ESMA, EIOPA guidelines | PDF | 505 | 501 |
 
 The difference between the two columns is section 6: 47 Danish sections amended since the
 text Retsinformation publishes, one Finnish section whose official Swedish text is not
-published yet, and seven EU articles whose duty the baseline records under another act.
+published yet, seven EU articles whose duty the baseline records under another act, and
+four units of EBA/GL/2015/18 whose published wording includes an amendment that does not
+apply yet.
 
 ## 2. What a script may do to a text
 
@@ -97,17 +99,28 @@ to a second reader, and a confirmed one is repaired at the rule and the source r
 
 Result: no difference in either source at the last pass.
 
-### 4.2 EBA, ESMA and EIOPA guidelines (471 units): not in the files
+### 4.2 EBA, ESMA and EIOPA guidelines (505 units of 27 documents)
 
-Steps 1 and 2 were done. The page-picture readers then went through all 471 units and a
-second reader confirmed 16 differences: one paragraph that ends before its list (EBA/GL/2020/06
-paragraph 158), one unit that keeps its own number and one that holds two points
-(EBA/GL/2015/18), one false paragraph break at a page break (EBA/GL/2018/05), one unit in a
-consolidated version printed with tracked changes, and eleven wrong heading paths. The
-extraction is being repaired at the rule and every unit will be read again against the
-text layer and the page pictures before any of it is added. Until then the 98 obligations
-under those guidelines say "published as PDF only; added once checked against the printed
-pages".
+Steps 1 and 2 as above. The readers of the page pictures then went through the 471 units
+the first extraction gave, and a second reader confirmed 16 differences: one paragraph that
+ended before its list (EBA/GL/2020/06 paragraph 158, whose list sits under italic labels),
+one point that kept its own number and one unit that held two points (EBA/GL/2015/18), one
+false paragraph break at a page break (EBA/GL/2018/05), and wrong heading paths. So none of
+it was taken. The extraction was repaired at the rule (among others: an italic label inside
+a paragraph belongs to it; a guideline cited whole resolves to its points; a document
+printed with its changes showing, ESMA/2016/1478, is read as amended, struck words out and
+inserted words in), which made 505 units, and every one was read again:
+
+- against the text of its pages, by a reader with its own program: 505 of 505 identical;
+- against a picture of its printed page, each report settled by a second reader: every
+  text, every boundary and every nearest heading as printed.
+
+108 units still carry an incomplete `headingPath`, the chain of outer headings (a Title or
+a parent section left out). The files hold a unit's text, its reference and its nearest
+heading, never that path, so nothing shown depends on it; it must not be used until it is
+repaired. 22 units the two readings could not agree on, or that hold a list label or a
+character the PDF does not carry as text, are not in the files, and their nine obligations
+say so.
 
 ## 5. Translations
 
@@ -126,19 +139,25 @@ Skatteverket's own English for "kontrolluppgift" is "income statement", which th
 translations follow; our summaries say "control statement". Left for the owner
 (`docs/TODO_FOR_alex.md`).
 
-## 6. Obligations with no text yet (166)
+## 6. Obligations with no text yet (78)
 
 | Reason, as the file states it | Obligations |
 |---|---|
-| A supervisory guideline published as PDF only, not yet checked against the printed pages | 98 |
 | Danish section amended since the text Retsinformation publishes for the act | 41 |
 | The baseline records the duty under an amending act; the article is in the act it amends | 9 |
+| A guideline's paragraph holds a list label, a character or a table the PDF does not carry as text | 9 |
 | The provision holds a formula or a table the source does not publish as plain text | 7 |
 | The section could not be cut from the official text with certainty | 4 |
 | Cited from two published versions whose wording differs | 3 |
 | The cited section is not in the official consolidated text | 2 |
 | The citation names a part that is not a numbered section | 1 |
 | The authority's own Swedish text of the wording in force is not published yet | 1 |
+| The published guideline already includes an amendment that does not apply yet | 1 |
+
+Four more obligations show only part of what they cite, because one cited provision is held
+back and the others are not: `obl-dk-forsdist-fair-dealing`,
+`obl-dk-skatopsparbek-pool-information`, `obl-dk-skatopsparbek-depot-placement` and
+`obl-eu-eba-gl-pog-target-market`. The citation on the obligation names what is missing.
 
 ## 7. Kept as printed
 
@@ -157,17 +176,17 @@ own characters:
 
 ## 8. The duty reading
 
-Before the files were committed, every obligation with text (1,728) was read beside the
+Before the files were committed, every obligation with text (1,816) was read beside the
 provisions cited under it: does the text carry the duty the summary describes? A second
-reader then tried to show that it does for every case the first reader doubted. 1,556
-carry it. 172 stood, none overturned:
+reader then tried to show that it does for every case the first reader doubted. 1,641
+carry it. 175 stood, none overturned:
 
 - **9 contradict the law's words** (a deadline, an actor or a condition stated differently
   in the summary).
 - **14 cite only the Norwegian clause that makes an EU regulation Norwegian law**; the
   duty's own words are in the EU article the citation names, which the library holds under
   the EU act.
-- **149 are carried in part**: a material element of the summary comes from a provision
+- **152 are carried in part**: a material element of the summary comes from a provision
   that is not cited. 82 of them are Norwegian sanctions regulations that incorporate an EU
   regulation by reference.
 
@@ -175,8 +194,10 @@ The law texts are not in question in any of them. Each is a correction to propos
 obligation, through the proposal door: `docs/reviews/law-text-2026-11-13/duty-reading.json`
 lists every one with the words at issue and what to do.
 
-By program, over all 2,917 pairs of a provision and an obligation that names it: the
-obligation's own citation names the provision's section in every pair.
+By program, over the 2,917 pairs of a provision of a law and an obligation that names it:
+the obligation's own citation names the provision's section in every pair. The guidelines
+are cited more loosely (a whole section, a range of points), so their 504 pairs were read
+by the duty readers instead.
 
 ## 9. Where the tooling is
 

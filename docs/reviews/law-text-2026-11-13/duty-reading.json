@@ -9,7 +9,7 @@
  "counts": {
   "contradicts": 9,
   "incorporation clause only": 14,
-  "partly": 149
+  "partly": 152
  },
  "findings": [
   {
@@ -2075,6 +2075,42 @@
    "summarySays": "From 20 November 2026, under the Consumer Credit Act (2026:1011), it is the form in Annex I to Directive (EU) 2023/2225, made available by Konsumentverket.",
    "textSays": "\"Det formulär som det hänvisas till i 8 § andra stycket konsumentkreditlagen (2010:1846) har den utformning som framgår av bilaga II till Europaparlamentets och rådets direktiv 2008/48/EG\"; nothing on the 2026 Act, Directive (EU) 2023/2225 or Konsumentverket.",
    "whatToDo": "1 § carries the current form rule (Annex II to 2008/48/EC) but not the 2026 form or Konsumentverket's role. Cite the amended or future wording that sets them, as a separate version with its effective date, or drop the 2026 sentence from the summary."
+  },
+  {
+   "obligation": "obl-eu-eba-gl-internal-governance-conflicts-of-interest",
+   "tranche": "eu-banking-credit",
+   "instrument": "EBA/GL/2021/05",
+   "citation": "Paras 105 and 106, Section 12",
+   "title": "Identify, manage and prevent conflicts of interest at institution and staff level",
+   "verdict": "partly",
+   "provision": "eba-gl-2021-05/paragraph-111",
+   "summarySays": "including loans and other transactions with members of the management body and their related parties",
+   "textSays": "Para 111(a) lists only \"loans granted by the institution to a company owned by staff\" as an economic interest, and para 112 says having \"private accounts or loans with ... an institution\" is no conflict \"if they stay within an appropriate de minimis threshold\". Para 108 covers conflicts with \"the private interests of staff, including members of the management body\", but none of paras 105-106 or 108-119 deals with loans or other transactions with management body members and their related parties.",
+   "whatToDo": "The first reader is right. Most of the summary is carried: paras 105 and 108 give the management body's duty to set and oversee the policy at institution and staff level. The loans and related-party transactions element comes from the separate subsection on loans to management body members and their related parties (Section 12.1, para 120 onwards), which is not shown. Add those paragraphs to the citation, or drop that clause from the summary."
+  },
+  {
+   "obligation": "obl-eu-eba-gl-pog-target-market",
+   "tranche": "eu-banking-credit",
+   "instrument": "EBA/GL/2015/18",
+   "citation": "Guideline 3.1 to 3.5",
+   "title": "Identify the target market and design products that meet its needs",
+   "verdict": "partly",
+   "provision": "eba-gl-2015-18/guideline-003-005",
+   "summarySays": "Manufacturers should identify the target market of each retail banking product, and the segments it does not suit, and only design and bring to market products whose features, charges and risks meet the interests, objectives and characteristics of, and benefit, that target market.",
+   "textSays": "\"The manufacturer should also identify the market segments for which the product is considered not likely to meet their interests, objectives and characteristics.\" (3.5); 3.4: \"The manufacturer should consider how the product fits within the manufacturer's existing product range and whether the presence of too many product variants prevents the consumer from making informed decisions.\"",
+   "whatToDo": "Only Guidelines 3.4 and 3.5 are in the library; the main duty (identify the target market and design only products whose features, charges and risks meet and benefit it) is in Guidelines 3.1 to 3.3, which the citation names but the text lacks. Add 3.1 to 3.3 as provisions under this obligation. Until then, the summary should not claim the main duty is shown in the text."
+  },
+  {
+   "obligation": "obl-eu-esma-lmt-selection",
+   "tranche": "eu-insurance-funds",
+   "instrument": "ESMA34-671404336-1364",
+   "citation": "Paras. 3, 4 and 12 to 18",
+   "title": "Select and calibrate at least two suitable liquidity management tools for each fund",
+   "verdict": "partly",
+   "provision": "esma-34-671404336-1364/paragraph-004",
+   "summarySays": "For funds existing before 16 April 2026 the guidelines apply from 16 April 2027.",
+   "textSays": "\"These guidelines apply on the date of application of the RTS referred to in Article 18a(3) of the UCITS Directive and Article 16(2g) of the AIFMD.\" (para 3); \"in respect of a fund existing before the date of application referred to in that subparagraph, these guidelines apply twelve months from that date.\" (para 4)",
+   "whatToDo": "Paragraphs 12 to 18 carry the selection, calibration, demonstration and fair-treatment duties, and the twelve-month transition matches. The calendar dates 16 April 2026 and 16 April 2027 are not in the cited text. They come from the date of application of the RTS under Article 18a(3) UCITSD and Article 16(2g) AIFMD. Either cite that RTS's application article, or reword the summary to tie the start to the RTS date of application and give the dates as derived from it."
   }
  ]
 }
