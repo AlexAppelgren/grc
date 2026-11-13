@@ -1235,7 +1235,10 @@ export interface paths {
          *     twice, more ids than `REGISTER_DECIDE_ALL_SELECTED_MAX`, 1000 by default, or nothing left
          *     to decide; `model_unavailable` (503) when the model failed, timed out after
          *     `REGISTER_REASON_DRAFT_DEADLINE_MS`, 15000 by default, or wrote nothing, in which case the
-         *     person writes the reason themselves.
+         *     person writes the reason themselves; `rate_limited` (429) after
+         *     `REGISTER_REASON_DRAFT_RATE_PER_USER_PER_MINUTE` drafts, 6 by default, in one minute by
+         *     the same person. A draft confirms one decision only: its `generationId` sent again, with
+         *     another answer or for another legal entity is `not_found` there.
          *
          *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.
          */
@@ -24987,7 +24990,7 @@ export interface components {
             reason: string;
             /**
              * Reasondraftid
-             * @description The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person changed it, naming them, and the decision's audit event records the draft's id and that review. It must be a draft the same person was given in this bank, or the call answers 404 `not_found` and nothing is stored.
+             * @description The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person changed it, naming them, and the decision's audit event records the draft's id and that review. It must be a draft the same person was given in this bank, for this legal entity and this answer, not yet used for another decision, or the call answers 404 `not_found` and nothing is stored.
              */
             reasonDraftId?: string | null;
             /**
@@ -25604,7 +25607,7 @@ export interface components {
             reason: string;
             /**
              * Reasondraftid
-             * @description The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person changed it, naming them, and the decision's audit event records the draft's id and that review. It must be a draft the same person was given in this bank, or the call answers 404 `not_found` and nothing is stored.
+             * @description The `generationId` of the AI draft the reason began from (`POST /applicability/reason-draft`), as a UUID; leave it out when the person wrote the reason without one. The draft's AI log row then reads `confirmed` when the reason is the draft as it stood, or `edited` when the person changed it, naming them, and the decision's audit event records the draft's id and that review. It must be a draft the same person was given in this bank, for this legal entity and this answer, not yet used for another decision, or the call answers 404 `not_found` and nothing is stored.
              */
             reasonDraftId?: string | null;
         };
