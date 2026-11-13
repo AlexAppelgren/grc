@@ -6,8 +6,8 @@ import { useEffect, type ReactNode } from 'react';
 
 import { ErrorState } from '@/components/ui/States';
 import { signOutKey, switchContextKey, userLocaleOf, useSession } from '@/features/identity/hooks';
-import { useT } from '@/shared/i18n/LocaleProvider';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import type { Locale } from '@/shared/i18n';
+import { LocaleProvider, useAdoptLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { leaveForPublicPage } from '@/shared/navigation/leave';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 
@@ -50,7 +50,14 @@ export function SessionGate({ children }: { children: ReactNode }) {
   }
   return (
     <LocaleProvider locale={userLocaleOf(session.me)}>
+      <AdoptLocale locale={userLocaleOf(session.me)} />
       <PermissionsProvider permissions={session.me.permissions}>{children}</PermissionsProvider>
     </LocaleProvider>
   );
+}
+
+/** The person's own language reaches what sits above the session too, such as the passkey prompt. */
+function AdoptLocale({ locale }: { locale: Locale }) {
+  useAdoptLocale(locale);
+  return null;
 }

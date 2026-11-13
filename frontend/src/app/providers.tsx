@@ -30,7 +30,7 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
-        <LocaleProvider locale={locale}>
+        <LocaleProvider locale={locale} adoptable>
           <StepUpProvider>
             <PermissionsProvider permissions={null}>{children}</PermissionsProvider>
           </StepUpProvider>

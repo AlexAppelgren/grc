@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { LocaleProvider, useLocale, useT } from './LocaleProvider';
+import { LocaleProvider, useAdoptLocale, useLocale, useT } from './LocaleProvider';
 
 function Probe() {
   const t = useT();
@@ -26,5 +26,38 @@ describe('LocaleProvider', () => {
       </LocaleProvider>,
     );
     expect(screen.getByText('sv:Idag')).toBeInTheDocument();
+  });
+
+  it("gives the signed-in person's language to what sits above the session, and gives it back when they leave", () => {
+    function Adopt() {
+      useAdoptLocale('sv');
+      return null;
+    }
+    const tree = (signedIn: boolean) => (
+      <LocaleProvider locale="en" adoptable>
+        <Probe />
+        {signedIn ? <Adopt /> : null}
+      </LocaleProvider>
+    );
+    const { rerender } = render(tree(true));
+    expect(screen.getByText('sv:Idag')).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('sv');
+    rerender(tree(false));
+    expect(screen.getByText('en:Today')).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('leaves a provider that does not adopt as it is', () => {
+    function Adopt() {
+      useAdoptLocale('sv');
+      return null;
+    }
+    render(
+      <LocaleProvider locale="en">
+        <Probe />
+        <Adopt />
+      </LocaleProvider>,
+    );
+    expect(screen.getByText('en:Today')).toBeInTheDocument();
   });
 });
