@@ -1,0 +1,1971 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proposals: obligations, regulations, licences</title>
+<style>
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --accent:#003824;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;
+  --red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;--green:#026436;--green-soft:#dcefdc;
+  --blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--sand-3:#453921;
+  --line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --accent:#d6c7a8;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
+  --red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;
+  --blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--sand-3:#453921;
+  --line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --accent:#d6c7a8;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
+  --red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;
+  --blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
+}
+/* Fixed-theme swatches so a card shows a pill in light AND dark whatever the viewer's theme */
+.swatch{display:inline-flex;gap:6px;align-items:center;padding:6px 8px;border-radius:10px;border:1px solid var(--line)}
+.swatch.light{--surface:#ffffff;--sand-2:#efe9dc;--text:#0a0b0b;--bronze:#685631;--line-strong:#777e7c;--red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;--green:#026436;--green-soft:#dcefdc;--blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb;background:#f4f5f5;color:#0a0b0b}
+.swatch.dark{--surface:#191a1a;--sand-2:#342b18;--text:#f7f8f7;--bronze:#d6c7a8;--line-strong:#a0a6a4;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;background:#0a0b0b;color:#f7f8f7}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{font-weight:500;line-height:1.2;margin:0;letter-spacing:-.01em}
+h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}h3{font-size:1rem}
+p{margin:0 0 .75rem}
+.mono{font-family:var(--mono);font-size:.9em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+.side::-webkit-scrollbar{display:none}
+.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto;scrollbar-width:none}
+.brand{padding:0 8px 20px}
+.brand small{display:block;color:rgba(255,255,255,.7);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
+.logo{display:block;width:100%;height:auto;max-width:150px}
+.mbrand{display:none}
+.nav button{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
+.nav button:hover{background:rgba(255,255,255,.12)}
+.nav button[aria-current="page"]{background:#f8f6f1;color:#003824;font-weight:600}
+.nav button[aria-current="page"] .count{background:#003824;color:#fff}
+.nav .count{background:#efe9dc;color:#003824;border-radius:999px;font-size:.75rem;font-weight:700;padding:1px 8px}
+.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
+.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
+.who b{display:block;color:#fff;font-weight:600}
+
+main{padding:32px 36px 96px;max-width:1100px;width:100%;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.notice{background:var(--sand);color:var(--text);border-left:3px solid var(--bronze);padding:10px 14px;font-size:.92rem;margin-bottom:20px;border-radius:0 12px 12px 0}
+.notice .bar{margin-top:8px}
+.notice.warn{border-left-color:var(--amber)}
+.notice.bad{border-left-color:var(--red)}
+
+.grid{display:grid;gap:16px}.grid>*{min-width:0}
+.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1.4fr 1fr}.g11{grid-template-columns:1fr 1fr}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel>h2,.panel>h3{margin-bottom:12px}
+.panel.sand{background:var(--sand);border-color:var(--sand-2)}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;width:100%}
+.stat b{display:block;font-size:2.25rem;font-weight:400;line-height:1;letter-spacing:-.02em;margin-bottom:4px}
+.stat span{color:var(--muted);font-size:.9rem}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;color:var(--muted);white-space:nowrap;font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filters select,.filters input[type=date],.field input,.field select,.field textarea,.search input,.kv select,.inline input{background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.field input::placeholder,.search input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.chip{background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:6px 14px;font-size:.88rem;min-height:36px}
+.chip[aria-pressed="true"]{background:var(--btn);border-color:var(--btn);color:var(--btn-text);font-weight:600}
+.chip.off{opacity:.55;text-decoration:line-through}
+
+.rows{display:grid;gap:10px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;text-decoration:none}
+button.row:hover,a.row:hover{border-color:var(--text)}
+.row h3{font-weight:600;font-size:1.02rem;margin:6px 0}
+.row.outside{border-style:dashed}
+.row.sel{border-color:var(--text);background:var(--sand)}
+.meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;background:var(--grey-soft);color:var(--text);white-space:nowrap}
+.pill.notice{background:var(--blue-soft);color:var(--blue)}
+.pill.positive{background:var(--green-soft);color:var(--green)}
+.pill.warning{background:var(--amber-soft);color:var(--amber)}
+.pill.negative{background:var(--red-soft);color:var(--red)}
+.pill.brand{background:var(--sand-2);color:var(--bronze)}
+.pill.outlined{background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong)}
+.pill .x{margin-left:6px;opacity:.7;font-weight:400}
+.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.empty h2{color:var(--text);font-size:1.25rem;font-weight:500;margin:0 0 8px}
+.empty a{color:var(--text);font-weight:600}
+.skeleton{height:84px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.ghost:hover{border-color:var(--text)}
+.btn.danger{background:transparent;color:var(--red);border-color:var(--red)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.bar.left{justify-content:flex-start}
+.barwrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.barwrap .bar{margin-top:2px}
+
+.sowhat{background:var(--sand);border-radius:12px;padding:12px 14px;margin:14px 0;line-height:1.5}
+.feature .sowhat,.panel.sand .sowhat,.answer .sowhat{background:var(--surface)}
+.sowhat .ai{font-size:.8rem;color:var(--bronze);font-weight:600;display:block;margin-bottom:2px}
+.kicker{color:var(--muted);font-size:.95rem;margin:0 0 6px}
+.feature{background:var(--sand);border:1px solid var(--sand-2);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px}
+.feature h2.lead{font-size:1.9rem;font-weight:400;max-width:24ch;line-height:1.15}
+.home{display:grid;grid-template-columns:1fr 1.7fr;gap:16px;align-items:stretch}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dates{display:flex;flex-direction:column;gap:16px}
+.dates>div{display:flex;gap:12px;align-items:flex-start}
+.dates i{width:12px;height:12px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--text)}
+.dates i.negative{background:var(--red)}.dates i.warning{background:var(--amber)}.dates i.notice{background:var(--blue)}.dates i.brand{background:var(--bronze)}
+.dates b{font-weight:700}.dates b.negative{color:var(--red)}.dates b.warning{color:var(--amber)}.dates b.notice{color:var(--blue)}.dates b.brand{color:var(--bronze)}
+.dates a{text-decoration:none}.dates a:hover{text-decoration:underline}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-top:16px}
+.brief{padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.brief:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.brief a{font-weight:600;font-size:1.04rem;text-decoration:none}.brief a:hover{text-decoration:underline}
+.brief p{color:var(--muted);font-size:.92rem;margin:6px 0 8px}
+.roster{display:grid;gap:12px;align-items:start;margin-bottom:18px}
+.roster .q{display:flex;flex-direction:column;gap:8px;min-width:0}
+.roster .qh{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:2px solid var(--text);font-weight:600;font-size:.95rem}
+.roster .qh span{color:var(--muted);font-weight:400;font-size:.82rem}
+.rcard{text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;display:flex;flex-direction:column;gap:3px;width:100%}
+.rcard:hover{border-color:var(--line-strong)}
+.rcard[aria-pressed="true"]{background:var(--sand);border-color:var(--text)}
+.rcard b{font-size:.9rem}.rcard b.negative{color:var(--red)}.rcard b.warning{color:var(--amber)}.rcard b.notice{color:var(--blue)}.rcard b.brand{color:var(--bronze)}
+.rcard span{font-size:.84rem;line-height:1.35}.rcard small{font-size:.76rem;color:var(--muted)}
+.rdetail{display:grid;grid-template-columns:1.6fr 1fr;gap:28px}
+.inline-detail{display:none}
+.timeline{list-style:none;padding:0;margin:0}
+.timeline li{position:relative;padding:0 0 14px 24px;color:var(--muted);font-size:.92rem}
+.timeline li:before{content:"";position:absolute;left:4px;top:7px;width:9px;height:9px;border-radius:50%;border:2px solid var(--line-strong);background:var(--surface)}
+.timeline li:after{content:"";position:absolute;left:8px;top:18px;bottom:0;width:1px;background:var(--line)}
+.timeline li:last-child:after{display:none}
+.timeline li.done{color:var(--text)}.timeline li.done:before{background:var(--accent);border-color:var(--accent)}
+.timeline li.next:before{border-color:var(--bronze);background:var(--bronze)}
+
+.lagrum{display:grid;grid-template-columns:96px 1fr;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.lagrum .margin{background:var(--sand);color:var(--bronze);padding:20px 10px;text-align:center}
+.lagrum .margin b{display:block;font-size:2.2rem;font-weight:400;line-height:1}
+.lagrum .margin small{font-size:.76rem;line-height:1.3;display:block;margin-top:8px;font-family:var(--mono)}
+.lagrum .body{padding:20px 24px;font-size:1.12rem;line-height:1.65;max-width:70ch}
+.lagrum .body .mt{display:block;color:var(--bronze);font-size:.8rem;font-weight:600;margin-bottom:8px}
+.lagrum ins{background:var(--green-soft);color:var(--green);text-decoration:none;padding:1px 3px;border-radius:4px}
+.lagrum del{background:var(--red-soft);color:var(--red);padding:1px 3px;border-radius:4px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;font-size:.94rem;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.facets{display:flex;gap:6px;flex-wrap:wrap}
+
+.field{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-bottom:14px}
+.field label{font-weight:600;font-size:.9rem}
+.field textarea{min-height:76px;resize:vertical}
+.field .hint{color:var(--muted);font-size:.82rem}
+.err{color:var(--red);font-size:.88rem;margin-top:6px}
+.ok{color:var(--green);font-size:.88rem;margin-top:6px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand)}
+.check small{display:block;color:var(--muted);font-size:.82rem}
+
+.search{display:flex;gap:8px;margin-bottom:12px}.search input{flex:1 1 0;min-width:0;font-size:1.05rem}
+mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
+.answer{background:var(--sand);border:1px solid var(--sand-2);border-radius:16px;padding:20px;margin-bottom:16px}
+.answer ol{margin:8px 0 0;padding-left:20px;font-size:.9rem;color:var(--muted)}
+.answer sup{font-weight:600;color:var(--bronze)}
+.log{font-size:.9rem}.log div{padding:10px 0;border-bottom:1px solid var(--line)}.log div:last-child{border-bottom:0}.log time{color:var(--muted);font-size:.8rem;display:block}
+.tree{list-style:none;margin:0;padding:0}.tree ul{list-style:none;margin:0;padding-left:22px;border-left:1px solid var(--line)}
+.tree li{padding:6px 0}.tree summary{cursor:pointer;font-weight:600}.tree .ref{font-family:var(--mono);font-size:.85rem;color:var(--bronze);margin-right:8px}
+
+.vrow{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.vrow .grip{color:var(--line-strong);font-size:1.1rem;cursor:grab;text-align:center;user-select:none}
+.vrow .lbl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.vrow .lbl small{color:var(--muted);font-size:.82rem}
+.vrow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.vrow.retired{opacity:.6;border-style:dashed}
+.vrow.dragging{border-color:var(--text);box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.inline input{min-height:40px;padding:6px 10px}
+.combo{position:relative}
+.combo .menu{background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;margin-top:6px;overflow:hidden}
+.combo .menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 14px;border-bottom:1px solid var(--line)}
+.combo .menu button:last-child{border-bottom:0}
+.combo .menu button:hover,.combo .menu button[aria-selected="true"]{background:var(--sand)}
+.combo .menu small{display:block;color:var(--muted);font-size:.82rem}
+.side-by-side{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.quote{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:.95rem;line-height:1.6}
+.quote cite{display:block;color:var(--muted);font-style:normal;font-size:.82rem;margin-top:8px}
+.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
+.restricted{text-align:center;padding:64px 16px;max-width:60ch;margin:0 auto}
+.restricted p{color:var(--muted)}
+.modal{background:rgba(10,11,11,.6);display:flex;align-items:center;justify-content:center;padding:16px;border-radius:16px;margin-top:20px}
+.modal .box{background:var(--surface);border-radius:20px;padding:24px;max-width:560px;width:100%;border:1px solid var(--line)}
+.modal pre{white-space:pre-wrap;font-family:var(--mono);font-size:.88rem;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto}
+.box h2{margin-bottom:12px}
+.toast{display:inline-block;background:#0a0b0b;color:#fff;padding:12px 18px;border-radius:999px;font-size:.92rem;border:1px solid rgba(255,255,255,.2)}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+.tabbar{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}.side{display:none}
+  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
+  main{padding:20px 16px 100px}
+  h1{font-size:1.6rem}
+  .home,.pair,.rdetail,.side-by-side,.g11{grid-template-columns:1fr}.feature{padding:20px}.feature h2.lead{font-size:1.45rem}
+  .roster{grid-template-columns:1fr!important}.roster .q.none{display:none}
+  .below-detail{display:none}.inline-detail{display:block;padding:4px 2px 12px}
+  .bar{justify-content:flex-end;flex-wrap:nowrap}
+  .bar .btn{order:2;flex:0 1 auto;min-width:0;padding:10px 16px;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .btn.small{padding:6px 12px;font-size:.86rem}
+  .bar .btn:not(.ghost):not(.danger){order:3}
+  .barwrap{flex-direction:column;align-items:flex-end;gap:6px}.barwrap .bar{align-self:stretch}
+  .head>.btn{margin-left:auto}
+  .g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
+  .kv{grid-template-columns:1fr;gap:2px 0}.kv dd{margin-bottom:10px}
+  .lagrum{grid-template-columns:1fr}.lagrum .margin{display:flex;gap:10px;align-items:baseline;text-align:left;padding:10px 16px}
+  .lagrum .margin b{font-size:1.4rem}.lagrum .margin small{margin:0}.lagrum .body{padding:16px}
+  .vrow{grid-template-columns:28px 1fr}.vrow .acts{grid-column:2;justify-content:flex-end}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem;display:grid;justify-items:center;gap:3px;position:relative}
+  .tabbar button[aria-current="page"]{color:#fff;font-weight:600}
+  .tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .tabbar .dot{position:absolute;top:6px;right:calc(50% - 20px);background:#efe9dc;color:#003824;border-radius:999px;font-size:.65rem;font-weight:700;padding:0 6px}
+}
+@media (max-width:380px){.bar .btn{padding:10px 12px;font-size:.9rem}.bar .btn.small{padding:6px 10px}}
+
+/* Shared additions for the proposal mock-ups. Variables only, no hex. */
+.micro{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:6px}
+.sub{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.sub:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.sub>h3{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:600;margin-bottom:8px}
+.oneline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.92rem}
+.entity{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:10px;background:var(--surface)}
+.entity>h3{font-weight:600;margin-bottom:8px}
+.entity .fact{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:start}
+.entity .fact+.fact{border-top:1px dashed var(--line);margin-top:12px;padding-top:12px}
+.entity .fact p{margin:6px 0 0}
+.fold{border-top:1px solid var(--line);padding:10px 0 0;margin-top:10px}
+.fold>summary{cursor:pointer;font-weight:600;font-size:.94rem}
+.fold>summary span{color:var(--muted);font-weight:400}
+.fold[open]>summary{margin-bottom:8px}
+.rollup{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.92rem;margin:8px 0}
+.rollup b{font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;background:var(--line-strong)}
+.dot.positive{background:var(--green)}.dot.warning{background:var(--amber)}.dot.negative{background:var(--red)}
+.aidraft{background:var(--sand);border:1px solid var(--sand-2);border-radius:8px;padding:10px 12px}
+.aidraft .ai{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--bronze);font-weight:600;margin-bottom:4px}
+.aidraft textarea{background:transparent;border:0;width:100%;min-height:96px;resize:vertical;padding:0;outline:0}
+.labelrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.linkbtn{background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:3px;font-weight:600;font-size:.88rem;color:var(--text)}
+.stickybar{position:sticky;bottom:12px;background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.pick{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.pick input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand)}
+.pick .why{grid-column:2 / -1;color:var(--muted);font-size:.86rem}
+.pick .state{color:var(--muted);font-size:.9rem;white-space:nowrap}
+.orow{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line);text-decoration:none}
+.orow .ref{font-family:var(--mono);font-size:.85rem;color:var(--bronze)}
+.orow .pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.admintabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.admintabs a{padding:10px 12px;color:var(--muted);white-space:nowrap;text-decoration:none;border-bottom:2px solid transparent;font-weight:500}
+.admintabs a[aria-current="page"]{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.admintabs.second{margin-bottom:20px;font-size:.92rem}
+.states4{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.statecap{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:0 0 8px}
+.modal.flat{margin-top:0}
+@media (max-width:820px){
+  .states4{grid-template-columns:1fr}
+  .orow{grid-template-columns:1fr}.orow .pills{justify-content:flex-start}
+  .entity .fact{grid-template-columns:1fr}
+}
+
+/* Component finish (accordion, checkbox, select, progress): how the Radix-based parts will read. */
+details.fold>summary{list-style:none;display:flex;align-items:center;gap:6px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s;flex-shrink:0;margin:0 6px 4px auto}
+details.fold[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.mock-screen input[type=checkbox]{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:1.5px solid var(--line-strong);border-radius:5px;background:var(--surface);display:inline-grid;place-content:center;margin:3px 0 0;cursor:pointer;flex-shrink:0}
+.mock-screen input[type=checkbox]:checked{background:var(--btn);border-color:var(--btn)}
+.mock-screen input[type=checkbox]:checked::after{content:"";width:9px;height:5px;border-left:2px solid var(--btn-text);border-bottom:2px solid var(--btn-text);transform:rotate(-45deg) translate(1px,-1px)}
+.mock-screen input[type=checkbox]:indeterminate{background:var(--btn);border-color:var(--btn)}
+.mock-screen input[type=checkbox]:indeterminate::after{content:"";width:9px;height:2px;background:var(--btn-text)}
+.mock-screen select{appearance:none;-webkit-appearance:none;padding-right:38px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 19px) 50%,calc(100% - 13px) 50%;background-size:6px 6px,6px 6px;background-repeat:no-repeat}
+.progress{height:8px;border-radius:999px;background:var(--grey-soft);overflow:hidden;margin:8px 0}
+.progress>i{display:block;height:100%;background:var(--btn);border-radius:999px;transition:width .3s}
+.runline{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;font-weight:600}
+.runline span{color:var(--muted);font-weight:400;font-size:.9rem}
+.groupline{display:flex;justify-content:space-between;align-items:baseline;gap:8px 16px;flex-wrap:wrap}
+.breakdown{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin:10px 0;font-size:.92rem}
+.breakdown div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.breakdown div:first-child{border-top:0}
+.pill.notice{border-left:0;padding:2px 10px;font-size:.78rem;margin-bottom:0;border-radius:999px}
+
+.proposalbar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px dashed var(--line-strong);margin:-32px -36px 24px;padding:10px 36px 0}
+.proposalbar .row1{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:.85rem;margin-bottom:6px}
+.proposalbar .row1 b{color:var(--text);font-weight:600}
+.proposalbar .tabs{margin-bottom:0;border-bottom:0}
+.mock-screen[hidden]{display:none}
+.nav .new{font-size:.68rem;font-weight:700;background:#efe9dc;color:#003824;border-radius:999px;padding:1px 7px}
+@media (max-width:820px){.proposalbar{margin:-20px -16px 20px;padding:8px 16px 0}}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <nav class="nav" aria-label="Main"><button data-nav="today">Today</button><button data-nav="watch">Watch</button><button data-nav="inventory">Inventory</button><button data-nav="ask">Ask</button><hr><button data-nav="work">My work</button><button data-nav="roadmap">Roadmap</button><button data-nav="gaps">Gaps</button><button data-nav="applies">What applies <span class="new">new</span></button><hr><button data-nav="admin">Admin</button></nav>
+    <div class="who">Signed in as<b>Sara Lindqvist</b>Compliance officer</div>
+  </aside>
+  <main id="main">
+    <div class="proposalbar">
+      <div class="row1"><b>Proposal, 13 Nov 2026.</b><span>Made-up data. Start at Recommended; the numbered tabs follow its three steps.</span>
+        <span>Theme:</span><button class="linkbtn" data-theme-set="light">Light</button><button class="linkbtn" data-theme-set="dark">Dark</button><button class="linkbtn" data-theme-set="">System</button></div>
+      <div class="tabs" role="tablist" aria-label="Proposals"><button role="tab" aria-selected="false" data-key="overview" data-nav="applies">Recommended</button><button role="tab" aria-selected="false" data-key="licences" data-nav="admin">1 Licences</button><button role="tab" aria-selected="false" data-key="what-applies" data-nav="applies">2 What applies</button><button role="tab" aria-selected="false" data-key="obligation-a" data-nav="inventory">3 Obligation page</button><button role="tab" aria-selected="false" data-key="regulation" data-nav="inventory">Regulation page</button><button role="tab" aria-selected="false" data-key="ai-draft" data-nav="inventory">Suggested reasons and AI</button><button role="tab" aria-selected="false" data-key="obligation-b" data-nav="inventory">Alternative: tabs</button></div>
+    </div>
+    <style>
+[data-screen="overview"] .ov-head{margin-bottom:20px}
+[data-screen="overview"] .ov-head p{color:var(--muted);margin:6px 0 0}
+[data-screen="overview"] .ov-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+[data-screen="overview"] .ov-step{display:flex;flex-direction:column;gap:10px}
+[data-screen="overview"] .ov-step>h2{margin:0}
+[data-screen="overview"] .ov-step>p{color:var(--muted);font-size:.94rem;margin:0}
+[data-screen="overview"] .ov-mini{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.9rem;display:grid;gap:10px;margin-top:auto}
+[data-screen="overview"] .ov-mini b{font-weight:600}
+[data-screen="overview"] .ov-mini .oneline{color:var(--text)}
+[data-screen="overview"] .ov-mini .oneline span{color:var(--muted)}
+[data-screen="overview"] .ov-mini .ov-sep{border-top:1px solid var(--line);padding-top:10px}
+[data-screen="overview"] .ov-decision{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 12px}
+[data-screen="overview"] .ov-reason{background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 12px;line-height:1.45}
+[data-screen="overview"] .ov-reason .micro{margin-bottom:4px}
+[data-screen="overview"] .ov-mini .ov-flush{margin-top:0}
+[data-screen="overview"] .ov-step>.bar{margin-top:0;justify-content:flex-start}
+[data-screen="overview"] .ov-simpler{margin-bottom:16px}
+[data-screen="overview"] .ov-simpler .kv{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+[data-screen="overview"] .ov-simpler .kv dt.ov-colhead,[data-screen="overview"] .ov-simpler .kv dd.ov-colhead{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);padding-bottom:6px}
+[data-screen="overview"] .ov-list{margin:0;padding-left:18px;display:grid;gap:8px;font-size:.94rem}
+[data-screen="overview"] .ov-list .bar{margin-top:6px;justify-content:flex-start}
+[data-screen="overview"] .ov-last{color:var(--muted);font-size:.9rem;margin:16px 0 0}
+@media (max-width:820px){
+  [data-screen="overview"] .ov-steps{grid-template-columns:1fr}
+  [data-screen="overview"] .ov-simpler .kv{grid-template-columns:1fr;gap:2px 0}
+  [data-screen="overview"] .ov-simpler .kv dt{margin-top:8px}
+  [data-screen="overview"] .ov-simpler .kv dt::after{content:" \2192"}
+  [data-screen="overview"] .ov-simpler .kv dd{font-weight:600;margin-bottom:0}
+  [data-screen="overview"] .ov-simpler .kv .ov-colhead{display:none}
+}
+</style>
+<div class="mock-screen" data-screen="overview">
+  <div class="ov-head">
+    <h1>The recommended solution</h1>
+    <p>From licence to decision in three steps.</p>
+  </div>
+
+  <div class="ov-steps">
+    <section class="panel ov-step">
+      <span class="micro">Step 1</span>
+      <h2>See each company's licences</h2>
+      <p>Every company of the bank with the licences the supervisor's register holds for it. Under each licence: what it brings into scope.</p>
+      <div class="ov-mini" aria-label="Example licence">
+        <div><span class="micro">Example Fonder AB</span><b>Tillstånd att driva fondverksamhet</b></div>
+        <div class="meta">Brings into scope: <span class="pill brand">Funds</span></div>
+      </div>
+      <div class="bar"><button class="btn ghost small" data-goto="licences">Open Licences</button></div>
+    </section>
+
+    <section class="panel ov-step">
+      <span class="micro">Step 2</span>
+      <h2>Decide what applies, a company at a time</h2>
+      <p>Pick a company and its regulations are listed, one line each. Decide all of them at once, or one regulation at a time.</p>
+      <div class="ov-mini" aria-label="Example of What applies">
+        <div class="oneline"><span>58 obligations in 6 regulations · 41 to decide</span><button class="btn small" type="button">Decide all 41</button></div>
+        <div class="oneline ov-sep"><div><b>Lag (2004:46) om värdepappersfonder</b><br><span>9 of 12 to decide</span></div><button class="btn small" type="button">Decide 9</button></div>
+      </div>
+      <div class="bar"><button class="btn ghost small" data-goto="what-applies">Open What applies</button></div>
+    </section>
+
+    <section class="panel ov-step">
+      <span class="micro">Step 3</span>
+      <h2>Adjust a single obligation where needed</h2>
+      <p>Each obligation shows the bank's position per company on one page of five cards. The same dialog decides one obligation or forty.</p>
+      <div class="ov-mini" aria-label="Example of the decision dialog">
+        <div><b>Decision</b><div class="ov-decision"><span>Applies</span></div></div>
+        <div><b>Reason</b><div class="ov-reason"><span class="micro">Suggested from the licence facts</span>Within the scope of its licence Tillstånd att driva fondverksamhet, which brings Funds into scope. Read from Finansinspektionen's register on 11 Nov 2026.</div></div>
+        <div class="bar ov-flush"><button class="btn small" type="button">Set to Applies</button></div>
+      </div>
+      <div class="bar"><button class="btn ghost small" data-goto="obligation-a">Open the obligation page</button></div>
+    </section>
+  </div>
+
+  <section class="panel ov-simpler">
+    <h2>What gets simpler</h2>
+    <dl class="kv">
+      <dt class="ov-colhead">Today</dt><dd class="ov-colhead">With this</dd>
+      <dt>Sixteen cards on an obligation</dt><dd>Five</dd>
+      <dt>Decide obligation by obligation</dt><dd>Decide all for a company or a regulation, with no limit</dd>
+      <dt>Two dialogs to decide</dt><dd>One, whose button says what it does</dd>
+      <dt>Type every reason from scratch</dt><dd>A reason suggested from the licence facts, yours to edit</dd>
+      <dt>A directive's page ends in links</dt><dd>Its national laws open in place, with their obligations</dd>
+      <dt>Licences sixth down the Organisation page</dt><dd>Their own page, tied to what they bring into scope</dd>
+      <dt>No link from an obligation to its regulation</dt><dd>One click, both ways</dd>
+    </dl>
+  </section>
+
+  <div class="grid g11">
+    <section class="panel">
+      <h2>Decided in this proposal</h2>
+      <ul class="ov-list">
+        <li>The obligation page is one page of five cards.</li>
+        <li>What applies sits in the main menu, beside Gaps.</li>
+        <li>The reason is suggested from facts the bank already holds, so it works with AI switched off.</li>
+        <li>Nothing is stored until the person presses the button, and every obligation gets its own audit entry.</li>
+      </ul>
+    </section>
+    <section class="panel">
+      <h2>Yours to decide</h2>
+      <ul class="ov-list">
+        <li>Whether AI may also read what a person typed in that one field, to write it out. Everything else works without it.
+          <div class="bar"><button class="btn ghost small" data-goto="ai-draft">See how it would work</button></div>
+        </li>
+        <li>The plan for the original-language texts, which follows separately.</li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="ov-last"><button class="linkbtn" data-goto="obligation-b">An alternative obligation layout with tabs is kept in the last tab, for comparison.</button></p>
+</div>
+<style>
+[data-screen="licences"] .ehead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+[data-screen="licences"] .ehead>.linkbtn{margin-left:auto}
+[data-screen="licences"] a.linkbtn{white-space:nowrap}
+[data-screen="licences"] .sub>.meta{margin-bottom:8px}
+[data-screen="licences"] .lic{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
+[data-screen="licences"] .lic>.meta{flex-basis:100%}
+[data-screen="licences"] .lic>.when{color:var(--muted);font-size:.86rem;white-space:nowrap}
+[data-screen="licences"] .lic.gone>.name{color:var(--muted)}
+[data-screen="licences"] .wd>summary{display:inline-block;cursor:pointer;list-style:none}
+[data-screen="licences"] .wd>summary::-webkit-details-marker{display:none}
+[data-screen="licences"] .wd[open]>summary{margin-bottom:10px}
+[data-screen="licences"] .wd[open]>summary .show,[data-screen="licences"] .wd:not([open])>summary .hide{display:none}
+</style>
+<div class="mock-screen" data-screen="licences">
+  <nav class="admintabs" aria-label="Admin">
+    <a href="#">People</a>
+    <a href="#" aria-current="page">Organisation</a>
+    <a href="#">Agents and keys</a>
+    <a href="#">Security</a>
+    <a href="#">Logs</a>
+  </nav>
+  <nav class="admintabs second" aria-label="Organisation">
+    <a href="#">Organisation</a>
+    <a href="#" aria-current="page">Licences</a>
+    <a href="#">Regulatory scope</a>
+    <a href="#">Vocabularies</a>
+    <a href="#">Workflow</a>
+  </nav>
+
+  <div class="head"><h1>Licences</h1></div>
+
+  <div class="grid">
+
+    <!-- Example Bank AB -->
+    <section class="panel" aria-labelledby="licences-bank">
+      <div class="ehead">
+        <h2 id="licences-bank">Example Bank AB</h2>
+        <span class="pill brand">Bank</span>
+        <span class="meta"><span><span class="mono">556000-0001</span> · Sweden</span></span>
+        <a class="linkbtn" href="#" aria-label="What applies to Example Bank AB">What applies to it ›</a>
+      </div>
+
+      <div class="sub">
+        <h3>From the register</h3>
+        <div class="meta"><span>Finansinspektionen · read 11 Nov 2026 · <a href="#" rel="noopener">Source</a></span></div>
+        <div class="lic">
+          <span class="name" lang="sv">Tillstånd att driva bankrörelse</span>
+          <span class="when">granted 12 May 1998</span>
+          <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Banking</span><span class="pill brand">Payments</span><span class="pill brand">Custody</span></span></div>
+        </div>
+        <div class="lic">
+          <span class="name" lang="sv">Tillstånd för värdepappersrörelse: investeringsrådgivning</span>
+          <span class="when">granted 1 Nov 2007</span>
+          <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Securities</span><span class="pill brand">Advice</span></span></div>
+        </div>
+        <div class="lic">
+          <span class="name" lang="sv">Tillstånd för värdepappersrörelse: portföljförvaltning</span>
+          <span class="when">granted 1 Nov 2007</span>
+          <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Securities</span><span class="pill brand">Portfolio management</span></span></div>
+        </div>
+        <div class="lic">
+          <span class="name" lang="sv">Tillstånd att ge ut elektroniska pengar</span>
+          <span class="when">granted 9 Sep 2011</span>
+          <div class="meta"><span>Not used for scope yet</span></div>
+        </div>
+        <details class="fold">
+          <summary>Show 4 more</summary>
+          <div class="lic">
+            <span class="name" lang="sv">Tillstånd för värdepappersrörelse: utförande av order på kunders uppdrag</span>
+            <span class="when">granted 1 Nov 2007</span>
+            <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Securities</span><span class="pill brand">Order execution</span></span></div>
+          </div>
+          <div class="lic">
+            <span class="name" lang="sv">Tillstånd för värdepappersrörelse: mottagande och vidarebefordran av order</span>
+            <span class="when">granted 1 Nov 2007</span>
+            <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Securities</span><span class="pill brand">Order transmission</span></span></div>
+          </div>
+          <div class="lic">
+            <span class="name" lang="sv">Tillstånd för värdepappersrörelse: förvaring av finansiella instrument</span>
+            <span class="when">granted 1 Nov 2007</span>
+            <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Securities</span><span class="pill brand">Custody</span></span></div>
+          </div>
+          <div class="lic">
+            <span class="name" lang="sv">Tillstånd att ge ut säkerställda obligationer</span>
+            <span class="when">granted 14 Jun 2006</span>
+            <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Covered bonds</span></span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="sub">
+        <h3>Recorded by us
+          <button class="btn ghost small" type="button" aria-label="Add a licence or certificate to Example Bank AB">Add</button>
+        </h3>
+        <div class="lic">
+          <span class="name">ISO/IEC 27001 certificate</span>
+          <button class="btn ghost small" type="button" aria-label="Edit the ISO/IEC 27001 certificate">Edit</button>
+          <div class="meta"><span>BSI · valid until 30 Jun 2027 · next audit 12 Mar 2027 · Owner Johan Berg</span></div>
+        </div>
+        <details class="wd">
+          <summary class="linkbtn"><span class="show">Show 1 withdrawn</span><span class="hide">Hide withdrawn</span></summary>
+          <div class="lic gone">
+            <span class="name">PCI DSS 4.0 attestation of compliance</span>
+            <span class="when">withdrawn 1 Feb 2026</span>
+            <div class="meta"><span>Example Assessors Oy · valid until 31 Jan 2026 · Owner Johan Berg</span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="sub">
+        <h3>Outside this company's scope
+          <a class="linkbtn" href="#">Regulatory scope ›</a>
+        </h3>
+        <div class="facets"><span class="pill brand">Insurance</span><span class="pill brand">Card acquiring</span></div>
+      </div>
+
+      <div class="sub">
+        <div class="oneline">
+          <span>142 obligations within its licences · 31 not decided</span>
+          <a class="linkbtn" href="#" aria-label="What applies to Example Bank AB">What applies ›</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Example Fonder AB -->
+    <section class="panel" aria-labelledby="licences-fonder">
+      <div class="ehead">
+        <h2 id="licences-fonder">Example Fonder AB</h2>
+        <span class="pill brand">Fund company</span>
+        <span class="meta"><span><span class="mono">556000-0003</span> · Sweden</span></span>
+        <a class="linkbtn" href="#" aria-label="What applies to Example Fonder AB">What applies to it ›</a>
+      </div>
+
+      <div class="sub">
+        <h3>From the register</h3>
+        <div class="meta"><span>Finansinspektionen · read 11 Nov 2026 · <a href="#" rel="noopener">Source</a></span></div>
+        <div class="lic">
+          <span class="name" lang="sv">Tillstånd att driva fondverksamhet</span>
+          <span class="when">granted 4 May 2011</span>
+          <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Funds</span></span></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Recorded by us
+          <button class="btn ghost small" type="button" aria-label="Add a licence or certificate to Example Fonder AB">Add</button>
+        </h3>
+        <div class="meta"><span>None</span></div>
+      </div>
+
+      <div class="sub">
+        <h3>Outside this company's scope
+          <a class="linkbtn" href="#">Regulatory scope ›</a>
+        </h3>
+        <div class="facets"><span class="pill brand">Banking</span><span class="pill brand">Payments</span><span class="pill brand">Insurance</span></div>
+      </div>
+
+      <div class="sub">
+        <div class="oneline">
+          <span>58 obligations within its licences · 41 not decided</span>
+          <a class="linkbtn" href="#" aria-label="What applies to Example Fonder AB">What applies ›</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Example Liv Försäkring AB -->
+    <section class="panel" aria-labelledby="licences-liv">
+      <div class="ehead">
+        <h2 id="licences-liv">Example Liv Försäkring AB</h2>
+        <span class="pill brand">Insurer</span>
+        <span class="meta"><span><span class="mono">516000-0002</span> · Sweden</span></span>
+        <a class="linkbtn" href="#" aria-label="What applies to Example Liv Försäkring AB">What applies to it ›</a>
+      </div>
+
+      <div class="sub">
+        <h3>From the register</h3>
+        <div class="meta"><span>Finansinspektionen · read 11 Nov 2026 · <a href="#" rel="noopener">Source</a></span></div>
+        <div class="lic">
+          <span class="name" lang="sv">Tillstånd att driva livförsäkringsrörelse</span>
+          <span class="when">granted 3 Feb 2003</span>
+          <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Insurance</span></span></div>
+        </div>
+        <div class="lic">
+          <span class="name" lang="sv">Försäkringsdistribution</span>
+          <span class="when">granted 1 Oct 2018</span>
+          <div class="meta"><span>Brings into scope:</span><span class="facets"><span class="pill brand">Insurance distribution</span></span></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Recorded by us
+          <button class="btn ghost small" type="button" aria-label="Add a licence or certificate to Example Liv Försäkring AB">Add</button>
+        </h3>
+        <div class="meta"><span>None</span></div>
+      </div>
+
+      <div class="sub">
+        <h3>Outside this company's scope
+          <a class="linkbtn" href="#">Regulatory scope ›</a>
+        </h3>
+        <div class="facets"><span class="pill brand">Banking</span><span class="pill brand">Payments</span><span class="pill brand">Securities</span><span class="pill brand">Funds</span></div>
+      </div>
+
+      <div class="sub">
+        <div class="oneline">
+          <span>77 obligations within its licences · 12 not decided</span>
+          <a class="linkbtn" href="#" aria-label="What applies to Example Liv Försäkring AB">What applies ›</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <p class="note">Any member can read this page; adding and editing needs the organisation permission. It lists every company of the bank: people are not tied to single companies yet.</p>
+</div>
+<style>
+[data-screen="what-applies"] [hidden]{display:none!important}
+[data-screen="what-applies"] .modal{scroll-margin-top:9.5rem}
+[data-screen="what-applies"] .companies{margin-bottom:12px}
+[data-screen="what-applies"] .companies .linkbtn{margin-left:auto}
+[data-screen="what-applies"] .top{align-items:center;margin-bottom:16px}
+[data-screen="what-applies"] .top .meta{font-size:.95rem;color:var(--text)}
+[data-screen="what-applies"] .list{padding-top:8px;padding-bottom:8px}
+[data-screen="what-applies"] .list>details.fold:first-child{border-top:0;margin-top:0}
+[data-screen="what-applies"] .list>details.fold{padding-bottom:10px}
+[data-screen="what-applies"] .list summary{flex-wrap:wrap;gap:6px 12px;font-weight:400}
+[data-screen="what-applies"] .list summary input{margin:0}
+[data-screen="what-applies"] .sn{flex:1 1 16rem;min-width:0;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+[data-screen="what-applies"] .sn a{font-weight:600}
+[data-screen="what-applies"] .basis{color:var(--muted);font-size:.86rem}
+[data-screen="what-applies"] .cnt{color:var(--muted);font-size:.88rem;white-space:nowrap}
+[data-screen="what-applies"] .t{display:grid;grid-template-columns:7rem minmax(0,1fr);gap:2px 10px;align-items:baseline}
+[data-screen="what-applies"] .ref{color:var(--bronze);font-size:.85rem;white-space:nowrap}
+[data-screen="what-applies"] .choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[data-screen="what-applies"] .choice .chip{min-height:52px;border-radius:12px;font-size:1rem}
+[data-screen="what-applies"] .covers{border-top:0;margin:0 0 16px;padding:0}
+[data-screen="what-applies"] .covers>summary{color:var(--muted);font-weight:400}
+[data-screen="what-applies"] .quiet{color:var(--muted);font-size:.86rem;margin:0 0 4px}
+[data-screen="what-applies"] [data-hint].ai{color:var(--bronze)}
+@media (max-width:720px){
+[data-screen="what-applies"] .sn{flex-basis:calc(100% - 40px)}
+[data-screen="what-applies"] .cnt{margin-left:30px}
+[data-screen="what-applies"] .t{grid-template-columns:minmax(0,1fr)}
+[data-screen="what-applies"] .pick .state{grid-column:2 / -1;white-space:normal}
+}
+</style>
+<div class="mock-screen" data-screen="what-applies">
+  <div class="head"><h1>What applies</h1></div>
+
+  <div class="filters companies" role="group" aria-label="Company">
+    <button class="chip" type="button" aria-pressed="false">Example Bank AB <b>31</b><span class="sr"> to decide</span></button>
+    <button class="chip" type="button" aria-pressed="true">Example Fonder AB <b data-todo>41</b><span class="sr"> to decide</span></button>
+    <button class="chip" type="button" aria-pressed="false">Example Liv Försäkring AB <b>12</b><span class="sr"> to decide</span></button>
+    <button class="linkbtn" type="button" data-goto="licences">Licences</button>
+  </div>
+  <div class="groupline top">
+    <span class="meta">58 obligations in 6 regulations · <span><b data-todo>41</b> to decide</span></span>
+    <button class="btn" type="button" data-decide="all">Decide all 41</button>
+  </div>
+
+  <div class="panel" data-run tabindex="-1" style="margin-bottom:16px" hidden>
+    <div class="runline">
+      <div data-run-title role="status">Setting 41 obligations to Applies</div>
+      <span data-run-count>0 of 41</span>
+      <button class="btn ghost small" type="button" data-act="done" hidden>Done</button>
+    </div>
+    <div class="progress" role="progressbar" aria-label="Obligations set so far" aria-valuemin="0" aria-valuemax="41" aria-valuenow="0"><i style="width:0"></i></div>
+  </div>
+
+  <div class="filters" role="group" aria-label="Show">
+    <button class="chip" type="button" aria-pressed="true">To decide <b data-todo>41</b></button>
+    <button class="chip" type="button" aria-pressed="false">Decided <b data-decided>17</b></button>
+    <button class="chip" type="button" aria-pressed="false">All <b>58</b></button>
+    <div class="search" style="flex:1 1 260px;max-width:30rem;margin:0 0 0 auto;align-items:center">
+      <label class="meta" for="what-applies-find" style="white-space:nowrap">Find a regulation</label>
+      <input id="what-applies-find" type="search" placeholder="e.g. penningtvätt">
+    </div>
+  </div>
+
+  <div class="panel list">
+
+    <details class="fold" open data-reg data-total="12" data-basis="funds">
+      <summary><input type="checkbox" data-all aria-label="Select all to decide in Lag (2004:46) om värdepappersfonder"><span class="sn"><a href="#" data-goto="regulation" data-name lang="sv">Lag (2004:46) om värdepappersfonder ›</a><span class="basis">From its licence: <span lang="sv">Tillstånd att driva fondverksamhet</span></span></span><span class="cnt" data-cnt>9 of 12 to decide</span><button class="btn small" type="button" data-decide="group">Decide 9</button></summary>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o1"><div class="t"><span class="mono ref">2 kap. 8 §</span><a href="#" data-goto="obligation-a" id="what-applies-o1">Hold own funds that match the assets under management</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o2"><div class="t"><span class="mono ref">2 kap. 17 b §</span><a href="#" data-goto="obligation-a" id="what-applies-o2">Run a risk management system for every fund</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o3"><div class="t"><span class="mono ref">2 kap. 17 e §</span><a href="#" data-goto="obligation-a" id="what-applies-o3">Set rules for employees' own securities trades</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o4"><div class="t"><span class="mono ref">2 kap. 21 §</span><a href="#" data-goto="obligation-a" id="what-applies-o4">Handle complaints from unit holders promptly</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o5"><div class="t"><span class="mono ref">3 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o5">Appoint a depositary to hold each fund's assets</a></div><span class="state">to decide</span></div>
+      <div class="pick"><span aria-hidden="true"></span><div class="t"><span class="mono ref">4 kap. 2 §</span><a href="#" data-goto="obligation-a">Act only in the unit holders' common interest</a></div><span class="state"><span class="pill positive">Applies</span> Sara Lindqvist, 20 Sep 2026</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o6"><div class="t"><span class="mono ref">4 kap. 7 §</span><a href="#" data-goto="obligation-a" id="what-applies-o6">Publish each fund's net asset value every banking day</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o7"><div class="t"><span class="mono ref">4 kap. 15 §</span><a href="#" data-goto="obligation-a" id="what-applies-o7">Keep a prospectus for each fund up to date</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o8"><div class="t"><span class="mono ref">4 kap. 16 §</span><a href="#" data-goto="obligation-a" id="what-applies-o8">Give investors a key information document</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o9"><div class="t"><span class="mono ref">7 kap. 3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o9">Follow the investor protection rules when managing a client's portfolio</a></div><span class="state">to decide</span><span class="why">Covers: Portfolio management</span></div>
+    </details>
+
+    <details class="fold" data-reg data-total="8" data-basis="aml">
+      <summary><input type="checkbox" data-all aria-label="Select all to decide in Lag (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism"><span class="sn"><a href="#" data-goto="regulation" data-name lang="sv">Lag (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism ›</a><span class="basis">From the bank's scope: Anti-money laundering</span></span><span class="cnt" data-cnt>4 of 8 to decide</span><button class="btn small" type="button" data-decide="group">Decide 4</button></summary>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o10"><div class="t"><span class="mono ref">2 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o10">Assess how the business could be used for money laundering</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o11"><div class="t"><span class="mono ref">3 kap. 8 §</span><a href="#" data-goto="obligation-a" id="what-applies-o11">Find out who owns or controls each customer</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o12"><div class="t"><span class="mono ref">3 kap. 13 §</span><a href="#" data-goto="obligation-a" id="what-applies-o12">Follow each customer relationship and its transactions over time</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o13"><div class="t"><span class="mono ref">4 kap. 3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o13">Report suspected money laundering to the Financial Intelligence Unit</a></div><span class="state">to decide</span></div>
+    </details>
+
+    <details class="fold" data-reg data-total="18" data-basis="funds">
+      <summary><input type="checkbox" data-all aria-label="Select all to decide in FFFS 2013:9 om värdepappersfonder"><span class="sn"><a href="#" data-goto="regulation" data-name lang="sv">FFFS 2013:9 om värdepappersfonder ›</a><span class="basis">From its licence: <span lang="sv">Tillstånd att driva fondverksamhet</span></span></span><span class="cnt" data-cnt>18 of 18 to decide</span><button class="btn small" type="button" data-decide="group">Decide 18</button></summary>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o14"><div class="t"><span class="mono ref">5 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o14">Set out the board's responsibility for the fund business</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o15"><div class="t"><span class="mono ref">5 kap. 4 §</span><a href="#" data-goto="obligation-a" id="what-applies-o15">Keep written internal rules for every part of the business</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o16"><div class="t"><span class="mono ref">6 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o16">Run an internal audit function</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o17"><div class="t"><span class="mono ref">6 kap. 3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o17">Keep a permanent compliance function</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o18"><div class="t"><span class="mono ref">6 kap. 6 §</span><a href="#" data-goto="obligation-a" id="what-applies-o18">Report compliance findings to the board at least once a year</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o19"><div class="t"><span class="mono ref">7 kap. 2 §</span><a href="#" data-goto="obligation-a" id="what-applies-o19">Keep the risk management function apart from the fund managers</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o20"><div class="t"><span class="mono ref">7 kap. 5 §</span><a href="#" data-goto="obligation-a" id="what-applies-o20">Set risk limits for each fund</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o21"><div class="t"><span class="mono ref">8 kap. 2 §</span><a href="#" data-goto="obligation-a" id="what-applies-o21">Keep a remuneration policy that discourages excess risk</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o22"><div class="t"><span class="mono ref">9 kap. 3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o22">Identify and manage conflicts of interest</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o23"><div class="t"><span class="mono ref">10 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o23">Keep records of every fund transaction</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o24"><div class="t"><span class="mono ref">11 kap. 2 §</span><a href="#" data-goto="obligation-a" id="what-applies-o24">Value each fund's assets on fair terms</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o25"><div class="t"><span class="mono ref">12 kap. 4 §</span><a href="#" data-goto="obligation-a" id="what-applies-o25">Keep a plan for the continuity of the business</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o26"><div class="t"><span class="mono ref">13 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o26">Supervise every outsourced task</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o27"><div class="t"><span class="mono ref">14 kap. 3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o27">Test each fund's liquidity regularly</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o28"><div class="t"><span class="mono ref">16 kap. 2 §</span><a href="#" data-goto="obligation-a" id="what-applies-o28">Disclose fees and costs to unit holders</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o29"><div class="t"><span class="mono ref">17 kap. 4 §</span><a href="#" data-goto="obligation-a" id="what-applies-o29">Carry out each fund's orders on the best terms for the fund</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o30"><div class="t"><span class="mono ref">22 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o30">Report each fund's holdings to Finansinspektionen</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o31"><div class="t"><span class="mono ref">25 kap. 2 §</span><a href="#" data-goto="obligation-a" id="what-applies-o31">Measure each fund's total exposure every day</a></div><span class="state">to decide</span></div>
+    </details>
+
+    <details class="fold" data-reg data-total="7" data-basis="aml">
+      <summary><input type="checkbox" data-all aria-label="Select all to decide in FFFS 2017:11 om åtgärder mot penningtvätt"><span class="sn"><a href="#" data-goto="regulation" data-name lang="sv">FFFS 2017:11 om åtgärder mot penningtvätt ›</a><span class="basis">From the bank's scope: Anti-money laundering</span></span><span class="cnt" data-cnt>5 of 7 to decide</span><button class="btn small" type="button" data-decide="group">Decide 5</button></summary>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o32"><div class="t"><span class="mono ref">2 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o32">Document the general risk assessment</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o33"><div class="t"><span class="mono ref">2 kap. 3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o33">Keep written procedures for customer due diligence</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o34"><div class="t"><span class="mono ref">3 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o34">Screen customers against sanctions lists</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o35"><div class="t"><span class="mono ref">6 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o35">Train staff in anti-money laundering every year</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o36"><div class="t"><span class="mono ref">7 kap. 1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o36">Appoint a central function officer for anti-money laundering</a></div><span class="state">to decide</span></div>
+    </details>
+
+    <details class="fold" data-reg data-total="6" data-basis="funds">
+      <summary><input type="checkbox" data-all aria-label="Select all to decide in Förordning (2013:588) om värdepappersfonder"><span class="sn"><a href="#" data-goto="regulation" data-name lang="sv">Förordning (2013:588) om värdepappersfonder ›</a><span class="basis">From its licence: <span lang="sv">Tillstånd att driva fondverksamhet</span></span></span><span class="cnt" data-cnt>3 of 6 to decide</span><button class="btn small" type="button" data-decide="group">Decide 3</button></summary>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o37"><div class="t"><span class="mono ref">1 §</span><a href="#" data-goto="obligation-a" id="what-applies-o37">Report each fund's leverage to Finansinspektionen</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o38"><div class="t"><span class="mono ref">3 §</span><a href="#" data-goto="obligation-a" id="what-applies-o38">Notify Finansinspektionen before marketing a fund in another country</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o39"><div class="t"><span class="mono ref">5 §</span><a href="#" data-goto="obligation-a" id="what-applies-o39">Have changed fund rules approved before they take effect</a></div><span class="state">to decide</span></div>
+    </details>
+
+    <details class="fold" data-reg data-total="7" data-basis="portfolio">
+      <summary><input type="checkbox" data-all aria-label="Select all to decide in MiFIR"><span class="sn"><a href="#" data-goto="regulation" data-name>MiFIR ›</a><span class="basis">From its licence: <span lang="sv">Portföljförvaltning</span></span></span><span class="cnt" data-cnt>2 of 7 to decide</span><button class="btn small" type="button" data-decide="group">Decide 2</button></summary>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o40"><div class="t"><span class="mono ref">Art. 25</span><a href="#" data-goto="obligation-a" id="what-applies-o40">Keep order records for five years</a></div><span class="state">to decide</span></div>
+      <div class="pick"><input type="checkbox" aria-labelledby="what-applies-o41"><div class="t"><span class="mono ref">Art. 26</span><a href="#" data-goto="obligation-a" id="what-applies-o41">Report transactions in financial instruments by the next working day</a></div><span class="state">to decide</span></div>
+    </details>
+
+  </div>
+
+  <div class="stickybar" hidden>
+    <span role="status"><b data-count>0</b> selected</span>
+    <div class="bar" style="margin:0 0 0 auto;align-items:center">
+      <button class="btn ghost small" type="button" data-act="clear">Clear</button>
+      <button class="btn" type="button" data-decide="rows">Decide 0</button>
+    </div>
+  </div>
+
+  <div class="modal" hidden>
+    <div class="box" role="dialog" aria-labelledby="what-applies-d" tabindex="-1">
+      <h2 id="what-applies-d" style="margin-bottom:6px">Does it apply to Example Fonder AB?</h2>
+      <details class="fold covers"><summary><span data-covers>41 obligations in 6 regulations</span></summary><div class="breakdown" data-list></div></details>
+      <div class="field">
+        <span class="label" style="font-weight:600;font-size:.9rem">Decision</span>
+        <div class="choice" role="group" aria-label="Decision">
+          <button class="chip" type="button" aria-pressed="true" data-choice="Applies">Applies</button>
+          <button class="chip" type="button" aria-pressed="false" data-choice="Does not apply">Does not apply</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="labelrow"><label for="what-applies-reason">Reason</label><button class="linkbtn" type="button" data-ai>Rewrite with AI</button></div>
+        <span class="micro" data-hint>Suggested from the licence facts</span>
+        <textarea id="what-applies-reason" placeholder="e.g. The company manages no funds of this kind"></textarea>
+      </div>
+      <p class="quiet">Each obligation gets its own entry in the audit log, with this reason.</p>
+      <p class="quiet">Anything a colleague decides in the meantime is left as it is.</p>
+      <div class="bar"><button class="btn ghost" type="button" data-act="cancel">Cancel</button><button class="btn" type="button" data-act="set">Set 41 to Applies</button></div>
+    </div>
+  </div>
+
+  <p class="note">One line per regulation, one button to decide, one dialog. The reason is suggested from the licence facts and is yours to edit. There is no limit on how many you decide at once: the work runs in the background and you can leave the page.</p>
+
+  <script>
+  (function () {
+    var root = document.querySelector('[data-screen="what-applies"]');
+    if (!root) return;
+    function one(sel, el) { return (el || root).querySelector(sel); }
+    function all(sel, el) { return [].slice.call((el || root).querySelectorAll(sel)); }
+    var regs = all('[data-reg]'), bar = one('.stickybar'), modal = one('.modal'), box = one('.box'), run = one('[data-run]');
+    var reason = one('#what-applies-reason'), hint = one('[data-hint]'), ai = one('[data-ai]'), setBtn = one('[data-act="set"]');
+    var job = null, opener = null, answer = 'Applies', typed = false;
+    var smooth = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    var read = " Read from Finansinspektionen's register on 11 Nov 2026.";
+    var suggested = {
+      funds: 'Within the scope of its licence Tillstånd att driva fondverksamhet, which brings Funds into scope.' + read,
+      aml: "Within the bank's scope Anti-money laundering, which includes Example Fonder AB.",
+      portfolio: 'Within the scope of its licence Portföljförvaltning, which brings Portfolio management into scope.' + read
+    };
+    var drafted = 'Example Fonder AB holds the licence Tillstånd att driva fondverksamhet from Finansinspektionen, which brings Funds into scope.' +
+      ' These obligations govern how a fund company manages its funds and protects unit holders, which is the business the licence permits, so they apply.' + read;
+
+    function rowsTo(el) { return all('.pick input', el); }
+    function rowOf(input) { return input.closest('.pick'); }
+    function nameOf(reg) { return one('[data-name]', reg).textContent.replace(/\s*›\s*$/, ''); }
+    function ticked() { return rowsTo().filter(function (input) { return input.checked; }); }
+    function count(n) { return n + (n === 1 ? ' obligation' : ' obligations'); }
+
+    // What one decision covers: everything to decide, one regulation, or the ticked rows.
+    function scope() {
+      var inputs, lines, covers, basis;
+      if (job.kind === 'rows') {
+        inputs = ticked();
+        lines = inputs.map(function (input) { var row = rowOf(input); return ['<span class="mono">' + one('.ref', row).textContent + '</span> ' + one('a', row).textContent, '']; });
+        covers = inputs.length === 1 ? '1 selected obligation' : inputs.length + ' selected obligations';
+      } else {
+        var list = job.kind === 'all' ? regs.filter(function (reg) { return rowsTo(reg).length; }) : [job.reg];
+        inputs = list.reduce(function (acc, reg) { return acc.concat(rowsTo(reg)); }, []);
+        lines = list.map(function (reg) { return [nameOf(reg), rowsTo(reg).length]; });
+        covers = count(inputs.length) + ' in ' + (job.kind === 'all' ? list.length + (list.length === 1 ? ' regulation' : ' regulations') : nameOf(job.reg));
+      }
+      basis = inputs.map(function (input) { return input.closest('[data-reg]').getAttribute('data-basis'); });
+      basis = basis.every(function (b) { return b === basis[0]; }) ? basis[0] : 'funds';
+      return { inputs: inputs, n: inputs.length, lines: lines, covers: covers, suggestion: suggested[basis] };
+    }
+    function label() {
+      setBtn.textContent = 'Set ' + job.s.n + ' to ' + answer;
+      setBtn.disabled = !reason.value.trim();
+    }
+    function choose(value) {
+      answer = value;
+      all('[data-choice]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-choice') === value)); });
+      if (!typed || !reason.value.trim()) {
+        typed = false;
+        reason.value = value === 'Applies' ? job.s.suggestion : '';
+      }
+      hint.textContent = 'Suggested from the licence facts';
+      hint.classList.remove('ai');
+      hint.hidden = typed || value !== 'Applies';
+      ai.hidden = value !== 'Applies';
+      label();
+    }
+    function cover() {
+      job.s = scope();
+      one('[data-covers]').textContent = job.s.covers;
+      one('[data-list]').innerHTML = job.s.lines.map(function (l) { return '<div><span>' + l[0] + '</span><b>' + l[1] + '</b></div>'; }).join('');
+    }
+    function open(kind, button) {
+      opener = button;
+      job = { kind: kind, reg: button.closest('[data-reg]') };
+      cover();
+      typed = false;
+      reason.value = '';
+      one('.covers').open = false;
+      choose('Applies');
+      modal.hidden = false;
+      modal.scrollIntoView({ block: 'start', behavior: smooth });
+      box.focus({ preventScroll: true });
+    }
+    function close() { modal.hidden = true; job = null; }
+
+    // The selection: each regulation's checkbox follows its rows, and the bar shows only while something is ticked.
+    function sync() {
+      var n = ticked().length;
+      regs.forEach(function (reg) {
+        var head = one('[data-all]', reg), rows = rowsTo(reg), on = rows.filter(function (i) { return i.checked; }).length;
+        if (!head) return;
+        head.checked = on > 0 && on === rows.length;
+        head.indeterminate = on > 0 && on < rows.length;
+      });
+      bar.hidden = !n;
+      one('[data-count]').textContent = n;
+      one('[data-decide="rows"]').textContent = 'Decide ' + n;
+      if (job && job.kind === 'rows') { if (n) { cover(); label(); } else { close(); } }
+    }
+    function recount() {
+      var left = rowsTo().length, decideAll = one('[data-decide="all"]');
+      all('[data-todo]').forEach(function (el) { el.textContent = left; });
+      one('[data-decided]').textContent = 58 - left;
+      decideAll.textContent = 'Decide all ' + left;
+      decideAll.hidden = !left;
+      regs.forEach(function (reg) {
+        var n = rowsTo(reg).length, head = one('[data-all]', reg), button = one('[data-decide]', reg);
+        one('[data-cnt]', reg).textContent = n ? n + ' of ' + reg.getAttribute('data-total') + ' to decide' : 'All decided';
+        button.textContent = 'Decide ' + n;
+        button.hidden = !n;
+        if (head && !n) head.style.visibility = 'hidden';
+      });
+    }
+    // The background work, played here by a timer: about four seconds, then the rows it covered read as decided.
+    function start() {
+      var s = job.s, value = answer, tick = 0, timer;
+      var title = one('[data-run-title]'), counter = one('[data-run-count]'), meter = one('.progress'), done = one('[data-act="done"]');
+      function paint() {
+        var n = Math.min(s.n, Math.round(s.n * tick / 40));
+        counter.textContent = n + ' of ' + s.n;
+        meter.firstElementChild.style.width = (100 * n / s.n) + '%';
+        meter.setAttribute('aria-valuenow', n);
+      }
+      close();
+      s.inputs.forEach(function (input) { input.checked = false; });
+      sync();
+      all('[data-decide]').forEach(function (b) { b.disabled = true; });
+      title.textContent = 'Setting ' + count(s.n) + ' to ' + value;
+      meter.setAttribute('aria-valuemax', s.n);
+      run.hidden = counter.hidden = meter.hidden = false;
+      done.hidden = true;
+      paint();
+      run.scrollIntoView({ block: 'center', behavior: smooth });
+      run.focus({ preventScroll: true });
+      timer = setInterval(function () {
+        tick += 1;
+        paint();
+        if (tick < 40) return;
+        clearInterval(timer);
+        s.inputs.forEach(function (input) {
+          var row = rowOf(input), gap = document.createElement('span');
+          gap.setAttribute('aria-hidden', 'true');
+          input.replaceWith(gap);
+          one('.state', row).innerHTML = '<span class="pill' + (value === 'Applies' ? ' positive' : '') + '">' + value + '</span> Sara Lindqvist, 13 Nov 2026';
+        });
+        title.textContent = s.n + ' set to ' + value + '.';
+        counter.hidden = meter.hidden = true;
+        done.hidden = false;
+        all('[data-decide]').forEach(function (b) { b.disabled = false; });
+        recount();
+        sync();
+      }, 100);
+    }
+
+    root.addEventListener('change', function (event) {
+      var input = event.target;
+      if (input.type !== 'checkbox') return;
+      if (input.hasAttribute('data-all')) rowsTo(input.closest('[data-reg]')).forEach(function (i) { i.checked = input.checked; });
+      sync();
+    });
+    root.addEventListener('input', function (event) {
+      if (event.target !== reason) return;
+      typed = true;
+      hint.hidden = true;
+      label();
+    });
+    root.addEventListener('click', function (event) {
+      var summary = event.target.closest('summary'), button = event.target.closest('button');
+      var kind = button && button.getAttribute('data-decide'), act = button && button.getAttribute('data-act'), choice = button && button.getAttribute('data-choice');
+      // The checkbox, the name and the button on a regulation's line never open or close it.
+      if (summary && summary.closest('.list') && event.target.closest('input,a,button')) {
+        var fold = summary.parentNode, was = fold.open;
+        setTimeout(function () { fold.open = was; });
+      }
+      if (event.target.closest('a[href="#"]')) event.preventDefault();
+      if (kind) open(kind, button);
+      if (choice) choose(choice);
+      if (button && button.hasAttribute('data-ai')) {
+        reason.value = drafted;
+        typed = false;
+        hint.textContent = 'Drafted by AI, not yet confirmed by a person';
+        hint.classList.add('ai');
+        hint.hidden = false;
+        label();
+      }
+      if (act === 'clear') { rowsTo().forEach(function (i) { i.checked = false; }); sync(); }
+      if (act === 'cancel') { close(); if (opener) opener.focus(); }
+      if (act === 'set') start();
+      if (act === 'done') run.hidden = true;
+    });
+    all('input[type=checkbox]').forEach(function (i) { i.checked = false; });
+    sync();
+  })();
+  </script>
+</div>
+<style>
+[data-screen="obligation-a"] .modal[hidden]{display:none}
+[data-screen="obligation-a"] .lagrum .margin a{color:inherit}
+[data-screen="obligation-a"] .pill button.x{background:none;border:0;padding:0 2px;color:inherit;font:inherit;line-height:1}
+[data-screen="obligation-a"] .dim{color:var(--muted)}
+[data-screen="obligation-a"] .ink{color:var(--text)}
+[data-screen="obligation-a"] .grow{flex:1 1 0;min-width:0}
+@media (min-width:821px){[data-screen="obligation-a"] .lagrum{grid-template-columns:128px 1fr}}
+</style>
+<div class="mock-screen" data-screen="obligation-a">
+  <button class="back">&larr; Inventory</button>
+  <div class="meta" style="margin-bottom:6px">
+    <a class="pill brand" href="#" title="Open the regulation FFFS 2017:2">FFFS 2017:2</a><span class="pill">Securities</span><span class="pill">Binding</span><span class="pill warning">Partly compliant</span>
+    <span>at Example Bank AB, the weakest legal entity</span>
+  </div>
+  <h1 style="margin-bottom:14px">Pay for third-party research only under the permitted models</h1>
+  <div class="filters">
+    <button class="chip" aria-pressed="true">English</button><button class="chip" aria-pressed="false">Svenska, original</button>
+    <span style="width:100%"></span>
+    <button class="chip" aria-pressed="false">Version 1</button><button class="chip" aria-pressed="true">Version 2, from 1 Oct 2026</button><button class="chip" aria-pressed="false">Show what changed</button>
+    <span style="display:inline-flex;align-items:center;gap:8px"><label class="meta" for="obligation-a-asof">As of</label><input type="date" id="obligation-a-asof"></span>
+  </div>
+  <div class="lagrum" style="margin-bottom:16px">
+    <div class="margin"><b>&sect;</b><small><a href="#">FFFS 2017:2</a> &rsaquo; <span style="white-space:nowrap">9 kap. 6 &sect;</span></small></div>
+    <div class="body" lang="en"><span class="mt">Machine translation from Swedish. The original is authoritative.</span>Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules. The institution sets criteria for an annual assessment of the quality, usability and value of the research it uses. If the research does not contribute to better investment decisions, the institution takes corrective action.</div>
+  </div>
+
+  <div class="grid g2">
+    <!-- Left: the bank's own judgement -->
+    <div class="grid" style="align-content:start">
+
+      <div class="panel"><h2>Our position</h2>
+        <div class="entity"><h3>Example Bank AB</h3>
+          <div class="fact">
+            <div><span class="micro">Does it apply</span>
+              <div class="meta"><span class="pill positive">Applies</span><span>Set by Sara Lindqvist, 18 Sep 2026</span></div>
+              <p>We give advice and manage portfolios, both paid partly with research.</p>
+            </div>
+            <div class="bar" style="margin-top:0"><button class="btn ghost small">Change</button></div>
+          </div>
+          <div class="fact">
+            <div><span class="micro">Where we stand</span>
+              <div class="meta"><span class="pill warning">Partly compliant</span><span>Owner Anna Nilsson &middot; Next review 30 Nov 2026 &middot; 1 open gap</span></div>
+              <p>Criteria agreed; the first yearly assessment is not done yet.</p>
+              <details class="fold"><summary>More</summary>
+                <dl class="kv"><dt>Risk if we fail</dt><dd>High</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>How you assessed it</dt><dd>Self-assessment</dd></dl>
+              </details>
+            </div>
+            <div class="bar" style="margin-top:0"><button class="btn ghost small">Edit</button></div>
+          </div>
+        </div>
+        <div class="entity" data-fonder><h3>Example Fonder AB</h3>
+          <div class="fact">
+            <div><span class="micro">Does it apply</span><p class="dim" style="margin:0">To decide</p></div>
+            <div class="bar" style="margin-top:0"><button class="btn small" data-decide-open aria-expanded="false" aria-controls="obligation-a-decide">Decide</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Opens from Decide; in the product it is a dialog over the page -->
+      <div class="modal flat" id="obligation-a-decide" data-decide-dialog hidden>
+        <div class="box" role="dialog" aria-labelledby="obligation-a-decide-title">
+          <h2 id="obligation-a-decide-title">Does it apply to Example Fonder AB?</h2>
+          <div class="field"><label for="obligation-a-decision">Decision</label>
+            <select id="obligation-a-decision"><option selected>Applies</option><option>Does not apply</option><option>Not assessed</option></select></div>
+          <div class="field">
+            <div class="labelrow"><label for="obligation-a-reason">Reason</label><button class="linkbtn" type="button" data-ai-link data-goto="ai-draft">Rewrite with AI</button></div>
+            <span class="micro" data-suggested style="margin-top:6px">Suggested from the licence facts and the rule's scope</span>
+            <textarea id="obligation-a-reason">Within the scope of its licence Tillstånd att driva fondverksamhet, which brings Funds into scope. The rule covers fund companies that manage portfolios.</textarea>
+          </div>
+          <p class="dim" style="margin:0">Now: to decide</p>
+          <div class="bar"><button class="btn ghost" type="button" data-decide-cancel>Cancel</button><button class="btn" type="button" data-decide-set>Set to Applies</button></div>
+        </div>
+      </div>
+
+      <div class="panel"><h2>How we comply</h2>
+        <div class="sub"><h3>How we read this rule</h3>
+          <p>"Research" covers written analysis and access to analysts. Free short market comments stay outside, as FI's Q&amp;A of 2018 allows.</p>
+          <div class="oneline"><span>Version 3, Sara Lindqvist, 12 Sep 2026</span><button class="btn ghost small">Write a new version</button></div>
+          <details class="fold"><summary>Earlier versions <span>(2)</span></summary>
+            <div class="log">
+              <div><time>Version 2, Sara Lindqvist, 2 Apr 2026</time>"Research" covers written analysis. Access to analysts counted as a minor benefit outside the rule.</div>
+              <div><time>Version 1, Johan Berg, 18 Mar 2026</time>The rule covers paid research subscriptions only.</div>
+            </div>
+          </details>
+          <details class="fold"><summary>Assessment history <span>(3)</span></summary>
+            <div class="log">
+              <div><span class="meta"><span class="pill warning">Partly compliant</span><span>22 Sep 2026</span><span>Sara Lindqvist</span><span>Self-assessment</span><span>Example Bank AB</span></span>Criteria agreed; the first yearly assessment is not done yet.</div>
+              <div><span class="meta"><span class="pill positive">Compliant</span><span>14 Apr 2026</span><span>Anna Nilsson</span><span>Control test</span><span>Example Bank AB</span></span>Research is paid from the bank's own resources; the first-quarter payments match the ledger.</div>
+              <div><span class="meta"><span class="pill negative">Gap</span><span>20 Mar 2026</span><span>Johan Berg</span><span>Internal audit</span><span>Example Bank AB</span></span>Two desks received research bundled with execution.</div>
+            </div>
+          </details>
+        </div>
+        <div class="sub"><h3><span>How we handle it</span><button class="btn ghost small">Edit</button></h3>
+          <p><span class="dim">Process</span> Research budget and yearly review (PRC-22) &middot; <span class="dim">System</span> Research payment account ledger &middot; <span class="dim">Evidence</span> <a href="#" rel="noopener">Compliance share, /Research/Assessments</a></p>
+          <div class="oneline"><span class="grow">Policy <span class="mono">POL-014</span> <a href="#" rel="noopener">Research and inducements policy</a></span><button class="linkbtn">Remove</button></div>
+          <div class="oneline" style="margin-top:6px"><span class="grow">Control <span class="mono">CTL-208</span> <span class="ink">Yearly research value assessment</span></span><button class="linkbtn">Remove</button></div>
+          <div class="bar"><button class="btn ghost small">Link an item</button></div>
+        </div>
+        <div class="sub"><h3><span>Gaps (1)</span><button class="btn ghost small">Record a gap</button></h3>
+          <a href="#">No annual assessment of the research we pay for</a>
+          <div class="meta" style="margin-top:6px"><span class="pill negative">Open</span><span class="pill negative">High</span><span>Example Bank AB</span><span>Anna Nilsson</span><span>Target 30 Nov 2026</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: the rule's own facts -->
+    <div class="grid" style="align-content:start">
+
+      <div class="panel"><h2>The rule</h2>
+        <div class="sub"><h3>Who and what it covers</h3>
+          <dl class="kv">
+            <dt>Legal entity</dt><dd class="facets"><span class="pill brand">Bank</span><span class="pill brand">Fund company</span></dd>
+            <dt>Service</dt><dd class="facets"><span class="pill brand">Advice</span><span class="pill brand">Portfolio management</span></dd>
+            <dt>Client category</dt><dd class="facets"><span class="pill brand">Retail</span><span class="pill brand">Professional</span></dd>
+            <dt>Jurisdiction</dt><dd class="facets"><span class="pill brand">Sweden</span></dd>
+          </dl>
+          <p class="meta" style="display:block;margin:10px 0 0">Not channel-specific &middot; Not account-specific &middot; Not activity-specific</p>
+        </div>
+        <div class="sub"><h3>The duty</h3>
+          <dl class="kv"><dt>Type</dt><dd>Governance</dd><dt>Trigger and frequency</dt><dd>Yearly assessment, from 1 Oct 2026</dd><dt>Record retention</dt><dd>5 years</dd><dt>Sanction exposure</dt><dd>FI remark, warning or sanction fee</dd></dl>
+        </div>
+        <div class="sub"><h3><span>Tags</span><button class="btn ghost small">Add a tag</button></h3>
+          <div class="facets" style="align-items:center"><span class="pill brand">Inducements</span><span class="pill brand">Research</span><span class="pill outlined">Custody<button class="x" type="button" aria-label="Remove Custody">&times;</button></span><span class="pill outlined">Priority<button class="x" type="button" aria-label="Remove Priority">&times;</button></span></div>
+        </div>
+      </div>
+
+      <div class="panel"><h2>Source and changes</h2>
+        <div class="sub"><h3>Where it comes from</h3>
+          <dl class="kv">
+            <dt>Regulation</dt><dd><a href="#">FFFS 2017:2 om v&auml;rdepappersr&ouml;relse</a></dd>
+            <dt>Reference</dt><dd class="mono">9 kap. 6 &sect;</dd>
+            <dt>Implements</dt><dd>MiFID II delegated directive (EU) 2017/593, art. 13</dd>
+            <dt>Source</dt><dd><a href="#" rel="noopener">fi.se, consolidated text</a></dd>
+            <dt>Last verified</dt><dd>30 Jun 2026 by Sara Lindqvist</dd>
+          </dl>
+          <div class="bar"><button class="btn ghost small">This looks wrong</button></div>
+        </div>
+        <div class="sub"><h3>Related changes (1)</h3>
+          <a href="#">FI adopts amended rules on paying for investment research</a>
+          <div class="meta" style="margin-top:6px"><span class="pill negative">Act now</span><span>Needs triage</span><span>Finansinspektionen, 15 Sep 2026</span></div>
+        </div>
+        <div class="sub"><h3>Versions</h3>
+          <div class="log">
+            <div><time>Version 2, in force from 1 Oct 2026</time>Approved 17 Sep 2026, machine-confirmed by Review agent 0.2 from a proposal by Research agent 0.4. Source: Finansinspektionen, board decision 15 Sep 2026.</div>
+            <div><time>Version 1, in force until 30 Sep 2026</time>Approved 12 Mar 2026. Source: Finansinspektionen, FFFS 2017:2 consolidated text.</div>
+          </div>
+        </div>
+        <details class="fold"><summary>Related obligations <span>(1)</span></summary>
+          <a href="#">Disclose all costs and charges before and after the service</a>
+          <div class="meta" style="margin-top:4px"><span>FFFS 2017:2, binding</span></div>
+        </details>
+        <details class="fold"><summary>Reported problems <span>(2)</span></summary>
+          <div class="log">
+            <div><span class="meta"><span class="pill warning">Open</span><span>Johan Berg, 20 Sep 2026</span><span>Version 2, Swedish</span></span>The retention line says five years; the source says ten.<br><button class="linkbtn">Close report</button></div>
+            <div><span class="meta"><span class="pill">Answered</span><span>Anna Nilsson, 12 Sep 2026</span></span>The sanction line leaves out the sanction fee.<br><span class="dim">Closed by Erik Holm, 13 Sep 2026: the fee is there, last in the line.</span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel"><h2>People and discussion</h2>
+        <div class="sub"><h3><span>Participants</span><button class="btn ghost small">Add</button></h3>
+          <div class="oneline"><span class="grow"><span class="ink">Erik Holm</span> &middot; Added 19 Sep 2026 by Anna Nilsson</span><button class="linkbtn">Remove</button></div>
+          <div class="oneline" style="margin-top:6px"><span class="grow"><span class="ink">Legal</span> &middot; Team &middot; Added 18 Sep 2026 by Anna Nilsson</span><button class="linkbtn">Remove</button></div>
+        </div>
+        <div class="sub"><h3>Comments (2)</h3>
+          <div class="log">
+            <div><span class="meta"><span class="ink">Anna Nilsson</span><span>21 Sep 2026, 10:42</span></span>The research desk sends its supplier list on Friday. I start the value assessment from that.</div>
+            <div><span class="meta"><span class="ink">Sara Lindqvist</span><span>22 Sep 2026, 08:15</span></span>Good. Use the agreed criteria and attach the result to the gap.</div>
+          </div>
+          <div class="field" style="margin:10px 0 0"><label class="sr" for="obligation-a-comment">Write a comment</label><textarea id="obligation-a-comment" placeholder="Write a comment"></textarea></div>
+          <div class="bar"><button class="btn ghost small">Comment</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="statecap" style="margin-top:36px">The same page for an obligation nobody has worked on yet</p>
+  <div class="grid g2">
+    <div class="grid" style="align-content:start">
+      <div class="panel"><h2>Our position</h2>
+        <div class="entity"><h3>Example Bank AB</h3>
+          <div class="fact">
+            <div><span class="micro">Does it apply</span><p class="dim" style="margin:0">To decide</p></div>
+            <div class="bar" style="margin-top:0"><button class="btn small">Decide</button></div>
+          </div>
+        </div>
+        <div class="entity"><h3>Example Fonder AB</h3>
+          <div class="fact">
+            <div><span class="micro">Does it apply</span><p class="dim" style="margin:0">To decide</p></div>
+            <div class="bar" style="margin-top:0"><button class="btn small">Decide</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel"><h2>How we comply</h2>
+        <div class="sub"><div class="oneline"><span>No reading written yet.</span><button class="btn ghost small">Write our reading</button></div></div>
+        <div class="sub"><div class="oneline"><span>Not mapped to a process, system or evidence yet.</span><button class="btn ghost small">Map it</button></div></div>
+        <div class="sub"><div class="oneline"><span>No gaps recorded.</span><button class="btn ghost small">Record a gap</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">Five cards instead of sixteen. Empty parts shrink to one line with their button. One dialog decides, and its reason is suggested from the licence facts.</p>
+
+  <script>
+  (function(){
+    var s=document.currentScript;
+    var root=(s&&s.closest('[data-screen="obligation-a"]'))||document.querySelector('[data-screen="obligation-a"]');
+    if(!root)return;
+    var dialog=root.querySelector('[data-decide-dialog]');
+    var open=root.querySelector('[data-decide-open]');
+    var cancel=root.querySelector('[data-decide-cancel]');
+    var set=root.querySelector('[data-decide-set]');
+    var sel=root.querySelector('#obligation-a-decision');
+    var reason=root.querySelector('#obligation-a-reason');
+    var suggested=root.querySelector('[data-suggested]');
+    var ai=root.querySelector('[data-ai-link]');
+    var block=root.querySelector('[data-fonder]');
+    if(!dialog||!open||!cancel||!set||!sel||!reason||!block)return;
+    var suggestion=reason.value, typed=false;
+    function show(el,on){if(el)el.style.display=on?'':'none';}
+    function sync(){
+      set.textContent='Set to '+sel.value;
+      set.disabled=!reason.value.trim();
+    }
+    sel.addEventListener('change',function(){
+      var applies=sel.value==='Applies';
+      if(!typed){reason.value=applies?suggestion:'';show(suggested,applies);}
+      show(ai,applies);
+      reason.placeholder=applies?'':'e.g. The company gives no investment advice';
+      sync();
+    });
+    reason.addEventListener('input',function(){typed=true;show(suggested,false);sync();});
+    open.addEventListener('click',function(){
+      dialog.hidden=false;open.setAttribute('aria-expanded','true');sel.focus();
+    });
+    cancel.addEventListener('click',function(){
+      dialog.hidden=true;open.setAttribute('aria-expanded','false');open.focus();
+    });
+    set.addEventListener('click',function(){
+      if(set.disabled)return;
+      var v=sel.value;
+      dialog.hidden=true;
+      var fact=document.createElement('div');fact.className='fact';
+      var left=document.createElement('div');
+      left.innerHTML='<span class="micro">Does it apply</span><div class="meta"><span class="pill"></span><span>Set by Sara Lindqvist, 13 Nov 2026</span></div><p></p>';
+      var pill=left.querySelector('.pill');pill.textContent=v;
+      if(v==='Applies')pill.classList.add('positive');
+      left.querySelector('p').textContent=reason.value.trim();
+      fact.appendChild(left);
+      var bar=document.createElement('div');bar.className='bar';bar.style.marginTop='0';
+      bar.innerHTML='<button class="btn ghost small" type="button">Change</button>';
+      fact.appendChild(bar);
+      block.querySelectorAll('.fact').forEach(function(f){f.remove();});
+      block.appendChild(fact);
+      if(v==='Applies'){
+        var stand=document.createElement('div');stand.className='fact';
+        stand.innerHTML='<div><span class="micro">Where we stand</span><div class="meta"><span class="pill">Not assessed</span></div></div><div class="bar" style="margin-top:0"><button class="btn ghost small" type="button">Edit</button></div>';
+        block.appendChild(stand);
+      }
+    });
+    sync();
+  })();
+  </script>
+</div>
+<style>
+[data-screen="regulation"] [data-variant][hidden]{display:none}
+[data-screen="regulation"] .lede{color:var(--muted);margin:0 0 6px}
+[data-screen="regulation"] .co{color:var(--text);font-weight:600}
+[data-screen="regulation"] .findrow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+[data-screen="regulation"] .counts{display:block;color:var(--muted);font-weight:400;font-size:.86rem;margin:2px 0 0 .81rem}
+</style>
+<div class="mock-screen" data-screen="regulation">
+  <div class="filters" role="group" aria-label="Which regulation to show" style="border-bottom:1px dashed var(--line-strong);padding-bottom:12px;margin-bottom:20px">
+    <span class="meta">Show the page for</span>
+    <button class="chip" type="button" aria-pressed="true" data-show="regulation">A regulation</button>
+    <button class="chip" type="button" aria-pressed="false" data-show="directive">A directive</button>
+  </div>
+
+  <!-- Variant 1: a regulation that carries its own obligations -->
+  <div data-variant="regulation">
+    <button class="back" type="button">← Regulations</button>
+    <div class="meta" style="margin-bottom:6px"><span class="pill">FI regulation</span><span class="pill">Binding</span><span class="pill brand">Sweden</span><span class="pill">Securities</span></div>
+    <h1 style="margin-bottom:6px">FFFS 2017:2</h1>
+    <p class="lede" lang="sv">Finansinspektionens föreskrifter om värdepappersrörelse</p>
+    <p class="meta" style="display:block;margin-bottom:20px">In force from 3 Jan 2018 · <a href="#" rel="noopener">Source</a></p>
+
+    <div class="grid g2"><div class="grid" style="align-content:start">
+      <div class="panel"><h2>Obligations in this regulation</h2>
+        <p>20 in the library. 14 fall in your scope.</p>
+        <div class="facets" role="group" aria-label="Filter by answer">
+          <button class="chip" type="button" aria-pressed="true">All 14</button>
+          <button class="chip" type="button" aria-pressed="false">Not decided 5</button>
+          <button class="chip" type="button" aria-pressed="false">Applies 8</button>
+          <button class="chip" type="button" aria-pressed="false">Does not apply 1</button>
+        </div>
+        <div class="rollup"><span>Where it applies:</span><span><span class="dot positive" aria-hidden="true"></span><b>5</b> compliant</span><span><span class="dot warning" aria-hidden="true"></span><b>2</b> partly compliant</span><span><span class="dot negative" aria-hidden="true"></span><b>1</b> gap</span></div>
+        <details class="fold"><summary>By company</summary>
+          <div class="rows">
+            <div class="oneline"><span><span class="co">Example Bank AB</span>: 8 apply · 1 does not · 3 not decided</span><a href="#">Decide 3 ›</a></div>
+            <div class="oneline"><span><span class="co">Example Fonder AB</span>: 0 apply · 0 do not · 12 not decided</span><a href="#">Decide 12 ›</a></div>
+          </div>
+        </details>
+        <div class="sub findrow">
+          <div class="field" style="flex:1 1 150px;margin-bottom:0"><label for="regulation-find">Find an obligation</label><input id="regulation-find" type="search" placeholder="e.g. research"></div>
+          <div class="facets" role="group" aria-label="Which obligations to list" style="padding-bottom:4px">
+            <button class="chip" type="button" aria-pressed="true">My scope</button>
+            <button class="chip" type="button" aria-pressed="false">Markets we watch</button>
+            <button class="chip" type="button" aria-pressed="false">Show all items</button>
+          </div>
+        </div>
+        <div class="orow"><span class="ref">9 kap. 6 §</span><a href="#">Pay for third-party research only under the permitted models</a><span class="pills"><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></span></div>
+        <div class="orow"><span class="ref">9 kap. 10 §</span><a href="#">Disclose all costs and charges before and after the service</a><span class="pills"><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></span></div>
+        <div class="orow"><span class="ref">9 kap. 14 §</span><a href="#">Keep records of client orders</a><span class="pills"><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></span></div>
+        <div class="orow"><span class="ref">9 kap. 21 §</span><a href="#">Assess suitability before advising</a><span class="pills"><span class="pill positive">Applies</span><span class="pill negative">Gap</span></span></div>
+        <div class="orow"><span class="ref">9 kap. 27 §</span><a href="#">Classify each client</a><span class="pills meta">Not decided</span></div>
+        <div class="orow"><span class="ref">9 kap. 33 §</span><a href="#">Handle complaints within the set time</a><span class="pills meta">Not decided</span></div>
+        <div class="orow"><span class="ref">11 kap. 2 §</span><a href="#">Safeguard client assets</a><span class="pills"><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></span></div>
+        <div class="orow"><span class="ref">12 kap. 3 §</span><a href="#">Report suspected market abuse</a><span class="pills"><span class="pill">Does not apply</span></span></div>
+        <div class="oneline" style="border-top:1px solid var(--line);padding-top:12px">
+          <span class="inline"><button class="btn ghost small" type="button" disabled>Previous</button><span>1–8 of 14</span><button class="btn ghost small" type="button">Next</button></span>
+          <a href="#">Open in the inventory</a>
+        </div>
+      </div>
+
+      <div class="panel"><h2>Provisions</h2>
+        <ul class="tree">
+          <li><details open><summary><span class="ref">9 kap.</span>Skydd för investerare</summary>
+            <ul>
+              <li><details><summary><span class="ref">6 §</span>Betalning för analys</summary>
+                  <div class="lagrum" style="margin:8px 0"><div class="margin"><b>§</b><small>9 kap. 6 §</small></div><div class="body" lang="sv" style="font-size:1rem">Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna.</div></div></details>
+                <p class="meta" style="display:block;margin:4px 0 0 .875rem">Obligations: <a href="#">Pay for third-party research only under the permitted models</a></p></li>
+              <li><details><summary><span class="ref">10 §</span>Kostnader och avgifter</summary>
+                  <div class="lagrum" style="margin:8px 0"><div class="margin"><b>§</b><small>9 kap. 10 §</small></div><div class="body" lang="sv" style="font-size:1rem">Ett värdepappersinstitut ska i god tid innan en tjänst utförs, och därefter minst en gång per år, lämna kunden en sammanställning av samtliga kostnader och avgifter.</div></div></details>
+                <p class="meta" style="display:block;margin:4px 0 0 .875rem">Obligations: <a href="#">Disclose all costs and charges before and after the service</a></p></li>
+              <li><details><summary><span class="ref">21 §</span>Lämplighetsbedömning</summary>
+                  <div class="lagrum" style="margin:8px 0"><div class="margin"><b>§</b><small>9 kap. 21 §</small></div><div class="body" lang="sv" style="font-size:1rem">Innan ett värdepappersinstitut ger investeringsrådgivning ska det inhämta de uppgifter om kunden som behövs för att bedöma om rådet är lämpligt för kunden.</div></div></details>
+                <p class="meta" style="display:block;margin:4px 0 0 .875rem">Obligations: <a href="#">Assess suitability before advising</a></p></li>
+            </ul></details></li>
+          <li><details><summary><span class="ref">11 kap.</span>Kundmedel och finansiella instrument</summary>
+            <ul>
+              <li><details><summary><span class="ref">2 §</span>Förvaring av kunders tillgångar</summary>
+                  <div class="lagrum" style="margin:8px 0"><div class="margin"><b>§</b><small>11 kap. 2 §</small></div><div class="body" lang="sv" style="font-size:1rem">Ett värdepappersinstitut ska hålla kunders finansiella instrument och medel åtskilda från sina egna tillgångar och stämma av dem regelbundet.</div></div></details>
+                <p class="meta" style="display:block;margin:4px 0 0 .875rem">Obligations: <a href="#">Safeguard client assets</a></p></li>
+            </ul></details></li>
+        </ul>
+      </div>
+    </div><div class="grid" style="align-content:start">
+      <div class="panel"><h2>What it is</h2>
+        <div class="facets" role="group" aria-label="Language" style="margin-bottom:12px"><button class="chip" type="button" aria-pressed="true">English</button><button class="chip" type="button" aria-pressed="false">Svenska, original</button></div>
+        <p style="margin:0">Sets the detailed conduct and organisation rules for firms that run a securities business in Sweden. It covers how clients are classified and informed, how advice is tested for suitability, how orders and costs are recorded, and how client assets are kept apart. Finansinspektionen issued it to carry the detailed MiFID II rules into Swedish supervision.</p>
+      </div>
+      <div class="panel"><h2>Identity</h2>
+        <dl class="kv">
+          <dt>Official reference</dt><dd class="mono">FFFS 2017:2</dd>
+          <dt>Level</dt><dd>FI regulation</dd>
+          <dt>Binding force</dt><dd>Binding</dd>
+          <dt>Jurisdiction</dt><dd>Sweden</dd>
+          <dt>Authority</dt><dd>Finansinspektionen</dd>
+          <dt>In force</dt><dd>3 Jan 2018</dd>
+          <dt>Last verified</dt><dd>30 Jun 2026</dd>
+        </dl>
+        <div class="bar"><button class="btn ghost small" type="button">This looks wrong</button></div>
+        <details class="fold"><summary>Reported problems <span>(0)</span></summary>
+          <p class="meta" style="display:block;margin:0">Nobody in your organisation has reported a problem with this regulation.</p>
+        </details>
+      </div>
+      <div class="panel"><h2>Lineage</h2>
+        <span class="micro">Implements</span>
+        <p><a href="#">MiFID II delegated directive (EU) 2017/593</a><br><span class="meta">EU directive, binding</span></p>
+        <span class="micro">Amended by</span>
+        <p style="margin:0"><a href="#">FFFS 2026:11</a><br><span class="meta">In force from 1 Oct 2026</span></p>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Variant 2: a directive, whose obligations sit in each country's implementing law -->
+  <div data-variant="directive" hidden>
+    <button class="back" type="button">← Regulations</button>
+    <div class="meta" style="margin-bottom:6px"><span class="pill">EU directive</span><span class="pill">Binding</span><span class="pill brand">European Union</span><span class="pill">Securities</span></div>
+    <h1 style="margin-bottom:6px">MiFID II</h1>
+    <p class="lede">Directive 2014/65/EU on markets in financial instruments</p>
+    <p class="meta" style="display:block;margin-bottom:20px">In force from 2 Jul 2014 · <a href="#" rel="noopener">Source</a></p>
+
+    <div class="grid g2"><div class="grid" style="align-content:start">
+      <div class="panel"><h2>Obligations from this directive</h2>
+        <p>A directive binds the member states; a bank's obligations come from each country's law that implements it.</p>
+        <p>109 obligations in 12 national laws the library holds. 23 fall in your scope.</p>
+        <details class="fold" open><summary>Sweden · <a href="#" lang="sv">Lag (2007:528) om värdepappersmarknaden ›</a><small class="counts">34 obligations · 23 in your scope · 14 apply · 9 not decided</small></summary>
+          <div class="orow"><span class="ref">8 kap. 9 §</span><a href="#">Run the business with sound governance and internal control</a><span class="pills"><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></span></div>
+          <div class="orow"><span class="ref">8 kap. 21 §</span><a href="#">Identify and manage conflicts of interest</a><span class="pills"><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></span></div>
+          <div class="orow"><span class="ref">9 kap. 1 §</span><a href="#">Act honestly, fairly and professionally for the client</a><span class="pills"><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></span></div>
+          <div class="orow"><span class="ref">9 kap. 23 §</span><a href="#">Assess suitability before advising or managing a portfolio</a><span class="pills meta">Not decided</span></div>
+          <div class="orow"><span class="ref">9 kap. 31 §</span><a href="#">Execute orders on the best terms for the client</a><span class="pills meta">Not decided</span></div>
+          <div class="oneline" style="border-top:1px solid var(--line);padding-top:12px"><span>First 5 of 23 in your scope</span><a href="#">See all 34</a></div>
+        </details>
+        <details class="fold"><summary>Denmark · <a href="#" lang="da">Kapitalmarkedsloven ›</a><small class="counts">21 obligations · 0 in your scope</small></summary>
+          <div class="oneline"><span>None fall in your scope.</span><a href="#">See all 21</a></div>
+        </details>
+        <details class="fold"><summary>Finland · <a href="#" lang="fi">Sijoituspalvelulaki ›</a><small class="counts">18 obligations · 0 in your scope</small></summary>
+          <div class="oneline"><span>None fall in your scope.</span><a href="#">See all 18</a></div>
+        </details>
+        <details class="fold"><summary>Other countries <span>(9)</span><small class="counts">36 obligations · 0 in your scope</small></summary>
+          <div class="rows">
+            <div class="oneline"><a href="#">Estonia · Väärtpaberituru seadus ›</a><span>6 obligations</span></div>
+            <div class="oneline"><a href="#">France · Code monétaire et financier ›</a><span>1 obligation</span></div>
+            <div class="oneline"><a href="#">Germany · Wertpapierhandelsgesetz ›</a><span>4 obligations</span></div>
+            <div class="oneline"><a href="#">Ireland · Markets in Financial Instruments Regulations 2017 ›</a><span>2 obligations</span></div>
+            <div class="oneline"><a href="#">Latvia · Finanšu instrumentu tirgus likums ›</a><span>5 obligations</span></div>
+            <div class="oneline"><a href="#">Lithuania · Finansinių priemonių rinkų įstatymas ›</a><span>5 obligations</span></div>
+            <div class="oneline"><a href="#">Luxembourg · Loi relative aux marchés d'instruments financiers ›</a><span>1 obligation</span></div>
+            <div class="oneline"><a href="#">Netherlands · Wet op het financieel toezicht ›</a><span>3 obligations</span></div>
+            <div class="oneline"><a href="#">Norway · Verdipapirhandelloven ›</a><span>9 obligations</span></div>
+          </div>
+        </details>
+      </div>
+    </div><div class="grid" style="align-content:start">
+      <div class="panel"><h2>What it is</h2>
+        <div class="facets" role="group" aria-label="Language" style="margin-bottom:12px"><button class="chip" type="button" aria-pressed="true">English</button><button class="chip" type="button" aria-pressed="false">Svenska</button></div>
+        <p style="margin:0">Sets the common EU rules for firms that provide investment services and for the venues where financial instruments trade. It covers authorisation, how a firm is organised, how clients are protected and how markets stay transparent. It has applied since 3 Jan 2018 and is filled in by delegated acts and technical standards.</p>
+      </div>
+      <div class="panel"><h2>Identity</h2>
+        <dl class="kv">
+          <dt>Official reference</dt><dd class="mono">Directive 2014/65/EU</dd>
+          <dt>Level</dt><dd>EU directive</dd>
+          <dt>Binding force</dt><dd>Binding</dd>
+          <dt>Jurisdiction</dt><dd>European Union</dd>
+          <dt>Authority</dt><dd>European Parliament and Council</dd>
+          <dt>In force</dt><dd>2 Jul 2014</dd>
+          <dt>Last verified</dt><dd>14 Sep 2026</dd>
+        </dl>
+        <div class="bar"><button class="btn ghost small" type="button">This looks wrong</button></div>
+        <details class="fold"><summary>Reported problems <span>(0)</span></summary>
+          <p class="meta" style="display:block;margin:0">Nobody in your organisation has reported a problem with this regulation.</p>
+        </details>
+      </div>
+      <div class="panel"><h2>Lineage</h2>
+        <span class="micro">Implemented in national law by</span>
+        <p><a href="#" lang="sv">Lag (2007:528) om värdepappersmarknaden</a><br><span class="meta">Sweden</span></p>
+        <p><a href="#" lang="da">Kapitalmarkedsloven</a><br><span class="meta">Denmark</span></p>
+        <p><a href="#" lang="fi">Sijoituspalvelulaki</a><br><span class="meta">Finland</span></p>
+        <p class="meta" style="display:block">9 more in other countries</p>
+        <span class="micro">Elaborated by</span>
+        <p style="margin:0"><a href="#">MiFID II delegated directive (EU) 2017/593</a><br><span class="meta">EU directive, binding</span></p>
+      </div>
+    </div></div>
+  </div>
+
+  <p class="note">The obligation list comes first, with what applies and where we stand rolled up. A directive opens its national laws in place instead of ending in links. Every obligation page links back here.</p>
+
+  <script>
+  (function(){
+    var root=document.querySelector('[data-screen="regulation"]');
+    if(!root){return;}
+    var chips=[].slice.call(root.querySelectorAll('[data-show]'));
+    var variants=[].slice.call(root.querySelectorAll('[data-variant]'));
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        var key=chip.getAttribute('data-show');
+        chips.forEach(function(c){c.setAttribute('aria-pressed',String(c===chip));});
+        variants.forEach(function(v){v.hidden=v.getAttribute('data-variant')!==key;});
+      });
+    });
+  })();
+  </script>
+</div>
+<style>
+[data-screen="ai-draft"] [hidden]{display:none}
+[data-screen="ai-draft"] .aidraft:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+[data-screen="ai-draft"] .aidraft textarea{display:block;field-sizing:content}
+[data-screen="ai-draft"] .field textarea{field-sizing:content}
+[data-screen="ai-draft"] .tilenote{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+[data-screen="ai-draft"] .wide{grid-column:1 / -1}
+[data-screen="ai-draft"] .wide .states4 .field{margin-bottom:0}
+[data-screen="ai-draft"] .plain{list-style:none;margin:0;padding:0}
+[data-screen="ai-draft"] .plain li{padding:10px 0;border-top:1px solid var(--line)}
+[data-screen="ai-draft"] .plain li:first-child{border-top:0;padding-top:0}
+</style>
+<div class="mock-screen" data-screen="ai-draft">
+  <button class="back" type="button" data-goto="obligation-a">← Obligation</button>
+  <h1 style="margin-bottom:20px">A reason you do not type from scratch</h1>
+
+  <div class="states4">
+
+    <!-- 1. You pick Applies: the live tile. "Rewrite with AI" swaps to the AI view, "Back to the suggestion" swaps back, typing drops the label. -->
+    <div data-live>
+      <p class="statecap" data-suggest="You pick Applies" data-ai="You ask AI to rewrite it">You pick Applies</p>
+      <div class="modal flat"><div class="box" role="group" aria-labelledby="ai-draft-s1-h">
+        <h2 id="ai-draft-s1-h">Does it apply to Example Fonder AB?</h2>
+        <div class="field">
+          <label for="ai-draft-s1-d">Decision</label>
+          <select id="ai-draft-s1-d"><option selected>Applies</option><option>Does not apply</option></select>
+        </div>
+        <div class="field" data-view="suggest">
+          <div class="labelrow">
+            <label for="ai-draft-s1-r">Reason</label>
+            <button class="linkbtn" type="button" data-act="ai" data-focus>Rewrite with AI</button>
+          </div>
+          <span class="micro" id="ai-draft-s1-l" data-label>Suggested from the licence facts</span>
+          <textarea id="ai-draft-s1-r" rows="3" aria-describedby="ai-draft-s1-l">Within the scope of its licence Tillstånd att driva fondverksamhet, which brings Funds into scope. The rule covers fund companies that manage portfolios.</textarea>
+        </div>
+        <div class="field" data-view="ai" hidden>
+          <div class="labelrow">
+            <label for="ai-draft-s1-ra">Reason</label>
+            <button class="linkbtn" type="button" data-act="back" data-focus>Back to the suggestion</button>
+          </div>
+          <div class="aidraft">
+            <span class="ai" id="ai-draft-s1-al">Drafted by AI, not yet confirmed by a person</span>
+            <textarea id="ai-draft-s1-ra" rows="5" aria-describedby="ai-draft-s1-al">The rule covers firms that manage portfolios and pay for third-party research. Example Fonder AB holds the licence Tillstånd att driva fondverksamhet, which covers portfolio management for the funds it runs. The rule therefore reaches the company's business.</textarea>
+          </div>
+          <span class="hint">Drafted from: FFFS&nbsp;2017:2, 9&nbsp;kap. 6&nbsp;§ · Fund company · Portfolio management</span>
+        </div>
+        <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Set to Applies</button></div>
+      </div></div>
+      <p class="tilenote" data-suggest="No AI is involved here. It works with AI switched off." data-ai="Only where the bank has AI switched on.">No AI is involved here. It works with AI switched off.</p>
+    </div>
+
+    <!-- 2. You edit it: the label is gone, it is a plain field -->
+    <div>
+      <p class="statecap">You edit it</p>
+      <div class="modal flat"><div class="box" role="group" aria-labelledby="ai-draft-s2-h">
+        <h2 id="ai-draft-s2-h">Does it apply to Example Fonder AB?</h2>
+        <div class="field">
+          <label for="ai-draft-s2-d">Decision</label>
+          <select id="ai-draft-s2-d"><option selected>Applies</option><option>Does not apply</option></select>
+        </div>
+        <div class="field">
+          <div class="labelrow">
+            <label for="ai-draft-s2-r">Reason</label>
+            <button class="linkbtn" type="button">Rewrite with AI</button>
+          </div>
+          <textarea id="ai-draft-s2-r" rows="3">Within the scope of its licence Tillstånd att driva fondverksamhet, which brings Funds into scope. The company buys research for the funds it manages.</textarea>
+        </div>
+        <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Set to Applies</button></div>
+      </div></div>
+      <p class="tilenote">It is your reason now.</p>
+    </div>
+
+    <!-- 3. You ask AI to rewrite it -->
+    <div>
+      <p class="statecap">You ask AI to rewrite it</p>
+      <div class="modal flat"><div class="box" role="group" aria-labelledby="ai-draft-s3-h">
+        <h2 id="ai-draft-s3-h">Does it apply to Example Fonder AB?</h2>
+        <div class="field">
+          <label for="ai-draft-s3-d">Decision</label>
+          <select id="ai-draft-s3-d"><option selected>Applies</option><option>Does not apply</option></select>
+        </div>
+        <div class="field">
+          <div class="labelrow">
+            <label for="ai-draft-s3-r">Reason</label>
+            <button class="linkbtn" type="button">Back to the suggestion</button>
+          </div>
+          <div class="aidraft">
+            <span class="ai" id="ai-draft-s3-l">Drafted by AI, not yet confirmed by a person</span>
+            <textarea id="ai-draft-s3-r" rows="5" aria-describedby="ai-draft-s3-l">The rule covers firms that manage portfolios and pay for third-party research. Example Fonder AB holds the licence Tillstånd att driva fondverksamhet, which covers portfolio management for the funds it runs. The rule therefore reaches the company's business.</textarea>
+          </div>
+          <span class="hint">Drafted from: FFFS&nbsp;2017:2, 9&nbsp;kap. 6&nbsp;§ · Fund company · Portfolio management</span>
+        </div>
+        <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button">Set to Applies</button></div>
+      </div></div>
+      <p class="tilenote">Only where the bank has AI switched on.</p>
+    </div>
+
+    <!-- 4. You pick Does not apply: empty, no label, no AI link, button disabled until the person writes -->
+    <div>
+      <p class="statecap">You pick Does not apply</p>
+      <div class="modal flat"><div class="box" role="group" aria-labelledby="ai-draft-s4-h">
+        <h2 id="ai-draft-s4-h">Does it apply to Example Fonder AB?</h2>
+        <div class="field">
+          <label for="ai-draft-s4-d">Decision</label>
+          <select id="ai-draft-s4-d"><option>Applies</option><option selected>Does not apply</option></select>
+        </div>
+        <div class="field">
+          <label for="ai-draft-s4-r">Reason</label>
+          <textarea id="ai-draft-s4-r" rows="3" placeholder="e.g. The company gives no investment advice"></textarea>
+        </div>
+        <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="button" disabled>Set to Does not apply</button></div>
+      </div></div>
+      <p class="tilenote">The fact that takes a company outside a rule is yours to give.</p>
+    </div>
+
+  </div>
+
+  <div class="states4" style="margin-top:28px">
+    <div class="panel wide">
+      <h2>If AI may also read what you typed</h2>
+      <div class="states4">
+        <div class="modal flat"><div class="box" role="group" aria-label="What you typed">
+          <div class="field">
+            <div class="labelrow">
+              <label for="ai-draft-s5-r">Reason</label>
+              <button class="linkbtn" type="button">Write it out with AI</button>
+            </div>
+            <textarea id="ai-draft-s5-r" rows="2">no advice to clients, no client money</textarea>
+          </div>
+        </div></div>
+        <div class="modal flat"><div class="box" role="group" aria-label="The reason, written out">
+          <div class="field">
+            <label for="ai-draft-s5-rd">Reason</label>
+            <div class="aidraft">
+              <span class="ai" id="ai-draft-s5-l">Drafted by AI from your words, not yet confirmed by a person</span>
+              <textarea id="ai-draft-s5-rd" rows="4" aria-describedby="ai-draft-s5-l">The rule covers firms that advise clients or manage their portfolios and pay for research. The company gives no advice to clients and holds no client money, so the rule does not reach it.</textarea>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <p class="tilenote" style="margin-top:14px">This is the one decision left for you: the bank's own words in that field would go to the model. Everything above works without it.</p>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:28px">
+    <h2>Where the suggestion and the AI link appear</h2>
+    <ul class="plain">
+      <li>Deciding one obligation, a regulation or a whole company: suggested from the licence facts; AI can rewrite it.</li>
+      <li>How we read this rule: AI can draft it from the rule's own text.</li>
+      <li>A gap, a status note: only from your own words, so only if you allow that.</li>
+    </ul>
+  </div>
+
+  <p class="note">The suggestion is built from facts the bank already holds, so it is instant and works everywhere. AI drafts are labelled until a person edits or saves them, and the AI log records each one. With AI switched off, on a standard, or on a record private to the bank, the AI link is not shown.</p>
+
+  <script>
+  (function(){
+    var root=document.querySelector('[data-screen="ai-draft"]');
+    var tile=root&&root.querySelector('[data-live]');
+    if(!tile){return;}
+    var cap=tile.querySelector('.statecap');
+    var note=tile.querySelector('.tilenote');
+    var suggest=tile.querySelector('[data-view="suggest"]');
+    var ai=tile.querySelector('[data-view="ai"]');
+    var label=suggest.querySelector('[data-label]');
+    var field=suggest.querySelector('textarea');
+    field.addEventListener('input',function(){
+      label.hidden=true;
+      field.removeAttribute('aria-describedby');
+    });
+    tile.addEventListener('click',function(event){
+      var button=event.target.closest('[data-act]');
+      if(!button){return;}
+      var on=button.getAttribute('data-act')==='ai';
+      if(!on){
+        field.value=field.defaultValue;
+        label.hidden=false;
+        field.setAttribute('aria-describedby','ai-draft-s1-l');
+      }
+      suggest.hidden=on;
+      ai.hidden=!on;
+      var key=on?'data-ai':'data-suggest';
+      cap.textContent=cap.getAttribute(key);
+      note.textContent=note.getAttribute(key);
+      (on?ai:suggest).querySelector('[data-focus]').focus();
+    });
+  })();
+  </script>
+</div>
+<style>
+[data-screen="obligation-b"] [hidden]{display:none}
+[data-screen="obligation-b"] .ob-position{grid-row:1;grid-column-end:-1}
+[data-screen="obligation-b"] .ob-rule{grid-column-start:1}
+[data-screen="obligation-b"] strong{font-weight:600;color:var(--text)}
+[data-screen="obligation-b"] .entity>h3 small{font-weight:400;font-size:.86rem;color:var(--muted);white-space:nowrap}
+[data-screen="obligation-b"] .tabs .n{font-weight:400;color:var(--muted);margin-left:4px}
+</style>
+<div class="mock-screen" data-screen="obligation-b">
+  <button class="back" type="button">← Inventory</button>
+  <div class="meta" style="margin-bottom:6px"><a class="pill brand" href="#">FFFS 2017:2</a><span class="pill">Securities</span><span class="pill">Binding</span><span class="pill warning">Partly compliant</span><span>at Example Bank AB, the weakest legal entity</span></div>
+  <h1 style="margin-bottom:20px">Pay for third-party research only under the permitted models</h1>
+
+  <!-- Always visible. Our position is first in the markup, so a phone shows it first; the two placement rules seat it in the right-hand column wherever the grid has one. -->
+  <div class="grid g2">
+    <div class="grid ob-position" style="align-content:start">
+      <div class="panel">
+        <h2>Our position</h2>
+
+        <div class="entity">
+          <h3>Example Bank AB <small>Bank · 556000-0001</small></h3>
+          <div class="fact">
+            <div>
+              <span class="micro">Does it apply</span>
+              <div class="meta"><span class="pill positive">Applies</span><span>Set by Sara Lindqvist, 18 Sep 2026</span></div>
+              <p>We give advice and manage portfolios, both paid partly with research.</p>
+            </div>
+            <button class="btn ghost small" type="button" style="justify-self:end">Change</button>
+          </div>
+          <div class="fact">
+            <div>
+              <span class="micro">Where we stand</span>
+              <div class="meta"><span class="pill warning">Partly compliant</span><span>Owner Anna Nilsson · Next review 30 Nov 2026 · 1 open gap</span></div>
+              <details class="fold">
+                <summary>Details</summary>
+                <p>Criteria adopted; the first yearly assessment is booked for 24 Nov 2026.</p>
+                <p class="meta"><span>Risk if we fail: Medium</span><span>Compliance contact: Sara Lindqvist</span><span>Last assessed 5 Nov 2026, control test</span></p>
+              </details>
+            </div>
+            <button class="btn ghost small" type="button" style="justify-self:end">Edit</button>
+          </div>
+        </div>
+
+        <div class="entity">
+          <h3>Example Fonder AB <small>Fund company · 556000-0003</small></h3>
+          <div class="fact">
+            <div>
+              <span class="micro">Does it apply</span>
+              <p style="margin:0;color:var(--muted)">Nobody has decided yet.</p>
+            </div>
+            <button class="btn small" type="button" id="obligation-b-decide" aria-haspopup="dialog" aria-controls="obligation-b-dialog" aria-expanded="false" style="justify-self:end">Decide</button>
+          </div>
+        </div>
+
+        <div class="oneline sub">
+          <span style="flex:1 1 200px">Handled in: Research budget and yearly review (PRC-22), Research payment account ledger</span>
+          <button class="btn ghost small" type="button">Edit</button>
+        </div>
+      </div>
+
+      <!-- Revealed by Decide. In the product this is the centred dialog; here it opens in place. -->
+      <div class="modal flat" id="obligation-b-dialog" hidden>
+        <div class="box" role="dialog" aria-labelledby="obligation-b-dialog-title">
+          <h2 id="obligation-b-dialog-title">Does it apply to Example Fonder AB?</h2>
+          <div class="field">
+            <label for="obligation-b-decision">Decision</label>
+            <select id="obligation-b-decision"><option selected>Applies</option><option>Does not apply</option><option>Not assessed</option></select>
+          </div>
+          <div class="field">
+            <div class="labelrow"><label for="obligation-b-reason">Reason</label><button class="btn ghost small" type="button">Draft with AI</button></div>
+            <textarea id="obligation-b-reason" aria-describedby="obligation-b-reason-hint"></textarea>
+            <span class="hint" id="obligation-b-reason-hint">An auditor reads this.</span>
+          </div>
+          <div class="bar"><button class="btn ghost" type="button" id="obligation-b-cancel">Cancel</button><button class="btn" type="button">Continue</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid ob-rule" style="align-content:start">
+      <div class="filters" style="margin-bottom:0">
+        <button class="chip" type="button" aria-pressed="true">English</button><button class="chip" type="button" aria-pressed="false">Svenska, original</button>
+        <span style="width:100%"></span>
+        <button class="chip" type="button" aria-pressed="false">Version 1</button><button class="chip" type="button" aria-pressed="true">Version 2, from 1 Oct 2026</button><button class="chip" type="button" aria-pressed="false">Show what changed</button>
+        <span class="meta" style="flex-wrap:nowrap"><label for="obligation-b-asof">As of</label><input type="date" id="obligation-b-asof"></span>
+      </div>
+
+      <div class="lagrum">
+        <div class="margin"><b>§</b><small><a href="#" style="color:inherit">FFFS 2017:2<br>9 kap. 6 §</a></small></div>
+        <div class="body" lang="en"><span class="mt">Machine translation from Swedish. The original is authoritative.</span>Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules. The institution sets criteria for an annual assessment of the quality, usability and value of the research it uses. If the research does not contribute to better investment decisions, the institution takes corrective action.</div>
+      </div>
+
+      <div class="panel">
+        <h2>What it covers and requires</h2>
+        <dl class="kv">
+          <dt>Legal entity</dt><dd class="facets"><span class="pill brand">Bank</span><span class="pill brand">Fund company</span></dd>
+          <dt>Service</dt><dd class="facets"><span class="pill brand">Advice</span><span class="pill brand">Portfolio management</span></dd>
+          <dt>Client category</dt><dd class="facets"><span class="pill brand">Retail</span><span class="pill brand">Professional</span></dd>
+          <dt>Jurisdiction</dt><dd class="facets"><span class="pill brand">Sweden</span></dd>
+        </dl>
+        <p class="meta" style="margin:10px 0 0">Not channel-specific · Not account-specific · Not activity-specific</p>
+        <dl class="kv sub">
+          <dt>Type</dt><dd>Governance</dd>
+          <dt>Trigger and frequency</dt><dd>Annual assessment from 1 Oct 2026</dd>
+          <dt>Record retention</dt><dd>5 years</dd>
+          <dt>Sanction exposure</dt><dd>FI remark, warning or sanction fee</dd>
+          <dt>Tags</dt><dd class="facets" style="align-items:center"><span class="pill brand">Inducements</span><span class="pill brand">Research</span><span class="pill outlined">Priority</span><button class="linkbtn" type="button">Add a tag</button></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- Everything else: three tabs, one shown at a time. -->
+  <div class="tabs" role="tablist" aria-label="More on this obligation" style="margin-top:28px">
+    <button type="button" role="tab" id="obligation-b-tab-work" aria-controls="obligation-b-panel-work" aria-selected="true">Our work <span class="n" title="1 open gap">1</span></button>
+    <button type="button" role="tab" id="obligation-b-tab-record" aria-controls="obligation-b-panel-record" aria-selected="false" tabindex="-1">Record <span class="n" title="1 related change, 2 reported problems">3</span></button>
+    <button type="button" role="tab" id="obligation-b-tab-discussion" aria-controls="obligation-b-panel-discussion" aria-selected="false" tabindex="-1">Discussion <span class="n" title="2 comments">2</span></button>
+  </div>
+
+  <div role="tabpanel" id="obligation-b-panel-work" aria-labelledby="obligation-b-tab-work">
+    <div class="grid g11" style="align-items:start">
+      <div class="panel">
+        <h2>How we read this rule</h2>
+        <p>"Research" covers written analysis and access to analysts. Free short market comments stay outside, as FI's Q&amp;A of 2018 allows.</p>
+        <p class="meta">Version 3, written by Sara Lindqvist, 12 Sep 2026</p>
+        <div class="bar"><button class="btn ghost small" type="button">Write a new version</button></div>
+        <details class="fold">
+          <summary>Earlier versions <span>(2)</span></summary>
+          <div class="log">
+            <div><time>Version 2, written by Sara Lindqvist, 4 May 2026</time>"Research" covers written analysis only. Access to analysts is bought and judged separately.</div>
+            <div><time>Version 1, written by Johan Berg, 20 Mar 2026</time>Everything a third party writes about an issuer or a market counts as research.</div>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>Assessment history <span>(3)</span></summary>
+          <div class="log">
+            <div><span class="meta"><span class="pill warning">Partly compliant</span><span>5 Nov 2026</span><span>Anna Nilsson</span><span>Control test</span><span>Example Bank AB</span></span>Criteria adopted; the first yearly assessment is booked for 24 Nov 2026.</div>
+            <div><span class="meta"><span class="pill warning">Partly compliant</span><span>20 Oct 2026</span><span>Sara Lindqvist</span><span>Self-assessment</span><span>Example Bank AB</span></span>Criteria drafted; no assessment done yet.</div>
+            <div><span class="meta"><span class="pill negative">Gap</span><span>22 Sep 2026</span><span>Johan Berg</span><span>Internal audit</span><span>Example Bank AB</span></span>No yearly assessment of the research we pay for.</div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h2>Gaps (1)</h2>
+        <a class="row" href="#">
+          <span class="meta"><span class="pill negative">Open</span><span class="pill negative">High</span><span class="pill">Internal audit</span></span>
+          <h3>No annual assessment of the research we pay for</h3>
+          <span class="meta"><span>Example Bank AB</span><span>Anna Nilsson</span><span>Target 30 Nov 2026</span></span>
+        </a>
+        <div class="bar"><button class="btn ghost small" type="button">Record a gap</button></div>
+      </div>
+    </div>
+
+    <div class="panel oneline" style="margin-top:16px">
+      <span style="flex:1 1 200px">2 linked internal items: <a href="#"><span class="mono">POL-014</span> Research and inducements policy</a>, <a href="#"><span class="mono">CTL-208</span> Yearly research value assessment</a></span>
+      <button class="btn ghost small" type="button">Link an item</button>
+    </div>
+  </div>
+
+  <div role="tabpanel" id="obligation-b-panel-record" aria-labelledby="obligation-b-tab-record" hidden>
+    <div class="grid g11" style="align-items:start">
+      <div class="panel">
+        <h2>Where it comes from</h2>
+        <dl class="kv">
+          <dt>Regulation</dt><dd><a href="#">FFFS 2017:2 om värdepappersrörelse</a></dd>
+          <dt>Reference</dt><dd class="mono">FFFS 2017:2, 9 kap. 6 §</dd>
+          <dt>Implements</dt><dd><a href="#">MiFID II</a>, delegated directive (EU) 2017/593, art. 13</dd>
+          <dt>Source</dt><dd><a href="#" rel="noopener">fi.se, consolidated text</a></dd>
+          <dt>Last verified</dt><dd>2 Nov 2026 by Research agent 0.4</dd>
+        </dl>
+        <div class="bar"><button class="btn ghost small" type="button">This looks wrong</button></div>
+        <details class="fold">
+          <summary>Related obligations <span>(1)</span></summary>
+          <p style="margin:0"><a href="#">Disclose all costs and charges before and after the service</a></p>
+          <span class="meta"><span>FFFS 2017:2</span><span>Binding</span></span>
+        </details>
+        <details class="fold">
+          <summary>Reported problems <span>(2)</span></summary>
+          <div class="log">
+            <div><span class="meta"><span class="pill warning">Open</span><span>Reported by Johan Berg, 20 Sep 2026</span><span>Version 2, Swedish</span></span>The retention line says five years; the source says ten. <button class="linkbtn" type="button">Close report</button></div>
+            <div><span class="meta"><span class="pill">Answered</span><span>Reported by Anna Nilsson, 12 Sep 2026</span></span>The in-force date looks wrong.<span class="meta">Closed by Erik Holm, 13 Sep 2026: the screen showed version 1, which ran until 30 Sep 2026.</span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="grid" style="align-content:start">
+        <div class="panel">
+          <h2>Versions</h2>
+          <div class="log">
+            <div><time>Version 2, in force from 1 Oct 2026</time>Machine-confirmed 17 Sep 2026: proposed by Research agent 0.4, confirmed by Review agent 0.2. Source: Finansinspektionen, board decision 15 Sep 2026. <button class="linkbtn" type="button">Show what changed</button></div>
+            <div><time>Version 1, in force until 30 Sep 2026</time>Machine-confirmed 12 Mar 2026: proposed by Research agent 0.3, confirmed by Review agent 0.2. Source: Finansinspektionen, FFFS 2017:2 consolidated text.</div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Related changes (1)</h2>
+          <a class="row" href="#">
+            <span class="meta"><span class="pill negative">Act now</span><span>Finansinspektionen</span><span>15 Sep 2026</span></span>
+            <h3>FI adopts amended rules on paying for investment research</h3>
+            <span class="meta">Being implemented</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div role="tabpanel" id="obligation-b-panel-discussion" aria-labelledby="obligation-b-tab-discussion" hidden>
+    <div class="panel" style="max-width:760px">
+      <h2>Comments (2)</h2>
+      <div class="log">
+        <div><span class="meta"><strong>Erik Holm</strong><span>4 Nov 2026 14:20</span></span>The investment committee adopted the assessment criteria yesterday. <strong>Anna Nilsson</strong>, the first yearly assessment is booked for 24 Nov.</div>
+        <div><span class="meta"><strong>Johan Berg</strong><span>Yesterday 09:02</span></span>Internal audit will look at the assessment once it is recorded. <strong>Sara Lindqvist</strong>, should Example Fonder AB be decided before then?</div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label for="obligation-b-comment">Add a comment</label>
+        <textarea id="obligation-b-comment" aria-describedby="obligation-b-comment-hint"></textarea>
+        <span class="hint" id="obligation-b-comment-hint">Everyone in your organisation can read comments.</span>
+      </div>
+      <div class="bar"><button class="btn small" type="button">Comment</button></div>
+      <details class="fold">
+        <summary>Participants <span>(3)</span></summary>
+        <div class="log">
+          <div><strong>Erik Holm</strong><span class="meta">Added 19 Sep 2026 by Anna Nilsson</span></div>
+          <div><strong>Johan Berg</strong><span class="meta">Added 22 Sep 2026 by Sara Lindqvist</span></div>
+          <div><strong>Legal</strong><span class="meta"><span>Team</span><span>Added 18 Sep 2026 by Anna Nilsson</span></span></div>
+        </div>
+        <div class="bar"><button class="btn ghost small" type="button">Add a participant</button></div>
+      </details>
+    </div>
+  </div>
+
+  <p class="note">The bank's position and the rule stay on screen; everything else is one click away in three tabs. A link can open a tab directly.</p>
+
+  <script>
+  (function(){
+    var root=document.querySelector('[data-screen="obligation-b"]');
+    if(!root){return;}
+    var tabs=[].slice.call(root.querySelectorAll('[role="tab"]'));
+    function select(tab,focus){
+      tabs.forEach(function(t){
+        var on=t===tab;
+        t.setAttribute('aria-selected',String(on));
+        t.tabIndex=on?0:-1;
+        root.querySelector('#'+t.getAttribute('aria-controls')).hidden=!on;
+      });
+      if(focus){tab.focus();}
+    }
+    tabs.forEach(function(t,i){
+      t.addEventListener('click',function(){select(t,false);});
+      t.addEventListener('keydown',function(e){
+        var step=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;
+        if(step){e.preventDefault();select(tabs[(i+step+tabs.length)%tabs.length],true);}
+      });
+    });
+    var decide=root.querySelector('#obligation-b-decide');
+    var dialog=root.querySelector('#obligation-b-dialog');
+    function show(open){
+      dialog.hidden=!open;
+      decide.setAttribute('aria-expanded',String(open));
+      if(open){dialog.scrollIntoView({block:'nearest'});root.querySelector('#obligation-b-decision').focus();}
+      else{decide.focus();}
+    }
+    decide.addEventListener('click',function(){show(dialog.hidden);});
+    root.querySelector('#obligation-b-cancel').addEventListener('click',function(){show(false);});
+  })();
+  </script>
+</div>
+
+  </main>
+</div>
+<script>
+
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('.proposalbar [role=tab]'));
+  var screens=[].slice.call(document.querySelectorAll('.mock-screen'));
+  function show(key){
+    tabs.forEach(function(t){t.setAttribute('aria-selected',String(t.dataset.key===key));});
+    screens.forEach(function(s){s.hidden=s.dataset.screen!==key;});
+    var nav=(tabs.filter(function(t){return t.dataset.key===key;})[0]||{dataset:{}}).dataset.nav;
+    [].forEach.call(document.querySelectorAll('.nav button[data-nav]'),function(b){
+      if(b.dataset.nav===nav){b.setAttribute('aria-current','page');}else{b.removeAttribute('aria-current');}
+    });
+    window.scrollTo(0,0);
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.key);});});
+  document.addEventListener('click',function(e){
+    var el=e.target.closest?e.target.closest('[data-goto]'):null;
+    if(!el){return;}
+    e.preventDefault();
+    show(el.getAttribute('data-goto'));
+  });
+  [].forEach.call(document.querySelectorAll('[data-theme-set]'),function(b){
+    b.addEventListener('click',function(){
+      var v=b.dataset.themeSet;
+      if(v){document.documentElement.setAttribute('data-theme',v);}else{document.documentElement.removeAttribute('data-theme');}
+    });
+  });
+  show(tabs[0].dataset.key);
+})();
+
+</script>
+</body>
+</html>

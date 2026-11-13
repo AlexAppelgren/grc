@@ -10,6 +10,7 @@
 | `public/` | The public page: `index.html` is the whole page as one standalone file, `README.md` is the design note |
 | `brand/` | The phonetic wordmark `[blɛkː]`, the favicon, and the brand layer placeholders |
 | `screens/` | One card per screen, cut from the prototype as each chunk starts (playbook Section 7). Chunk 10's are indexed below |
+| `proposals/` | Clickable proposals the owner was shown before a redesign, each one standalone file with its options side by side. A record of what was chosen from and why (the decision row names it), never the contract: once a screen is built its card in `screens/` decides. `obligations-regulations-licences.html` is the proposal behind D-141 to D-143 |
 
 ## Chunk 10 cards
 
