@@ -399,7 +399,7 @@ as the obligation page asks; a row nobody answered reads as under assessment at 
 `tests_company_view.py` holds the agreement with the obligation page row by row, the span as
 SQL against `_spans`, the filters, the refusals and the pinned query counts.
 
-### REG-S20 — A whole company's unanswered obligations are decided in one confirmed run `@integration` (REG-01, AC-REG1)
+### REG-S20 — A whole company's unanswered obligations are decided in one confirmed run `@integration` (REG-01, AC-REG1b)
 ```gherkin
 Given Example Bank AB, for which the register offers four obligations: one an officer answered "Does not apply", three nobody has answered
 And "What applies" reads three to decide for the company
@@ -453,7 +453,7 @@ transaction of its own, and the screen reads the progress from the cache
 part way, a row the door refuses, the chunks, the reason kept out of arguments and logs, and
 the query counts of the start and of one chunk.
 
-### REG-S22 — A compliance officer decides what a company's licences bring in, in one go `@e2e` (REG-01, FP-05, AC-REG1)
+### REG-S22 — A compliance officer decides what a company's licences bring in, in one go `@e2e` (REG-01, FP-05, AC-REG1b)
 ```gherkin
 Given Example Liv Försäkring AB, for which the register offers the ISK control statements under SFL and nobody has answered them for the company
 When a compliance officer opens "What applies" from the menu and picks Example Liv Försäkring AB

@@ -373,7 +373,7 @@ And the Norwegian law comes after it, closed, and reads its duties only once ope
 And the page never claims the laws listed are every law that implements the directive
 ```
 
-### INV-S20 — An obligation shows the words of the rule it comes from, in the language they were published in `@integration` (INV-02, INV-05)
+### INV-S20 — An obligation shows the words of the rule it comes from, in the language they were published in `@integration` (INV-02, INV-05, AC-INV3)
 ```gherkin
 Given a Swedish ordinance whose two sections were published in Swedish, each with an English machine translation
 And an obligation under it citing both sections, whose plain-words summary bleqq wrote in English
@@ -384,7 +384,7 @@ And the summary is still returned as before, English marked as the language bleq
 And an obligation citing no provision returns an empty list of provisions
 ```
 
-### INV-S22 — A reader sees the rule's own words beside the summary, each labelled for what it is `@e2e` (INV-02, INV-05)
+### INV-S22 — A reader sees the rule's own words beside the summary, each labelled for what it is `@e2e` (INV-02, INV-05, AC-INV3)
 ```gherkin
 Given an obligation whose plain-words summary bleqq wrote in sv, citing a section the authority published in sv with an en machine translation
 When a reader whose interface language is en opens the obligation
