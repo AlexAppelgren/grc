@@ -762,6 +762,72 @@
       ]
     },
     {
+      "title": "Add the EJPD's ordinance on the maximum interest rate for consumer credit (Verordnung des EJPD über den Höchstzinssatz für Konsumkredite)",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2021/791/20260101/de/html/fedlex-data-admin-ch-eli-cc-2021-791-20260101-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung des EJPD über den Höchstzinssatz für Konsumkredite, SR 221.214.111, ordinance of the Federal Department of Justice and Police under Art. 1 Abs. 4 VKKG; consolidated German text (file store), Stand am 1. Januar 2026, in force on 14 November 2026; entry into force read in Art. 2: \"Diese Verordnung tritt am 1. Januar 2022 in Kraft.\"",
+      "fieldSources": {
+        "inForceFrom": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2021/791/20260101/de/html/fedlex-data-admin-ch-eli-cc-2021-791-20260101-de-html.html#art_2",
+        "eliUri": "https://fedlex.data.admin.ch/sparqlendpoint?format=json&query=SELECT%20%3Fp%20%3Fo%20WHERE%20%7B%20%3Chttps%3A%2F%2Ffedlex.data.admin.ch%2Feli%2Fcc%2F2021%2F791%3E%20%3Fp%20%3Fo%20%7D"
+      },
+      "payload": {
+        "key": "ch-sr-221-214-111",
+        "titles": {
+          "de": "Verordnung des EJPD über den Höchstzinssatz für Konsumkredite",
+          "en": "Ordinance of the Federal Department of Justice and Police on the Maximum Interest Rate for Consumer Credit"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "Verordnung des EJPD über den Höchstzinssatz für Konsumkredite",
+        "officialRef": "Verordnung des EJPD vom 22. November 2021 über den Höchstzinssatz für Konsumkredite, SR 221.214.111",
+        "eliUri": "https://www.fedlex.admin.ch/eli/cc/2021/791/de",
+        "level": "government_regulation",
+        "jurisdiction": "ch",
+        "authority": "ejpd",
+        "regime": "regime:banking",
+        "inForceFrom": "2022-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Charge no more than 10 per cent a year on cash credit, purchase financing and consumer leasing",
+          "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2021/791/20260101/de/html/fedlex-data-admin-ch-eli-cc-2021-791-20260101-de-html.html#art_1",
+          "sourceLabel": "Fedlex, Verordnung des EJPD über den Höchstzinssatz für Konsumkredite (SR 221.214.111), Art. 1 Abs. 1, consolidated German text, Stand am 1. Januar 2026",
+          "payload": {
+            "key": "obl-ch-ejpd-hoechstzinssatz-cash-credit-financing-and-leasing-at-most-10-per-cent",
+            "titles": {
+              "en": "Charge no more than 10 per cent a year on cash credit, purchase financing and consumer leasing"
+            },
+            "summaries": {
+              "en": "The maximum interest rate for cash credit, for contracts financing the purchase of goods or services and for leasing contracts under the Consumer Credit Act is 10 per cent."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "Art. 1 Abs. 1",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Charge no more than 12 per cent a year on overdrafts and on credit or customer card accounts with a credit option",
+          "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2021/791/20260101/de/html/fedlex-data-admin-ch-eli-cc-2021-791-20260101-de-html.html#art_1",
+          "sourceLabel": "Fedlex, Verordnung des EJPD über den Höchstzinssatz für Konsumkredite (SR 221.214.111), Art. 1 Abs. 2, consolidated German text, Stand am 1. Januar 2026",
+          "payload": {
+            "key": "obl-ch-ejpd-hoechstzinssatz-overdrafts-and-card-accounts-at-most-12-per-cent",
+            "titles": {
+              "en": "Charge no more than 12 per cent a year on overdrafts and on credit or customer card accounts with a credit option"
+            },
+            "summaries": {
+              "en": "The maximum interest rate for overdraft credit on a current account or on a credit or customer card account with a credit option under the Consumer Credit Act is 12 per cent."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "Art. 1 Abs. 2",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
       "title": "Add the Syrien-Verordnung, the Swiss freeze of assets of foreign politically exposed persons in connection with Syria",
       "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2025/157/20250731/de/html/fedlex-data-admin-ch-eli-cc-2025-157-20250731-de-html.html",
       "sourceLabel": "Fedlex, Verordnung über die Sperrung von Vermögenswerten im Zusammenhang mit Syrien (Syrien-Verordnung), SR 196.127.27, ordinance of the Federal Council under Art. 3 und 30 SRVG; consolidated German text (file store), Stand am 31. Juli 2025, in force on 14 November 2026; entry into force read in Art. 4: \"Diese Verordnung tritt am 7. März 2025 um 18 Uhr in Kraft und gilt bis zum 6. März 2029.\"",
