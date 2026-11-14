@@ -3,24 +3,15 @@
 The shared library's starting inventory: the instruments in force within the sector scope
 on the day they were researched, and the core duties of each in our own words. Today it
 holds the EU, Sweden, Denmark, Norway and Finland in full. The eight home markets D-145
-added arrive tranche by tranche, as ADR 0070 stages them: the statutes and their duties
-of Germany (`de-acts`), the United Kingdom (`gb-acts`), Switzerland (`ch-acts`), Latvia
-(`lv-acts`), Austria (`at-acts`), Estonia (`ee-acts`) and the Netherlands (`nl-acts`) are
-here, and all seven carry the law's own words: the United Kingdom's
-(`provisions/gb-acts.json`, Swedish beside the English original) and the others'
-(`provisions/de-acts.json`, `nl-acts.json`, `ch-acts.json`, `lv-acts.json`,
-`ee-acts.json` and `at-acts.json`, English and Swedish beside the German, the Dutch, the
-Latvian and the Estonian). The United Kingdom's
-statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`), the
-Netherlands' decrees and regulations (`nl-besluiten`), Switzerland's ordinances
-(`ch-verordnungen`), Austria's regulations (`at-verordnungen`), Latvia's
-(`lv-noteikumi`, with more in `lv-noteikumi-2`) and Estonia's (`ee-maarused`) are here
-too, and more of Switzerland's ordinances (`ch-verordnungen-2`), Austria's regulations
-(`at-verordnungen-2`) and Estonia's (`ee-maarused-2`). The regulations of the
-United Kingdom, Switzerland, the Netherlands, Austria, Latvia and Estonia carry their law
-text (`provisions/gb-si.json`, `ch-verordnungen.json`, `nl-besluiten.json`,
-`at-verordnungen.json`, `lv-noteikumi.json`, `ee-maarused.json`);
-the other markets' law text and regulations, and Lithuania, are not here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
+added arrive tranche by tranche, as ADR 0070 stages them. Seven of them are here: Germany,
+the United Kingdom, Switzerland, Latvia, Austria, Estonia and the Netherlands, each with
+its statutes (`<market>-acts`) and its regulations (`de-verordnungen`, `gb-si`,
+`ch-verordnungen`, `lv-noteikumi`, `at-verordnungen`, `ee-maarused`, `nl-besluiten`), and
+for Switzerland, Latvia, Austria and Estonia so far the further regulations those found
+(the same names with `-2`), each with its duties and a plain summary per instrument. The statutes and the regulations carry
+the law's own words in `provisions/` under the same names, with Swedish beside an English
+original and English and Swedish beside every other; the third tranches' law text is not
+here yet. Lithuania is not here: its register refuses the build session. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then
