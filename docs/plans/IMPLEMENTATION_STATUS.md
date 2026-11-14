@@ -488,9 +488,16 @@ the Netherlands, Austria and Switzerland.
   The regulations' law text began with Switzerland's ordinances
   (`provisions/ch-verordnungen.json`): 154 articles, with English and Swedish beside each,
   listed names of sanctioned entities kept as printed; 127 of 127 duties carry their text,
-  one of them in part because the article it also cites holds a table.
+  one of them in part because the article it also cites holds a table. Then the
+  Netherlands' decrees and regulations (`provisions/nl-besluiten.json`): 124 articles and
+  annex points with English and Swedish beside each; 99 of 102 duties carry their text, and
+  three do not, because the article holds a table or a formula published only as an
+  image. Last of the statutes, Germany's (`provisions/de-acts.json`): 155 sections from
+  Gesetze im Internet's XML and section pages, read a third time from the full-act pages,
+  with English and Swedish beside each; all 169 duties carry their text, so every statute
+  tranche of the seven markets now carries the law's own words.
 - **In work on this branch:** the
-  law's own words for Germany's statutes and for the regulations, each
+  law's own words for the other regulations, each
   provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
