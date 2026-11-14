@@ -9,8 +9,8 @@ of Germany (`de-acts`), the United Kingdom (`gb-acts`), Switzerland (`ch-acts`),
 here. The United Kingdom's, the Netherlands' and Switzerland's also carry the law's own
 words (`provisions/gb-acts.json` with Swedish beside the English original,
 `provisions/nl-acts.json` and `provisions/ch-acts.json` with English and Swedish beside the
-Dutch and the German); the other markets' law text, their regulations and Lithuania are not
-here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
+Dutch and the German). The United Kingdom's statutory instruments are here too (`gb-si`);
+the other markets' law text and regulations, and Lithuania, are not here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then

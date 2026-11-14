@@ -426,6 +426,12 @@ the Netherlands, Austria and Switzerland.
   duties, from the consolidated XML of the Basiswettenbestand, because wetten.overheid.nl
   closed every read). That is 135 statutes and 895 duties; the baseline now holds 679
   instruments and 2,789 obligations.
+- **Regulations:** the United Kingdom's first (`gb-si`): 24 statutory instruments made by
+  the Treasury or a Secretary of State, with 109 duties, among them the Money Laundering,
+  Payment Services, Electronic Money and Payment Accounts Regulations, the ring-fencing
+  and resolution orders, the tax reporting regulations, and eight sanctions regimes with
+  their freeze, funds, licence and reporting duties. The baseline now holds 703
+  instruments and 2,898 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
@@ -440,7 +446,7 @@ the Netherlands, Austria and Switzerland.
   (`provisions/ch-acts.json`): 167 articles of the consolidation in force on 2026-11-14,
   read from Fedlex's Akoma Ntoso XML and HTML and a third time from its DOCX, the German
   text only, with English and Swedish beside each; all 140 duties carry their text.
-- **In work on this branch:** the seven markets' regulations; and the law's own words
+- **In work on this branch:** the other six markets' regulations; and the law's own words
   for the other four statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
