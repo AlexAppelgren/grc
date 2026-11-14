@@ -15,9 +15,9 @@ statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`), the
 Netherlands' decrees and regulations (`nl-besluiten`), Switzerland's ordinances
 (`ch-verordnungen`), Austria's regulations (`at-verordnungen`), Latvia's
 (`lv-noteikumi`) and Estonia's (`ee-maarused`) are here too. The regulations of the
-United Kingdom, Switzerland, the Netherlands and Austria carry their law text
+United Kingdom, Switzerland, the Netherlands, Austria and Latvia carry their law text
 (`provisions/gb-si.json`, `ch-verordnungen.json`, `nl-besluiten.json`,
-`at-verordnungen.json`);
+`at-verordnungen.json`, `lv-noteikumi.json`);
 the other markets' law text and regulations, and Lithuania, are not here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
