@@ -36,7 +36,6 @@
   {"name": "Deutsche Bundesbank, Pressemitteilungen", "url": "https://www.bundesbank.de/de/presse/pressemitteilungen", "kind": "authority_site", "authority": "bundesbank"},
   {"name": "legislation.gov.uk", "url": "https://www.legislation.gov.uk/", "kind": "legal_database", "authority": null},
   {"name": "FCA, News", "url": "https://www.fca.org.uk/news", "kind": "authority_site", "authority": "fca"},
-  {"name": "FCA Handbook", "url": "https://handbook.fca.org.uk/", "kind": "authority_site", "authority": "fca"},
   {"name": "FCA, Publications", "url": "https://www.fca.org.uk/publications/rss.xml", "kind": "authority_site", "authority": "fca"},
   {"name": "Bank of England, Prudential regulation news and publications", "url": "https://www.bankofengland.co.uk/news/prudential-regulation", "kind": "authority_site", "authority": "pra"},
   {"name": "PRA Rulebook", "url": "https://www.prarulebook.co.uk/", "kind": "authority_site", "authority": "pra"},

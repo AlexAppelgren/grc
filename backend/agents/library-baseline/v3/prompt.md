@@ -42,7 +42,9 @@ cannot verify stays out, and you say so.
   recht.bund.de for the Bundesgesetzblatt; bafin.de for BaFin's Verordnungen and
   Rundschreiben.
 - United Kingdom: legislation.gov.uk for Acts and statutory instruments (XML of every
-  version); the FCA Handbook and the PRA Rulebook for the regulators' rules.
+  version). The FCA Handbook only through its own API, never its site, whose terms
+  forbid an automated read; the PRA Rulebook for the Prudential Regulation Authority's
+  rules.
 - Netherlands: wetten.overheid.nl by BWB id (XML of every version) and
   officielebekendmakingen.nl for the Staatsblad and the Staatscourant; DNB's Open Boek
   Toezicht and afm.nl for the supervisors.

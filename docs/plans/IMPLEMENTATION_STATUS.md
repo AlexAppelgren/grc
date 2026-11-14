@@ -393,7 +393,7 @@ the Netherlands, Austria and Switzerland.
   `at`, `ch`) and five more content languages (`et`, `lv`, `lt`, `de`, `nl`) in the
   reference seed; the six member states with the EU as parent, the United Kingdom and
   Switzerland with none, so a Union rule reaches ten countries and no longer "all"
-  (FP-S12, I18N-S1). 64 authorities and 40 watched sources for the eight markets, each read
+  (FP-S12, I18N-S1). 64 authorities and 39 watched sources for the eight markets, each read
   on the body's own site or in an official directory
   (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
 - **Built (search):** German, Dutch and Lithuanian with PostgreSQL's own configurations,
@@ -430,8 +430,9 @@ the Netherlands, Austria and Switzerland.
   for the seven statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
-  supervisors' rules that live outside the legal database (the FCA Handbook, the PRA
-  Rulebook) and the supervisors' circulars; the interface in the five new languages
+  supervisors' rules that live outside the legal database (the FCA Handbook, read only
+  through its API once a person has signed up for it, and the PRA Rulebook, whose text
+  needs a licence) and the supervisors' circulars; the interface in the five new languages
   (I18N-02, R3); French and Italian for Switzerland; Swedish beside EU texts; licence
   registers beyond Sweden's; a sentence splitter that knows German capitalisation.
 - **Owner-blocked:** publishing the new agent versions in the console, the order of the

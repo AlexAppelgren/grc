@@ -19,11 +19,21 @@ library takes their law in its own language. What needs you, most urgent first.
       obligations each, with the law's own words. Seven new markets hold their statutes (15
       to 24 each); their regulations and the law's own words with English and Swedish
       are in work on this branch. Three things stay out until you
-      act: Lithuania, whose register refuses the build session (below); the PRA Rulebook's
-      text, which needs a licence from the PRA, and the FCA Handbook, which has no
-      interface for its text; and the supervisors' circulars (BaFin's MaRisk, FINMA's and
+      act: Lithuania, whose register refuses the build session (below); the FCA Handbook,
+      which needs your sign-up for its API (next item), and the PRA Rulebook's text,
+      which needs a licence from the PRA; and the supervisors' circulars (BaFin's MaRisk, FINMA's and
       the Austrian FMA's Rundschreiben), which are no legal norms and have no level in the
       library yet. Default for the circulars: a later tranche once you say they belong.
+- [ ] **Sign up for the FCA Handbook API.** The Handbook's own terms forbid any automated
+      read of its site "other than by access to the API Data through the API" (clause
+      35.3), so no agent reads its pages and its page is no longer a watched source. The
+      API is free, gives the Handbook, the technical standards and the glossary, and
+      allows reuse under the Open Government Licence with the FCA named. It needs an
+      account: sign up at `handbook.fca.org.uk/handbook-api`, read its limits, and put
+      the token on the environment as a network secret. The FCA's rules for a United
+      Kingdom bank (PRIN, SYSC, COBS, CASS, BCOBS, MCOB, CONC, SUP, DISP) are researched
+      the day the token is there. Until then the watch follows the FCA's publications
+      feed, which announces each rule change.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
@@ -80,12 +90,12 @@ library takes their law in its own language. What needs you, most urgent first.
       (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`). Confirm the six names and
       addresses, and the news page of Lietuvos bankas, which is registered as its home
       page. The watch agent may be refused the same way.
-- [ ] **Four sources still cannot be read by a program.** You asked for a way round the
+- [ ] **Three sources still cannot be read by a program.** You asked for a way round the
       pages that refuse or serve nothing. Where the publisher has a feed or a data
       interface of its own, that address is now the one registered: Austria's legal
       database and its FMA, Switzerland's Fedlex, and the FCA's publications feed beside
-      its Handbook. Left: Riigi Teataja has no list of new acts that was found, the FCA
-      Handbook has no interface for its own text, Lithuania's open data refused the
+      the Handbook's API, which needs your sign-up (above). Left: Riigi Teataja has no list
+      of new acts that was found, Lithuania's open data refused the
       build session's network, and Wetten.nl closed every command-line read on 14
       November: its search interface lists what changed since a given day, but only
       with that day in the address, which a registered source cannot carry today. Run
