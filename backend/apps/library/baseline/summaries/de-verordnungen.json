@@ -1,0 +1,214 @@
+{
+ "tranche": "de-verordnungen",
+ "researchedOn": "2026-11-14",
+ "summaries": [
+  {
+   "key": "de-solvv-2014",
+   "source": "https://www.gesetze-im-internet.de/solvv_2014/BJNR416800013.html",
+   "sourceLabel": "Gesetze im Internet, Solvabilitätsverordnung (SolvV), BGBl. I S. 4168, consolidated text (Zuletzt geändert durch Art. 9 G v. 25.3.2026 I Nr. 81)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Banking Act that fills in what the CRR leaves to national law: how applications and reports reach the supervisors, benchmarking of internal approaches, the national past-due threshold and the capital buffers. It binds institutions and groups under the CRR own funds rules. In practice a bank files CRR applications in writing with BaFin and regular reports through the Bundesbank, reports benchmark results, applies the past-due threshold and works out its maximum distributable amount when it misses its buffer."
+   }
+  },
+  {
+   "key": "de-liqv",
+   "source": "https://www.gesetze-im-internet.de/liqv/BJNR311700006.html",
+   "sourceLabel": "Gesetze im Internet, Liquiditätsverordnung (LiqV), BGBl. I S. 3117, consolidated text (Zuletzt geändert durch Art. 26 Abs. 4 G v. 25.3.2026 I Nr. 81)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Banking Act that sets the national liquidity standard. Since the CRR took over liquidity rules for most banks, it applies only to credit institutions that Part Six of the CRR does not reach. In practice such an institution keeps a liquidity ratio of at least one for the coming month, calculates observation ratios for the bands up to twelve months, and reports the figures to the Bundesbank each month on the set forms, keeping the reports for the current and two preceding years."
+   }
+  },
+  {
+   "key": "de-gromikv-2014",
+   "source": "https://www.gesetze-im-internet.de/gromikv_2014/BJNR418300013.html",
+   "sourceLabel": "Gesetze im Internet, Großkredit- und Millionenkreditverordnung (GroMiKV), BGBl. I S. 4183, consolidated text (Zuletzt geändert durch Art. 10 G v. 25.3.2026 I Nr. 81)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Banking Act that supplements the CRR's large exposure rules and sets how loans of one million euros or more are reported to the credit register at the Bundesbank. It binds institutions and the other firms in the million-loan procedure. In practice a bank has all managing directors decide unanimously before a large exposure rises above the limit, reports the master data of large borrowers, reports each quarter the borrowers at or above one million euros, and keeps the reports for the current and two preceding years."
+   }
+  },
+  {
+   "key": "de-institutsvergv-2014",
+   "source": "https://www.gesetze-im-internet.de/institutsvergv_2014/BJNR427000013.html",
+   "sourceLabel": "Gesetze im Internet, Institutsvergütungsverordnung (InstitutsVergV), BGBl. I S. 4270, consolidated text (Zuletzt geändert durch Art. 10 G v. 12.5.2026 I Nr. 139)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Banking Act that sets the supervisory requirements for how institutions pay staff and managing directors, with stricter rules for significant institutions. Pay fixed by collective agreement is outside it. In practice a bank designs pay that rewards no excessive risk, sets its bonus pool in a documented process tied to capital and liquidity, bars personal hedging, writes its pay principles down, reviews them yearly and, at a significant institution, defers risk takers' bonuses."
+   }
+  },
+  {
+   "key": "de-anzv-2006",
+   "source": "https://www.gesetze-im-internet.de/anzv_2006/BJNR324500006.html",
+   "sourceLabel": "Gesetze im Internet, Anzeigenverordnung (AnzV), BGBl. I S. 3245, consolidated text (Zuletzt geändert durch Art. 7 G v. 25.3.2026 I Nr. 81)",
+   "text": {
+    "en": "A BaFin regulation under the Banking Act that sets how the notifications the Act requires are made: channel, forms, content and deadlines. It binds institutions, financial holding companies and others who notify under the Act. In practice a bank files with its supervisor and its Bundesbank regional office, keeps a valid legal entity identifier, reports material outsourcing and serious outsourcing incidents through BaFin's platform, uses the set forms for board changes, and files yearly returns on holdings, branches and high earners."
+   }
+  },
+  {
+   "key": "de-inhkontrollv",
+   "source": "https://www.gesetze-im-internet.de/inhkontrollv/BJNR056210009.html",
+   "sourceLabel": "Gesetze im Internet, Inhaberkontrollverordnung (InhKontrollV), BGBl. I S. 562, 688, consolidated text (Zuletzt geändert durch Art. 39 G v. 4.2.2026 I Nr. 33)",
+   "text": {
+    "en": "A BaFin regulation that sets what anyone intending to acquire, increase, reduce or give up a qualifying holding in a bank, financial services institution, insurer or pension fund must file. It binds the acquirer or holder, often a bank or banking group buying into another regulated firm. In practice the acquirer files the set form with all annexes and a chart for complex structures, reports at once a change of intention, updates documents that change during the assessment, and files a further form when it reduces or gives up the holding."
+   }
+  },
+  {
+   "key": "de-finav",
+   "source": "https://www.gesetze-im-internet.de/finav/BJNR420910013.html",
+   "sourceLabel": "Gesetze im Internet, Finanz- und Risikotragfähigkeitsinformationenverordnung (FinaRisikoV), BGBl. I S. 4209, consolidated text (zuletzt geändert durch Art. 7 Abs. 40 G v. 12.5.2021 I 990)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Banking Act that sets the financial and risk-bearing capacity information institutions send the supervisors. It binds all institutions under the Act and the parents of groups. In practice a credit institution sends the Bundesbank its profit and loss, planned figures and other data each quarter by fixed dates, a group parent sends consolidated figures, and each year every credit institution and group reports how it steers risk-bearing capacity, capital planning and liquidity."
+   }
+  },
+  {
+   "key": "de-masanv",
+   "source": "https://www.gesetze-im-internet.de/masanv/BJNR064400020.html",
+   "sourceLabel": "Gesetze im Internet, Sanierungsplanmindestanforderungsverordnung (MaSanV), BGBl. I S. 644, consolidated text (Zuletzt geändert durch Art. 1 V v. 3.12.2024 I Nr. 392)",
+   "text": {
+    "en": "A BaFin regulation under the Recovery and Resolution Act that sets what a recovery plan must contain beyond the EU rules. It binds institutions and parent undertakings that draw up a recovery plan, with lighter rules for those granted simplified requirements. In practice a bank puts an organisation chart in its plan, sets indicators with thresholds for capital, liquidity, profitability and asset quality, makes sure management hears within one bank working day when a threshold is reached and the supervisor a day later, and runs stress scenarios."
+   }
+  },
+  {
+   "key": "de-belwertv",
+   "source": "https://www.gesetze-im-internet.de/belwertv/BJNR117500006.html",
+   "sourceLabel": "Gesetze im Internet, Beleihungswertermittlungsverordnung (BelWertV), BGBl. I S. 1175, consolidated text (Zuletzt geändert durch Art. 5 V v. 4.10.2022 I 1614)",
+   "text": {
+    "en": "A BaFin regulation under the Pfandbrief Act that sets how a Pfandbrief bank determines the mortgage lending value of a property it lends against and counts as cover. It binds Pfandbrief banks. In practice the bank values each property through a report by a qualified valuer who is independent of the lending and the sale, has the property inspected, derives the value from the income value and checks it against the asset or comparative value, may use a simpler valuation for home loans of up to 600,000 euros, and monitors each value at least once a year."
+   }
+  },
+  {
+   "key": "de-deckregv",
+   "source": "https://www.gesetze-im-internet.de/deckregv/BJNR207400006.html",
+   "sourceLabel": "Gesetze im Internet, Deckungsregisterverordnung (DeckRegV), BGBl. I S. 2074, consolidated text (Zuletzt geändert durch Art. 24 G v. 25.3.2026 I Nr. 81)",
+   "text": {
+    "en": "A BaFin regulation under the Pfandbrief Act that sets how a Pfandbrief bank keeps the cover registers in which every asset backing its Pfandbriefe is entered. It binds Pfandbrief banks. In practice the bank keeps a separate register for each class of Pfandbrief with a sub-register for cover derivatives, lets only specially authorised staff make entries, enters an asset only once every condition for cover is met and never backdated, keeps entries unchangeable and traceable, and runs an electronic register on secure systems with a daily backup held in Germany."
+   }
+  },
+  {
+   "key": "de-pfandbarwertv-2005",
+   "source": "https://www.gesetze-im-internet.de/pfandbarwertv_2005/BJNR216500005.html",
+   "sourceLabel": "Gesetze im Internet, Pfandbrief-Barwertverordnung (PfandBarwertV), BGBl. I S. 2165, consolidated text (Zuletzt geändert durch Art. 2 V v. 4.10.2022 I 1614)",
+   "text": {
+    "en": "A BaFin regulation under the Pfandbrief Act that sets how a Pfandbrief bank shows its Pfandbriefe are covered at all times by present value. It binds Pfandbrief banks. In practice the bank compares the present value of each class of Pfandbriefe with that of its cover every bank working day using swap curves, values cover derivatives at market prices set independently of trading, stress tests the pool at least weekly for rate and currency shocks, tops up any shortfall at once, documents its methods and changes them only with BaFin's consent."
+   }
+  },
+  {
+   "key": "de-zaganzv",
+   "source": "https://www.gesetze-im-internet.de/zaganzv/BJNR360300009.html",
+   "sourceLabel": "Gesetze im Internet, ZAG-Anzeigenverordnung (ZAGAnzV), BGBl. I S. 3603, consolidated text (Zuletzt geändert durch Art. 41 G v. 4.2.2026 I Nr. 33)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance that sets how payment institutions and e-money institutions make the notifications the Payment Services Supervision Act requires. It binds those institutions. In practice such an institution files with BaFin and its Bundesbank regional office with certified translations, files evidence on agents and reports changes a month ahead, reports material outsourcing and serious incidents through BaFin's platform, files a declaration and CV for each new managing director, and reports holdings in itself."
+   }
+  },
+  {
+   "key": "de-zagmonawv",
+   "source": "https://www.gesetze-im-internet.de/zagmonawv/BJNR359100009.html",
+   "sourceLabel": "Gesetze im Internet, ZAG-Monatsausweisverordnung (ZAGMonAwV), BGBl. I S. 3591, consolidated text (Zuletzt geändert durch Art. 1 V v. 13.12.2018 I 2453)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance that sets the periodic returns of payment institutions and e-money institutions. It binds every institution under the Payment Services Supervision Act, with account information services filing only a few figures. In practice such an institution sends the Bundesbank each quarter, or each month if BaFin so orders, a statement of assets and a profit and loss account on the set forms, with figures on payment volumes, transactions, chargebacks and e-money, by the twentieth business day after the period."
+   }
+  },
+  {
+   "key": "de-wpdverov-2018",
+   "source": "https://www.gesetze-im-internet.de/wpdverov_2018/BJNR356600017.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierdienstleistungs-Verhaltens- und -Organisationsverordnung (WpDVerOV), BGBl. I S. 3566, consolidated text (Zuletzt geändert durch Art. 11 G v. 4.2.2026 I Nr. 33)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Securities Trading Act that fills in the conduct and organisation rules for investment services. It binds investment services firms, banks among them. In practice a bank keeps the product information sheet for advice short and free of advertising, keeps a register of inducements and how each improves the service, records sales targets and keeps records for five years, chooses and reconciles custodians of client assets with care, sets a target market for products it sells and checks staff competence."
+   }
+  },
+  {
+   "key": "de-wpaiv",
+   "source": "https://www.gesetze-im-internet.de/wpaiv/BJNR337600004.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierhandelsanzeigeverordnung (WpAV), BGBl. I S. 3376, consolidated text (Zuletzt geändert durch Art. 10 G v. 4.2.2026 I Nr. 33)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Securities Trading Act that sets how the Act's market abuse and transparency notices are made. It binds firms that report suspected short selling breaches and issuers whose securities are traded, banks in both roles. In practice a bank reports suspected short selling breaches to BaFin with the listed details, and as an issuer sends inside information to EEA-wide media under a set heading and content, records how it sent it, and tells BaFin of each publication and each delayed disclosure."
+   }
+  },
+  {
+   "key": "de-kaverov",
+   "source": "https://www.gesetze-im-internet.de/kaverov/BJNR246000013.html",
+   "sourceLabel": "Gesetze im Internet, Kapitalanlage-Verhaltens- und -Organisationsverordnung (KAVerOV), BGBl. I S. 2460, consolidated text (Zuletzt geändert durch Art. 1 V v. 28.7.2022 BAnz AT 29.07.2022 V2)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Code that fills in the conduct, conflict of interest, organisation and risk management duties of management companies of UCITS and retail AIFs, largely by applying Delegated Regulation (EU) No 231/2013. It binds those companies. In practice such a company treats investors fairly, confirms subscriptions and redemptions by the next business day, publishes its voting strategy and order execution principles, runs a free complaints procedure, and analyses each acquisition's effect on the fund beforehand."
+   }
+  },
+  {
+   "key": "de-karbv",
+   "source": "https://www.gesetze-im-internet.de/karbv/BJNR248300013.html",
+   "sourceLabel": "Gesetze im Internet, Kapitalanlage-Rechnungslegungs- und -Bewertungsverordnung (KARBV), BGBl. I S. 2483, consolidated text (Geändert durch Art. 18 Abs. 2 G v. 3.6.2021 I 1498)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Code that sets the content and form of investment fund reports and how fund assets are valued. It binds management companies, depositaries, which are often banks, and liquidators. In practice the management company draws up complete, clear annual and half-yearly reports with the set components, signed by management and filed electronically, and the company or depositary values assets at the last tradable price or by documented models, with valuation kept apart from portfolio management."
+   }
+  },
+  {
+   "key": "de-derivatev-2013",
+   "source": "https://www.gesetze-im-internet.de/derivatev_2013/BJNR246300013.html",
+   "sourceLabel": "Gesetze im Internet, Derivateverordnung (DerivateV), BGBl. I S. 2463, consolidated text (Zuletzt geändert durch Art. 11 G v. 9.4.2026 I Nr. 97)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Code that sets how management companies use derivatives, securities lending and repos in open-ended German retail funds and certain special AIFs, and how they measure and limit the risk. It binds those companies. In practice the company keeps derivatives within the fund's character, measures use of the market risk limit at least daily, documents its method and reports a change to BaFin, stress tests each fund at least monthly, and sends BaFin a yearly report on each UCITS fund's derivatives."
+   }
+  },
+  {
+   "key": "de-pangv-2022",
+   "source": "https://www.gesetze-im-internet.de/pangv_2022/BJNR492110021.html",
+   "sourceLabel": "Gesetze im Internet, Preisangabenverordnung (PAngV), BGBl. I S. 4921, consolidated text (Zuletzt geändert durch Art. 3 G v. 19.10.2026 I Nr. 314)",
+   "text": {
+    "en": "A regulation of the Federal Government and two ministries that sets how businesses state prices to consumers, with a part on financial services. It binds every business dealing with consumers, banks and other lenders among them. In practice a bank keeps a price list for its main services, states the total cost of a consumer loan as an annual percentage rate calculated by the set formula, gives the required standard information with a representative example whenever it advertises loans with rates or cost figures, and states the borrowing rate instead for simple overdrafts."
+   }
+  },
+  {
+   "key": "de-immokwplv",
+   "source": "https://www.gesetze-im-internet.de/immokwplv/BJNR052900018.html",
+   "sourceLabel": "Gesetze im Internet, Immobiliar-Kreditwürdigkeitsprüfungsleitlinien-Verordnung (ImmoKWPLV), BGBl. I S. 529, consolidated text (text as enacted)",
+   "text": {
+    "en": "A regulation of the Federal Ministries of Finance and of Justice that sets the criteria and methods lenders use to assess a consumer's creditworthiness before a residential property loan. It binds lenders under the Civil Code and credit institutions under the Banking Act. In practice a bank reaches a reasoned forecast over the whole term from full information on income, spending and assets, counts the home's value only as an extra factor, allows for likely changes such as retirement or higher rates, and reassesses when the loan rises by over 10 per cent."
+   }
+  },
+  {
+   "key": "de-vglwebmv",
+   "source": "https://www.gesetze-im-internet.de/vglwebmv/BJNR0440A0024.html",
+   "sourceLabel": "Gesetze im Internet, Vergleichswebsitemeldeverordnung (VglWebMV), BGBl. 2024 I Nr. 68, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation under the Payment Accounts Act that sets what payment service providers report about their consumer payment accounts for the public comparison website, and how. It binds every payment service provider that offers payment accounts to consumers, banks first among them. In practice a bank reports, for each consumer account it offers, its own details, the product name and the comparison criteria and fees the annex lists, as one complete data set through BaFin's reporting platform, follows BaFin's technical instructions, sends no other data and corrects wrong data the same way."
+   }
+  },
+  {
+   "key": "de-entschfinv",
+   "source": "https://www.gesetze-im-internet.de/entschfinv/BJNR000900016.html",
+   "sourceLabel": "Gesetze im Internet, Entschädigungseinrichtungs-Finanzierungsverordnung (EntschFinV), BGBl. I S. 9, consolidated text (Zuletzt geändert durch Art. 1 V v. 28.10.2024 I Nr. 337)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Deposit Guarantee Act on the financing of the statutory compensation scheme of private banks, the Entschädigungseinrichtung deutscher Banken. It binds the scheme and its member credit institutions. In practice a member bank pays a risk-based annual contribution and a one-off payment on joining, sends the scheme its audited accounts, supervisory reports and ratings by 30 June, and backs any payment commitment with unencumbered low-risk collateral, reporting anything that could impair it."
+   }
+  },
+  {
+   "key": "de-gwgmeldv",
+   "source": "https://www.gesetze-im-internet.de/gwgmeldv/BJNR0C80A0025.html",
+   "sourceLabel": "Gesetze im Internet, GwG-Meldeverordnung (GwGMeldV), BGBl. 2025 I Nr. 200, consolidated text (text as enacted)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Anti-Money Laundering Act that sets the form and minimum content of suspicious activity reports to the Financial Intelligence Unit. It binds every obliged entity that reports, banks first among them. In practice a bank files each report through the Unit's electronic procedure in XML or the set fields, gives its reference, the reporting reasons and any related report or complaint, describes the facts with the customer due diligence data, and attaches the records needed."
+   }
+  },
+  {
+   "key": "de-awv-2013",
+   "source": "https://www.gesetze-im-internet.de/awv_2013/BJNR286500013.html",
+   "sourceLabel": "Gesetze im Internet, Außenwirtschaftsverordnung (AWV), BGBl. I S. 2865, consolidated text (Zuletzt geändert durch Art. 1 V v. 14.10.2026 I Nr. 300)",
+   "text": {
+    "en": "The Federal Government's regulation under the Foreign Trade and Payments Act, with the export and import rules, capital transaction restrictions, embargo rules and reporting duties for capital and payment transactions abroad. It binds every resident, banks included. In practice a bank reports to the Bundesbank by the seventh working day of each month its securities payments, interest and dividends and travel card payments with non-residents, reports its own large cross-border payments and foreign direct investments, and honours no claim EU sanctions bar."
+   }
+  },
+  {
+   "key": "de-immodarlsachkv",
+   "source": "https://www.gesetze-im-internet.de/immodarlsachkv/BJNR097200016.html",
+   "sourceLabel": "Gesetze im Internet, Immobiliar-Darlehensvergabe-Sachkunde-Verordnung (ImmoDarlSachkV), BGBl. I S. 972, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation under the Banking Act that sets what knowledge the internal and external staff of credit institutions who deal with consumer residential property loans must have and how it is shown. It binds credit institutions that grant such loans. In practice a bank makes sure these staff know the legal basis of property lending, the creditworthiness assessment, the loan products and ancillary services, how property is bought and land registers work, and how collateral is valued, and keeps certificates, training records or a recognised qualification as evidence."
+   }
+  },
+  {
+   "key": "de-pfandmeldev",
+   "source": "https://www.gesetze-im-internet.de/pfandmeldev/BJNR161410022.html",
+   "sourceLabel": "Gesetze im Internet, Pfandbrief-Meldeverordnung (PfandMeldeV), BGBl. I S. 1614, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation that sets the periodic reports Pfandbrief banks send BaFin on their outstanding Pfandbriefe and cover pools, implementing the Covered Bond Directive's reporting article. It binds every Pfandbrief bank with Pfandbriefe of at least one class outstanding. In practice the bank files each quarter, or each month where BaFin so orders, the cross-class report and the reports for each class it issues on circulation, cover, domestic and foreign cover assets, further cover and cover derivatives, as at the last bank working day of the period and electronically in the format BaFin sets."
+   }
+  }
+ ]
+}
