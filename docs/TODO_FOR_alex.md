@@ -201,6 +201,13 @@ library takes their law in its own language. What needs you, most urgent first.
       option duties wait on it); the RIS's own note that one 2026 amendment of the
       FMA-IPV could not be worked into its consolidated text; "pålitlighet" for
       Zuverlässigkeit and "revisorer och skatterådgivare" for Wirtschaftstreuhänder.
+- [ ] **A reader on the Latvian regulations' law text.** Titles of EBA and ESMA guidelines
+      (EBA/GL/2023/08, 2022/06, 2022/08, 2019/05, 2021/02; three ESMA guidelines) and the
+      annex headings of Regulation (EU) 2024/3117 are translated from the Latvian, because
+      their own English and Swedish texts could not be read from the build session;
+      check them against the issuers' versions. Also: "utsedd representant" for a credit
+      intermediary's appointed representative (from the Mortgage Credit Directive), where
+      the laws file says "anknutet ombud"; "förvaltningsråd" for a padome.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as

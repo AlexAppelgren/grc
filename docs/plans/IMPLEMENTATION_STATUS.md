@@ -501,7 +501,9 @@ the Netherlands, Austria and Switzerland.
   the 2023 disclosable arrangements regulations only as made. And Austria's regulations
   (`provisions/at-verordnungen.json`): 88 sections with English and Swedish beside each;
   99 of 103 duties carry their text, and four do not, because FMA-PIV § 3 sets its rates
-  out as a table and VERA-V § 6a publishes its formulas only as images. The baseline's
+  out as a table and VERA-V § 6a publishes its formulas only as images. Then Latvia's
+  regulations (`provisions/lv-noteikumi.json`): 450 numbered points with English and
+  Swedish beside each; all 131 duties carry their text. The baseline's
   tests filed and approved everything on the branch together (39 tests, 798 s).
 - **In work on this branch:** the
   law's own words for the other regulations, each
