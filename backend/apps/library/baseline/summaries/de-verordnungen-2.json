@@ -1,0 +1,166 @@
+{
+ "tranche": "de-verordnungen-2",
+ "researchedOn": "2026-11-14",
+ "summaries": [
+  {
+   "key": "de-kwgvermv",
+   "source": "https://www.gesetze-im-internet.de/kwgvermv/BJNR278500007.html",
+   "sourceLabel": "Gesetze im Internet, KWG-WpIG-Vermittlerverordnung (KWGWpIGVermV), BGBl. I S. 2785, consolidated text (Zuletzt geändert durch Art. 1 V v. 10.11.2022 I 2021)",
+   "text": {
+    "en": "A BaFin regulation under the Banking Act and the Investment Firms Act on tied agents, the intermediaries who sell investment services in the name and under the liability of one institution, and on BaFin's public register of them. It binds the institution that takes on that liability. In practice a bank notifies each tied agent through BaFin's electronic procedure with the set details, confirms the agent is competent and reliable, reports changes and the end of the agent's work, and keeps the published register data correct."
+   }
+  },
+  {
+   "key": "de-refiregv",
+   "source": "https://www.gesetze-im-internet.de/refiregv/BJNR324100006.html",
+   "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, consolidated text (Geändert durch Art. 8 V v. 4.10.2022 I 1614)",
+   "text": {
+    "en": "A BaFin regulation under the Banking Act that sets the form of the refinancing register, the register in which an undertaking records receivables and charges it has promised to transfer in a refinancing so that they stay apart if it fails. It binds every undertaking that keeps such a register, banks first among them. In practice a bank keeps the register on paper or electronically in the set layout, numbers and dates each entry, never back-dates or silently changes one, protects the register and, if it is electronic, secures, logs and backs it up in Germany."
+   }
+  },
+  {
+   "key": "de-stimmrmv",
+   "source": "https://www.gesetze-im-internet.de/stimmrmv/BJNR172300018.html",
+   "sourceLabel": "Gesetze im Internet, Stimmrechtsmitteilungsverordnung (StimmRMV), BGBl. I S. 1723, consolidated text (Geändert durch Art. 1 V v. 2.6.2020 I 1217)",
+   "text": {
+    "en": "A BaFin regulation under the Securities Trading Act that sets how notifications of voting rights from shares and other instruments reach BaFin and the issuer. It binds everyone who must notify a holding crossing a threshold, banks holding shares or instruments for their own account among them. In practice a bank sends each notification electronically, to BaFin only through BaFin's reporting and publication platform once registered and admitted, and to the issuer as an XML record, naming the person responsible for its content."
+   }
+  },
+  {
+   "key": "de-nlposv-2012",
+   "source": "https://www.gesetze-im-internet.de/nlposv_2012/BJNR269900012.html",
+   "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, consolidated text (Zuletzt geändert durch Art. 24 Abs. 11 G v. 23.6.2017 I 1693)",
+   "text": {
+    "en": "A BaFin regulation that sets how the notifications and publications of net short positions which the EU Short Selling Regulation requires are made in Germany. It binds every holder of a net short position that must be notified or published, banks trading for their own account among them. In practice a bank registers a contact person for BaFin's reporting platform, gives its identifying details, notifies positions there on the EU forms and publishes positions in shares in the Federal Gazette, also when a third party reports for it."
+   }
+  },
+  {
+   "key": "de-wpi-anzv",
+   "source": "https://www.gesetze-im-internet.de/wpi-anzv/BJNR15D0A0023.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, consolidated text (Zuletzt geändert durch Art. 19 G v. 25.3.2026 I Nr. 81)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Firms Act that sets how investment firms and their holding companies make the notifications the Act requires: channel, forms, content and deadlines. It binds investment firms licensed under that Act, not banks, which notify under the Banking Act. In practice such a firm files with BaFin and the Bundesbank, keeps a valid legal entity identifier, notifies management changes with the set evidence, reports material outsourcing through BaFin's platform, reports holdings in it, and sends the Bundesbank its quarterly figures and pay data."
+   }
+  },
+  {
+   "key": "de-wpi-inhkontrollv",
+   "source": "https://www.gesetze-im-internet.de/wpi-inhkontrollv/BJNR0090A0024.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Inhaberkontrollverordnung (WpI-InhKontrollV), BGBl. 2024 I Nr. 9, consolidated text (Geändert durch Art. 47 G v. 4.2.2026 I Nr. 33)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Firms Act that sets what anyone intending to acquire, increase, reduce or give up a qualifying holding in an investment firm must file. It binds the acquirer or holder, often a bank or banking group buying into or selling an investment firm. In practice the acquirer files with BaFin and the Bundesbank on the set forms with the documents the EU standards require and a reliability declaration for each person, keeps the file current while BaFin assesses it, and names the transferee when it sells."
+   }
+  },
+  {
+   "key": "de-wpivergv",
+   "source": "https://www.gesetze-im-internet.de/wpivergv/BJNR0050A0024.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Firms Act that sets how medium-sized investment firms pay their risk takers. Pay fixed by collective agreement and commercial agents are outside it, and § 18 also binds the superordinate undertakings of groups. In practice such a firm identifies its risk takers, sets a sound ratio of variable to fixed pay, pays at least half of variable pay in instruments and defers at least 40 per cent, applies malus and clawback, bars hedging, writes its pay principles down and reviews its pay systems every year."
+   }
+  },
+  {
+   "key": "de-kagbauslanzv",
+   "source": "https://www.gesetze-im-internet.de/kagbauslanzv/BJNR209100022.html",
+   "sourceLabel": "Gesetze im Internet, KAGB-Auslagerungsanzeigenverordnung (KAGBAuslAnzV), BGBl. I S. 2091, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Code that sets how a fund management company notifies BaFin of outsourcing and sub-outsourcing and of material changes to them. It binds management companies under the Investment Code, including those in banking groups. In practice such a company registers for BaFin's electronic portal and uses its identification number, notifies each intended outsourcing without delay with the listed contract, provider, location, cloud and risk data, confirms it meets the Code's outsourcing rules, and reports material changes marked as such."
+   }
+  },
+  {
+   "key": "de-eakav",
+   "source": "https://www.gesetze-im-internet.de/eakav/BJNR247700013.html",
+   "sourceLabel": "Gesetze im Internet, Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV), BGBl. I S. 2477, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation under the Investment Code that sets how a management company notifies BaFin that it intends to market a UCITS it manages in another EEA state, or an AIF to professional investors there. It binds UCITS and AIF management companies and persons they authorise to notify. In practice such a company files one notification per fund through BaFin's reporting and publication portal, in the set file formats, packed and named as prescribed, and files any missing documents BaFin asks for as a supplementary notification."
+   }
+  },
+  {
+   "key": "de-bausparkv-2015",
+   "source": "https://www.gesetze-im-internet.de/bausparkv_2015/BJNR257600015.html",
+   "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, consolidated text (Geändert durch Art. 1 V v. 23.7.2021 I 3206)",
+   "text": {
+    "en": "A BaFin regulation under the Building and Loan Associations Act that sets how a Bausparkasse, a credit institution taking savings deposits for home loans from a collective pool, steers that pool. It binds every Bausparkasse. In practice such a bank validates its simulation model each year, simulates base and stress scenarios, files a collective status report by the end of each year, keeps its tariffs within the minimum ratio, warns BaFin when collective liquidity is at risk, tops up its technical security fund and keeps large contracts and riskier loans within the set limits."
+   }
+  },
+  {
+   "key": "de-schiffsbelwertv",
+   "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/BJNR085100008.html",
+   "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, consolidated text (Geändert durch Art. 6 V v. 4.10.2022 I 1614)",
+   "text": {
+    "en": "A BaFin regulation under the Pfandbrief Act that sets how a Pfandbrief bank determines the mortgage lending value of a ship or a ship under construction that backs ship Pfandbriefe. It binds Pfandbrief banks in ship finance. In practice the bank has an independent, experienced valuer inspect the ship and its class papers and write a report, sets the value no higher than the current and the ten-year average market value and the price paid, and monitors the value at least once a year, reducing it when the market falls or the loan is 90 days in arrears."
+   }
+  },
+  {
+   "key": "de-flugbelwertv",
+   "source": "https://www.gesetze-im-internet.de/flugbelwertv/BJNR103600009.html",
+   "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, consolidated text (Geändert durch Art. 7 V v. 4.10.2022 I 1614)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Pfandbrief Act that sets how a Pfandbrief bank determines the mortgage lending value of an aircraft that backs aircraft Pfandbriefe. It binds Pfandbrief banks in aircraft finance. In practice the bank has an independent valuer with aircraft market expertise inspect the aircraft and its maintenance records and write a report, keeps the value within the current, ten-year average and balanced-market values, and monitors it at least once a year, cutting it when prices fall or the loan is 90 days in arrears."
+   }
+  },
+  {
+   "key": "de-ziev",
+   "source": "https://www.gesetze-im-internet.de/ziev/BJNR364300009.html",
+   "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, consolidated text (Zuletzt geändert durch Art. 1 V v. 10.12.2018 I 2330)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Payment Services Supervision Act that sets how much own funds payment institutions and e-money institutions must hold and what liability cover payment initiation and account information services need. It binds those institutions. In practice such an institution calculates its own funds requirement by the set method, holds at least that amount at all times, keeps cover suited to its risk profile, reports its own funds to the Bundesbank each quarter and tells the supervisors at once of any shortfall."
+   }
+  },
+  {
+   "key": "de-agnwv",
+   "source": "https://www.gesetze-im-internet.de/agnwv/BJNR364100009.html",
+   "sourceLabel": "Gesetze im Internet, Agentennachweisverordnung (AgNwV), BGBl. I S. 3641, consolidated text (Geändert durch Art. 7 Abs. 37 G v. 12.5.2021 I 990)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Payment Services Supervision Act that sets what evidence a payment or e-money institution must collect before it uses an agent to provide payment services, and how it keeps the agent in check. It binds those institutions, except for agents that are themselves supervised institutions. In practice the institution gathers official certificates and register extracts, CVs and accounts for the agent and its managers, signs a written agreement with control rights, documents its checks and renews the evidence regularly."
+   }
+  },
+  {
+   "key": "de-finstabdev",
+   "source": "https://www.gesetze-im-internet.de/finstabdev/BJNR011000021.html",
+   "sourceLabel": "Gesetze im Internet, Finanzstabilitätsdatenerhebungsverordnung (FinStabDEV), BGBl. I S. 110, 1165, consolidated text (text as enacted)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Financial Stability Act that lets the Deutsche Bundesbank request data on residential property loans to natural persons from financial corporations based in Germany, to watch risks to financial stability. It binds the corporations asked, banks first among them. In practice a bank that receives a request sends the listed loan, property and borrower group data electronically in the Bundesbank's schema by the set dates, never passes on personal data, and lets the Bundesbank check what it sent."
+   }
+  },
+  {
+   "key": "de-kmanzv",
+   "source": "https://www.gesetze-im-internet.de/kmanzv/BJNR0990A0026.html",
+   "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation that sets how crypto-asset service providers supervised under the Crypto Markets Supervision Act make the notifications that Act requires. It binds those providers, and banks offering crypto-asset services under MiCA only for their cross-border and branch notices. In practice a provider files with BaFin and the Bundesbank, notifies cross-border services and branches with the set details, reports holdings in it and its close links on the set forms, reports material outsourcing and serious incidents through BaFin's platform, and reports its managers' side activities."
+   }
+  },
+  {
+   "key": "de-kmmv",
+   "source": "https://www.gesetze-im-internet.de/kmmv/BJNR0C50A0025.html",
+   "sourceLabel": "Gesetze im Internet, Kryptomärktemitteilungs-Verordnung (KMMV), BGBl. 2025 I Nr. 197, consolidated text (text as enacted)",
+   "text": {
+    "en": "A BaFin regulation that sets what issuers, offerors and those seeking admission to trading of crypto-assets tell BaFin when they publish inside information under the MiCA Regulation, and what a notice of a delayed disclosure must add. It binds them, banks issuing crypto-assets such as e-money tokens among them. In practice such a bank sends BaFin, electronically on the channel BaFin names, the text, time and media of each publication with a contact person, and in a deferral notice lists every review of the reasons and everyone involved in the decision."
+   }
+  },
+  {
+   "key": "de-trd-v",
+   "source": "https://www.gesetze-im-internet.de/trd_v/BJNR209000017.html",
+   "sourceLabel": "Gesetze im Internet, Transparenzregisterdatenübermittlungsverordnung (TrDüV), BGBl. I S. 2090, consolidated text (Geändert durch Art. 10 G v. 25.6.2021 I 2083)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance under the Anti-Money Laundering Act that sets how companies and other legal entities register with the transparency register and send it the details of their beneficial owners. It binds every legal entity and legal arrangement that must report, a bank among them as a company in its own right. In practice a bank registers a user account on the register's website with its minimum details, keeps those details current and files its beneficial owner data on the register's forms over the secure connection the register sets."
+   }
+  },
+  {
+   "key": "de-kredanstwiawphev",
+   "source": "https://www.gesetze-im-internet.de/kredanstwiawphev/BJNR189100999.html",
+   "sourceLabel": "Gesetze im Internet, EdW-Beitragsverordnung (EdWBeitrV), BGBl. I S. 1891, consolidated text (Zuletzt geändert durch Art. 10 G v. 9.4.2026 I Nr. 97)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Finance on how the investor compensation scheme for securities trading firms at the KfW, the EdW, is financed. It binds the institutions assigned to that scheme under the Investor Compensation Act, such as investment firms and other non-bank institutions providing investment services. In practice such a firm files the auditor-confirmed figures on its commission and trading income by 1 July, pays its annual contribution by 30 September, at least the set minimum, and pays a one-off amount when it joins the scheme."
+   }
+  },
+  {
+   "key": "de-rstruktfv-2015",
+   "source": "https://www.gesetze-im-internet.de/rstruktfv_2015/BJNR126800015.html",
+   "sourceLabel": "Gesetze im Internet, Restrukturierungsfonds-Verordnung (RStruktFV), BGBl. I S. 1268, consolidated text (Geändert durch Art. 9 G v. 23.12.2016 I 3171)",
+   "text": {
+    "en": "A regulation of the Federal Government under the Restructuring Fund Act on how the resolution authority raises the annual contributions to the restructuring fund for credit institutions, adding to the EU rules on contributions to resolution financing. It binds the institutions liable to contribute: CRR credit institutions, investment firms with initial capital of at least 750,000 euros and branches of EU institutions. In practice a bank sends the resolution authority the extra data for its risk indicators within the EU deadlines and confirms that all its contribution data are correct."
+   }
+  }
+ ]
+}
