@@ -393,7 +393,7 @@ the Netherlands, Austria and Switzerland.
   `at`, `ch`) and five more content languages (`et`, `lv`, `lt`, `de`, `nl`) in the
   reference seed; the six member states with the EU as parent, the United Kingdom and
   Switzerland with none, so a Union rule reaches ten countries and no longer "all"
-  (FP-S12, I18N-S1). 64 authorities and 39 watched sources for the eight markets, each read
+  (FP-S12, I18N-S1). 71 authorities and 39 watched sources for the eight markets, each read
   on the body's own site or in an official directory
   (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
 - **Built (search):** German, Dutch and Lithuanian with PostgreSQL's own configurations,

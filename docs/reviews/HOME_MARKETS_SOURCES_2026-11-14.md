@@ -43,6 +43,30 @@ abbreviation is Sweden's "FI".
   for Finantsinspektsioon, Latvijas Banka, BaFin, the AFM, the Oesterreichische
   Nationalbank and FINMA; Lietuvos bankas could not be read.
 
+**Seven makers of regulations added (2026-11-14, later the same day).** The baseline's
+researchers left regulations out because the body that made them was not seeded, and a
+baseline record may name only a seeded authority. The seven makers are now seeded, so
+later tranches can file those regulations: the Netherlands' Ministerie van Buitenlandse
+Zaken (`ministerie-van-buitenlandse-zaken`, BZ), maker with the Minister of Finance of the
+Sanctieregelingen under the Sanctiewet 1977; Germany's Bundesministerium für Wirtschaft
+und Energie (`bmwe`; VersVermV, FinVermV), Bundesministerium des Innern (`bmi-de`,
+"BMI (DE)", as Austria's interior ministry is BMI too; ZIdPrüfV) and Bundesministerium der
+Justiz und für Verbraucherschutz (`bmjv`; RechZahlV, with the finance ministry);
+Switzerland's Eidgenössisches Justiz- und Polizeidepartement (`ejpd`; the maximum interest
+rate for consumer credit, SR 221.214.111); Estonia's Justiits- ja Digiministeerium
+(`justiits-ja-digiministeerium`; the ESIS form, nr 11 of 2016, and the consumer credit
+information forms, nr 47 of 2010 in its text of 2015); and Austria's Bundesministerium für
+Arbeit, Soziales, Gesundheit, Pflege und Konsumentenschutz (`bmasgpk`; VZKG-V, BGBl. II
+Nr. 255/2016). Each row carries the name the body uses today, read on its own site; the
+regulations name the ministry as it was called when they were made. Each was shown as the
+maker in the regulation's own text on the official database. The sites of the German
+economy and interior ministries refused a program (a browser check, a cookie check), so
+those two rest on the Federal Government's list of ministries, and `bmwe.de` is not the
+ministry's. Not read: who made the RechKredV, whose page names no issuer, and the
+Bundesministeriengesetz behind the Austrian ministry's consumer protection remit, which
+rests on its name and its topics. The verification log's rows carry the pages. These
+markets now have 71 authorities.
+
 ## Where a page cannot be read by a program
 
 Alex asked on 2026-11-14 whether the pages that refuse or serve nothing can be worked
