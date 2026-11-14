@@ -92,7 +92,10 @@ library takes their law in its own language. What needs you, most urgent first.
       reader's hour: "styrelse" for a valde and "förvaltningsråd" for a padome (the
       Finland-Swedish pair for a two-tier board; "tillsynsråd" may read better in
       Sweden); "statsstad" for a valstspilsēta, which has no Swedish counterpart; Latvian
-      act names kept in the nominative inside English and Swedish sentences. And a
+      act names kept in the nominative inside English and Swedish sentences; and the
+      insurance law's "būtiskas funkcijas", rendered with Solvency II's "critical or
+      important functions" because the directive is the term's origin, where "material
+      functions" would follow the Latvian word. And a
       lawyer's question: the Copyright Law (6. pants) frees laws and their official
       consolidated versions, while Likumi.lv calls its systematised text informative;
       whether that text is an official consolidated version decides whether
