@@ -1,0 +1,166 @@
+{
+  "tranche": "lv-acts",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "lv-ta-37426",
+      "source": "https://likumi.lv/ta/id/37426-kreditiestazu-likums",
+      "sourceLabel": "Likumi.lv, Kredītiestāžu likums (Latvijas Vēstnesis, 163, 24.10.1995.), consolidated text, the version in force from 11.11.2026",
+      "text": {
+        "en": "Latvia's central banking statute: it sets who may operate as a credit institution and how one is licensed, governed and supervised by Latvijas Banka. It binds credit institutions registered in Latvia and the Latvian branches of foreign ones. In practice a bank runs a governance system with risk strategies reviewed every two years, caps variable pay, controls outsourcing, appoints suitable board members, limits exposures to related persons, keeps client information secret, answers complaints within 30 days and keeps cash and in-person services available."
+      }
+    },
+    {
+      "key": "lv-ta-81995",
+      "source": "https://likumi.lv/ta/id/81995-finansu-instrumentu-tirgus-likums",
+      "sourceLabel": "Likumi.lv, Finanšu instrumentu tirgus likums (Latvijas Vēstnesis, 175, 11.12.2003.), consolidated text, the version in force from 13.11.2026",
+      "text": {
+        "en": "Latvia's securities markets statute: it governs public offers, regulated markets, the central securities depository and investment services, and carries most of MiFID II into Latvian law. It binds investment firms, credit institutions that provide investment services, issuers and market operators. In practice a bank runs its investment services in a dedicated unit, records client calls, signs a written agreement with each client, checks suitability, manages conflicts of interest, sets target markets, discloses costs and inducements, seeks best execution and holds client instruments separately."
+      }
+    },
+    {
+      "key": "lv-ta-332418",
+      "source": "https://likumi.lv/ta/id/332418-ieguldijumu-brokeru-sabiedribu-likums",
+      "sourceLabel": "Likumi.lv, Ieguldījumu brokeru sabiedrību likums (Latvijas Vēstnesis, 94, 17.05.2022.), consolidated text, the version in force from 09.06.2026",
+      "text": {
+        "en": "Latvia's statute on investment firms: it sets how a firm is licensed, capitalised, governed and supervised by Latvijas Banka, and carries the Investment Firms Directive into Latvian law. It binds investment firms licensed in Latvia and the Latvian branches of foreign ones. In practice a firm runs a governance system with risk management and internal control, assesses its capital and liquidity and keeps a wind-down plan, keeps client assets apart from its own, keeps records and call recordings for five years, controls outsourcing and gives staff a channel for reporting breaches."
+      }
+    },
+    {
+      "key": "lv-ta-206634",
+      "source": "https://likumi.lv/ta/id/206634-maksajumu-pakalpojumu-un-elektroniskas-naudas-likums",
+      "sourceLabel": "Likumi.lv, Maksājumu pakalpojumu un elektroniskās naudas likums (Latvijas Vēstnesis, 43, 17.03.2010.), consolidated text, the version in force from 15.10.2026",
+      "text": {
+        "en": "Latvia's payments statute: it licenses payment and electronic money institutions and sets the rights and duties of payment service providers and users, including the consumer's basic account. It binds those institutions and credit institutions that provide payment services. In practice a provider safeguards client funds, gives contract information beforehand and two months' notice of changes, executes payments by the next business day, refunds unauthorised payments, decides on basic accounts within ten business days, answers complaints in 15 and applies strong customer authentication."
+      }
+    },
+    {
+      "key": "lv-ta-178987",
+      "source": "https://likumi.lv/ta/id/178987-noziedzigi-iegutu-lidzeklu-legalizacijas-un-terorisma-finansesanas-noversanas-likums",
+      "sourceLabel": "Likumi.lv, Noziedzīgi iegūtu līdzekļu legalizācijas un terorisma un proliferācijas finansēšanas novēršanas likums (Latvijas Vēstnesis, 116, 30.07.2008.), consolidated text, the version in force from 15.10.2026",
+      "text": {
+        "en": "Latvia's anti-money laundering statute: it sets the duties of obliged entities and the powers of the Financial Intelligence Unit and the supervisors. It binds credit and financial institutions, crypto-asset service providers and the other obliged entities it lists. In practice a bank documents a risk assessment and an internal control system, appoints responsible officers, carries out customer due diligence and identifies beneficial owners, monitors transactions, applies enhanced measures to higher risks, reports suspicions at once and keeps records for five years."
+      }
+    },
+    {
+      "key": "lv-ta-280278",
+      "source": "https://likumi.lv/ta/id/280278-starptautisko-un-latvijas-republikas-nacionalo-sankciju-likums",
+      "sourceLabel": "Likumi.lv, Starptautisko un Latvijas Republikas nacionālo sankciju likums (Latvijas Vēstnesis, 31, 15.02.2016.), consolidated text, the version in force from 15.10.2026",
+      "text": {
+        "en": "Latvia's sanctions statute: it makes United Nations and European Union sanctions binding in Latvia, lets the Cabinet of Ministers impose national sanctions and names the Financial Intelligence Unit as competent authority. It binds every person and adds duties for the firms that Latvijas Banka and the other supervisors oversee. In practice a bank freezes the funds and economic resources of sanctioned persons at once and provides them nothing, documents a sanctions risk assessment with an internal control system, and reports suspected breaches and every freeze to the Financial Intelligence Unit."
+      }
+    },
+    {
+      "key": "lv-ta-287271",
+      "source": "https://likumi.lv/ta/id/287271-kontu-registra-likums",
+      "sourceLabel": "Likumi.lv, Kontu reģistra likums (Latvijas Vēstnesis, 241, 10.12.2016.), consolidated text, the version in force from 01.10.2026",
+      "text": {
+        "en": "Latvia's statute on the account register: it sets up a central register of demand deposit, payment and investment accounts and safe deposit boxes, kept by the State Revenue Service for the authorities the act lists. It binds credit institutions, credit unions and payment service providers as suppliers of the data. In practice a bank sends the register, at least every two working days, the holder and number of each account and safe deposit box with opening and closing dates, the beneficial owner and any authorised person, and reports changes as it learns of them."
+      }
+    },
+    {
+      "key": "lv-ta-52953",
+      "source": "https://likumi.lv/ta/id/52953-ieguldijumu-parvaldes-sabiedribu-likums",
+      "sourceLabel": "Likumi.lv, Ieguldījumu pārvaldes sabiedrību likums (Latvijas Vēstnesis, 342/346, 30.12.1997.), consolidated text, the version in force from 01.12.2025",
+      "text": {
+        "en": "Latvia's statute on investment management companies and their investment funds, which carries the UCITS Directive into Latvian law. It binds management companies licensed by Latvijas Banka and the custodian banks that hold fund assets. In practice a management company acts only in investors' interests, limits third-party payments, controls conflicts of interest and delegation, publishes the prospectus and key investor information, redeems units on request and answers complaints within 30 days, while a bank acting as custodian safeguards the fund's assets and reports the company's breaches."
+      }
+    },
+    {
+      "key": "lv-ta-258477",
+      "source": "https://likumi.lv/ta/id/258477-alternativo-ieguldijumu-fondu-un-to-parvaldnieku-likums",
+      "sourceLabel": "Likumi.lv, Alternatīvo ieguldījumu fondu un to pārvaldnieku likums (Latvijas Vēstnesis, 142, 24.07.2013.), consolidated text, the version in force from 01.06.2026",
+      "text": {
+        "en": "Latvia's statute on alternative investment funds and their managers, which carries the Alternative Investment Fund Managers Directive into Latvian law. It binds managers registered or licensed by Latvijas Banka and the custodian banks of their funds. In practice a manager acts in the interests of each fund and its investors, keeps records that allow every transaction to be reconstructed, limits and discloses conflicts of interest, runs risk and liquidity management with stress tests, answers complaints within 30 days and reports to Latvijas Banka, while a custodian bank holds the assets."
+      }
+    },
+    {
+      "key": "lv-ta-274969",
+      "source": "https://likumi.lv/ta/id/274969-apdrosinasanas-un-parapdrosinasanas-likums",
+      "sourceLabel": "Likumi.lv, Apdrošināšanas un pārapdrošināšanas likums (Latvijas Vēstnesis, 124, 30.06.2015.), consolidated text, the version in force from 01.10.2025",
+      "text": {
+        "en": "Latvia's statute on insurers and reinsurers, which carries Solvency II into Latvian law: it sets how they are licensed, governed, capitalised and supervised by Latvijas Banka. It binds insurance and reinsurance undertakings, including those in a banking group. In practice an insurer runs a governance system with written policies filed with Latvijas Banka, a risk management system, a yearly stress test and an own risk and solvency assessment, keeps policyholder information confidential, gives 30 days' notice before outsourcing a critical function and publishes a yearly solvency report."
+      }
+    },
+    {
+      "key": "lv-ta-306711",
+      "source": "https://likumi.lv/ta/id/306711-apdrosinasanas-un-parapdrosinasanas-izplatisanas-likums",
+      "sourceLabel": "Likumi.lv, Apdrošināšanas un pārapdrošināšanas izplatīšanas likums (Latvijas Vēstnesis, 91, 09.05.2019.), consolidated text, the version in force from 12.12.2025",
+      "text": {
+        "en": "Latvia's statute on selling insurance, which carries the Insurance Distribution Directive into Latvian law. It binds insurers, brokers, agents and ancillary intermediaries, which includes a bank that sells insurance for an insurer. In practice a distributor is registered before it sells, acts in the customer's interest, establishes demands and needs and hands over the product information document, says when parts of a package can be bought separately, assesses suitability for insurance-based investment products, trains staff 15 hours a year and answers complaints within 20 days."
+      }
+    },
+    {
+      "key": "lv-ta-274737",
+      "source": "https://likumi.lv/ta/id/274737-noguldijumu-garantiju-likums",
+      "sourceLabel": "Likumi.lv, Noguldījumu garantiju likums (Latvijas Vēstnesis, 118, 18.06.2015.), consolidated text, the version in force from 26.06.2026",
+      "text": {
+        "en": "Latvia's deposit guarantee statute: it guarantees each depositor up to 100,000 euros per deposit taker through the deposit guarantee fund that Latvijas Banka manages. It binds credit institutions registered in Latvia, credit unions and the Latvian branches of foreign banks that take part in the fund. In practice a bank pays a quarterly contribution based on its covered deposits, keeps its records of eligible deposits updated at least daily and hands them over within one working day, has its covered deposit report audited each year and gives each depositor the standard information sheet."
+      }
+    },
+    {
+      "key": "lv-ta-275045",
+      "source": "https://likumi.lv/ta/id/275045-kreditiestazu-un-ieguldijumu-brokeru-sabiedribu-darbibas-atjaunosanas-un-noregulejuma-likums",
+      "sourceLabel": "Likumi.lv, Kredītiestāžu un ieguldījumu brokeru sabiedrību darbības atjaunošanas un noregulējuma likums (Latvijas Vēstnesis, 127, 02.07.2015.), consolidated text, the version in force from 01.12.2025",
+      "text": {
+        "en": "Latvia's recovery and resolution statute, which carries the Bank Recovery and Resolution Directive into Latvian law: it sets how institutions prepare for a crisis and how Latvijas Banka can restructure a failing one. It binds credit institutions, investment firms and the financial companies in their groups. In practice a bank keeps a recovery plan and reviews it at least once a year, gives Latvijas Banka what it needs for resolution planning, writes bail-in and stay recognition clauses into contracts under third-country law and publishes any group financial support agreement."
+      }
+    },
+    {
+      "key": "lv-ta-323799",
+      "source": "https://likumi.lv/ta/id/323799-segto-obligaciju-likums",
+      "sourceLabel": "Likumi.lv, Segto obligāciju likums (Latvijas Vēstnesis, 110, 09.06.2021.), consolidated text, the version in force from 19.07.2023",
+      "text": {
+        "en": "Latvia's covered bond statute, which carries the Covered Bond Directive into Latvian law: an issuer runs a covered bond programme with permission from Latvijas Banka and transfers the cover pool to a covered bond company that guarantees the bonds. It binds issuers, covered bond companies and cover pool monitors. In practice an issuing bank holds cover assets of at least 105 per cent of the bonds outstanding and liquid assets for the next 180 days of net outflows, runs stress tests every quarter, keeps a continuity plan and reports quarterly to Latvijas Banka and investors."
+      }
+    },
+    {
+      "key": "lv-ta-23309",
+      "source": "https://likumi.lv/ta/id/23309-pateretaju-tiesibu-aizsardzibas-likums",
+      "sourceLabel": "Likumi.lv, Patērētāju tiesību aizsardzības likums (Latvijas Vēstnesis, 104/105, 01.04.1999.), consolidated text, the version in force from 15.10.2026",
+      "text": {
+        "en": "Latvia's general consumer protection statute, which also holds the consumer credit rules that carry the EU consumer and mortgage credit directives into Latvian law. Its section 8 binds every lender to consumers, banks included. In practice a bank puts each consumer credit agreement in writing and concludes none between 21.00 and 8.00, keeps the total cost of credit within 0.07 per cent a day, assesses the consumer's ability to repay from income and expenses before lending, accepts early repayment with a fair cost reduction, and charges only actual costs for late payment."
+      }
+    },
+    {
+      "key": "lv-ta-300099",
+      "source": "https://likumi.lv/ta/id/300099-fizisko-personu-datu-apstrades-likums",
+      "sourceLabel": "Likumi.lv, Fizisko personu datu apstrādes likums (Latvijas Vēstnesis, 132, 04.07.2018.), consolidated text, the version in force from 04.06.2021",
+      "text": {
+        "en": "Latvia's statute beside the General Data Protection Regulation: it sets up the Data State Inspectorate, regulates data protection officers and adds national rules on processing and on the limits of data subjects' rights. It binds every controller and processor in Latvia, financial firms included. In practice a bank processes personal data only on a ground of the Regulation, leaves out of an access reply what anti-money laundering and supervisory law forbids disclosing, names itself and the purpose on video surveillance signs and keeps system audit trails no longer than a year as a rule."
+      }
+    },
+    {
+      "key": "lv-ta-33946",
+      "source": "https://likumi.lv/ta/id/33946-par-nodokliem-un-nodevam",
+      "sourceLabel": "Likumi.lv, Par nodokļiem un nodevām (Latvijas Vēstnesis, 26, 18.02.1995.), consolidated text, the version in force from 15.10.2026",
+      "text": {
+        "en": "Latvia's general tax statute: it sets the tax system and taxpayers' duties, and its chapter XII carries the EU rules on automatic exchange of financial account information into Latvian law. The parts registered here bind financial institutions resident in Latvia and Latvian branches of foreign ones. In practice a bank identifies reportable accounts and reports their holders, balances and income, tells clients before it reports, reports suspected tax offences, and by 1 February each year reports residents whose account turnover reached 15,000 euros or cash deposits 7,000 euros."
+      }
+    },
+    {
+      "key": "lv-ta-326575",
+      "source": "https://likumi.lv/ta/id/326575-latvijas-bankas-likums",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas likums (Latvijas Vēstnesis, 193, 06.10.2021.), consolidated text, the version in force from 09.06.2026",
+      "text": {
+        "en": "The statute of Latvijas Banka, which since 1 January 2023 is both Latvia's central bank and the supervisor and resolution authority of its financial market. Most of it governs the bank itself; the parts registered here bind the financial market participants it supervises. In practice a bank holds its minimum reserves with Latvijas Banka, pays the fees that fund supervision and 0.05 per cent a day on late payments, supplies true statistical data, gives access, documents and information during searches and inspections, and registers before it processes and recirculates euro banknotes and coins."
+      }
+    },
+    {
+      "key": "lv-ta-353012",
+      "source": "https://likumi.lv/ta/id/353012-kriptoaktivu-pakalpojumu-likums",
+      "sourceLabel": "Likumi.lv, Kriptoaktīvu pakalpojumu likums (Latvijas Vēstnesis, 120A, 21.06.2024.), consolidated text, the text as published, which the page shows without later versions (version date 30.06.2024)",
+      "text": {
+        "en": "Latvia's statute beside the EU Markets in Crypto-Assets Regulation: it names Latvijas Banka as competent authority and sets the fees and penalties. It binds persons who issue crypto-assets or offer them to the public in Latvia and crypto-asset service providers, banks that provide such services included. In practice a firm tells Latvijas Banka at once of every material change and of anything that may harm its business, applies for authorisation with a fee of 2,500 euros where it is not already supervised, and pays a yearly fee of up to 0.6 per cent of its income from the services."
+      }
+    },
+    {
+      "key": "lv-ta-363378",
+      "source": "https://likumi.lv/ta/id/363378-finansu-tirgus-digitalas-darbibas-noturibas-un-maksliga-intelekta-izmantosanas-likums",
+      "sourceLabel": "Likumi.lv, Finanšu tirgus digitālās darbības noturības un mākslīgā intelekta izmantošanas likums (Latvijas Vēstnesis, 188, 30.09.2025.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvia's statute on digital operational resilience and artificial intelligence in the financial market: it states which financial market participants the EU Digital Operational Resilience Act and the EU AI Act apply to in Latvia and makes Latvijas Banka their supervisor for both. It binds credit institutions, payment and electronic money institutions, investment firms, insurers and the other financial entities it lists. In practice a bank meets the resilience rules for its information and communication technology and on its use of artificial intelligence, and reports material changes."
+      }
+    }
+  ]
+}
