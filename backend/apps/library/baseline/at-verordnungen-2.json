@@ -1,0 +1,2398 @@
+{
+  "tranche": "at-verordnungen-2",
+  "researchedOn": "2026-11-14",
+  "instruments": [
+    {
+      "title": "Add KKG-MMV, the FMA's regulation on reports of transfers of non-performing loans (KKG-Melde- und Mitteilungsverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272894/NOR40272894.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), KKG-Melde- und Mitteilungsverordnung (KKG-MMV), BGBl. II Nr. 253/2025, made by the Finanzmarktaufsichtsbehörde (FMA) under § 2 Abs. 4 zweiter Satz, § 15 Abs. 3 and § 19 Abs. 3 KKG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 7",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272892/NOR40272892.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2025-253",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über Meldungen und Mitteilungen zum Kreditdienstleister- und Kreditkäufergesetz (KKG-Melde- und Mitteilungsverordnung – KKG-MMV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on reports and notifications under the Credit Servicers and Credit Purchasers Act (KKG Reporting and Notification Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "KKG-MMV",
+        "officialRef": "KKG-Melde- und Mitteilungsverordnung (KKG-MMV), BGBl. II Nr. 253/2025",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2025/253/P0/NOR40272894",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:banking",
+        "inForceFrom": "2025-12-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report transfers of non-performing credit agreements to credit purchasers in the annex's layout",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272887/NOR40272887.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), KKG-Melde- und Mitteilungsverordnung (KKG-MMV), BGBl. II Nr. 253/2025, § 2 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-kkg-mmv-npl-transfer-report",
+            "titles": {
+              "en": "Report transfers of non-performing credit agreements to credit purchasers in the annex's layout"
+            },
+            "summaries": {
+              "en": "A CRR credit institution with its seat in Austria, or active in Austria through a branch, that transfers a creditor's rights under a non-performing credit agreement, or the agreement itself, to a credit purchaser must structure the information it reports under § 15 Abs. 2 KKG as the annex to the regulation lays down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report loan transfers as at 30 June and 31 December by the end of the second month after",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272889/NOR40272889.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), KKG-Melde- und Mitteilungsverordnung (KKG-MMV), BGBl. II Nr. 253/2025, § 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-kkg-mmv-reporting-dates-and-deadline",
+            "titles": {
+              "en": "Report loan transfers as at 30 June and 31 December by the end of the second month after"
+            },
+            "summaries": {
+              "en": "The reports on transfers of non-performing credit agreements are made as at 30 June and 31 December, cover the half-year before that date, and must be filed with the annex by the last day of the second month after the reference date."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the loan transfer reports electronically with the Nationalbank in standard form",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272890/NOR40272890.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), KKG-Melde- und Mitteilungsverordnung (KKG-MMV), BGBl. II Nr. 253/2025, § 5 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-kkg-mmv-electronic-filing",
+            "titles": {
+              "en": "File the loan transfer reports electronically with the Nationalbank in standard form"
+            },
+            "summaries": {
+              "en": "A credit institution must file its reports on transfers of non-performing credit agreements in standardised form by electronic transmission to the Oesterreichische Nationalbank, meeting the minimum requirements the FMA announces after hearing the Nationalbank."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add MI-EKV, the FMA's regulation on the information for acquiring a holding in a central counterparty or central securities depository (Marktinfrastrukturen-Eigentümerkontrollverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272647/NOR40272647.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Marktinfrastrukturen-Eigentümerkontrollverordnung (MI-EKV), BGBl. II Nr. 243/2025, made by the Finanzmarktaufsichtsbehörde (FMA) under § 8 ZGVG and § 9a ZvVG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 10 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272646/NOR40272646.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2025-243",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über die Informationen, die ein Anzeigepflichtiger, der einen Erwerb oder eine Erhöhung einer qualifizierten Beteiligung an bestimmten Marktinfrastrukturen beabsichtigt, der FMA vorzulegen hat (Marktinfrastrukturen-Eigentümerkontrollverordnung – MI-EKV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the information that a person who intends to acquire or increase a qualifying holding in certain market infrastructures must submit to the FMA (Market Infrastructures Ownership Control Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "MI-EKV",
+        "officialRef": "Marktinfrastrukturen-Eigentümerkontrollverordnung (MI-EKV), BGBl. II Nr. 243/2025",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2025/243/P0/NOR40272647",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2026-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Attach the prescribed documents with a numbered index to a notice of a holding in a CCP or CSD",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272639/NOR40272639.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Marktinfrastrukturen-Eigentümerkontrollverordnung (MI-EKV), BGBl. II Nr. 243/2025, § 3 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-mi-ekv-notice-documents-and-index",
+            "titles": {
+              "en": "Attach the prescribed documents with a numbered index to a notice of a holding in a CCP or CSD"
+            },
+            "summaries": {
+              "en": "A person who notifies the FMA of an intended acquisition or increase of a qualifying holding in a central counterparty or central securities depository must state the size of the intended holding and attach the general documents and declarations and the further documents the regulation lists. Each bundle of attachments must open with an index that assigns the consecutively numbered attachments to the provisions of the regulation."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 1",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Declare criminal, administrative, insolvency and supervisory proceedings in a CCP or CSD holding notice",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272640/NOR40272640.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Marktinfrastrukturen-Eigentümerkontrollverordnung (MI-EKV), BGBl. II Nr. 243/2025, § 4 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-mi-ekv-reliability-declarations",
+            "titles": {
+              "en": "Declare criminal, administrative, insolvency and supervisory proceedings in a CCP or CSD holding notice"
+            },
+            "summaries": {
+              "en": "The notifying person must state whether criminal, administrative penalty, insolvency, enforcement, supervisory or disciplinary proceedings are or were conducted against it, whether a licence or registration was refused or withdrawn, and whether it was dismissed from employment or a position of trust, within the periods the regulation sets. Acquittals, cases discontinued for legal reasons or lack of suspicion and expunged convictions need not be stated, and under § 1 Abs. 2 a financial counterparty supervised by the FMA leaves out the statements on administrative, insolvency, enforcement and supervisory proceedings."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Show the funding of a CCP or CSD holding and its origin and disclose every related agreement",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272644/NOR40272644.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Marktinfrastrukturen-Eigentümerkontrollverordnung (MI-EKV), BGBl. II Nr. 243/2025, § 8 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-mi-ekv-financing-and-agreements",
+            "titles": {
+              "en": "Show the funding of a CCP or CSD holding and its origin and disclose every related agreement"
+            },
+            "summaries": {
+              "en": "The notice must describe the own and borrowed funds for the acquisition and their economic origin, all agreements on the acquisition, concerted action with other holders, the purchase price and the market value of the shares with the criteria used, backing the statements on funds and agreements with evidence. For own funds it must show by evidence that the acquisition is no attempt at money laundering, and for borrowed funds it must name the lenders and give the main terms, security and sources of repayment."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 8 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Add a business plan to a CCP or CSD holding notice when the acquisition gives more than half or control",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40272645/NOR40272645.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Marktinfrastrukturen-Eigentümerkontrollverordnung (MI-EKV), BGBl. II Nr. 243/2025, § 9 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-mi-ekv-business-plan-on-control",
+            "titles": {
+              "en": "Add a business plan to a CCP or CSD holding notice when the acquisition gives more than half or control"
+            },
+            "summaries": {
+              "en": "Where the acquisition or increase gives the notifying person more than 50 per cent of the capital or voting rights of the central counterparty or central securities depository, or control in another way, the notice must include a business plan on its strategic aims and plans, the expected development of the target's assets, finances and earnings, and the effects on the target's corporate and organisational structure."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 9 Abs. 1",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add MiCAR-CASP-MV, the FMA's regulation on the reports of crypto-asset service providers (MiCAR Crypto-Asset Service Provider Meldeverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276816/NOR40276816.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, made by the Finanzmarktaufsichtsbehörde (FMA) under § 10 Abs. 4 MiCA-VVG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 10",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276812/NOR40276812.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2026-71",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über Meldestichtage, Meldeintervalle, Gliederung und Inhalte von Meldungen gemäß der Verordnung (EU) 2023/1114 über Märkte für Kryptowerte betreffend Anbieter von Kryptowerte-Dienstleistungen (MiCAR Crypto-Asset Service Provider Meldeverordnung – MiCAR-CASP-MV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on reference dates, intervals, structure and content of reports under Regulation (EU) 2023/1114 on markets in crypto-assets concerning crypto-asset service providers (MiCAR Crypto-Asset Service Provider Reporting Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "MiCAR-CASP-MV",
+        "officialRef": "MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2026/71/P0/NOR40276816",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2026-06-15"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report company master data to the FMA as an authorised crypto-asset service provider",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276808/NOR40276808.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, § 6 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-casp-mv-master-data",
+            "titles": {
+              "en": "Report company master data to the FMA as an authorised crypto-asset service provider"
+            },
+            "summaries": {
+              "en": "A crypto-asset service provider with its seat in Austria and an authorisation under Article 63 of the Markets in Crypto-Assets Regulation must transmit its company master data to the FMA as Annex 1 lays down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report balance sheet, profit and loss and prudential safeguard data as an authorised crypto-asset service provider",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276808/NOR40276808.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, § 6 Abs. 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-casp-mv-accounts-and-prudential-data",
+            "titles": {
+              "en": "Report balance sheet, profit and loss and prudential safeguard data as an authorised crypto-asset service provider"
+            },
+            "summaries": {
+              "en": "An authorised crypto-asset service provider must transmit data on its balance sheet, on its profit and loss account under the cost method it uses, and on the prudential requirements of Article 67 of the Markets in Crypto-Assets Regulation, its fixed overheads included, as Annex 2 lays down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report data on users and on each crypto-asset service provided as an authorised provider",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276808/NOR40276808.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, § 6 Abs. 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-casp-mv-service-activity-data",
+            "titles": {
+              "en": "Report data on users and on each crypto-asset service provided as an authorised provider"
+            },
+            "summaries": {
+              "en": "An authorised crypto-asset service provider must transmit data on its users and, for each service it provides, on custody and administration, operating a trading platform, exchange, executing orders, placing, receiving and transmitting orders, advice, portfolio management and transfer services, as the sections of Annex 3 lay down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 4",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report data on users and crypto-asset services offered as a financial entity under Article 60",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276809/NOR40276809.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, § 7 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-casp-mv-financial-entity-service-data",
+            "titles": {
+              "en": "Report data on users and crypto-asset services offered as a financial entity under Article 60"
+            },
+            "summaries": {
+              "en": "A financial entity with its seat in Austria that may provide crypto-asset services under Article 60 of the Markets in Crypto-Assets Regulation must transmit data on its users and on each crypto-asset service it provides, as the sections of Annex 3 lay down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the crypto-asset service reports by their reference dates and deadlines",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276807/NOR40276807.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, § 5 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-casp-mv-reporting-dates-and-deadlines",
+            "titles": {
+              "en": "File the crypto-asset service reports by their reference dates and deadlines"
+            },
+            "summaries": {
+              "en": "Master data are reported as at 31 December by 11 February, annual accounts and prudential data within six months of the end of the financial year, the service data of an authorised provider as at 30 June and 31 December by 11 August and 11 February, and the service data of a financial entity under Article 60 as at 31 December by 11 February, each without delay."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Convert crypto-assets into euro at a documented price source applied consistently",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276805/NOR40276805.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR Crypto-Asset Service Provider Meldeverordnung (MiCAR-CASP-MV), BGBl. II Nr. 71/2026, § 3 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-casp-mv-crypto-asset-conversion",
+            "titles": {
+              "en": "Convert crypto-assets into euro at a documented price source applied consistently"
+            },
+            "summaries": {
+              "en": "Amounts are reported rounded to whole numbers, percentages to four decimal places and foreign currency at the ECB spot rate on the reference date. Crypto-assets are converted into euro at the average spot price of the three crypto-asset trading platforms in the Union with the highest volume or at the latest price of a generally recognised price data provider, and the firm must document the source it chooses and apply it consistently."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 1 und 2",
+            "dutyType": "record_keeping",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add MiCAR-E-MV, the FMA's regulation on the reports of issuers of asset-referenced and e-money tokens (MiCAR-Emittenten-Meldeverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271248/NOR40271248.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025, made by the Finanzmarktaufsichtsbehörde (FMA) under § 10 Abs. 4 MiCA-VVG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 10",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271247/NOR40271247.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2025-170",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über Meldestichtage, Meldeintervalle, Gliederung und Inhalte von Meldungen gemäß der Verordnung (EU) 2023/1114 über Märkte für Kryptowerte betreffend Emittenten vermögenswertereferenzierter Token und Emittenten von E-Geld-Token (MiCAR-Emittenten-Meldeverordnung – MiCAR-E-MV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on reference dates, intervals, structure and content of reports under Regulation (EU) 2023/1114 on markets in crypto-assets concerning issuers of asset-referenced tokens and issuers of e-money tokens (MiCAR Issuers Reporting Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "MiCAR-E-MV",
+        "officialRef": "MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2025/170/P0/NOR40271248",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2025-07-31"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report master data, balance sheet and profit and loss as an authorised issuer of asset-referenced tokens",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271243/NOR40271243.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025, § 6 Abs. 1 bis 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-e-mv-master-data-and-financials",
+            "titles": {
+              "en": "Report master data, balance sheet and profit and loss as an authorised issuer of asset-referenced tokens"
+            },
+            "summaries": {
+              "en": "An issuer authorised under Article 21 of the Markets in Crypto-Assets Regulation to offer an asset-referenced token to the public or seek its admission to trading must report its general company master data, data on its managers and key function holders and on its staff, and data on its balance sheet and profit and loss account, as Annex 1 lays down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 1 bis 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report token issuer master data each half-year and every change within 20 bank working days",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271242/NOR40271242.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025, § 5 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-e-mv-master-data-dates-and-changes",
+            "titles": {
+              "en": "Report token issuer master data each half-year and every change within 20 bank working days"
+            },
+            "summaries": {
+              "en": "Master data are reported as at 30 June and 31 December by 11 August and 11 February, and every change of a reported item must be notified without delay and within 20 bank working days of taking effect. Staff numbers are reported only as at the year end, by 31 January of the following year, without notice of changes during the year."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the token issuer's financial and supplementary reports each quarter by the set dates",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271242/NOR40271242.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025, § 5 Abs. 2 und 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-e-mv-quarterly-deadlines",
+            "titles": {
+              "en": "File the token issuer's financial and supplementary reports each quarter by the set dates"
+            },
+            "summaries": {
+              "en": "The balance sheet and profit and loss data and the supplementary reports covering European requirements are reported as at 31 March, 30 June, 30 September and 31 December, without delay and by 12 May, 11 August, 11 November and 11 February at the latest."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 2 und 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report own funds, reserve of assets, liquidity and funds received for tokens on the European templates",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271244/NOR40271244.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025, § 7 Abs. 1 bis 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-e-mv-own-funds-reserve-and-liquidity",
+            "titles": {
+              "en": "Report own funds, reserve of assets, liquidity and funds received for tokens on the European templates"
+            },
+            "summaries": {
+              "en": "Issuers of asset-referenced tokens and of e-money tokens must report supplementary information on their own funds requirements and on the reserve of assets and liquidity on the templates of Annex 2, as far as the articles of the Markets in Crypto-Assets Regulation named for each template apply to them. Issuers of e-money tokens subject to Article 54 also report on the funds they received in exchange for their tokens."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 1 bis 4",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report the data for assessing a token's significance once its issue value exceeds 100 million euro",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40271244/NOR40271244.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), MiCAR-Emittenten-Meldeverordnung (MiCAR-E-MV), BGBl. II Nr. 170/2025, § 7 Abs. 5 bis 7, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-micar-e-mv-significance-data",
+            "titles": {
+              "en": "Report the data for assessing a token's significance once its issue value exceeds 100 million euro"
+            },
+            "summaries": {
+              "en": "Issuers must report the information for assessing significance on templates S 10.01 to S 10.03, and issuers of e-money tokens denominated in an official currency of a member state further templates as well. These templates, and the reserve templates for such e-money tokens, are due only for tokens whose issue value exceeds 100 million euro."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 5 bis 7",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add WPF-StDMV, the FMA's regulation on the master data reports of investment firms (Wertpapierfirmen-Stammdatenmeldeverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40250696/NOR40250696.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierfirmen-Stammdatenmeldeverordnung (WPF-StDMV), BGBl. II Nr. 17/2023, made by the Finanzmarktaufsichtsbehörde (FMA) under § 47 Abs. 3 WPFG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 7 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40250689/NOR40250689.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2023-17",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über die der FMA nach nationalem Recht vorzulegenden Stammdatenmeldungen der Wertpapierfirmen – Wertpapierfirmen-Stammdatenmeldeverordnung (WPF-StDMV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the master data reports investment firms submit to the FMA under national law (Investment Firms Master Data Reporting Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "WPF-StDMV",
+        "officialRef": "Wertpapierfirmen-Stammdatenmeldeverordnung (WPF-StDMV), BGBl. II Nr. 17/2023",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2023/17/P0/NOR40250696",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2023-02-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: File separate master data reports for the investment firm, its group and its parent",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40250686/NOR40250686.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierfirmen-Stammdatenmeldeverordnung (WPF-StDMV), BGBl. II Nr. 17/2023, § 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpf-stdmv-separate-master-data-reports",
+            "titles": {
+              "en": "File separate master data reports for the investment firm, its group and its parent"
+            },
+            "summaries": {
+              "en": "An investment firm must file a separate master data report for itself under Annex 1 and, where it is subject to consolidated supervision under § 38 Abs. 1 WPFG, for the Austrian investment firm group under Annex 2 and for a parent that is a non-Austrian parent investment firm, parent investment holding company or mixed financial holding company under Annex 3."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:investment_firm",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report every change of investment firm master data within one month with its effective date",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40250685/NOR40250685.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierfirmen-Stammdatenmeldeverordnung (WPF-StDMV), BGBl. II Nr. 17/2023, § 3 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpf-stdmv-master-data-changes",
+            "titles": {
+              "en": "Report every change of investment firm master data within one month with its effective date"
+            },
+            "summaries": {
+              "en": "An investment firm must report every change of the master data it has to transmit within one month of the change taking effect, stating the date on which it took effect."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:investment_firm",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the first master data report within one month of becoming subject to the regulation",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40250689/NOR40250689.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierfirmen-Stammdatenmeldeverordnung (WPF-StDMV), BGBl. II Nr. 17/2023, § 7 Abs. 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpf-stdmv-first-report",
+            "titles": {
+              "en": "File the first master data report within one month of becoming subject to the regulation"
+            },
+            "summaries": {
+              "en": "A firm that comes under the regulation when it is licensed under § 3 WAG 2018, including one whose licence moves from the Banking Act to WAG 2018, must file its first master data report within one month of the regulation applying to it. The FMA may set another deadline for a firm that reported under the Master Data Reporting Regulation 2016 before."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:investment_firm",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add PB-BV, the FMA's regulation on the annual reports on covered bond programmes (Pfandbrief-Berichtsverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40247164/NOR40247164.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Pfandbrief-Berichtsverordnung (PB-BV), BGBl. II Nr. 354/2022, made by the Finanzmarktaufsichtsbehörde (FMA) under § 29 Abs. 2 PfandBG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in the RIS Inkrafttretensdatum of the original title document",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40247164/NOR40247164.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2022-354",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über die Berichte zum Pfandbriefgesetz (Pfandbrief-Berichtsverordnung – PB-BV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the reports under the Covered Bonds Act (Covered Bonds Reports Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "PB-BV",
+        "officialRef": "Pfandbrief-Berichtsverordnung (PB-BV), BGBl. II Nr. 354/2022",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2022/354/P0/NOR40247164",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:banking",
+        "inForceFrom": "2022-09-28"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Send the annual covered bond reports under § 29 Abs. 1 Z 3, 4 and 11 PfandBG by the end of January",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40247162/NOR40247162.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Pfandbrief-Berichtsverordnung (PB-BV), BGBl. II Nr. 354/2022, § 2 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-pb-bv-annual-programme-reports",
+            "titles": {
+              "en": "Send the annual covered bond reports under § 29 Abs. 1 Z 3, 4 and 11 PfandBG by the end of January"
+            },
+            "summaries": {
+              "en": "A covered bond issuer must make the reports under § 29 Abs. 1 Z 3, 4 and 11 PfandBG once a year for the calendar year and send them to the FMA between 1 January of that year and the last bank working day of the following January. It need not send them where it made no use of those provisions or nothing has changed in substance since the last report."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Send the annual covered bond report under § 29 Abs. 1 Z 8 PfandBG promptly after the year end",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40247162/NOR40247162.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Pfandbrief-Berichtsverordnung (PB-BV), BGBl. II Nr. 354/2022, § 2 Abs. 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-pb-bv-annual-report-z-8",
+            "titles": {
+              "en": "Send the annual covered bond report under § 29 Abs. 1 Z 8 PfandBG promptly after the year end"
+            },
+            "summaries": {
+              "en": "The report under § 29 Abs. 1 Z 8 PfandBG covers the calendar year and must be sent to the FMA without delay once the year has ended, and by the last bank working day of the following January at the latest."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add SK-MV, the FMA's regulation on the reports of fund management companies and other special credit institutions (Sonderkreditinstitute-Meldeverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40231714/NOR40231714.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Sonderkreditinstitute-Meldeverordnung (SK-MV), BGBl. II Nr. 102/2021, made by the Finanzmarktaufsichtsbehörde (FMA) under § 44 Abs. 1 with § 44 Abs. 7 and § 74 Abs. 1 with § 74 Abs. 6 BWG and § 39 Abs. 3 BMSVG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 6",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40231711/NOR40231711.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2021-102",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über die von Sonderkreditinstituten der FMA vorzulegenden Meldungen (Sonderkreditinstitute-Meldeverordnung – SK-MV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the reports special credit institutions submit to the FMA (Special Credit Institutions Reporting Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "SK-MV",
+        "officialRef": "Sonderkreditinstitute-Meldeverordnung (SK-MV), BGBl. II Nr. 102/2021",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2021/102/P0/NOR40231714",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:banking",
+        "inForceFrom": "2022-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: File the special credit institution statement as a management company or real estate fund company",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40231707/NOR40231707.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Sonderkreditinstitute-Meldeverordnung (SK-MV), BGBl. II Nr. 102/2021, § 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-sk-mv-fund-company-statement",
+            "titles": {
+              "en": "File the special credit institution statement as a management company or real estate fund company"
+            },
+            "summaries": {
+              "en": "A UCITS management company and a real estate investment fund company that are special credit institutions under the Banking Act must file the statement that Annex 1 lays down."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the special credit institution statement electronically with the Nationalbank within four weeks of each quarter",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40231709/NOR40231709.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Sonderkreditinstitute-Meldeverordnung (SK-MV), BGBl. II Nr. 102/2021, § 4 Abs. 2 und 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-sk-mv-quarterly-filing",
+            "titles": {
+              "en": "File the special credit institution statement electronically with the Nationalbank within four weeks of each quarter"
+            },
+            "summaries": {
+              "en": "The statement must be filed in standardised form by electronic transmission to the Oesterreichische Nationalbank, meeting the minimum requirements the FMA announces, without delay after each calendar quarter and within four weeks of the reference date, covering the period from 1 January to that date."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 2 und 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the statement on the audited annual accounts within six months of the year end",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40231709/NOR40231709.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Sonderkreditinstitute-Meldeverordnung (SK-MV), BGBl. II Nr. 102/2021, § 4 Abs. 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-sk-mv-audited-annual-statement",
+            "titles": {
+              "en": "File the statement on the audited annual accounts within six months of the year end"
+            },
+            "summaries": {
+              "en": "A special credit institution must also file the statement on the basis of its audited annual accounts without delay after the financial year and within six months of its end, leaving out the items on expected year-end values."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 4",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add FK-QUAB-V, the FMA's regulation on quarterly reports and risk concentration limits of financial conglomerates (Finanzkonglomeratsquartalsberichts-Verordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR30005797/NOR30005797.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Finanzkonglomeratsquartalsberichts-Verordnung (FK-QUAB-V), BGBl. II Nr. 101/2007, made by the Finanzmarktaufsichtsbehörde (FMA) under § 9 Abs. 5 and § 14 Abs. 5 FKG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 358/2013; entry into force read in the RIS Inkrafttretensdatum of the original title document",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR30005797/NOR30005797.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2007-101",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über Quartalsberichte und Kreditrisikobegrenzung von Finanzkonglomeraten (Finanzkonglomeratsquartalsberichts-Verordnung – FK-QUAB-V)",
+          "en": "Regulation of the Financial Market Authority (FMA) on quarterly reports and the limitation of credit risk of financial conglomerates (Financial Conglomerates Quarterly Reports Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "FK-QUAB-V",
+        "officialRef": "Finanzkonglomeratsquartalsberichts-Verordnung (FK-QUAB-V), BGBl. II Nr. 101/2007",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2007/101/P0/NOR30005797",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:banking",
+        "inForceFrom": "2007-05-03"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Send quarterly conglomerate reports on risk concentrations and intra-group transactions to the FMA and the Nationalbank",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40116892/NOR40116892.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Finanzkonglomeratsquartalsberichts-Verordnung (FK-QUAB-V), BGBl. II Nr. 101/2007, § 1 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fk-quab-v-quarterly-reports",
+            "titles": {
+              "en": "Send quarterly conglomerate reports on risk concentrations and intra-group transactions to the FMA and the Nationalbank"
+            },
+            "summaries": {
+              "en": "The entity under supplementary supervision under § 5 FKG must send the FMA quarterly reports on compliance with §§ 9 and 10 FKG on risk concentrations and intra-group transactions, in the annex's layout, by the fifteenth calendar day of the second month after each quarter, and send them to the Oesterreichische Nationalbank as well."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report each conglomerate risk concentration above the thresholds the FMA set",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40158472/NOR40158472.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Finanzkonglomeratsquartalsberichts-Verordnung (FK-QUAB-V), BGBl. II Nr. 101/2007, § 2 Abs. 1, 2 und 5, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fk-quab-v-report-risk-concentrations",
+            "titles": {
+              "en": "Report each conglomerate risk concentration above the thresholds the FMA set"
+            },
+            "summaries": {
+              "en": "A risk concentration must be reported and shown in Part II of the annex once it exceeds the thresholds the FMA set for the financial conglomerate by decision, recorded towards each client and, where relevant, each group of connected clients in the sense of the Capital Requirements Regulation."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1, 2 und 5",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Keep weighted conglomerate risk concentrations within 25 and 20 per cent of eligible own funds",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40158475/NOR40158475.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Finanzkonglomeratsquartalsberichts-Verordnung (FK-QUAB-V), BGBl. II Nr. 101/2007, § 5, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fk-quab-v-limit-risk-concentrations",
+            "titles": {
+              "en": "Keep weighted conglomerate risk concentrations within 25 and 20 per cent of eligible own funds"
+            },
+            "summaries": {
+              "en": "The aggregate weighted risk concentration towards any client or group of connected clients must not exceed 25 per cent of eligible own funds at conglomerate level and towards an undertaking within the conglomerate 20 per cent. The insurance undertakings' concentration towards the banking undertakings of the conglomerate, and the banking undertakings' towards the insurance undertakings, must each stay within 25 per cent in total."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Report each conglomerate intra-group transaction above the thresholds the FMA set",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40087303/NOR40087303.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Finanzkonglomeratsquartalsberichts-Verordnung (FK-QUAB-V), BGBl. II Nr. 101/2007, § 6, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fk-quab-v-report-intra-group-transactions",
+            "titles": {
+              "en": "Report each conglomerate intra-group transaction above the thresholds the FMA set"
+            },
+            "summaries": {
+              "en": "An intra-group transaction in the sense of § 2 Z 18 FKG must be reported in Part III of the annex once it exceeds the thresholds the FMA set for the financial conglomerate by decision."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add BSpkV, the FMA's regulation on loan limits and the safeguard fund of building societies (Bausparkassengesetzverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40111262/NOR40111262.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, made by the Finanzmarktaufsichtsbehörde (FMA) under § 11 Abs. 1 und 2 BSpG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 317/2024; entry into force read in § 10 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266322/NOR40266322.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2009-355",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) zum Bausparkassengesetz (Bausparkassengesetzverordnung – BSpkV)",
+          "en": "Regulation of the Financial Market Authority (FMA) under the Building Societies Act (Building Societies Act Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "BSpkV",
+        "officialRef": "Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2009/355/P0/NOR40111262",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:banking",
+        "inForceFrom": "2010-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Keep the building loans to one saver within the indexed cap of 300,000 euro",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266314/NOR40266314.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 1 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-loan-cap-per-saver",
+            "titles": {
+              "en": "Keep the building loans to one saver within the indexed cap of 300,000 euro"
+            },
+            "summaries": {
+              "en": "A building society may grant one building saver building loans of at most 300,000 euro in total, loans still outstanding included; the cap rises on 1 January by the steps of Table 1 of Annex 1 when the collective wage index reaches the values set there. Loans under large building savings contracts, loans until they are divided among the owners of flats, and loans for large projects without flat ownership are exempt."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 Abs. 1 und 2",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Keep large building savings contracts within 10 per cent of unallotted and 5 per cent of new contract sums",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266315/NOR40266315.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 2 Abs. 2 und 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-large-contract-shares",
+            "titles": {
+              "en": "Keep large building savings contracts within 10 per cent of unallotted and 5 per cent of new contract sums"
+            },
+            "summaries": {
+              "en": "Unallotted large building savings contracts must not exceed 10 per cent of the building society's total unallotted contract sum, and the large contracts concluded in a calendar year must not exceed 5 per cent of the contract sum of all building savings contracts it concluded in that year."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 2 und 3",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Allow the transfer of a building savings contract only in the listed cases",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40111266/NOR40111266.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 4 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-contract-transfer-limits",
+            "titles": {
+              "en": "Allow the transfer of a building savings contract only in the listed cases"
+            },
+            "summaries": {
+              "en": "A building savings contract may be transferred only to heirs or legatees, to persons a court or authority designates, between relatives in direct line, siblings, spouses and partners who prove six months of shared residence, within a large building project on the conditions the regulation sets, or once the loan has been paid out."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 1 und 2",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Grant loans without security of at most 45,000 euro in total per saver",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266317/NOR40266317.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 5, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-unsecured-loan-cap",
+            "titles": {
+              "en": "Grant loans without security of at most 45,000 euro in total per saver"
+            },
+            "summaries": {
+              "en": "Where security does not appear necessary under § 10 Abs. 4 Z 2 BSpG, a building society may grant one building saver such loans of at most 45,000 euro in total, a cap that rises by Table 3 of Annex 1 with the collective wage index."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Allocate the surplus income to the technical safeguard fund at each year end by the set formula",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266318/NOR40266318.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 6 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-safeguard-fund-allocation",
+            "titles": {
+              "en": "Allocate the surplus income to the technical safeguard fund at each year end by the set formula"
+            },
+            "summaries": {
+              "en": "At the end of each financial year a building society must allocate to its fund for technical safeguarding the surplus income it calculates by the regulation's formula from the surpluses and shortfalls of building savings deposits against building loans at the allotment dates, using the interest earned outside the collective and the rate for building loans."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 1 und 2",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Use the safeguard fund to support interest rates when waiting times would rise by more than half a year",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266319/NOR40266319.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 7 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-safeguard-fund-use",
+            "titles": {
+              "en": "Use the safeguard fund to support interest rates when waiting times would rise by more than half a year"
+            },
+            "summaries": {
+              "en": "A building society must use the fund to support interest rates where the waiting time for building savings contracts would otherwise have to rise by more than half a year within twelve months. It may use the fund in other cases only with the FMA's consent, to avert an urgent danger to its ability to allot contracts."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 1 und 2",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Keep loans to participations within 60 per cent of eligible own funds and 15 per cent per undertaking",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266320/NOR40266320.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bausparkassengesetzverordnung (BSpkV), BGBl. II Nr. 355/2009, § 8, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-bspkv-loans-to-participations",
+            "titles": {
+              "en": "Keep loans to participations within 60 per cent of eligible own funds and 15 per cent per undertaking"
+            },
+            "summaries": {
+              "en": "Loans under § 2 Abs. 1 Z 2 lit. d BSpG may be granted up to 60 per cent in total of the building society's own funds eligible under Part 2 of the Capital Requirements Regulation, and up to 15 per cent for a single undertaking."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 8",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add GKE-V 2018, the FMA's regulation on reporting granular credit data to the Nationalbank (Granulare Kreditdatenerhebungs-Verordnung 2018)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40204620/NOR40204620.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018, made by the Finanzmarktaufsichtsbehörde (FMA) under § 75 Abs. 4 BWG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 300/2026; entry into force read in § 10 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40281128/NOR40281128.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2018-170",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über die Meldungen zur Erhebung granularer Kreditdaten (Granulare Kreditdatenerhebungs-Verordnung 2018 – GKE-V 2018)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the reports for the collection of granular credit data (Granular Credit Data Collection Regulation 2018)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "GKE-V 2018",
+        "officialRef": "Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2018/170/P0/NOR40204620",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:banking",
+        "inForceFrom": "2018-09-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report granular credit data and counterparty master data to the Nationalbank",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40262383/NOR40262383.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018, § 2 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-gke-v-2018-granular-credit-and-master-data",
+            "titles": {
+              "en": "Report granular credit data and counterparty master data to the Nationalbank"
+            },
+            "summaries": {
+              "en": "A reporting institution must report granular credit data under § 3 Abs. 1 and 2 and counterparty master data under § 4 to the Oesterreichische Nationalbank, on the conditions § 75 Abs. 1 and 2 BWG sets."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report securitisations and their risk data as superordinate institution or central institution",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40262383/NOR40262383.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018, § 2 Abs. 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-gke-v-2018-securitisation-report",
+            "titles": {
+              "en": "Report securitisations and their risk data as superordinate institution or central institution"
+            },
+            "summaries": {
+              "en": "A reporting institution that is a superordinate credit institution under § 30 Abs. 5 BWG or the central organisation of an association of credit institutions under § 30a BWG must report securitisations and the related risk information to the Oesterreichische Nationalbank; where the superordinate institution is not the responsible undertaking under § 30 Abs. 6 BWG, that undertaking reports."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report monthly credit data by the twentieth bank working day and quarterly data by the quarterly dates",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40235121/NOR40235121.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018, § 6 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-gke-v-2018-reporting-dates",
+            "titles": {
+              "en": "Report monthly credit data by the twentieth bank working day and quarterly data by the quarterly dates"
+            },
+            "summaries": {
+              "en": "The data of Annexes 1A and 2A are reported as at each month end by the twentieth bank working day after it, and the data of Annexes 1B, 2B, 3A and 3B as at each quarter end by the next quarterly date, which is 12 May, 11 August, 11 November or 11 February."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report a counterparty's master data at once when it first passes the reporting threshold or its data change",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40235121/NOR40235121.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018, § 6 Abs. 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-gke-v-2018-counterparty-master-data-events",
+            "titles": {
+              "en": "Report a counterparty's master data at once when it first passes the reporting threshold or its data change"
+            },
+            "summaries": {
+              "en": "The master data report on a counterparty must be made without delay when a person or unit first appears as counterparty of a reportable instrument and the reporting threshold of § 75 Abs. 1 BWG is exceeded, and whenever the master data of a counterparty already reported change."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Ask the Nationalbank for a counterparty's identification number before reporting it and use it in every report",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40204612/NOR40204612.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Granulare Kreditdatenerhebungs-Verordnung 2018 (GKE-V 2018), BGBl. II Nr. 170/2018, § 9 Abs. 1 bis 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-gke-v-2018-counterparty-identifiers",
+            "titles": {
+              "en": "Ask the Nationalbank for a counterparty's identification number before reporting it and use it in every report"
+            },
+            "summaries": {
+              "en": "Before reporting a counterparty for the first time, an institution must request its identification number from the Oesterreichische Nationalbank electronically with the data needed to identify it, and mark every report on that counterparty with the number. Tranches are identified by ISIN, failing that by the number of Österreichische Wertpapierdaten Service GmbH, failing that by an internal number."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 9 Abs. 1 bis 3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add 4. DeRiMV, the FMA's regulation on derivatives risk calculation and reporting for UCITS (4. Derivate-Risikoberechnungs- und Meldeverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40186642/NOR40186642.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, made by the Finanzmarktaufsichtsbehörde (FMA) under § 14 Abs. 5, § 73 Abs. 1 Z 1 und 2 and § 87 Abs. 3 InvFG 2011 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 351/2019; entry into force read in § 36 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40219359/NOR40219359.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2011-266",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über die Risikoberechnung und Meldung von Derivaten (4. Derivate-Risikoberechnungs- und Meldeverordnung – 4. DeRiMV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the risk calculation and reporting of derivatives (4th Derivatives Risk Calculation and Reporting Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "4. DeRiMV",
+        "officialRef": "4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2011/266/P0/NOR40186642",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2011-09-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report UCITS derivatives risk data to the FMA every quarter within one month",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40219357/NOR40219357.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-quarterly-derivatives-report",
+            "titles": {
+              "en": "Report UCITS derivatives risk data to the FMA every quarter within one month"
+            },
+            "summaries": {
+              "en": "A management company must send the FMA reports every quarter, as at 31 March, 30 June, 30 September and 31 December, in standardised machine-readable form, within one month of each reference date. A UCITS dissolved during the period is reported with its data at dissolution."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Calculate each UCITS's global exposure at least daily and keep within its limits at all times",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131281/NOR40131281.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-global-exposure",
+            "titles": {
+              "en": "Calculate each UCITS's global exposure at least daily and keep within its limits at all times"
+            },
+            "summaries": {
+              "en": "A UCITS must calculate its global exposure at least daily, and continuously during trading hours where its strategy requires, keep the limits at all times and use only a method the regulation allows, chosen by self-assessment to fit its risk profile and strategy. It must use the value-at-risk approach where it pursues complex strategies or invests in exotic derivatives to a non-negligible extent or the commitment approach does not capture its market risk, and it keeps an internal risk management and limit system in any case."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Back-test the UCITS value-at-risk model monthly and report frequent overshootings to management and the FMA",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131299/NOR40131299.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 21, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-var-back-testing",
+            "titles": {
+              "en": "Back-test the UCITS value-at-risk model monthly and report frequent overshootings to management and the FMA"
+            },
+            "summaries": {
+              "en": "A UCITS using value at risk must back-test its model at least monthly against each business day's one-day value at risk, evaluate overshootings and review the model where they are conspicuously frequent. Where more than four overshootings occurred in the last 250 business days at 99 per cent confidence, the management company must inform its management at least quarterly and the FMA half-yearly, analysing the causes and the measures taken."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 21",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Stress test each value-at-risk UCITS at least monthly under documented policies",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131302/NOR40131302.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 24, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-var-stress-testing",
+            "titles": {
+              "en": "Stress test each value-at-risk UCITS at least monthly under documented policies"
+            },
+            "summaries": {
+              "en": "A UCITS using value at risk must be stress tested at least monthly, and also when changes in its value, composition or the market suggest the results would change materially. The management company must set traceable policies for designing and adapting the tests, develop a programme for each UCITS, explain why the test fits, document completed tests and results in writing and give reasons for any change of the programme."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 24",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Accept collateral for OTC derivatives only on the set criteria and keep a documented haircut policy",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40149722/NOR40149722.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 28, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-otc-collateral",
+            "titles": {
+              "en": "Accept collateral for OTC derivatives only on the set criteria and keep a documented haircut policy"
+            },
+            "summaries": {
+              "en": "Collateral counted against counterparty risk must be highly liquid, valued at least each trading day, of high credit quality, not issued by or highly correlated with the counterparty, diversified with at most 20 per cent of net asset value per issuer, never deferred and, sight deposits apart, not sold, reinvested or pledged. Where ownership passed it is held by the fund's depositary, it must be realisable at once without the counterparty, and the management company keeps a documented haircut policy for each type of asset received."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 28",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Reinvest cash collateral from OTC derivatives only in the permitted assets",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40149723/NOR40149723.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 28a, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-cash-collateral-reinvestment",
+            "titles": {
+              "en": "Reinvest cash collateral from OTC derivatives only in the permitted assets"
+            },
+            "summaries": {
+              "en": "Collateral other than sight and callable deposits must not be reinvested. Such deposits may only be placed as deposits of up to twelve months with credit institutions in a member state or under equivalent supervision, in government bonds of high credit quality, in recallable repurchase transactions with such credit institutions, or in short-term money market funds, and must keep the diversification limit for collateral."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 28a",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Hold the underlying or liquid assets to cover every derivative delivery and payment obligation",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131312/NOR40131312.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 34, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-derivative-cover",
+            "titles": {
+              "en": "Hold the underlying or liquid assets to cover every derivative delivery and payment obligation"
+            },
+            "summaries": {
+              "en": "Where a derivative provides for physical delivery and this is usual for the instrument, the underlying must be held in the fund as cover; where it is cash-settled and the underlying is not held, cash and liquid assets that can be turned into cash within seven bank working days must be held instead. The management company must make sure it can meet all delivery and payment obligations from derivatives in full."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 34",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report internal audit, risk management and compliance findings to the supervisory board and management at set intervals",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40186645/NOR40186645.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 4. Derivate-Risikoberechnungs- und Meldeverordnung (4. DeRiMV), BGBl. II Nr. 266/2011, § 35 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-4-derimv-internal-reports",
+            "titles": {
+              "en": "Report internal audit, risk management and compliance findings to the supervisory board and management at set intervals"
+            },
+            "summaries": {
+              "en": "A management company must give the supervisory board the internal audit and risk management reports in writing, in full and verifiably at least quarterly, and the compliance reports at least once a year. Management receives the reports under § 14 Abs. 4 Z 1 InvFG 2011 and the audit and risk management reports at least monthly and at once where there is cause, and the compliance reports at least once a year."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 35 Abs. 1 und 2",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add WPV, the FMA's regulation on securities lending and repos by fund management companies (Wertpapierleih- und Pensionsgeschäfteverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40149721/NOR40149721.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, made by the Finanzmarktaufsichtsbehörde (FMA) under §§ 83, 84 and 87 Abs. 3 InvFG 2011 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 8/2015; entry into force read in § 9 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40168310/NOR40168310.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2013-101",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) zu Wertpapierleih- und Pensionsgeschäften durch Verwaltungsgesellschaften (Wertpapierleih- und Pensionsgeschäfteverordnung – WPV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on securities lending and repurchase transactions by management companies (Securities Lending and Repurchase Transactions Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "WPV",
+        "officialRef": "Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2013/101/P0/NOR40149721",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2013-05-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Enter securities lending and repos only in unit holders' interest, for at most twelve months and recallable at any time",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40149712/NOR40149712.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, § 2 Abs. 1 bis 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpv-lending-and-repo-conditions",
+            "titles": {
+              "en": "Enter securities lending and repos only in unit holders' interest, for at most twelve months and recallable at any time"
+            },
+            "summaries": {
+              "en": "A management company may enter securities lending and repurchase transactions only in unit holders' best interest, without changing a fund's strategy or materially its risk profile, and for at most twelve months. It must pass the income net of costs to the fund at once, check at least yearly by documented comparison that fees are at market rates, make sure redemptions are not impaired, and be able to end a lending transaction at any time with return within the usual settlement period, at most three trading days."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1 bis 4",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Take sufficient collateral before or against delivery of lent securities and keep a haircut policy",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40168307/NOR40168307.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, § 4 Abs. 1 bis 6, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpv-lending-collateral",
+            "titles": {
+              "en": "Take sufficient collateral before or against delivery of lent securities and keep a haircut policy"
+            },
+            "summaries": {
+              "en": "Securities may be transferred only where sufficient collateral is given for the fund beforehand or at the same time, never deferred, meeting the criteria on liquidity, daily valuation, haircuts, credit quality, independence from the counterparty and diversification. Collateral is held by the depositary where ownership passed, must be realisable at once without the counterparty's consent, and is covered by a documented haircut policy for each type of asset."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 1 bis 6",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Reinvest cash collateral from securities lending and repos only in the permitted assets",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40149716/NOR40149716.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, § 5 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpv-collateral-reinvestment",
+            "titles": {
+              "en": "Reinvest cash collateral from securities lending and repos only in the permitted assets"
+            },
+            "summaries": {
+              "en": "Collateral other than sight and callable deposits must not be reinvested. Such deposits may only be placed as deposits of up to twelve months with credit institutions in a member state or under equivalent supervision, in government bonds of high credit quality, in recallable repurchase transactions with such credit institutions, or in short-term money market funds, within the diversification limit for collateral."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 1 und 2",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Stress test collateral liquidity risk where collateral reaches 30 per cent of a fund's net asset value",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40149717/NOR40149717.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, § 6, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpv-collateral-stress-tests",
+            "titles": {
+              "en": "Stress test collateral liquidity risk where collateral reaches 30 per cent of a fund's net asset value"
+            },
+            "summaries": {
+              "en": "Where a fund receives collateral for OTC derivatives, securities lending or repos worth at least 30 per cent of its net asset value, the management company must develop and apply stress tests that regularly assess the collateral's liquidity risk in normal and exceptional conditions, covering scenario design, the empirical approach with back-tests, reporting frequency and loss tolerance thresholds, and loss mitigation."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Disclose securities lending and repo risks, collateral and costs in the fund prospectus",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40168308/NOR40168308.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, § 7 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpv-prospectus-information",
+            "titles": {
+              "en": "Disclose securities lending and repo risks, collateral and costs in the fund prospectus"
+            },
+            "summaries": {
+              "en": "The prospectus must state that the fund may enter repurchase or securities lending transactions and describe their risks, counterparty risk above all, potential conflicts of interest, effects on performance, eligible collateral and its level, the reinvestment and haircut policies, and the direct and indirect costs and fees and who receives them. Where no prospectus is required, the management company must give unit holders this information in another way."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: State securities lending and repo exposure, counterparties, collateral and income in the fund's annual report",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40168309/NOR40168309.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapierleih- und Pensionsgeschäfteverordnung (WPV), BGBl. II Nr. 101/2013, § 8, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-wpv-annual-report-disclosures",
+            "titles": {
+              "en": "State securities lending and repo exposure, counterparties, collateral and income in the fund's annual report"
+            },
+            "summaries": {
+              "en": "For each fund with securities lending or repos, the annual report must state the exposure from them, the identity of the counterparties, the type and amount of collateral received, the fees, costs and income of the period, the issuer of collateral exceeding 20 per cent of net asset value, and whether the fund is fully collateralised by securities issued or guaranteed by a member state."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 8",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add TFV, the FMA's regulation on the books, reports and prices of sub-funds of umbrella funds (Teilfondsverordnung)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131225/NOR40131225.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Teilfondsverordnung (TFV), BGBl. II Nr. 264/2011, made by the Finanzmarktaufsichtsbehörde (FMA) under § 47 Abs. 3 InvFG 2011 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 4",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131224/NOR40131224.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2011-264",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) zur buchhalterischen Darstellung, Rechnungslegung und Ermittlung des Wertes von Teilfonds bei Umbrella-Konstruktionen (Teilfondsverordnung – TFV)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the bookkeeping, reporting and valuation of sub-funds in umbrella structures (Sub-Funds Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "TFV",
+        "officialRef": "Teilfondsverordnung (TFV), BGBl. II Nr. 264/2011",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2011/264/P0/NOR40131225",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2011-09-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Keep umbrella fund books that trace every transaction to its sub-fund",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131221/NOR40131221.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Teilfondsverordnung (TFV), BGBl. II Nr. 264/2011, § 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-tfv-sub-fund-bookkeeping",
+            "titles": {
+              "en": "Keep umbrella fund books that trace every transaction to its sub-fund"
+            },
+            "summaries": {
+              "en": "The bookkeeping of an umbrella structure must allow each transaction affecting a single sub-fund to be traced by nature and time from its origin to its settlement, and must show to which sub-fund it is attributed."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report on each sub-fund separately in the annual and half-yearly reports",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131222/NOR40131222.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Teilfondsverordnung (TFV), BGBl. II Nr. 264/2011, § 2 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-tfv-sub-fund-reports",
+            "titles": {
+              "en": "Report on each sub-fund separately in the annual and half-yearly reports"
+            },
+            "summaries": {
+              "en": "The annual and half-yearly reports of an umbrella structure must report on every sub-fund separately, with the contents § 49 Abs. 2 and 3 InvFG 2011 require, and the auditor gives a single audit opinion on the annual reports of the sub-funds."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Value each sub-fund and publish its issue and redemption prices separately",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40131223/NOR40131223.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Teilfondsverordnung (TFV), BGBl. II Nr. 264/2011, § 3 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-tfv-sub-fund-prices",
+            "titles": {
+              "en": "Value each sub-fund and publish its issue and redemption prices separately"
+            },
+            "summaries": {
+              "en": "The value of each sub-fund is determined under § 57 Abs. 1 and 2 InvFG 2011, and the duty to publish the issue and redemption prices of units under § 57 Abs. 3 InvFG 2011 applies to each sub-fund."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add AIF-Warnhinweisverordnung, the FMA's regulation on the warning for foreign alternative investment funds sold to retail clients",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40154181/NOR40154181.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AIF-Warnhinweisverordnung, BGBl. II Nr. 224/2013, made by the Finanzmarktaufsichtsbehörde (FMA) under § 49 Abs. 5 AIFMG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in the RIS Inkrafttretensdatum of the original title document",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40154181/NOR40154181.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2013-224",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) zur Ausgestaltung des Warnhinweises von Alternativen Investmentfonds (AIF-Warnhinweisverordnung)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the form of the warning for alternative investment funds (AIF Warning Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "AIF-Warnhinweisverordnung",
+        "officialRef": "AIF-Warnhinweisverordnung, BGBl. II Nr. 224/2013",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2013/224/P0/NOR40154181",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2013-07-31"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Show the warning in German in the key information document of an AIF sold to retail clients",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40154178/NOR40154178.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AIF-Warnhinweisverordnung, BGBl. II Nr. 224/2013, § 2 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-aif-warnhinweisverordnung-warning-in-key-information",
+            "titles": {
+              "en": "Show the warning in German in the key information document of an AIF sold to retail clients"
+            },
+            "summaries": {
+              "en": "An alternative investment fund admitted under § 49 AIFMG for sale to retail clients in Austria must carry a warning in German that is clearly visible, unmistakable and easy to read, and the warning must be in the key information document or simplified prospectus already when the notification under § 49 Abs. 2 AIFMG is filed."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company",
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Include the AIF warning in every piece of marketing used in Austria",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40154178/NOR40154178.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AIF-Warnhinweisverordnung, BGBl. II Nr. 224/2013, § 2 Abs. 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-aif-warnhinweisverordnung-warning-in-marketing",
+            "titles": {
+              "en": "Include the AIF warning in every piece of marketing used in Austria"
+            },
+            "summaries": {
+              "en": "The warning must also appear in all marketing material of the fund or its manager used for sale in Austria. Where a medium does not allow a written warning, its content must be given in another suitable way; a general reference to where the warning can be found is not enough."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 3",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company",
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Word the AIF warning as prescribed: no Austrian supervision and no Austrian check of the documents",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40154179/NOR40154179.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AIF-Warnhinweisverordnung, BGBl. II Nr. 224/2013, § 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-aif-warnhinweisverordnung-warning-wording",
+            "titles": {
+              "en": "Word the AIF warning as prescribed: no Austrian supervision and no Austrian check of the documents"
+            },
+            "summaries": {
+              "en": "The warning must state, in the wording the regulation sets, that neither the fund nor its manager is supervised by the FMA or another Austrian authority, which home authority supervises them, that no prospectus or key information document was checked by an Austrian authority, and that Austrian authorities are not liable for the accuracy or completeness of the sales documents."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company",
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add VeröffentlichungsV 2018, the FMA's regulation on publishing share buybacks and share options (Veröffentlichungsverordnung 2018)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200221/NOR40200221.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, made by the Finanzmarktaufsichtsbehörde (FMA) under § 119 Abs. 9 BörseG 2018 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in the RIS Inkrafttretensdatum of the original title document",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200221/NOR40200221.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2018-13",
+        "titles": {
+          "de": "Verordnung der Finanzmarktaufsichtsbehörde (FMA) über den Inhalt und die Form der Veröffentlichungen im Zusammenhang mit dem Rückerwerb und/oder der Veräußerung eigener Aktien sowie der Einräumung von Aktienoptionen (Veröffentlichungsverordnung 2018 – VeröffentlichungsV 2018)",
+          "en": "Regulation of the Financial Market Authority (FMA) on the content and form of publications on the buyback or sale of own shares and the granting of share options (Publications Regulation 2018)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "VeröffentlichungsV 2018",
+        "officialRef": "Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2018/13/P0/NOR40200221",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "fma-at",
+        "regime": "regime:securities",
+        "inForceFrom": "2018-01-19"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Publish the reports on granting share options and tell the FMA and the exchange",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200207/NOR40200207.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, § 1 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-veroeffentlichungsv-2018-share-option-reports",
+            "titles": {
+              "en": "Publish the reports on granting share options and tell the FMA and the exchange"
+            },
+            "summaries": {
+              "en": "An issuer of shares admitted to official trading must publish its reports on granting share options under the Stock Corporation Act within the periods that act sets, stating the date and content of the authorising general meeting resolution where required, and tell the FMA and the stock exchange operator the information without delay."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Publish general meeting resolutions on buying back and selling own shares without delay",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200208/NOR40200208.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, § 2 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-veroeffentlichungsv-2018-buyback-resolution",
+            "titles": {
+              "en": "Publish general meeting resolutions on buying back and selling own shares without delay"
+            },
+            "summaries": {
+              "en": "The issuer must publish without delay the date and content of a general meeting resolution or authorisation to buy back its own shares under § 65 Abs. 1 Z 4, 6 or 8 AktG, and of any authorisation to sell the shares later, and tell the FMA and the stock exchange operator without delay."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Publish a share buyback or resale programme at least three trading days before it starts",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200211/NOR40200211.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, § 5 Abs. 1 bis 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-veroeffentlichungsv-2018-buyback-programme",
+            "titles": {
+              "en": "Publish a share buyback or resale programme at least three trading days before it starts"
+            },
+            "summaries": {
+              "en": "The issuer must publish a buyback programme and its duration, or an intended sale of own shares, at least three trading days before carrying it out, with at least the resolution dates, start and duration, class and volume of shares, price range, type and purpose, effects on the listing and any share options. It must tell the FMA and the exchange as soon as the details are set, and say in both where on a website it will publish the later information."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 1 bis 4",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Publish changes to a share buyback programme without delay",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200212/NOR40200212.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, § 6 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-veroeffentlichungsv-2018-programme-changes",
+            "titles": {
+              "en": "Publish changes to a share buyback programme without delay"
+            },
+            "summaries": {
+              "en": "Where the issuer changes its decisions on a programme's start, duration, volume, prices, type, purpose, listing effects or share options, it must publish the changes without delay, whether or not the change is allowed under company or capital market law, and tell the FMA and the stock exchange operator without delay."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 Abs. 1 und 2",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Publish buyback and resale trades weekly and whenever 0.1 per cent of share capital has been traded",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200213/NOR40200213.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, § 7 Abs. 1 bis 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-veroeffentlichungsv-2018-transaction-reports",
+            "titles": {
+              "en": "Publish buyback and resale trades weekly and whenever 0.1 per cent of share capital has been traded"
+            },
+            "summaries": {
+              "en": "During a programme the issuer must publish on the second trading day of the week after each trade the daily volume, highest and lowest price, weighted average price and value, split into on- and off-exchange trades, after giving the data to the FMA and the exchange in machine-readable form a trading day before. It must publish again on the trading day after more than 0.1 per cent of share capital has been traded since the last publication, and once more when the programme ends."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 Abs. 1 bis 4",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Meet the buyback publication duties also where a subsidiary or a third party trades for the issuer",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40200214/NOR40200214.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Veröffentlichungsverordnung 2018 (VeröffentlichungsV 2018), BGBl. II Nr. 13/2018, § 8, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-veroeffentlichungsv-2018-subsidiaries-and-third-parties",
+            "titles": {
+              "en": "Meet the buyback publication duties also where a subsidiary or a third party trades for the issuer"
+            },
+            "summaries": {
+              "en": "The notification and publication duties of the regulation fall on the issuer also where a subsidiary, or a third party on the account of the issuer or of a subsidiary, carries out the buyback or sale of shares."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 8",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add AnaCredit-Begleitverordnung 2017, the Nationalbank's regulation applying the ECB's AnaCredit Regulation in Austria",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199409/NOR40199409.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017, made by the Oesterreichische Nationalbank under § 44 Abs. 1 Nationalbankgesetz 1984 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 26/2020; entry into force read in the RIS Inkrafttretensdatum of the original title document",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199409/NOR40199409.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2017-349",
+        "titles": {
+          "de": "Verordnung der Oesterreichischen Nationalbank zur Durchführung der Verordnung (EU) 2016/867 der Europäischen Zentralbank vom 18. Mai 2016 über die Erhebung granularer Kreditdaten und Kreditrisikodaten (EZB/2016/13) – AnaCredit-Begleitverordnung 2017",
+          "en": "Regulation of the Oesterreichische Nationalbank implementing Regulation (EU) 2016/867 of the European Central Bank of 18 May 2016 on the collection of granular credit and credit risk data (ECB/2016/13) (AnaCredit Accompanying Regulation 2017)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "AnaCredit-Begleitverordnung 2017",
+        "officialRef": "AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2017/349/P0/NOR40199409",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "oenb",
+        "regime": "regime:banking",
+        "inForceFrom": "2017-12-05"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report AnaCredit counterparty reference data when a counterparty first passes the threshold or its data change",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199396/NOR40199396.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017, § 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-anacredit-begleitverordnung-2017-counterparty-reference-data-events",
+            "titles": {
+              "en": "Report AnaCredit counterparty reference data when a counterparty first passes the threshold or its data change"
+            },
+            "summaries": {
+              "en": "A reporting agent must report counterparty reference data under the AnaCredit Regulation when an institutional unit first becomes counterparty to an instrument and the reporting threshold of Article 5 of that regulation is exceeded, and whenever the reference data of a counterparty already reported change."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Keep AnaCredit counterparty reference data continuously up to date in the master data report",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199397/NOR40199397.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017, § 4, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-anacredit-begleitverordnung-2017-continuous-update",
+            "titles": {
+              "en": "Keep AnaCredit counterparty reference data continuously up to date in the master data report"
+            },
+            "summaries": {
+              "en": "Since 31 December 2017 reporting agents must keep the counterparty reference data of Annex I of the AnaCredit Regulation continuously updated in their master data report to the Oesterreichische Nationalbank, applying the requirements of Annex III of that regulation."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Ask for the counterparty's identification number and use the national identifiers the ECB publishes",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199398/NOR40199398.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017, § 5 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-anacredit-begleitverordnung-2017-identifiers",
+            "titles": {
+              "en": "Ask for the counterparty's identification number and use the national identifiers the ECB publishes"
+            },
+            "summaries": {
+              "en": "Before reporting a counterparty for the first time, a reporting agent must request its identification number from the Oesterreichische Nationalbank electronically with the data needed to identify it, and must use as national identifier the identifiers the ECB publishes on its website for counterparties resident in Austria and elsewhere."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report AnaCredit credit data monthly by the sixteenth bank working day and quarterly by the quarterly dates",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40220742/NOR40220742.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017, § 7, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-anacredit-begleitverordnung-2017-deadlines",
+            "titles": {
+              "en": "Report AnaCredit credit data monthly by the sixteenth bank working day and quarterly by the quarterly dates"
+            },
+            "summaries": {
+              "en": "First and change reports of counterparty reference data are due without delay. Instrument data, counterparty-instrument data and data on collateral received, first reports and changes alike, and the monthly credit data are due by the sixteenth bank working day of the month after the reference date; quarterly credit data are due by the next quarterly date, which is 12 May, 11 August, 11 November or 11 February."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File AnaCredit reports electronically in the standard form the Nationalbank publishes",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199403/NOR40199403.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), AnaCredit-Begleitverordnung 2017, BGBl. II Nr. 349/2017, § 10, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-anacredit-begleitverordnung-2017-electronic-transmission",
+            "titles": {
+              "en": "File AnaCredit reports electronically in the standard form the Nationalbank publishes"
+            },
+            "summaries": {
+              "en": "Reporting agents must file their reports under the AnaCredit Regulation and this regulation in standardised form by electronic transmission to the Oesterreichische Nationalbank, meeting the minimum requirements it announces on its website."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 10",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add ZABIL-DL 1/2022, the Nationalbank's regulation on reporting cross-border services (Meldeverordnung ZABIL-DL 1/2022)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40239533/NOR40239533.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, made by the Oesterreichische Nationalbank under § 6 Abs. 3 Devisengesetz 2004 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 14/2025; entry into force read in § 39 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268421/NOR40268421.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2021-510",
+        "titles": {
+          "de": "Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank betreffend die statistische Erfassung des grenzüberschreitenden Dienstleistungsverkehrs",
+          "en": "Reporting Regulation ZABIL-DL 1/2022 of the Oesterreichische Nationalbank on the statistical recording of cross-border trade in services"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "ZABIL-DL 1/2022",
+        "officialRef": "Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2021/510/P0/NOR40239533",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "oenb",
+        "regime": "regime:banking",
+        "inForceFrom": "2022-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report cross-border services for the year after the reporting threshold was reached, with nil reports if need be",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268408/NOR40268408.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, § 18 Abs. 1 bis 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-zabil-dl-1-2022-bank-reporting-obligation",
+            "titles": {
+              "en": "Report cross-border services for the year after the reporting threshold was reached, with nil reports if need be"
+            },
+            "summaries": {
+              "en": "A credit institution, a branch under § 9 BWG, a financial institution under § 11 BWG or a pension fund in Austria that mainly works in banking and financial services, provides or buys cross-border services and reached the reporting threshold in the previous year must report for the four quarters of the following year. The duty runs to the end of those periods even if the threshold is no longer reached or no cross-border services occur, with nil reports."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 18 Abs. 1 bis 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Break down cross-border service exports and imports by type of service and country",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268407/NOR40268407.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, § 17 Abs. 4 und 5, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-zabil-dl-1-2022-services-by-type-and-country",
+            "titles": {
+              "en": "Break down cross-border service exports and imports by type of service and country"
+            },
+            "summaries": {
+              "en": "The reporting firm must report its exports and imports of cross-border services for the period by the types of service listed in the annex and by the country of the foreign provider or recipient with its ISO code, and give its OeNB identification number."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 17 Abs. 4 und 5",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the quarterly services report with the Nationalbank by the 15th of the following month",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40239512/NOR40239512.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, § 20 Abs. 1 bis 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-zabil-dl-1-2022-quarterly-deadline",
+            "titles": {
+              "en": "File the quarterly services report with the Nationalbank by the 15th of the following month"
+            },
+            "summaries": {
+              "en": "Reports are made to the Oesterreichische Nationalbank each quarter, for the calendar quarter in which the service was invoiced, and are due by the 15th calendar day of the month after the quarter."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 20 Abs. 1 bis 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report card payment flows with foreign card organisations by country and merchant category",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268410/NOR40268410.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, § 21 Abs. 1 bis 5, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-zabil-dl-1-2022-card-payment-flows",
+            "titles": {
+              "en": "Report card payment flows with foreign card organisations by country and merchant category"
+            },
+            "summaries": {
+              "en": "A payment service provider that issues cards, acquires card payments or runs cash withdrawals at cash machines must report the amounts refunded by and to foreign card organisations for card transactions between residents and non-residents, by the country of the foreign party and by merchant category code, stating whether the card was present and whether the payment was initiated electronically, and give its OeNB identification number."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 21 Abs. 1 bis 5",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the card payment report each quarter within 20 bank working days or with the payment statistics",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40239515/NOR40239515.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, § 23 Abs. 1 bis 5, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-zabil-dl-1-2022-card-report-deadline",
+            "titles": {
+              "en": "File the card payment report each quarter within 20 bank working days or with the payment statistics"
+            },
+            "summaries": {
+              "en": "The card payment report is made to the Oesterreichische Nationalbank each quarter and is due 20 bank working days after the quarter ends. It counts as made when filed as part of the Nationalbank's payment statistics, the period then being the quarter in which the transaction took place."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 23 Abs. 1 bis 5",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Register in time, file the services reports electronically in German and correct them without delay",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268400/NOR40268400.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL-DL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 510/2021, § 3 Abs. 1, 2, 3 und 10, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-zabil-dl-1-2022-general-reporting-rules",
+            "titles": {
+              "en": "Register in time, file the services reports electronically in German and correct them without delay"
+            },
+            "summaries": {
+              "en": "A reporting firm must file its reports electronically under the technical standards the OeNB or Statistics Austria publishes, in German, complete the registration and authentication steps in time before filing, and file a corrected report without delay where a report already filed needs to be corrected, completed or cut back."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 1, 2, 3 und 10",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Systemsicherheit von Zahlungssystemen, the Nationalbank's regulation on the safety of payment systems",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253733/NOR40253733.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, made by the Oesterreichische Nationalbank under § 44a Abs. 3 Nationalbankgesetz 1984 (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 26",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253731/NOR40253731.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2023-198",
+        "titles": {
+          "de": "Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen",
+          "en": "Regulation of the Oesterreichische Nationalbank on the safety of payment systems"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "Systemsicherheit von Zahlungssystemen",
+        "officialRef": "Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2023/198/P0/NOR40253733",
+        "level": "authority_regulation",
+        "jurisdiction": "at",
+        "authority": "oenb",
+        "regime": "regime:payments",
+        "inForceFrom": "2023-08-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Notify the Nationalbank within two weeks of starting or stopping a payment system and of participant changes",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253709/NOR40253709.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 4 Abs. 1 und 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-notify-operation-and-participants",
+            "titles": {
+              "en": "Notify the Nationalbank within two weeks of starting or stopping a payment system and of participant changes"
+            },
+            "summaries": {
+              "en": "The operator of a payment system must notify the Oesterreichische Nationalbank electronically within two weeks when it starts or stops operating the system, with the system's name, its own name and seat and the names and seats of the participants, and within two weeks of each change of participants, with the new or departing participant's name, seat and type of participation."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 1 und 2",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report major security and operational incidents of the payment system to the Nationalbank",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253709/NOR40253709.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 4 Abs. 3, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-major-incident-reports",
+            "titles": {
+              "en": "Report major security and operational incidents of the payment system to the Nationalbank"
+            },
+            "summaries": {
+              "en": "The operator must report major security and operational incidents in the sense of the Major Incident Reporting Framework for Payment Schemes and Retail Payment Systems electronically on the standard templates of Annex 1. No further report is needed where the firm already reports under § 86 ZaDiG 2018."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Set up a sound risk management system for the payment system's legal, credit, liquidity and operational risks",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253712/NOR40253712.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 7, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-risk-management-system",
+            "titles": {
+              "en": "Set up a sound risk management system for the payment system's legal, credit, liquidity and operational risks"
+            },
+            "summaries": {
+              "en": "A payment system must set up a sound risk management system for the comprehensive management of legal, credit and liquidity risks and of operational and other risks."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7",
+            "dutyType": "governance",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Hold enough liquidity in every relevant currency to settle on the same day under stress",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253715/NOR40253715.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 10, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-liquidity-risk",
+            "titles": {
+              "en": "Hold enough liquidity in every relevant currency to settle on the same day under stress"
+            },
+            "summaries": {
+              "en": "A payment system must measure, monitor and manage its liquidity risk effectively and hold enough liquid means in all relevant currencies to meet its payment obligations with high certainty on the same day, or at the latest on a following day, in a wide range of stress scenarios, including the default of the participant whose failure would cause the largest payment obligation in extreme but plausible market conditions."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 10",
+            "dutyType": "governance",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Set clear rules and procedures for handling a participant's default",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253719/NOR40253719.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 14, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-participant-default-rules",
+            "titles": {
+              "en": "Set clear rules and procedures for handling a participant's default"
+            },
+            "summaries": {
+              "en": "A payment system must establish effective and clearly defined rules and procedures for dealing with the default of a participant, designed so that it can contain losses and liquidity shortfalls in time and continue to meet its obligations."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 14",
+            "dutyType": "governance",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Limit the payment system's operational risks and plan for the timely recovery of operations",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253722/NOR40253722.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 17, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-operational-risk-and-recovery",
+            "titles": {
+              "en": "Limit the payment system's operational risks and plan for the timely recovery of operations"
+            },
+            "summaries": {
+              "en": "A payment system must identify internal and external sources of plausible operational risk and limit their effects with appropriate systems, policies, procedures and controls, be designed for a high degree of security and reliability with adequate scalable capacity, and plan for the timely recovery of operations and the meeting of its obligations, in particular after a wide-scale or major disruption."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 17",
+            "dutyType": "governance",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Disclose the payment system's rules, procedures, risks and fees to participants",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40253728/NOR40253728.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verordnung der Oesterreichischen Nationalbank zur Systemsicherheit von Zahlungssystemen, BGBl. II Nr. 198/2023, § 23, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-systemsicherheit-von-zahlungssystemen-disclosure-to-participants",
+            "titles": {
+              "en": "Disclose the payment system's rules, procedures, risks and fees to participants"
+            },
+            "summaries": {
+              "en": "A payment system must have clear and comprehensive rules and procedures and give enough information for participants to understand the risks, fees and other material costs of taking part, and must disclose all relevant rules and its main procedures."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 23",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add FMV 2015, the Finance Minister's regulation on reporting the tax data of funds (Fonds-Melde-Verordnung 2015)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40172187/NOR40172187.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Fonds-Melde-Verordnung 2015 (FMV 2015), BGBl. II Nr. 167/2015, made by the Bundesminister für Finanzen under § 186 Abs. 2 Z 2 InvFG 2011 and § 40 Abs. 2 Z 1 ImmoInvFG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, last amended by BGBl. II Nr. 64/2025; entry into force read in § 8 Abs. 1",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40269187/NOR40269187.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2015-167",
+        "titles": {
+          "de": "Verordnung des Bundesministers für Finanzen über die Meldung der steuerrelevanten Daten für Investmentfonds, Immobilienfonds und AIF (Fonds-Melde-Verordnung 2015 – FMV 2015)",
+          "en": "Regulation of the Federal Minister of Finance on reporting the tax-relevant data of investment funds, real estate funds and AIFs (Fund Reporting Regulation 2015)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "FMV 2015",
+        "officialRef": "Fonds-Melde-Verordnung 2015 (FMV 2015), BGBl. II Nr. 167/2015",
+        "eliUri": "https://ris.bka.gv.at/eli/bgbl/ii/2015/167/P0/NOR40172187",
+        "level": "government_regulation",
+        "jurisdiction": "at",
+        "authority": "bmf-at",
+        "regime": "regime:tax",
+        "inForceFrom": "2016-06-06"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Register with the reporting office two weeks before the first fund tax report and keep master data current",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40269186/NOR40269186.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Fonds-Melde-Verordnung 2015 (FMV 2015), BGBl. II Nr. 167/2015, § 2 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fmv-2015-registration-and-master-data",
+            "titles": {
+              "en": "Register with the reporting office two weeks before the first fund tax report and keep master data current"
+            },
+            "summaries": {
+              "en": "A management company must register with the reporting office, giving the master data of Annex 1, at least two weeks before its first transmission, then report the master data of the reporting funds it manages under Annex 2, keep both up to date and report any change to the reporting office without delay."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Transmit the tax data of funds only by automated means in the structured form of the annexes",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40209731/NOR40209731.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Fonds-Melde-Verordnung 2015 (FMV 2015), BGBl. II Nr. 167/2015, § 3 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fmv-2015-structured-transmission",
+            "titles": {
+              "en": "Transmit the tax data of funds only by automated means in the structured form of the annexes"
+            },
+            "summaries": {
+              "en": "The tax-relevant data of distributions and deemed distributed income must be transmitted only by automated means in structured form as Annexes 3, 3a and 3b describe, meeting their plausibility criteria. A transmission made another way, incomplete or outside the procedure of Annex 3 is not a report and the reporting office does not accept it."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 1",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the fund distribution report before the distribution day and the annual report within seven months",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40209731/NOR40209731.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Fonds-Melde-Verordnung 2015 (FMV 2015), BGBl. II Nr. 167/2015, § 3 Abs. 2, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fmv-2015-reporting-deadlines",
+            "titles": {
+              "en": "File the fund distribution report before the distribution day and the annual report within seven months"
+            },
+            "summaries": {
+              "en": "The distribution report is due at the latest on the last day before the distribution date, and the annual report at the latest seven months after the end of the fund's financial year, or on the last day before a payment under § 58 Abs. 2 InvFG 2011. A report not made in time has the legal consequences of § 186 Abs. 2 Z 3 InvFG 2011 and § 40 Abs. 2 Z 2 ImmoInvFG."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 Abs. 2",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Correct the capital gains tax withheld when a fund tax report is corrected, while the client relationship lasts",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40172177/NOR40172177.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Fonds-Melde-Verordnung 2015 (FMV 2015), BGBl. II Nr. 167/2015, § 4 Abs. 1, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-fmv-2015-withholding-tax-correction",
+            "titles": {
+              "en": "Correct the capital gains tax withheld when a fund tax report is corrected, while the client relationship lasts"
+            },
+            "summaries": {
+              "en": "A timely report may be corrected only until 15 December of the year in which it was made. Where a report is corrected, the paying agent that withholds capital gains tax must correct the withholding and the tax values based on it, provided it still has a business relationship with the unit holder."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 Abs. 1",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        }
+      ]
+    }
+  ]
+}
