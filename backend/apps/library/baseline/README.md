@@ -6,16 +6,17 @@ holds the EU, Sweden, Denmark, Norway and Finland in full. The eight home market
 added arrive tranche by tranche, as ADR 0070 stages them: the statutes and their duties
 of Germany (`de-acts`), the United Kingdom (`gb-acts`), Switzerland (`ch-acts`), Latvia
 (`lv-acts`), Austria (`at-acts`), Estonia (`ee-acts`) and the Netherlands (`nl-acts`) are
-here. Six of them also carry the law's own words: the United Kingdom's
-(`provisions/gb-acts.json`, Swedish beside the English original) and the Netherlands',
-Switzerland's, Latvia's, Estonia's and Austria's (`provisions/nl-acts.json`,
-`ch-acts.json`, `lv-acts.json`, `ee-acts.json` and `at-acts.json`, English and Swedish
-beside the Dutch, the German, the Latvian and the Estonian). The United Kingdom's
+here, and all seven carry the law's own words: the United Kingdom's
+(`provisions/gb-acts.json`, Swedish beside the English original) and the others'
+(`provisions/de-acts.json`, `nl-acts.json`, `ch-acts.json`, `lv-acts.json`,
+`ee-acts.json` and `at-acts.json`, English and Swedish beside the German, the Dutch, the
+Latvian and the Estonian). The United Kingdom's
 statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`), the
 Netherlands' decrees and regulations (`nl-besluiten`), Switzerland's ordinances
 (`ch-verordnungen`), Austria's regulations (`at-verordnungen`), Latvia's
 (`lv-noteikumi`) and Estonia's (`ee-maarused`) are here too, and Switzerland's ordinances
-carry their law text (`provisions/ch-verordnungen.json`);
+and the Netherlands' decrees and regulations carry their law text
+(`provisions/ch-verordnungen.json`, `nl-besluiten.json`);
 the other markets' law text and regulations, and Lithuania, are not here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console

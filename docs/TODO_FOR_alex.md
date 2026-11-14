@@ -177,6 +177,21 @@ library takes their law in its own language. What needs you, most urgent first.
       "Abschluss eines Joint Ventures" is rendered as winding up, which the French and
       Italian versions confirm ("liquidation", "liquidazione"). Names of sanctioned
       entities stay exactly as the German prints them.
+- [ ] **A German and a Swedish reader on Germany's law text.** English and Swedish stand
+      beside the 155 German sections. Worth a reader's hour: the rule that a duty German
+      states in the plain present ("Die Unternehmen stellen sicher") reads "must" and
+      "ska" when the subject is the person bound (applied in 49 texts); "företagsledare"
+      for a Geschäftsleiter and "ledningsorgan" for a Vorstand; "värdepappersinstitut"
+      for a Wertpapierdienstleistungsunternehmen and "värdepappersföretag" for a
+      Wertpapierinstitut; "bostadskreditavtal"; "business management requirements" for
+      betriebswirtschaftliche Notwendigkeiten. Several sections change soon: BGB, KWG
+      § 18a and BDSG § 31 on 20 November 2026, KWG § 14 on 30 December 2026, WpHG §§
+      63 and 64 and VVG §§ 7b and 7c on 1 January 2027.
+- [ ] **A Dutch and a Swedish reader on the decrees' law text.** Worth a reader's hour:
+      the Swedish terms chosen without a Swedish model ("skyddsnätsordningarna",
+      "avskärmade konton", "personbolag", "turbor"). Printed oddities kept as printed: the
+      Dutch remuneration annex says "een tiende" where CRD V says one third, and two
+      cross-references point at the wrong item.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
