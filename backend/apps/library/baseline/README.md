@@ -15,7 +15,8 @@ statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`), the
 Netherlands' decrees and regulations (`nl-besluiten`), Switzerland's ordinances
 (`ch-verordnungen`), Austria's regulations (`at-verordnungen`), Latvia's
 (`lv-noteikumi`, with more in `lv-noteikumi-2`) and Estonia's (`ee-maarused`) are here
-too, and more of Switzerland's ordinances (`ch-verordnungen-2`). The regulations of the
+too, and more of Switzerland's ordinances (`ch-verordnungen-2`) and Austria's
+regulations (`at-verordnungen-2`). The regulations of the
 United Kingdom, Switzerland, the Netherlands, Austria, Latvia and Estonia carry their law
 text (`provisions/gb-si.json`, `ch-verordnungen.json`, `nl-besluiten.json`,
 `at-verordnungen.json`, `lv-noteikumi.json`, `ee-maarused.json`);
