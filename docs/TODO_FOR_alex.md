@@ -224,6 +224,36 @@ library takes their law in its own language. What needs you, most urgent first.
       "målmarknad" for insurance products, applied in one pass over the files. Also from
       Germany's regulations: PAngV § 18 is struck and PAngV §§ 16, 17 and 19 and
       InstitutsVergV § 5 change on 20 November 2026, so those duties need new text then.
+- [ ] **A lawyer of each market on its third tranche.** The researchers' own doubts, by
+      market; each row of the verification log says more.
+      - Germany (`de-verordnungen-2`): KMAnzV § 1 Abs. 3 limits a MiCA bank to the § 2
+        notices; RStruktFV's contributors are read in the RStruktFG; FinStabDEV binds only
+        on the Bundesbank's request; EdWBeitrV is close to a fee regulation; VersVermV is
+        written as binding a bank that distributes insurance, because § 34d GewO exempts
+        no credit institution; 15 regulations carry no entry-into-force date ("am Tag nach
+        der Verkündung"). Lead not followed: the WpHG-Mitarbeiteranzeigeverordnung, which
+        is not on Gesetze im Internet.
+      - The United Kingdom (`gb-si-2`): Iraq reg. 9 read as a full freeze; Iran's nuclear
+        regs. 17A to 17D date from 29 September 2026; MiFI reg. 26(1) bites only on FCA
+        position limits set by direction; whether a bank is a reporting cryptoasset
+        service provider turns on the OECD framework. The FSMA (Cryptoassets) Regulations
+        2026 bind no firm before 25 October 2027 and are left out.
+      - Switzerland (`ch-verordnungen-2`): TJPV Art. 54 Abs. 3 and CSV Art. 14 are
+        definitions written as duties; the Syria and Venezuela asset-freeze ordinances
+        end in 2029 and 2030. Lapsed and left out: the FATCA ordinance and the Tunisia and
+        Ukraine SRVG ordinances.
+      - Latvia (`lv-noteikumi-2`): several duties add only figures or reports to duties
+        already held; long regulations (321, 254, 257, 326) were read in part.
+      - Austria (`at-verordnungen-2`): whether a payment system operator is in the sector
+        scope; GKE-V 2018 §§ 1 to 4 change on 1 March 2027; the VZKG-V's 40 euro cap is
+        written as a duty of a credit institution, as § 26 VZKG names it.
+      - Estonia (`ee-maarused-2`): the operational risk reports regulation's version ends
+        on 31 December 2026; the supervisory reporting form still names a repealed EU
+        implementing regulation; TARGET-Estonia's conditions sit in seven annex PDFs not
+        yet read.
+      - The Netherlands (`nl-besluiten-2`): the sanctions duties hold only what each Dutch
+        regulation adds; EU article numbers were converted from Latin suffixes by hand;
+        about seven further Sanctieregelingen of the same shape are not written yet.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as

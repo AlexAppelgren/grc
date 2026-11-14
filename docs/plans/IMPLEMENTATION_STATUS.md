@@ -478,7 +478,11 @@ the Netherlands, Austria and Switzerland.
   accounts at Eesti Pank, payment orders, euro banknotes) and 16 of the Minister of Finance
   (e-money and payment institution rules, fund and credit provider reports, the covered
   bond register, nominee accounts, investor protection contributions, the depositor
-  information sheet). Then Germany's (`de-verordnungen-2`): 20 regulations with 95 duties,
+  information sheet), with the Justice Minister's two credit information forms added once
+  the ministry was seeded (30 regulations, 92 duties in all). Then Germany's
+  (`de-verordnungen-2`): 20 regulations with 95 duties, and the justice and economy
+  ministries' RechZahlV and VersVermV added once they were seeded (22 regulations, 107
+  duties in all),
   13 of BaFin (the tied agents, refinancing register, voting rights, net short positions,
   investment firm notifications, owner control and remuneration, KAGB outsourcing,
   Bausparkassen and crypto-asset market regulations among them), 6 of the finance ministry
@@ -551,10 +555,9 @@ the Netherlands, Austria and Switzerland.
   formula only as an image. Every statute tranche and every second tranche of the seven
   markets now carries the law's own words. The baseline's
   tests filed and approved everything on the branch together (39 tests, 798 s).
-- **In work on this branch:** the
-  law's own words for the other regulations, each
-  provision in its original
-  language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
+- **In work on this branch:** the law's own words for the seven third tranches, each
+  provision in its original language with English and Swedish beside it (Swedish alone
+  beside a United Kingdom text); Switzerland's is in.
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only
   through its API once a person has signed up for it, and the PRA Rulebook, whose text
