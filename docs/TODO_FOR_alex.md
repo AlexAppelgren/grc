@@ -108,8 +108,9 @@ library takes their law in its own language. What needs you, most urgent first.
       Estonia's Justiits- ja Digiministeerium and Austria's BMASGPK; 103 authorities in
       all. Two gaps: the maker of the RechKredV is named on no page that could be read,
       and the Austrian ministry's consumer protection remit rests on its name and topics.
-      The Dutch sanctions regimes and the regulations these makers issued follow in the
-      next tranches. Say if you would rather not seed them.
+      The Dutch sanctions regimes are now in (`nl-besluiten-2`: thirteen Sanctieregelingen,
+      each with only what the Dutch regulation itself adds to the EU one), and the
+      regulations the other makers issued follow. Say if you would rather not seed them.
 - [ ] **A Dutch lawyer on the decrees and regulations.** The researcher's own doubts: the
       PEP and beneficial-owner categories of the Uitvoeringsbesluit Wwft 2018 are
       definitions written as duties; UrWwft art. 4 names documents that suffice, not the

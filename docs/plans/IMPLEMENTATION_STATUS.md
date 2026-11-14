@@ -485,8 +485,13 @@ the Netherlands, Austria and Switzerland.
   and the Bundesregierung's restructuring fund regulation. Gesetze im Internet reset almost
   every connection from about 15:20 UTC, so only 10 of the 114 section pages the duties
   cite could be fetched again; the text of every cited section was compared with the
-  regulation's XML and its full-text page instead. The baseline holds 991 instruments and
-  4,060 obligations.
+  regulation's XML and its full-text page instead. Then the Netherlands'
+  (`nl-besluiten-2`): 25 regulations with 83 duties, among them thirteen Sanctieregelingen
+  of the Minister of Foreign Affairs (terrorism, ISIS and Al Qaida, Ukraine, the Russian
+  Federation, Belarus, Iran, Syria, Libya, North Korea, human rights), the Bmfo, Bptfg and
+  Bm Wft, the bank data referral portal, the banker's oath and De Nederlandsche Bank's
+  recognition of three other states' systemic risk buffers. The baseline holds 1,015
+  instruments and 4,143 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
