@@ -1,0 +1,166 @@
+{
+  "tranche": "ch-acts",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "ch-sr-952-0",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/51/117_121_129/20261001/de/html/fedlex-data-admin-ch-eli-cc-51-117_121_129-20261001-de-html.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Banken und Sparkassen (Bankengesetz, BankG), SR 952.0, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's central banking statute: it sets who needs a banking licence from FINMA, how banks are organised and funded, and how a failing bank is restructured or wound up, with deposit protection. It binds banks, private bankers and savings banks. In practice a bank keeps the organisation and proper conduct its licence rests on, notifies FINMA of changes, holds adequate own funds and liquidity, publishes its annual report, appoints a licensed audit firm, covers privileged deposits with Swiss assets, belongs to the deposit insurance scheme and liquidates dormant assets after 50 years."
+      }
+    },
+    {
+      "key": "ch-sr-954-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2018/801/20261001/de/html/fedlex-data-admin-ch-eli-cc-2018-801-20261001-de-html-1.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Finanzinstitute (Finanzinstitutsgesetz, FINIG), SR 954.1, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's licensing statute for financial institutions other than banks: portfolio managers, trustees, managers of collective assets, fund management companies and securities firms. Banks and insurers are outside it. In practice such a firm holds a FINMA licence, reports changes to the facts behind it, sets governance rules and controls its risks, is run from Switzerland by fit and proper people, delegates only to capable third parties and has itself audited. A securities firm also holds adequate own funds and liquidity, records its orders and trades and files trade reports."
+      }
+    },
+    {
+      "key": "ch-sr-950-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2019/758/20261001/de/html/fedlex-data-admin-ch-eli-cc-2019-758-20261001-de-html-3.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Finanzdienstleistungen (Finanzdienstleistungsgesetz, FIDLEG), SR 950.1, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's conduct statute for financial services and the offering of financial instruments. It binds everyone who provides financial services commercially in Switzerland or to clients there, banks included, and the producers and offerors of financial instruments. In practice a bank sorts clients into retail, professional and institutional, informs them before the contract, checks appropriateness or suitability for advice and asset management, documents its services, executes orders on the best terms, manages conflicts of interest, discloses third-party payments and belongs to an ombudsman."
+      }
+    },
+    {
+      "key": "ch-sr-958-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/853/20240201/de/html/fedlex-data-admin-ch-eli-cc-2015-853-20240201-de-html-5.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Finanzmarktinfrastrukturen und das Marktverhalten im Effekten- und Derivatehandel (Finanzmarktinfrastrukturgesetz, FinfraG), SR 958.1, consolidated German text, Stand am 1. Februar 2024",
+      "text": {
+        "en": "Switzerland's statute on trading venues, clearing and settlement infrastructures and conduct in securities and derivatives markets. It binds the operators of those infrastructures and, through its market conduct rules, banks, securities firms, insurers, fund managers and other counterparties. In practice a bank that takes part in a trading venue records its orders and reports its trades, clears and reports its derivatives, confirms, reconciles, values and collateralises those it does not clear, discloses large holdings in listed companies and avoids insider dealing and market manipulation."
+      }
+    },
+    {
+      "key": "ch-sr-951-31",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2006/822/20261001/de/html/fedlex-data-admin-ch-eli-cc-2006-822-20261001-de-html-2.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die kollektiven Kapitalanlagen (Kollektivanlagengesetz, KAG), SR 951.31, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's funds statute: it governs collective investment schemes of every legal form and the persons who manage, keep and represent them. It binds fund management companies, investment companies, custodian banks and the representatives of foreign funds. In practice a fund needs FINMA's licence and approval of its documents, its managers act only in the investors' interest and follow the stated investment policy, the custodian bank keeps the assets and checks that the fund obeys the law and its rules, and net asset values and annual and half-yearly reports are published."
+      }
+    },
+    {
+      "key": "ch-sr-957-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2009/450/20261001/de/html/fedlex-data-admin-ch-eli-cc-2009-450-20261001-de-html-3.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über Bucheffekten (Bucheffektengesetz, BEG), SR 957.1, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's statute on securities held in book-entry form: it governs how securities credited to securities accounts are held, transferred and protected. It binds custodians: banks, securities firms, fund management companies that keep unit accounts, central depositories and others the act lists. In practice a custodian holds enough securities to cover every client's credit balance, keeps its own and clients' holdings apart, tells clients about sub-custody and its risks, uses clients' securities only with their authorisation and reverses debits made without a valid instruction."
+      }
+    },
+    {
+      "key": "ch-sr-211-423-4",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/47/109_113_57/20230101/de/html/fedlex-data-admin-ch-eli-cc-47-109_113_57-20230101-de-html-3.html",
+      "sourceLabel": "Fedlex, Pfandbriefgesetz (PfG), SR 211.423.4, consolidated German text, Stand am 1. Januar 2023",
+      "text": {
+        "en": "Switzerland's covered bond statute: only two central institutions, one of the cantonal banks and one of the other credit institutions, may issue Pfandbriefe, and they lend the proceeds to their member banks against mortgage cover. It binds the two central institutions and the banks that borrow from them. In practice a member bank keeps its loans from the central institution covered at all times by Swiss mortgage claims, enters that cover in a cover register, keeps it apart from its other assets, tops it up when short and counts a mortgage only up to two thirds of the property's market value."
+      }
+    },
+    {
+      "key": "ch-sr-221-214-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2002/593/20230901/de/html/fedlex-data-admin-ch-eli-cc-2002-593-20230901-de-html-5.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über den Konsumkredit (KKG), SR 221.214.1, consolidated German text, Stand am 1. September 2023",
+      "text": {
+        "en": "Switzerland's consumer credit statute: it governs loans, financed purchases, leasing, overdrafts and card accounts with a credit option for consumers. It binds everyone who grants such credit commercially, banks included, and crowdlending and credit intermediaries. In practice a lender concludes the contract in writing with the content the act lists, stays within the maximum interest rate, respects the 14-day right of withdrawal, checks before the contract that the consumer can repay, reports credits and arrears to the consumer credit information office and does not advertise aggressively."
+      }
+    },
+    {
+      "key": "ch-sr-951-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2004/221/20230901/de/html/fedlex-data-admin-ch-eli-cc-2004-221-20230901-de-html-17.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Schweizerische Nationalbank (Nationalbankgesetz, NBG), SR 951.11, consolidated German text, Stand am 1. September 2023",
+      "text": {
+        "en": "The statute of the Swiss National Bank: besides the central bank's own constitution and tasks it holds the monetary policy powers that reach financial firms. Those rules bind banks, financial market infrastructures, the firms under the Financial Institutions Act and licensed fund entities. In practice a bank delivers the statistical data the National Bank's ordinance asks for, holds minimum reserves at the rate the National Bank sets, proves regularly that it does so and pays interest on any shortfall, and payment systems and other infrastructures inform the National Bank for its oversight."
+      }
+    },
+    {
+      "key": "ch-sr-956-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2008/736/20250401/de/html/fedlex-data-admin-ch-eli-cc-2008-736-20250401-de-html-3.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Eidgenössische Finanzmarktaufsicht (Finanzmarktaufsichtsgesetz, FINMAG), SR 956.1, consolidated German text, Stand am 1. April 2025",
+      "text": {
+        "en": "The statute that sets up FINMA, the Swiss financial market supervisor, and gives it its supervisory instruments under the banking, insurance, funds, financial services and anti-money laundering acts. It binds every person that needs a licence, recognition, approval or registration from FINMA. In practice a supervised firm gives FINMA and its audit firm all the information and documents they need, reports at once any event of material importance for supervision, tells FINMA which audit firm it has chosen and passes non-public information to foreign authorities only under the act's conditions."
+      }
+    },
+    {
+      "key": "ch-sr-961-01",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2005/734/20240901/de/html/fedlex-data-admin-ch-eli-cc-2005-734-20240901-de-html-6.html",
+      "sourceLabel": "Fedlex, Bundesgesetz betreffend die Aufsicht über Versicherungsunternehmen (Versicherungsaufsichtsgesetz, VAG), SR 961.01, consolidated German text, Stand am 1. September 2024",
+      "text": {
+        "en": "Switzerland's insurance supervision statute: it sets the licence, solvency and organisation of insurers and the rules for those who sell insurance. It binds insurers, insurance groups and insurance intermediaries, which is where a bank that distributes insurance meets it. In practice an insurer keeps sufficient solvency, technical provisions and tied assets, runs risk management with an internal audit and a responsible actuary and reports to FINMA each year. An intermediary registers if untied, informs customers, avoids conflicts of interest and checks appropriateness for qualified life cover."
+      }
+    },
+    {
+      "key": "ch-sr-221-229-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/24/719_735_717/20240101/de/html/fedlex-data-admin-ch-eli-cc-24-719_735_717-20240101-de-html-14.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über den Versicherungsvertrag (Versicherungsvertragsgesetz, VVG), SR 221.229.1, consolidated German text, Stand am 1. Januar 2024",
+      "text": {
+        "en": "Switzerland's insurance contract statute: it governs how an insurance contract is concluded, what each party owes during it and how it ends. It binds insurers in their dealings with policyholders, and a banking group meets it through its own insurer or the policies it sells. In practice an insurer informs the customer before the contract about its identity and the main content of the cover, hands over the general conditions, accepts a withdrawal within 14 days, issues a policy that records the parties' rights and duties and pays a claim four weeks after receiving the details that establish it."
+      }
+    },
+    {
+      "key": "ch-sr-955-0",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/1998/892_892_892/20261001/de/html/fedlex-data-admin-ch-eli-cc-1998-892_892_892-20261001-de-html-4.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Bekämpfung der Geldwäscherei und der Terrorismusfinanzierung (Geldwäschereigesetz, GwG), SR 955.0, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's anti-money laundering statute: it sets the due diligence and reporting duties against money laundering and terrorist financing. It binds financial intermediaries, such as banks, securities firms, fund managers, life insurers and payment service providers, and dealers in goods who take cash and certain advisers. In practice a bank identifies each customer and the beneficial owner, clarifies unusual and high-risk transactions, keeps records for ten years, trains staff, reports suspicions to the reporting office at once, freezes assets when told to and never tips off the customer."
+      }
+    },
+    {
+      "key": "ch-sr-955-3",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2026/323/20261001/de/html/fedlex-data-admin-ch-eli-cc-2026-323-20261001-de-html-1.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Transparenz juristischer Personen und die Identifikation der wirtschaftlich berechtigten Personen (TJPG), SR 955.3, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "Switzerland's statute on the transparency of legal entities, in force since 1 October 2026: it creates a federal register of beneficial owners to help combat money laundering and terrorist financing. It binds Swiss companies limited by shares, limited liability companies, cooperatives and investment companies, and certain foreign entities; listed companies are outside it. In practice a bank that is such a company identifies and verifies its own beneficial owners, documents them, keeps the records for ten years and reports them and every change to the transparency register within a month."
+      }
+    },
+    {
+      "key": "ch-sr-946-231",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2002/564/20230701/de/html/fedlex-data-admin-ch-eli-cc-2002-564-20230701-de-html-4.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Durchsetzung von internationalen Sanktionen (Embargogesetz, EmbG), SR 946.231, consolidated German text, Stand am 1. Juli 2023",
+      "text": {
+        "en": "Switzerland's sanctions statute: it lets the Confederation enact coercive measures to enforce sanctions decided by the United Nations, the Organization for Security and Co-operation in Europe or Switzerland's most important trading partners. The measures themselves are Federal Council ordinances, which can restrict payments and capital movements and impose bans and reporting duties. The act binds everyone the measures affect, banks included. In practice a bank obeys each sanctions ordinance, since a breach is punishable under the act, and gives the control bodies the information they need."
+      }
+    },
+    {
+      "key": "ch-sr-196-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2016/322/20160701/de/html/fedlex-data-admin-ch-eli-cc-2016-322-20160701-de-html-10.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Sperrung und die Rückerstattung unrechtmässig erworbener Vermögenswerte ausländischer politisch exponierter Personen (SRVG), SR 196.1, consolidated German text, Stand am 1. Juli 2016",
+      "text": {
+        "en": "Switzerland's statute on the assets of fallen foreign rulers: it lets the Federal Council freeze assets in Switzerland that foreign politically exposed persons or those close to them control or beneficially own, and governs their confiscation and return. It binds every person and institution that holds or manages such assets in Switzerland, banks above all. In practice a bank reports assets caught by a freezing order to the Money Laundering Reporting Office at once, answers its requests, keeps managing the frozen assets and warns the foreign ministry if they threaten to lose value quickly."
+      }
+    },
+    {
+      "key": "ch-sr-235-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2022/491/20250707/de/html/fedlex-data-admin-ch-eli-cc-2022-491-20250707-de-html-1.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über den Datenschutz (Datenschutzgesetz, DSG), SR 235.1, consolidated German text, Stand am 7. Juli 2025",
+      "text": {
+        "en": "Switzerland's data protection statute: it governs the processing of personal data of natural persons by private persons and by federal bodies. It binds every bank and financial firm as the controller of its customers' and employees' data, and their processors. In practice a firm processes data lawfully and for a recognisable purpose, builds data protection and security into its systems, keeps a register of processing activities, informs people when it collects their data, assesses high-risk processing beforehand, reports serious breaches to the federal commissioner and answers access requests."
+      }
+    },
+    {
+      "key": "ch-sr-128",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2022/232/20251001/de/html/fedlex-data-admin-ch-eli-cc-2022-232-20251001-de-html-2.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Informationssicherheit (Informationssicherheitsgesetz, ISG), SR 128, consolidated German text, Stand am 1. Oktober 2025",
+      "text": {
+        "en": "Switzerland's information security statute: it secures the information and information systems of the Confederation, and since 1 April 2025 it also obliges the operators of critical infrastructure to report cyberattacks. That duty binds, among others, the companies subject to the Banking Act, the Insurance Supervision Act and the Financial Market Infrastructure Act. In practice a bank reports to the Federal Office for Cybersecurity, within 24 hours, a cyberattack that endangers its functioning, has led to manipulation or leakage of information or involves extortion, threats or coercion."
+      }
+    },
+    {
+      "key": "ch-sr-653-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2016/259/20260101/de/html/fedlex-data-admin-ch-eli-cc-2016-259-20260101-de-html-1.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über den internationalen automatischen Informationsaustausch in Steuersachen (AIAG), SR 653.1, consolidated German text, Stand am 1. Januar 2026",
+      "text": {
+        "en": "Switzerland's statute for the automatic exchange of information in tax matters: it carries out the agreements on financial accounts and, since 1 January 2026, on crypto-assets. It binds reporting Swiss financial institutions, banks among them, and reporting crypto-asset service providers. In practice a bank registers with the Federal Tax Administration, obtains a self-certification when it opens an account and closes or blocks the account if it is still missing after 90 days, tells reportable persons by 31 January, reports the account data each year within six months and keeps records."
+      }
+    },
+    {
+      "key": "ch-sr-672-933-6",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2014/314/20140630/de/html/fedlex-data-admin-ch-eli-cc-2014-314-20140630-de-html-6.html",
+      "sourceLabel": "Fedlex, Bundesgesetz über die Umsetzung des FATCA-Abkommens zwischen der Schweiz und den Vereinigten Staaten (FATCA-Gesetz), SR 672.933.6, consolidated German text, Stand am 30. Juni 2014",
+      "text": {
+        "en": "The Swiss statute that carries out the FATCA agreement with the United States. It binds Swiss financial institutions, which report to the United States Internal Revenue Service themselves. In practice a bank registers with the IRS and meets the duties of its agreement with it for its whole customer base, identifies the US accounts it holds, opens a new US account only if the holder consents to reporting and supplies a US tax number within 90 days, reports US account data each year, and delivers the data to the Federal Tax Administration within 10 days when a group request arrives."
+      }
+    }
+  ]
+}
