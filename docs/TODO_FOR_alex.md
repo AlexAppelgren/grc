@@ -87,6 +87,16 @@ library takes their law in its own language. What needs you, most urgent first.
       seeded authority: the Versicherungsvermittlungsverordnung (economy ministry), the
       Zahlungskonto-Identitätsprüfungsverordnung (interior ministry) and the
       RechKredV, whose page names no issuer.
+- [ ] **A Latvian and a Swedish reader on Latvia's law text.** English and Swedish stand
+      beside the 118 Latvian sections, machine translations written for meaning. Worth a
+      reader's hour: "styrelse" for a valde and "förvaltningsråd" for a padome (the
+      Finland-Swedish pair for a two-tier board; "tillsynsråd" may read better in
+      Sweden); "statsstad" for a valstspilsēta, which has no Swedish counterpart; Latvian
+      act names kept in the nominative inside English and Swedish sentences. And a
+      lawyer's question: the Copyright Law (6. pants) frees laws and their official
+      consolidated versions, while Likumi.lv calls its systematised text informative;
+      whether that text is an official consolidated version decides whether
+      republishing it needs more.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as

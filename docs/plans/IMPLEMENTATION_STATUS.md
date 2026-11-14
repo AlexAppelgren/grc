@@ -448,9 +448,14 @@ the Netherlands, Austria and Switzerland.
   Swedish beside each; all 100 duties carry their text. Then Switzerland's
   (`provisions/ch-acts.json`): 167 articles of the consolidation in force on 2026-11-14,
   read from Fedlex's Akoma Ntoso XML and HTML and a third time from its DOCX, the German
-  text only, with English and Swedish beside each; all 140 duties carry their text.
+  text only, with English and Swedish beside each; all 140 duties carry their text. Then
+  Latvia's (`provisions/lv-acts.json`): 118 sections of the version Likumi.lv marks in force
+  on 2026-11-14, read from its desktop and mobile pages and a third time through its
+  document route, with English and Swedish beside each; all 136 duties carry their text.
+  Republication rests on the Latvian Copyright Law, 6. pants, which leaves laws and their
+  official consolidated versions outside copyright.
 - **In work on this branch:** the other five markets' regulations; and the law's own words
-  for the other four statute tranches, each provision in its original
+  for the other three statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only
