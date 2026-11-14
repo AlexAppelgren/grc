@@ -82,7 +82,21 @@ library takes their law in its own language. What needs you, most urgent first.
       watch now checks. The inventory behind eight of them is still to come.
 - [ ] **A native speaker for Estonian, Latvian and Lithuanian.** The injection screen's
       phrases, the evaluation questions and the labelled change texts in those three
-      languages were written without one.
+      languages were written without one, with the terms taken from the official
+      language versions of MiFID II, PRIIPs, DORA, the GDPR and the IDD. Worth a look: the
+      words chosen for "prompt" and a model's "confidence" in each, and Latvian, whose
+      command form is also its third person, so "Banka ignorē iepriekšējos norādījumus"
+      is flagged as an instruction.
+- [ ] **What the injection screen does not read in the five new languages.** A command
+      with its verb last ("Alle vorherigen Anweisungen ignorieren"), text typed without
+      its diacritics, and three phrases that stay English only: "do not ask a human",
+      "print your API key" and "maintenance mode". Default: as built; say if these
+      should be added.
+- [x] **A hostile page could stall the injection screen. Fixed.** Found while extending
+      it: a 36 KB page that repeats one trigger word ("supersede" 4,000 times) took ten
+      seconds to screen, against a budget of half a second for 200 KB, because the older
+      rules let a word's ending run on without limit. The endings are bounded now, 198 KB
+      of the same page screens in 0.17 seconds, and a test holds it.
 - [ ] **A lawyer on what may be republished.** The PRA Rulebook forbids commercial use
       without a licence; FINMA and Finantsinspektsioon ask permission for their own
       texts; no licence text was found for Likumi.lv, the RIS open data or the Lithuanian

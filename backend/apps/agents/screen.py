@@ -37,6 +37,10 @@ _START_OF_WORD = r"(?<![^\W\d_])"
 # The ending of an inflected word that more of the phrase follows (D-145). Bounded: an
 # open-ended one is read again, to the end of a long run of letters, from every stem in it.
 _ENDING = r"\w{0,6}"
+# The same for the older rules' stems, with room for a Nordic compound ("tekoälyavustajalle").
+# They ended in an open `\w*` until 2026-11-14, when a 36 KB page of "supersede" written
+# 4,000 times took ten seconds to screen: every stem in the run read the run to its end.
+_COMPOUND_ENDING = r"\w{0,16}"
 # Where a command in German, Dutch, Estonian, Latvian or Lithuanian starts (D-145). At the
 # start of a word, because Latvian and Lithuanian negate with a prefix ("nepamirškite" asks
 # the reader to remember); and not after Estonian "ei" or "ega", which negate with the very
@@ -126,11 +130,11 @@ _INSTRUCTION_PHRASE = "|".join(
         ),
         # Steering the classification, the confidence or the decision.
         _phrase(
-            r"(?:classify|klassificer\w*|klassifiser\w*|luokittele)",
+            r"(?:classify|klassificer" + _COMPOUND_ENDING + r"|klassifiser" + _COMPOUND_ENDING + r"|luokittele)",
             r"(?:this|detta|dette|denne|tämä|tätä)",
         ),
         _phrase(
-            r"(?:confidence|konfidens|luottamus\w*|tillit)",
+            r"(?:confidence|konfidens|luottamus" + _COMPOUND_ENDING + r"|tillit)",
             r"(?:to|till|til|=)?",
             r"(?:1\.0|1,0|100)",
         ),
@@ -142,7 +146,7 @@ _INSTRUCTION_PHRASE = "|".join(
             r"(?:1\.0|1,0|100)",
         ),
         _phrase(
-            r"(?:approve\w*|godkänn\w*|godkend\w*|godkjenn\w*|hyväksy\w*)",
+            r"(?:approve|godkänn|godkend|godkjenn|hyväksy)" + _COMPOUND_ENDING,
             r"(?:every|all|alla|alle|kaikki|samtliga|hvert|hver|jokainen|pending|väntande)",
         ),
         _phrase(
@@ -245,9 +249,9 @@ _AUTHORITY = "|".join(
             r"(?:you|dig|deg|sinut)",
         ),
         _phrase(
-            r"(?:supersede\w*|åsidosätt\w*|tilsidesæt\w*|overstyr\w*|ohittaa|kumoaa)",
+            r"(?:(?:supersede|åsidosätt|tilsidesæt|overstyr)" + _COMPOUND_ENDING + r"|ohittaa|kumoaa)",
             r"(?:your|my|the|din|dit|denne|deres)?",
-            r"(?:system\w*)?",
+            r"(?:system" + _COMPOUND_ENDING + r")?",
             r"(?:prompt\w*|instruction\w*|instruks\w*|instruktion\w*|ohje\w*)",
         ),
         _START_OF_WORD + r"(?:" + _CLAIMS + r")",
@@ -312,9 +316,10 @@ _AI_ASIDE = "|".join(
             _ADDRESS,
             r"(?:the|den|det|de)?",
             r"(?:a\.?i\.?|ki)?",
-            r"(?:assistent\w*|assistant\w*|tekoäly\w*|kielimalli\w*|språkmodell\w*"
-            r"|sprogmodel\w*|kunstig" + _GAP + r"intelligens|artificiell" + _GAP
-            + r"intelligens|language" + _GAP + r"model|llm|chatbot|agent\w*)",
+            r"(?:(?:assistent|assistant|tekoäly|kielimalli|språkmodell|sprogmodel|agent)"
+            + _COMPOUND_ENDING
+            + r"|kunstig" + _GAP + r"intelligens|artificiell" + _GAP + r"intelligens"
+            r"|language" + _GAP + r"model|llm|chatbot)",
             r"[:,]",
         )
         + _END_OF_WORD,

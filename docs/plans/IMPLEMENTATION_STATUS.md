@@ -403,7 +403,9 @@ the Netherlands, Austria and Switzerland.
   national original, by jurisdiction, so a United Kingdom text carries Swedish; the door's
   cap on official languages is nine; the README has each new market's key format and what
   its legal database allows.
-- **Built (agents):** the injection screen reads the five new languages (AGT-07). New
+- **Built (agents):** the injection screen reads the five new languages (AGT-07), and a
+  slow path in its older rules is closed: a page repeating one trigger word no longer
+  stalls it (36 KB took ten seconds, 198 KB now takes 0.17). New
   versions of all six definitions name the markets: watch-sweeper 3, library-confirmer 5,
   tenant-source-watch 2, scope-researcher 2, library-baseline 3 and library-translator 2,
   which says to carry the meaning and never translate word for word. The eight national
