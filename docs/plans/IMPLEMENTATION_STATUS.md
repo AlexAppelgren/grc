@@ -415,17 +415,19 @@ the Netherlands, Austria and Switzerland.
   the rows. The organisation screen suggests a time zone per market; the public page lists
   the twelve markets with their sources; the published API's descriptions and the design
   cards name the thirteen jurisdictions and ten languages.
-- **Content:** the statutes of six of the eight markets, each fact read on the market's
+- **Content:** the statutes of seven of the eight markets, each fact read on the market's
   official legal database on 2026-11-14 and logged, each act with its duties in plain
   words and a plain summary: Germany (`de-acts`, 24 statutes, 169 duties, from
   gesetze-im-internet.de), the United Kingdom (`gb-acts`, 19 Acts, 84 duties, from
   legislation.gov.uk), Switzerland (`ch-acts`, 20 acts, 140 duties, from Fedlex), Latvia
   (`lv-acts`, 20 laws, 136 duties, from Likumi.lv), Austria (`at-acts`, 20 statutes, 133
-  duties, from the RIS open-data interface) and Estonia (`ee-acts`, 17 acts, 133 duties,
-  from Riigi Teataja's interface). That is 120 statutes and 795 duties; the baseline now
-  holds 664 instruments and 2,689 obligations.
-- **In work on this branch:** the Netherlands' statutes; the six markets' regulations; and
-  the law's own words for the six statute tranches, each provision in its original
+  duties, from the RIS open-data interface), Estonia (`ee-acts`, 17 acts, 133 duties,
+  from Riigi Teataja's interface) and the Netherlands (`nl-acts`, 15 statutes, 100
+  duties, from the consolidated XML of the Basiswettenbestand, because wetten.overheid.nl
+  closed every read). That is 135 statutes and 895 duties; the baseline now holds 679
+  instruments and 2,789 obligations.
+- **In work on this branch:** the seven markets' regulations; and the law's own words
+  for the seven statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, the PRA

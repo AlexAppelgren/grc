@@ -5,9 +5,9 @@ on the day they were researched, and the core duties of each in our own words. T
 holds the EU, Sweden, Denmark, Norway and Finland in full. The eight home markets D-145
 added arrive tranche by tranche, as ADR 0070 stages them: the statutes and their duties
 of Germany (`de-acts`), the United Kingdom (`gb-acts`), Switzerland (`ch-acts`), Latvia
-(`lv-acts`), Austria (`at-acts`) and Estonia (`ee-acts`) are here, without the law's own
-words yet; their regulations, the Netherlands and Lithuania are not. The rules below hold
-for every market. It is not loaded by a seed. Each entry is a proposal
+(`lv-acts`), Austria (`at-acts`), Estonia (`ee-acts`) and the Netherlands (`nl-acts`) are
+here, without the law's own words yet; their regulations and Lithuania are not. The rules
+below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then

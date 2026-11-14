@@ -9,15 +9,16 @@ any of them as a market it operates in or watches, the watch checks their source
 library takes their law in its own language. What needs you, most urgent first.
 
 - [ ] **Approve the home markets' proposals in the library queue.** After the deploy the
-      baseline files 120 statutes for six markets (Germany 24, the United Kingdom 19,
-      Switzerland 20, Latvia 20, Austria 20, Estonia 17), then their 795 obligations and
-      120 summaries once each statute is approved, like every baseline record. The
+      baseline files 135 statutes for seven markets (Germany 24, the United Kingdom 19,
+      Switzerland 20, Latvia 20, Austria 20, Estonia 17, the Netherlands 15), then their
+      895 obligations and 135 summaries once each statute is approved, like every
+      baseline record. The
       regulations and the law's own words follow the same way as they land.
 - [ ] **What the starting inventory still lacks.** You asked for the new markets to hold
       everything the first ones hold. The Nordics hold 65 to 96 regulations and 238 to 383
-      obligations each, with the law's own words. Six new markets hold their statutes (17
-      to 24 each); their regulations, the Netherlands' statutes and the law's own words
-      with English and Swedish are in work on this branch. Three things stay out until you
+      obligations each, with the law's own words. Seven new markets hold their statutes (15
+      to 24 each); their regulations and the law's own words with English and Swedish
+      are in work on this branch. Three things stay out until you
       act: Lithuania, whose register refuses the build session (below); the PRA Rulebook's
       text, which needs a licence from the PRA, and the FCA Handbook, which has no
       interface for its text; and the supervisors' circulars (BaFin's MaRisk, FINMA's and
@@ -50,6 +51,17 @@ library takes their law in its own language. What needs you, most urgent first.
         1 June 2001 by its own § 66 and 1 January 2002 in the gazette's header, and the
         record carries the first; the Eesti Pank Act was read and left out, because it
         gives powers and places no duty on a bank.
+      - The Netherlands: wetten.overheid.nl closed every read from the build session,
+        so each record's source is the consolidated XML file of the act (the Wft's is
+        9.9 MB) with the article's Juriconnect address in its label, and a reviewer
+        opens a file where the other markets open a page; the Sanctiewet 1977 holds no
+        duty, because the duties sit in its regulations; consumer credit (BW Boek 7,
+        Title 2a) still carried out the 2008 directive on 14 November and needs a
+        re-read after 20 November 2026; consumer rights, bans and the supervisor's
+        charges are written as duties (BW 7:66, 7:68, 6:193b, Whc 8.3 and 8.8, Wbft
+        art. 14 and 15); FATCA was not confirmed in the articles read, so no record
+        claims it; the Wft is capped at 14 duties and the banker's oath (3:17b) and
+        the duty of care (4:24a) are among those left for a later tranche.
 - [ ] **Publish the new agent versions in the Platform console**, each agent's next
       version in turn: watch-sweeper 2 then 3, library-confirmer 3, 4 then 5,
       tenant-source-watch 2, scope-researcher 2, library-baseline 2 then 3,
