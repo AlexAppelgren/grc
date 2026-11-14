@@ -472,8 +472,13 @@ the Netherlands, Austria and Switzerland.
   duties). Then Austria's (`at-verordnungen-2`): 19 regulations with 90 duties, 15 of the
   FMA (the consumer credit reporting, MiCA, covered bond, fund, Bausparkassen and derivative
   risk regulations among them), 3 of the Oesterreichische Nationalbank (AnaCredit, ZABIL,
-  payment system security) and 1 of the Finance Minister. The baseline holds 941
-  instruments and 3,881 obligations.
+  payment system security) and 1 of the Finance Minister. Then Estonia's
+  (`ee-maarused-2`): 28 regulations with 82 duties, 12 of Eesti Pank (the systemic risk
+  buffer, the balance of payments and off-balance-sheet reports, operational risk reports,
+  accounts at Eesti Pank, payment orders, euro banknotes) and 16 of the Minister of Finance
+  (e-money and payment institution rules, fund and credit provider reports, the covered
+  bond register, nominee accounts, investor protection contributions, the depositor
+  information sheet). The baseline holds 969 instruments and 3,963 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
