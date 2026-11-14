@@ -33,12 +33,18 @@ library takes their law in its own language. What needs you, most urgent first.
       (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`). Confirm the six names and
       addresses, and the news page of Lietuvos bankas, which is registered as its home
       page. The watch agent may be refused the same way.
-- [ ] **Six sources cannot be read as a plain page.** Riigi Teataja, Fedlex and the FCA
-      Handbook serve no text without a browser; the Austrian RIS and FMA, the Lithuanian
-      register and Lietuvos bankas refuse an automated read. All are registered, and a
-      run's check of one will fail or find nothing until the runner reads Riigi Teataja,
-      Fedlex and the RIS through the interfaces the review names. Default: leave them
-      registered so the coverage log shows the gap.
+- [ ] **Three sources still cannot be read by a program.** You asked for a way round the
+      pages that refuse or serve nothing. Where the publisher has a feed or a data
+      interface of its own, that address is now the one registered: Austria's legal
+      database and its FMA, Switzerland's Fedlex, and the FCA's publications feed beside
+      its Handbook. Left: Riigi Teataja has no list of new acts that was found, the FCA
+      Handbook has no interface for its own text, and Lithuania's open data refused the
+      build session's network. Run one check of the Lithuanian sources from production;
+      if they are refused there too, ask the Office of the Seimas and Lietuvos bankas to
+      admit the watch's address. A challenge page is never got round by a mirror or a
+      cache, as the agents' rules already say
+      (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`, "Where a page cannot be read by
+      a program").
 - [ ] **Move International to the end of the jurisdiction list** on the deployed
       database: file one jurisdiction proposal in the console that gives it a sort order
       after Switzerland's. A new database has it last already; a deployed one keeps it

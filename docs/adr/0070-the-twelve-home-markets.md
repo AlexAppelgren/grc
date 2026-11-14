@@ -51,8 +51,9 @@ markets.
 5. **Authorities and watched sources** for the eight markets are filed with the same change:
    64 authorities (each market's legislature, government and finance ministry, its financial
    supervisors and central bank, its data protection, tax and financial intelligence
-   authorities) and 39 sources (its official legal database and each supervisor's news page
-   and register of binding rules). Each was read on the body's own site, or in an official
+   authorities) and 40 sources (its official legal database and each supervisor's news page
+   and register of binding rules, at the publisher's own feed or data interface where its
+   page cannot be read by a program). Each was read on the body's own site, or in an official
    directory where the site refused the read, which is the case for six of Lithuania's seven
    bodies (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
 6. **Everything that lists a market or a language follows the rows**: the markets screen,
@@ -83,10 +84,14 @@ markets.
 - The supervisor's licence register is read for Sweden alone, as before (ADR 0066). GLEIF
   covers every market; the EBA register gives branches inside the EEA only, so a branch in
   the United Kingdom or Switzerland comes from GLEIF or is entered by hand.
-- Six of the registered sources cannot be read as a plain page: Riigi Teataja, Fedlex and
-  the FCA Handbook serve no text without a browser, and the Austrian RIS and FMA and the
-  Lithuanian register refuse an automated read. Riigi Teataja, Fedlex and the RIS have an
-  interface that serves the same law, which the runner does not use yet.
+- Some sources cannot be read as a plain page. Where the publisher offers a feed or a data
+  interface of its own, that address is the one registered: the Austrian RIS's open-data
+  interface, the Austrian FMA's feed, Fedlex's query endpoint and the FCA's publications
+  feed. A blocked page is never worked around by a mirror, a cache or a retry from elsewhere
+  (AGT-07, the confirmer's rule). Still without a way in from the build session: Riigi
+  Teataja's list of new acts, the FCA Handbook's own text, and every Lithuanian source,
+  whose open data is refused to the build session's network
+  (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
 - Not done: French and Italian for Switzerland; Swedish beside EU texts, which EUR-Lex
   publishes officially; a sentence splitter that knows German capitalisation, so the "what
   changed" view may cut a German sentence at "1. Januar".
