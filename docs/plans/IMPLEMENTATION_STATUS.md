@@ -465,9 +465,12 @@ the Netherlands, Austria and Switzerland.
   (`provisions/ee-acts.json`): 137 sections of the versions in force on 2026-11-14, read
   from Riigi Teataja's XML and plain text and a third time from its printed PDF, with the
   gazette's amendment notes kept in place and English and Swedish beside each; all 133
-  duties carry their text.
+  duties carry their text. Then Austria's (`provisions/at-acts.json`): 124 sections of the
+  versions in force on 2026-11-14 (the 2026 consumer credit act in its adopted wording from
+  20 November), read from the RIS open-data store's XML and HTML and a third time from its
+  PDF, with English and Swedish beside each; all 133 duties carry their text.
 - **In work on this branch:** the regulations of Latvia, Austria and Estonia; and the
-  law's own words for Germany's and Austria's statutes and for the regulations, each
+  law's own words for Germany's statutes and for the regulations, each
   provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
