@@ -10,7 +10,8 @@ here. Four of them also carry the law's own words: the United Kingdom's
 (`provisions/gb-acts.json`, Swedish beside the English original) and the Netherlands',
 Switzerland's and Latvia's (`provisions/nl-acts.json`, `ch-acts.json` and `lv-acts.json`,
 English and Swedish beside the Dutch, the German and the Latvian). The United Kingdom's
-statutory instruments (`gb-si`) and Germany's regulations (`de-verordnungen`) are here too;
+statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`) and the
+Netherlands' decrees and regulations (`nl-besluiten`) are here too;
 the other markets' law text and regulations, and Lithuania, are not here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console

@@ -100,6 +100,24 @@ library takes their law in its own language. What needs you, most urgent first.
       consolidated versions, while Likumi.lv calls its systematised text informative;
       whether that text is an official consolidated version decides whether
       republishing it needs more.
+- [ ] **The Dutch sanctions regulations need their maker seeded.** The Sanctieregelingen
+      that freeze assets and bar funds (terrorism 2002, Ukraine 2014, Belarus 2006, ISIS
+      and Al Qaida 2016, the Russian Federation 2024 and about forty more) are made by the
+      Minister of Foreign Affairs with the Minister of Finance. The library seeds no
+      authority for that minister, so none was filed; the Dutch tranche holds De
+      Nederlandsche Bank's Regeling toezicht Sanctiewet 1977 and the decree on reporting
+      terrorist financing instead. Germany's tranche left out three regulations for the
+      same reason (the economy and the interior ministries). Default: seed the Dutch
+      Ministerie van Buitenlandse Zaken, read on its own site, and file the five largest
+      sanctions regimes in a later tranche.
+- [ ] **A Dutch lawyer on the decrees and regulations.** The researcher's own doubts: the
+      PEP and beneficial-owner categories of the Uitvoeringsbesluit Wwft 2018 are
+      definitions written as duties; UrWwft art. 4 names documents that suffice, not the
+      only ones allowed; the mortgage risk-weight floor for internal-model banks (art.
+      2:2 of the CRD and CRR regulation) lapses on 1 December 2026 and was left out; two
+      regulations made by the AFM and De Nederlandsche Bank together are filed under De
+      Nederlandsche Bank; the AFM's CFD and turbo product-intervention decisions are
+      filed as authority regulations.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
