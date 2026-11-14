@@ -478,7 +478,15 @@ the Netherlands, Austria and Switzerland.
   accounts at Eesti Pank, payment orders, euro banknotes) and 16 of the Minister of Finance
   (e-money and payment institution rules, fund and credit provider reports, the covered
   bond register, nominee accounts, investor protection contributions, the depositor
-  information sheet). The baseline holds 969 instruments and 3,963 obligations.
+  information sheet). Then Germany's (`de-verordnungen-2`): 20 regulations with 95 duties,
+  13 of BaFin (the tied agents, refinancing register, voting rights, net short positions,
+  investment firm notifications, owner control and remuneration, KAGB outsourcing,
+  Bausparkassen and crypto-asset market regulations among them), 6 of the finance ministry
+  and the Bundesregierung's restructuring fund regulation. Gesetze im Internet reset almost
+  every connection from about 15:20 UTC, so only 10 of the 114 section pages the duties
+  cite could be fetched again; the text of every cited section was compared with the
+  regulation's XML and its full-text page instead. The baseline holds 991 instruments and
+  4,060 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
