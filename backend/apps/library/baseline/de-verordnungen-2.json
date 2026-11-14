@@ -1,0 +1,2391 @@
+{
+ "tranche": "de-verordnungen-2",
+ "researchedOn": "2026-11-14",
+ "instruments": [
+  {
+   "title": "Add KWGWpIGVermV, the German regulation on tied agents and their public register (KWG-WpIG-Vermittlerverordnung)",
+   "source": "https://www.gesetze-im-internet.de/kwgvermv/BJNR278500007.html",
+   "sourceLabel": "Gesetze im Internet, KWG-WpIG-Vermittlerverordnung (KWGWpIGVermV), BGBl. I S. 2785, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 24 Abs. 4 Satz 1 und 3 in conjunction with § 2 Abs. 10 Satz 4 und 7 KWG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Zuletzt geändert durch Art. 1 V v. 10.11.2022 I 2021); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-kwgvermv",
+    "titles": {
+     "de": "Verordnung über die vertraglich gebundenen Vermittler und das öffentliche Register nach § 2 Absatz 10 Satz 5 des Kreditwesengesetzes und nach § 3 Absatz 2 Satz 5 des Wertpapierinstitutsgesetzes (KWG-WpIG-Vermittlerverordnung - KWGWpIGVermV)",
+     "en": "Tied Agents Regulation under the Banking Act and the Investment Firms Act"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "KWGWpIGVermV",
+    "officialRef": "KWG-WpIG-Vermittlerverordnung vom 4. Dezember 2007 (BGBl. I S. 2785)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify tied agents only through BaFin's electronic procedure after registering for it",
+     "source": "https://www.gesetze-im-internet.de/kwgvermv/__1.html",
+     "sourceLabel": "Gesetze im Internet, KWG-WpIG-Vermittlerverordnung (KWGWpIGVermV), BGBl. I S. 2785, § 1",
+     "payload": {
+      "key": "obl-de-kwgwpigvermv-electronic-notification",
+      "titles": {
+       "en": "Notify tied agents only through BaFin's electronic procedure after registering for it"
+      },
+      "summaries": {
+       "en": "An institution that is liable for a tied agent must file its notifications on the agent, and on changes, by remote data transmission through the electronic procedure BaFin provides. Before using it for the first time the institution registers with BaFin through BaFin's website and receives the certificates it needs."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the set details of each tied agent and report changes and the end of its work without delay",
+     "source": "https://www.gesetze-im-internet.de/kwgvermv/__2.html",
+     "sourceLabel": "Gesetze im Internet, KWG-WpIG-Vermittlerverordnung (KWGWpIGVermV), BGBl. I S. 2785, § 2",
+     "payload": {
+      "key": "obl-de-kwgwpigvermv-notification-content-and-changes",
+      "titles": {
+       "en": "Give the set details of each tied agent and report changes and the end of its work without delay"
+      },
+      "summaries": {
+       "en": "The notification of a tied agent names the agent with the identifying details the regulation lists, which differ for a natural person and for a company and its managers, and the day the agent starts working for the institution. Any change to those details is reported without delay as a change notification, and when the agent stops working for the institution, the institution reports the day it stopped."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Confirm in the notification that the tied agent is competent and reliable",
+     "source": "https://www.gesetze-im-internet.de/kwgvermv/__3.html",
+     "sourceLabel": "Gesetze im Internet, KWG-WpIG-Vermittlerverordnung (KWGWpIGVermV), BGBl. I S. 2785, § 3",
+     "payload": {
+      "key": "obl-de-kwgwpigvermv-fitness-confirmation",
+      "titles": {
+       "en": "Confirm in the notification that the tied agent is competent and reliable"
+      },
+      "summaries": {
+       "en": "An institution with its registered office in Germany must confirm, in its notification of a tied agent, that the agent has the professional competence and is reliable."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep the tied agent data in BaFin's public register complete, correct and current",
+     "source": "https://www.gesetze-im-internet.de/kwgvermv/__5.html",
+     "sourceLabel": "Gesetze im Internet, KWG-WpIG-Vermittlerverordnung (KWGWpIGVermV), BGBl. I S. 2785, § 5",
+     "payload": {
+      "key": "obl-de-kwgwpigvermv-register-data-accuracy",
+      "titles": {
+       "en": "Keep the tied agent data in BaFin's public register complete, correct and current"
+      },
+      "summaries": {
+       "en": "The liable institution is responsible for the completeness, correctness and currency of the data on its tied agents that BaFin publishes in the register. It must check those data continuously and make any correction through the electronic procedure."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5",
+      "dutyType": "record_keeping",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add RefiRegV, the German regulation on the form of the refinancing register under the Banking Act and how entries are recorded (Refinanzierungsregisterverordnung)",
+   "source": "https://www.gesetze-im-internet.de/refiregv/BJNR324100006.html",
+   "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 22d Abs. 1 Satz 2 KWG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 8 V v. 4.10.2022 I 1614); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-refiregv",
+    "titles": {
+     "de": "Verordnung über die Form des Refinanzierungsregisters nach dem Kreditwesengesetz sowie die Art und Weise der Aufzeichnung (Refinanzierungsregisterverordnung - RefiRegV)",
+     "en": "Refinancing Register Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "RefiRegV",
+    "officialRef": "Refinanzierungsregisterverordnung vom 18. Dezember 2006 (BGBl. I S. 3241)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Head the refinancing register and each of its sections as set and list the sections",
+     "source": "https://www.gesetze-im-internet.de/refiregv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, § 4",
+     "payload": {
+      "key": "obl-de-refiregv-register-headings",
+      "titles": {
+       "en": "Head the refinancing register and each of its sections as set and list the sections"
+      },
+      "summaries": {
+       "en": "The register keeper must head the register as a refinancing register with its own name and, as a rule, the name of the party obliged to transfer. Each separate section that the Banking Act requires for a refinancing transaction or for each obliged party carries its number and the name of that transaction or party, and the register lists the sections it holds, with a list of subsections in each section."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Enter each asset with a running number on the set form and never back-date an entry",
+     "source": "https://www.gesetze-im-internet.de/refiregv/__5.html",
+     "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, § 5",
+     "payload": {
+      "key": "obl-de-refiregv-entries-on-form",
+      "titles": {
+       "en": "Enter each asset with a running number on the set form and never back-date an entry"
+      },
+      "summaries": {
+       "en": "Each asset entered in the register gets a running number within its section or subsection that is never reused after deletion, and back-dated entries are not allowed. Entries follow form RR in the annex column by column: the asset and the claim or charge with its details, the party entitled to the transfer, the date and time of entry, deletion notes with the date and time of deletion and the administrator's consent where an error is corrected, and remarks, including a note when a refinancing transaction has ended without deletion."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Record register entries permanently so that later changes and deletions stay visible",
+     "source": "https://www.gesetze-im-internet.de/refiregv/__3.html",
+     "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, § 3",
+     "payload": {
+      "key": "obl-de-refiregv-permanent-entries",
+      "titles": {
+       "en": "Record register entries permanently so that later changes and deletions stay visible"
+      },
+      "summaries": {
+       "en": "Entries must be recorded permanently in a way that shows any later change or deletion at all times, and technical and organisational measures must keep the original content ascertainable. This no longer applies, except for the running number and the deletion notes, to entries deleted completely and properly at least ten years ago."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Protect the refinancing register against unauthorised access and physical damage",
+     "source": "https://www.gesetze-im-internet.de/refiregv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, § 7",
+     "payload": {
+      "key": "obl-de-refiregv-register-protection",
+      "titles": {
+       "en": "Protect the refinancing register against unauthorised access and physical damage"
+      },
+      "summaries": {
+       "en": "The register keeper must give the register special protection against unauthorised access and against damage or destruction from outside events such as fire or water."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Run an electronic refinancing register on secure systems that keep it readable and audit-proof",
+     "source": "https://www.gesetze-im-internet.de/refiregv/__8.html",
+     "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, § 8 und § 9 Abs. 1",
+     "payload": {
+      "key": "obl-de-refiregv-electronic-register-controls",
+      "titles": {
+       "en": "Run an electronic refinancing register on secure systems that keep it readable and audit-proof"
+      },
+      "summaries": {
+       "en": "An electronic register must stay reproducible unchanged and readable, be archived in an audit-proof way, show the entries completely on screen and in print, and be printable in full at any time. The systems must be state of the art and meet data protection and security requirements, in particular secure identification and authentication, managed and checked access rights, audit-proof logging of every access, safe restoration, detection of falsified data, prompt reporting of malfunctions and secure data transfer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 8 und § 9 Abs. 1",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep a daily updated backup of an electronic refinancing register on German data carriers",
+     "source": "https://www.gesetze-im-internet.de/refiregv/__9.html",
+     "sourceLabel": "Gesetze im Internet, Refinanzierungsregisterverordnung (RefiRegV), BGBl. I S. 3241, § 9 Abs. 2",
+     "payload": {
+      "key": "obl-de-refiregv-electronic-register-backup",
+      "titles": {
+       "en": "Keep a daily updated backup of an electronic refinancing register on German data carriers"
+      },
+      "summaries": {
+       "en": "The register keeper holds at least one complete backup copy of the electronic register on another data carrier, brought up to date at least at the end of every working day, and keeps the original and at least one backup on data carriers in Germany. Where the technical operation is outsourced, the provider must be bound to hand the records over in a standard processable form to the trustee whom the Banking Act appoints for the register if the register keeper becomes insolvent."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 9 Abs. 2",
+      "dutyType": "technical",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add StimmRMV, the German regulation on how notifications of voting rights from shares and other instruments are sent (Stimmrechtsmitteilungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/stimmrmv/BJNR172300018.html",
+   "sourceLabel": "Gesetze im Internet, Stimmrechtsmitteilungsverordnung (StimmRMV), BGBl. I S. 1723, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 33 Abs. 5 Satz 1, § 38 Abs. 5 Satz 1 and § 39 Abs. 2 Satz 1 WpHG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 1 V v. 2.6.2020 I 1217); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-stimmrmv",
+    "titles": {
+     "de": "Verordnung zur Mitteilung der Stimmrechte aus Aktien und anderen Instrumenten nach dem Wertpapierhandelsgesetz (Stimmrechtsmitteilungsverordnung - StimmRMV)",
+     "en": "Voting Rights Notification Regulation under the Securities Trading Act"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "StimmRMV",
+    "officialRef": "Stimmrechtsmitteilungsverordnung vom 2. Oktober 2018 (BGBl. I S. 1723)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send voting rights notifications to BaFin only through its reporting platform",
+     "source": "https://www.gesetze-im-internet.de/stimmrmv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Stimmrechtsmitteilungsverordnung (StimmRMV), BGBl. I S. 1723, § 2, § 4 und § 5",
+     "payload": {
+      "key": "obl-de-stimmrmv-bafin-platform-channel",
+      "titles": {
+       "en": "Send voting rights notifications to BaFin only through its reporting platform"
+      },
+      "summaries": {
+       "en": "A notification of voting rights from shares or other instruments under §§ 33, 38 or 39 of the Securities Trading Act must be sent electronically. To BaFin it goes only through the voting rights procedure on BaFin's reporting and publication platform, which needs prior registration on the platform and admission to the procedure by BaFin. If a technical failure of the platform makes that impossible, the notification is sent in writing in the original or by fax, which meets the deadline."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2, § 4 und § 5",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Send voting rights notifications to the issuer as a marked XML record and keep the transfer secure",
+     "source": "https://www.gesetze-im-internet.de/stimmrmv/__6.html",
+     "sourceLabel": "Gesetze im Internet, Stimmrechtsmitteilungsverordnung (StimmRMV), BGBl. I S. 1723, § 6",
+     "payload": {
+      "key": "obl-de-stimmrmv-issuer-transmission",
+      "titles": {
+       "en": "Send voting rights notifications to the issuer as a marked XML record and keep the transfer secure"
+      },
+      "summaries": {
+       "en": "A notification sent electronically to the issuer must hold the information the annex to the Securities Trading Notification Regulation requires as an XML record and be marked as a voting rights notification. The notifying party answers for the integrity and confidentiality of the transfer unless it uses a channel the issuer provides; if the issuer's receiving systems fail, it sends the notification in writing in the original or by fax."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Name the person responsible for a notification sent electronically",
+     "source": "https://www.gesetze-im-internet.de/stimmrmv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Stimmrechtsmitteilungsverordnung (StimmRMV), BGBl. I S. 1723, § 7",
+     "payload": {
+      "key": "obl-de-stimmrmv-responsible-person-name",
+      "titles": {
+       "en": "Name the person responsible for a notification sent electronically"
+      },
+      "summaries": {
+       "en": "Where a voting rights notification is sent electronically, the full name of the natural person who answers for its content takes the place of the handwritten signature a written notification needs."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add NLPosV, the German regulation on how net short positions are notified to BaFin and published (Netto-Leerverkaufspositionsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/nlposv_2012/BJNR269900012.html",
+   "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 30h Abs. 4 Satz 1 Nr. 1 und Nr. 1a WpHG in the version of 2012, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Zuletzt geändert durch Art. 24 Abs. 11 G v. 23.6.2017 I 1693); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-nlposv-2012",
+    "titles": {
+     "de": "Verordnung zur Konkretisierung der Mitteilungs- und Veröffentlichungspflichten für Netto-Leerverkaufspositionen (Netto-Leerverkaufspositionsverordnung - NLPosV)",
+     "en": "Net Short Positions Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "NLPosV",
+    "officialRef": "Netto-Leerverkaufspositionsverordnung vom 17. Dezember 2012 (BGBl. I S. 2699)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify net short positions to BaFin through its electronic reporting platform on the EU forms",
+     "source": "https://www.gesetze-im-internet.de/nlposv_2012/__5.html",
+     "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, § 2 und § 5",
+     "payload": {
+      "key": "obl-de-nlposv-electronic-notification",
+      "titles": {
+       "en": "Notify net short positions to BaFin through its electronic reporting platform on the EU forms"
+      },
+      "summaries": {
+       "en": "A holder of a net short position that must be notified under Articles 5, 7 or 8 of the EU Short Selling Regulation sends the notification to BaFin electronically through BaFin's reporting platform, using one of the procedures offered there and the forms in Annexes II and III of Delegated Regulation (EU) No 826/2012. If technical problems prevent it, the holder notifies by fax, which meets the deadline, and repeats the notification electronically as soon as the problem is solved."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 und § 5",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give BaFin the position holder's identifying details with the first notification",
+     "source": "https://www.gesetze-im-internet.de/nlposv_2012/__3.html",
+     "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, § 3",
+     "payload": {
+      "key": "obl-de-nlposv-holder-identification",
+      "titles": {
+       "en": "Give BaFin the position holder's identifying details with the first notification"
+      },
+      "summaries": {
+       "en": "At the latest with its first notification, the position holder sends BaFin the identifying details the regulation lists: for a natural person name, address, birth details and contact data with a copy of an official photo identity document, and for a legal person name, BIC where it has one, head office address, state of seat, contact data and, if it has no BIC, its BaFin ID, with an extract from the commercial or a comparable register. Changes to the main details are reported in writing at the latest after the next notification."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Appoint a contact person for net short position notifications with a signed power of attorney",
+     "source": "https://www.gesetze-im-internet.de/nlposv_2012/__4.html",
+     "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, § 4",
+     "payload": {
+      "key": "obl-de-nlposv-contact-person",
+      "titles": {
+       "en": "Appoint a contact person for net short position notifications with a signed power of attorney"
+      },
+      "summaries": {
+       "en": "The position holder appoints at least one natural person who makes the notifications for it and answers questions, at the latest with the first notification, and proves the appointment with a power of attorney it signs and sends to BaFin by fax or post. It tells BaFin in writing without delay when the power is revoked or ends, and the contact person gives BaFin its own details and reports changes with the next notification through the electronic procedure."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Apply for admission to BaFin's net short position reporting procedure before the first notification",
+     "source": "https://www.gesetze-im-internet.de/nlposv_2012/__6.html",
+     "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, § 6",
+     "payload": {
+      "key": "obl-de-nlposv-platform-admission",
+      "titles": {
+       "en": "Apply for admission to BaFin's net short position reporting procedure before the first notification"
+      },
+      "summaries": {
+       "en": "At the latest with the first notification, the contact person applies for admission to the electronic reporting procedure: registering on BaFin's website, using the personal user name and password it receives for all later notifications without passing them on, signing up on the platform, and sending the signed printout with the identity document, the register extract and the power of attorney to BaFin by fax or post without delay. Once admitted, holder and contact person use the BaFin ID they receive for all future notifications."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Publish net short positions in shares in the Federal Gazette through its operator's platform",
+     "source": "https://www.gesetze-im-internet.de/nlposv_2012/__8.html",
+     "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, § 8, § 9 und § 10",
+     "payload": {
+      "key": "obl-de-nlposv-federal-gazette-publication",
+      "titles": {
+       "en": "Publish net short positions in shares in the Federal Gazette through its operator's platform"
+      },
+      "summaries": {
+       "en": "A holder of a net short position in shares that must be published under Article 6 of the EU Short Selling Regulation publishes it in the Federal Gazette by sending the completed EU forms to the Gazette's operator through the procedure on its electronic service platform. Before the first publication the holder identifies itself to the operator, during its usual business hours, and names a single contact person."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 8, § 9 und § 10",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Use only a suitable third party to notify or publish and stay answerable for timely filing",
+     "source": "https://www.gesetze-im-internet.de/nlposv_2012/__11.html",
+     "sourceLabel": "Gesetze im Internet, Netto-Leerverkaufspositionsverordnung (NLPosV), BGBl. I S. 2699, § 11, § 12 und § 13",
+     "payload": {
+      "key": "obl-de-nlposv-third-party-reporting",
+      "titles": {
+       "en": "Use only a suitable third party to notify or publish and stay answerable for timely filing"
+      },
+      "summaries": {
+       "en": "A position holder may have its notifications and publications made at its own cost by an external third party only if that party ensures lasting compliance with the notification and publication duties. The third party identifies itself and names a contact person, and sends BaFin or the Gazette's operator the holder's details and the holder's confirmation that it may act. The holder has met its duty only once the third party has made the notification and any publication completely and correctly within the deadline in Article 9 of the EU Short Selling Regulation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 11, § 12 und § 13",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add WpI-AnzV, the German regulation on notifications and the submission of documents under the Investment Firms Act (Wertpapierinstituts-Anzeigenverordnung)",
+   "source": "https://www.gesetze-im-internet.de/wpi-anzv/BJNR15D0A0023.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 14 Abs. 2 und 3, § 40 Abs. 4, § 66 Abs. 1 Satz 3 and § 68 Abs. 2 WpIG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Zuletzt geändert durch Art. 19 G v. 25.3.2026 I Nr. 81); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-wpi-anzv",
+    "titles": {
+     "de": "Verordnung über die Anzeigen und die Vorlage von Unterlagen nach dem Wertpapierinstitutsgesetz (Wertpapierinstituts-Anzeigenverordnung - WpI-AnzV)",
+     "en": "Notification Regulation under the Investment Firms Act"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "WpI-AnzV",
+    "officialRef": "Wertpapierinstituts-Anzeigenverordnung vom 7. Dezember 2023 (BGBl. 2023 I Nr. 349)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities",
+    "implementsNote": "IFD, Directive (EU) 2019/2034 (the directive the official note on EU law on Gesetze im Internet names)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File Investment Firms Act notifications with BaFin and the responsible Bundesbank regional office",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__1.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 1",
+     "payload": {
+      "key": "obl-de-wpi-anzv-filing-channel",
+      "titles": {
+       "en": "File Investment Firms Act notifications with BaFin and the responsible Bundesbank regional office"
+      },
+      "summaries": {
+       "en": "An investment firm files the notifications and documents that the Investment Firms Act and the EU authorisation standards for investment firms require, and that this regulation details, in one copy each with BaFin and with the regional office of the Deutsche Bundesbank responsible for it, unless the regulation says otherwise. Investment holding companies and mixed financial holding companies file with the regional office where their parent has its seat, and an electronic channel is used whenever BaFin or the Bundesbank asks for it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Obtain a legal entity identifier for supervisory reporting and keep it valid",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 2",
+     "payload": {
+      "key": "obl-de-wpi-anzv-legal-entity-identifier",
+      "titles": {
+       "en": "Obtain a legal entity identifier for supervisory reporting and keep it valid"
+      },
+      "summaries": {
+       "en": "Investment firms, investment holding companies and mixed financial holding companies need a legal entity identifier issued within an internationally recognised identification system. They report it in writing to BaFin and the Bundesbank without delay after obtaining it, or on becoming such a firm, keep it valid by paying its fee, and tell the issuing body without delay of a new name, seat, head office address, legal form or commercial register entry; the parent makes sure every group member it reports for does the same."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify changes in management and key functions on form WpI-PV with a CV, reliability declaration and certificate of conduct",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, §§ 4 bis 8",
+     "payload": {
+      "key": "obl-de-wpi-anzv-management-change-evidence",
+      "titles": {
+       "en": "Notify changes in management and key functions on form WpI-PV with a CV, reliability declaration and certificate of conduct"
+      },
+      "summaries": {
+       "en": "An investment firm uses the form in Annex 1 to notify the intended and completed authorisation of a person to represent it alone and its withdrawal with the reasons, the completed appointment of a managing director or board member and, in a large investment firm, the filling of a key function and the holder's departure with the reasons. For a person to be authorised to represent it alone or to hold a key function it attaches a signed, dated CV accurate to the month with references for the last three years, the reliability declaration on the form in Annex 4 signed by the person, and a certificate of conduct no older than three months, and by filing confirms the documents are correct to its knowledge. If the completed authorisation or appointment is notified more than twelve months after the intention, the documents are filed again in updated form."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§§ 4 bis 8",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify a material outsourcing with the listed contract data through BaFin's platform",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__13.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 13 Abs. 1, 3 und 5",
+     "payload": {
+      "key": "obl-de-wpi-anzv-outsourcing-notification-content",
+      "titles": {
+       "en": "Notify a material outsourcing with the listed contract data through BaFin's platform"
+      },
+      "summaries": {
+       "en": "A notification of an intended or completed material outsourcing gives the twenty items the section lists, such as a reference number per contract, the term and notice periods, the activities and data outsourced, the provider and its parent, where the service is provided and data are stored, the cloud model where relevant, the dates and results of the materiality and risk assessments, sub-outsourcing, how replaceable the provider is and the annual budget. It is filed electronically through BaFin's reporting and publication platform, the contract is handed over on request, and a small investment firm notifies only outsourcing of cloud or other IT services."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 13 Abs. 1, 3 und 5",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify material changes to and serious incidents in an existing material outsourcing",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__13.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 13 Abs. 2 und 4",
+     "payload": {
+      "key": "obl-de-wpi-anzv-outsourcing-changes-and-incidents",
+      "titles": {
+       "en": "Notify material changes to and serious incidents in an existing material outsourcing"
+      },
+      "summaries": {
+       "en": "An investment firm notifies material changes to an existing material outsourcing, such as important contract changes, a changed materiality, risk or replaceability assessment, new sub-outsourcing of material parts, a later move of the service to a third country, termination or a change of control over the provider. It also notifies serious incidents, among them a lasting interruption of the service, serious breaches of contract, law or data protection rules by the provider, significant security incidents, weak contingency management or resources at the provider and its threatened insolvency."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 13 Abs. 2 und 4",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify holdings in the investment firm on the set form and in a yearly collective return by 15 June",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__15.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 15",
+     "payload": {
+      "key": "obl-de-wpi-anzv-holdings-in-the-firm",
+      "titles": {
+       "en": "Notify holdings in the investment firm on the set form and in a yearly collective return by 15 June"
+      },
+      "summaries": {
+       "en": "An investment firm notifies each holding in it on the form in Annex 8, and again when a change reaches, exceeds or falls below 20, 30 or 50 per cent of voting rights or capital, when it becomes or stops being a subsidiary or sister undertaking, or when shares move to or between intermediate holders. It also files a collective return of the holdings in it as at 31 December by 15 June of the following year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 15",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send the Bundesbank quarterly financial information on the set forms by the set dates",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__19.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 19",
+     "payload": {
+      "key": "obl-de-wpi-anzv-quarterly-financial-information",
+      "titles": {
+       "en": "Send the Bundesbank quarterly financial information on the set forms by the set dates"
+      },
+      "summaries": {
+       "en": "A small or medium-sized investment firm reports its profit and loss account and its statement of assets each quarter on the forms in Annexes 9 and 10, as at the last calendar day of the quarter. It sends them electronically to the Deutsche Bundesbank by close of business on 12 May, 11 August, 11 November and 11 February, or on the next business day where that date falls on a weekend or public holiday."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 19",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File the remuneration, high earner, gender pay gap and diversity returns with the Bundesbank",
+     "source": "https://www.gesetze-im-internet.de/wpi-anzv/__9a.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Anzeigenverordnung (WpI-AnzV), BGBl. 2023 I Nr. 349, § 9a",
+     "payload": {
+      "key": "obl-de-wpi-anzv-remuneration-returns",
+      "titles": {
+       "en": "File the remuneration, high earner, gender pay gap and diversity returns with the Bundesbank"
+      },
+      "summaries": {
+       "en": "A medium-sized investment firm reports by 15 June each year its staff, managing directors and board members paid at least one million euros, unless its EU parent sits in another EEA state. If its average assets over four years exceed 300 million euros or it is asked to, it also reports its remuneration data each year by 15 June, its gender pay gap every three years by 15 June unless it has fewer than 50 staff or is a subsidiary of an EU parent investment firm, and diversity data every three years by 30 April. The returns go electronically to the Deutsche Bundesbank on the forms in the annexes, and parents report for their group where the section says so."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 9a",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add WpI-InhKontrollV, the German regulation on notifications of qualifying holdings in investment firms under § 24 of the Investment Firms Act (Wertpapierinstituts-Inhaberkontrollverordnung)",
+   "source": "https://www.gesetze-im-internet.de/wpi-inhkontrollv/BJNR0090A0024.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Inhaberkontrollverordnung (WpI-InhKontrollV), BGBl. 2024 I Nr. 9, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 14 Abs. 3 Satz 1, 3 und 4 in conjunction with § 24 Abs. 1 Satz 3 WpIG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 47 G v. 4.2.2026 I Nr. 33); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-wpi-inhkontrollv",
+    "titles": {
+     "de": "Verordnung über Anzeigen nach § 24 des Wertpapierinstitutsgesetzes (Wertpapierinstituts-Inhaberkontrollverordnung - WpI-InhKontrollV)",
+     "en": "Owner Control Regulation for Investment Firms (notifications of qualifying holdings)"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "WpI-InhKontrollV",
+    "officialRef": "Wertpapierinstituts-Inhaberkontrollverordnung vom 11. Januar 2024 (BGBl. 2024 I Nr. 9)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities",
+    "implementsNote": "IFD, Directive (EU) 2019/2034; MiFID II, Directive 2014/65/EU (the directives the official note on EU law on Gesetze im Internet names)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File owner control notifications for an investment firm with BaFin and the Bundesbank, translated on request",
+     "source": "https://www.gesetze-im-internet.de/wpi-inhkontrollv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Inhaberkontrollverordnung (WpI-InhKontrollV), BGBl. 2024 I Nr. 9, § 2",
+     "payload": {
+      "key": "obl-de-wpi-inhkontrollv-filing-channel-and-language",
+      "titles": {
+       "en": "File owner control notifications for an investment firm with BaFin and the Bundesbank, translated on request"
+      },
+      "summaries": {
+       "en": "Notifications of the acquisition, increase, reduction or disposal of a qualifying holding in an investment firm, and the further notices this regulation requires, are filed in one copy each with BaFin and with the Bundesbank regional office responsible for the investment firm, electronically if either asks. They may be filed wholly or partly in English, but if BaFin asks for a translation before confirming that the file is complete, the notification is complete only once the translation reaches both authorities."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Use form WpI-EENP or WpI-EEKNP for each acquirer of a qualifying holding in an investment firm",
+     "source": "https://www.gesetze-im-internet.de/wpi-inhkontrollv/__5.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Inhaberkontrollverordnung (WpI-InhKontrollV), BGBl. 2024 I Nr. 9, § 5",
+     "payload": {
+      "key": "obl-de-wpi-inhkontrollv-acquisition-forms-and-annexes",
+      "titles": {
+       "en": "Use form WpI-EENP or WpI-EEKNP for each acquirer of a qualifying holding in an investment firm"
+      },
+      "summaries": {
+       "en": "Each party notifying an intended or unintended acquisition or increase of a qualifying holding in an investment firm uses its own form, Annex 1 for a natural person and Annex 2 for any other party, attaches the documents Delegated Regulation (EU) 2017/1946 requires and gives a reliability declaration on the form in Annex 3 for each person and undertaking concerned, with the form in Annex 4 where the holding structure is complex. The notification is complete only once every form is filled in and every annex attached; an annex that cannot yet be attached is explained and filed without delay."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report a dropped or changed acquisition plan and file updated documents while BaFin assesses it",
+     "source": "https://www.gesetze-im-internet.de/wpi-inhkontrollv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Inhaberkontrollverordnung (WpI-InhKontrollV), BGBl. 2024 I Nr. 9, § 7",
+     "payload": {
+      "key": "obl-de-wpi-inhkontrollv-changed-intention-and-updates",
+      "titles": {
+       "en": "Report a dropped or changed acquisition plan and file updated documents while BaFin assesses it"
+      },
+      "summaries": {
+       "en": "A notifying party that drops its plan to acquire or increase a qualifying holding in an investment firm says so in writing without delay, and one that changes the plan does the same and refiles the documents affected, or files a new notification where the plan would now reach 20, 30 or 50 per cent or bring control. Any change to the filed information up to the end of the assessment period is filed without delay in updated documents, and information updated too late to leave BaFin 20 working days is treated as incorrect."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify the reduction or disposal of a qualifying holding in an investment firm on form WpI-AV and name the transferee",
+     "source": "https://www.gesetze-im-internet.de/wpi-inhkontrollv/__9.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Inhaberkontrollverordnung (WpI-InhKontrollV), BGBl. 2024 I Nr. 9, § 9",
+     "payload": {
+      "key": "obl-de-wpi-inhkontrollv-disposal-notification",
+      "titles": {
+       "en": "Notify the reduction or disposal of a qualifying holding in an investment firm on form WpI-AV and name the transferee"
+      },
+      "summaries": {
+       "en": "An intended or unintended reduction or disposal of a qualifying holding in an investment firm is notified on the form in Annex 5, one form for each notifying party. In an annex the notifying party states to whom it will transfer or has transferred the shares of capital or voting rights, or explains why it cannot say."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 9",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add WpIVergV, the German regulation on the supervisory requirements for remuneration systems of medium-sized investment firms (Wertpapierinstituts-Vergütungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/wpivergv/BJNR0050A0024.html",
+   "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 46 Abs. 3 WpIG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and no Stand line (text as enacted); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-wpivergv",
+    "titles": {
+     "de": "Verordnung über die aufsichtsrechtlichen Vorgaben an Vergütungssysteme von Mittleren Wertpapierinstituten (Wertpapierinstituts-Vergütungsverordnung - WpIVergV)",
+     "en": "Remuneration Regulation for Medium-sized Investment Firms"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "WpIVergV",
+    "officialRef": "Wertpapierinstituts-Vergütungsverordnung vom 9. Januar 2024 (BGBl. 2024 I Nr. 5)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities",
+    "implementsNote": "IFD, Directive (EU) 2019/2034 (the directive the official note on EU law on Gesetze im Internet names)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify every risk taker on the basis of a risk analysis and the EU criteria",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__3.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 3",
+     "payload": {
+      "key": "obl-de-wpivergv-risk-taker-identification",
+      "titles": {
+       "en": "Identify every risk taker on the basis of a risk analysis and the EU criteria"
+      },
+      "summaries": {
+       "en": "A medium-sized investment firm must identify all its risk takers itself on the basis of a risk analysis, applying the criteria of Delegated Regulation (EU) 2021/2154 and, where its risk profile calls for it, further internal criteria of its own."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give management and the supervisory body their set roles in designing and overseeing pay",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 4",
+     "payload": {
+      "key": "obl-de-wpivergv-pay-governance-responsibilities",
+      "titles": {
+       "en": "Give management and the supervisory body their set roles in designing and overseeing pay"
+      },
+      "summaries": {
+       "en": "Management is responsible for the pay systems of risk takers who are not managing directors and informs the supervisory body about them at least once a year, giving its chair a right to information. The supervisory body, or where there is none the owners, who document their work, is responsible for the managing directors' pay systems and for overseeing all pay systems, including the pay of the heads of risk control and compliance, and the control units take part in designing and overseeing the systems."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Set appropriate variable to fixed pay ratios and do not guarantee variable pay",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 7",
+     "payload": {
+      "key": "obl-de-wpivergv-variable-fixed-ratio-and-guarantees",
+      "titles": {
+       "en": "Set appropriate variable to fixed pay ratios and do not guarantee variable pay"
+      },
+      "summaries": {
+       "en": "The firm sets appropriate ratios between variable and fixed pay for its risk takers in view of its business and risks, keeps fixed pay high enough that variable pay can be cut to nil, and avoids any significant dependence of risk takers on variable pay. Variable pay is not guaranteed, except for a new risk taker in the first year of employment where the firm has adequate own funds and the person did not come from the same group."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pay at least half of variable pay in instruments and defer at least 40 per cent over three to five years",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__8.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 8 Abs. 3 bis 5 und § 10",
+     "payload": {
+      "key": "obl-de-wpivergv-instruments-and-deferral",
+      "titles": {
+       "en": "Pay at least half of variable pay in instruments and defer at least 40 per cent over three to five years"
+      },
+      "summaries": {
+       "en": "At least 50 per cent of a risk taker's variable pay consists of shares, share-linked instruments, capital instruments meeting Delegated Regulation (EU) 2021/2155 or other permitted non-cash instruments, held for a retention period of as a rule at least one year. At least 40 per cent is deferred and vests no faster than pro rata over three to five years after a fresh assessment of performance, and at least 60 per cent where variable pay is particularly high, above a threshold the firm sets at no more than 500,000 euros. These rules do not apply to yearly variable pay up to 50,000 euros that is no more than a quarter of total pay, nor to firms that meet the criteria of § 44 Abs. 3 Satz 2 Nr. 1 or 2 of the Investment Firms Act."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 8 Abs. 3 bis 5 und § 10",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Reduce or claw back variable pay under malus and clawback rules",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__8.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 8 Abs. 6",
+     "payload": {
+      "key": "obl-de-wpivergv-malus-and-clawback",
+      "titles": {
+       "en": "Reduce or claw back variable pay under malus and clawback rules"
+      },
+      "summaries": {
+       "en": "Unless § 10 exempts the pay or the firm, the firm must make sure variable pay can be reduced or paid back under malus and clawback rules based on criteria it sets, taking its financial result into account. Variable pay is cut or reclaimed in full in particular where the risk taker is responsible for or took part in activities causing significant losses, or is no longer competent and reliable, and clawback covers the period from the award until one year after the end of the last deferral period."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 8 Abs. 6",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Bar risk takers from hedging their pay risk and have compliance check it by sample",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__12.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 12",
+     "payload": {
+      "key": "obl-de-wpivergv-hedging-ban-and-checks",
+      "titles": {
+       "en": "Bar risk takers from hedging their pay risk and have compliance check it by sample"
+      },
+      "summaries": {
+       "en": "The firm must not limit or remove the risk adjustment of variable pay by hedging or other counter-measures or use any device to get round the regulation. It sets up compliance structures that commit risk takers to take no personal hedging or counter-measures, and its compliance function checks this, risk-based and at least by sample."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 12",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Write pay principles into the organisational guidelines, document bonus decisions and review pay systems yearly",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__13.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 13 und § 14",
+     "payload": {
+      "key": "obl-de-wpivergv-pay-principles-and-annual-review",
+      "titles": {
+       "en": "Write pay principles into the organisational guidelines, document bonus decisions and review pay systems yearly"
+      },
+      "summaries": {
+       "en": "The firm lays down and documents in its organisational guidelines principles on its pay systems, covering their design and the make-up of pay, who decides what, and a framework for setting and approving severance pay, and documents how the total of variable pay and its distribution were decided. At least once a year a central and independent internal review checks the pay systems, using the internal audit reports and the auditor's report, documents the result for management and the supervisory body, and any shortcomings found are remedied under a documented action plan."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 13 und § 14",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell risk takers in text form how their pay systems and parameters work",
+     "source": "https://www.gesetze-im-internet.de/wpivergv/__15.html",
+     "sourceLabel": "Gesetze im Internet, Wertpapierinstituts-Vergütungsverordnung (WpIVergV), BGBl. 2024 I Nr. 5, § 15",
+     "payload": {
+      "key": "obl-de-wpivergv-risk-taker-information",
+      "titles": {
+       "en": "Tell risk takers in text form how their pay systems and parameters work"
+      },
+      "summaries": {
+       "en": "The firm informs its risk takers in text form about the design of the pay systems that apply to them and in particular about the pay parameters relevant to them. It also makes the remuneration information it must disclose under Article 51 of Regulation (EU) 2019/2033 available to all risk takers in text form."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 15",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add KAGBAuslAnzV, the German regulation on outsourcing notifications under § 36 of the Investment Code (KAGB-Auslagerungsanzeigenverordnung)",
+   "source": "https://www.gesetze-im-internet.de/kagbauslanzv/BJNR209100022.html",
+   "sourceLabel": "Gesetze im Internet, KAGB-Auslagerungsanzeigenverordnung (KAGBAuslAnzV), BGBl. I S. 2091, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 36 Abs. 11 Satz 1 und 4 KAGB, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and no Stand line (text as enacted); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-kagbauslanzv",
+    "titles": {
+     "de": "Verordnung über die Anzeigen und die Vorlage von Unterlagen nach § 36 des Kapitalanlagegesetzbuchs (KAGB-Auslagerungsanzeigenverordnung - KAGBAuslAnzV)",
+     "en": "Outsourcing Notification Regulation under the Investment Code"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "KAGBAuslAnzV",
+    "officialRef": "KAGB-Auslagerungsanzeigenverordnung vom 23. November 2022 (BGBl. I S. 2091)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File outsourcing notifications through BaFin's portal under a permanent company identifier",
+     "source": "https://www.gesetze-im-internet.de/kagbauslanzv/__2.html",
+     "sourceLabel": "Gesetze im Internet, KAGB-Auslagerungsanzeigenverordnung (KAGBAuslAnzV), BGBl. I S. 2091, § 2, § 4 und § 5",
+     "payload": {
+      "key": "obl-de-kagbauslanzv-electronic-filing-and-identifier",
+      "titles": {
+       "en": "File outsourcing notifications through BaFin's portal under a permanent company identifier"
+      },
+      "summaries": {
+       "en": "A management company files its outsourcing and sub-outsourcing notifications under § 36 of the Investment Code, with the documents and information required, electronically through the portals BaFin opens on its website, after registering there; it tells BaFin without delay of any change to the information its registration was based on. It identifies itself with an identification number in every transmission and makes the arrangements needed to obtain that number and keep using it permanently, since BaFin treats records without a correct identifier or in the wrong format as not received."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2, § 4 und § 5",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify an intended outsourcing without delay with the listed data and confirm the Code's rules are met",
+     "source": "https://www.gesetze-im-internet.de/kagbauslanzv/__6.html",
+     "sourceLabel": "Gesetze im Internet, KAGB-Auslagerungsanzeigenverordnung (KAGBAuslAnzV), BGBl. I S. 2091, § 6 Abs. 1 und 2",
+     "payload": {
+      "key": "obl-de-kagbauslanzv-outsourcing-notification-content",
+      "titles": {
+       "en": "Notify an intended outsourcing without delay with the listed data and confirm the Code's rules are met"
+      },
+      "summaries": {
+       "en": "A notification of an intended outsourcing or sub-outsourcing is made without delay and gives the fourteen items the section lists, among them a reference number per arrangement, its term and notice periods, the tasks and data concerned, the provider with its register number and parent, where the work is done and data are stored, the cloud model where relevant, the date and result of the last risk analysis, who approved it, the governing law, audits, sub-outsourcing and, for a provider abroad, its supervisor and authorisation. The notification confirms and explains that the outsourcing rules of § 36 of the Investment Code are met."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6 Abs. 1 und 2",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify material changes to an existing outsourcing without delay, marked as change notifications",
+     "source": "https://www.gesetze-im-internet.de/kagbauslanzv/__6.html",
+     "sourceLabel": "Gesetze im Internet, KAGB-Auslagerungsanzeigenverordnung (KAGBAuslAnzV), BGBl. I S. 2091, § 6 Abs. 3 und 4",
+     "payload": {
+      "key": "obl-de-kagbauslanzv-material-change-notification",
+      "titles": {
+       "en": "Notify material changes to an existing outsourcing without delay, marked as change notifications"
+      },
+      "summaries": {
+       "en": "A management company notifies BaFin without delay of material changes to an existing outsourcing that may materially affect its business, in particular important contract changes or additional services, material findings of a new risk analysis, a later move of the work to a third country, termination, and a change of control over the provider. These notifications are marked as change notifications, and for an outsourcing that already existed when the regulation took effect they also give the full data of the first notification."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6 Abs. 3 und 4",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EAKAV, the German regulation on the electronic procedure for notifying the marketing of German and EU funds in other EEA states (EAKAV)",
+   "source": "https://www.gesetze-im-internet.de/eakav/BJNR247700013.html",
+   "sourceLabel": "Gesetze im Internet, Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV), BGBl. I S. 2477, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 312 Abs. 8 Satz 1 and § 331 Abs. 2 Satz 2 KAGB, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and no Stand line (text as enacted); entry into force read in § 7",
+   "payload": {
+    "key": "de-eakav",
+    "titles": {
+     "de": "Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV)",
+     "en": "Regulation on the Electronic Notification Procedure for Cross-border Fund Marketing under the Investment Code"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "EAKAV",
+    "officialRef": "Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch vom 16. Juli 2013 (BGBl. I S. 2477)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify the intended cross-border marketing separately for each fund, with a power of attorney where an agent files",
+     "source": "https://www.gesetze-im-internet.de/eakav/__2.html",
+     "sourceLabel": "Gesetze im Internet, Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV), BGBl. I S. 2477, § 2",
+     "payload": {
+      "key": "obl-de-eakav-one-notification-per-fund",
+      "titles": {
+       "en": "Notify the intended cross-border marketing separately for each fund, with a power of attorney where an agent files"
+      },
+      "summaries": {
+       "en": "A management company notifies BaFin of its intention to market a German UCITS in another EEA state, or a fund to professional investors there under § 331 of the Investment Code, separately for each fund, though one notification letter may cover several sub-funds of an umbrella. A person filing on its behalf attaches a valid power of attorney."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File marketing notifications through BaFin's reporting portal under an authorised user",
+     "source": "https://www.gesetze-im-internet.de/eakav/__3.html",
+     "sourceLabel": "Gesetze im Internet, Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV), BGBl. I S. 2477, § 3",
+     "payload": {
+      "key": "obl-de-eakav-portal-admission",
+      "titles": {
+       "en": "File marketing notifications through BaFin's reporting portal under an authorised user"
+      },
+      "summaries": {
+       "en": "The notification goes to BaFin through its reporting and publication portal, to which access is granted under BaFin's procedure. Unless managing directors apply themselves, the signed access request carries a declaration signed by management that the applicant works for the company and may file these notifications, and changes to that declaration are reported to BaFin without delay."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send the notification documents in the set formats, packed and named as prescribed",
+     "source": "https://www.gesetze-im-internet.de/eakav/__4.html",
+     "sourceLabel": "Gesetze im Internet, Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV), BGBl. I S. 2477, § 4 und § 5",
+     "payload": {
+      "key": "obl-de-eakav-file-format-and-naming",
+      "titles": {
+       "en": "Send the notification documents in the set formats, packed and named as prescribed"
+      },
+      "summaries": {
+       "en": "The notification letter and the documents are sent only as PDF, DOC or DOCX files, packed twice into ZIP files without a password, one notification per ZIP file. Each file is named with the fund's BaFin ID and the designation the regulation sets for it, such as notification letter, prospectus or annual report, and the ZIP files carry the prescribed prefix for the type of notification."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4 und § 5",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File missing documents BaFin asks for as a supplementary notification through the portal",
+     "source": "https://www.gesetze-im-internet.de/eakav/__6.html",
+     "sourceLabel": "Gesetze im Internet, Verordnung zum elektronischen Anzeigeverfahren für inländische Investmentvermögen und EU-Investmentvermögen nach dem Kapitalanlagegesetzbuch (EAKAV), BGBl. I S. 2477, § 6",
+     "payload": {
+      "key": "obl-de-eakav-supplementary-notification",
+      "titles": {
+       "en": "File missing documents BaFin asks for as a supplementary notification through the portal"
+      },
+      "summaries": {
+       "en": "Where BaFin asks for missing information or documents, the notifying party files a supplementary notification through the portal under the same rules on filing, format and naming, with a covering letter saying which notification the documents belong to."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add BausparkV, the German regulation under the Building and Loan Associations Act (Bausparkassen-Verordnung)",
+   "source": "https://www.gesetze-im-internet.de/bausparkv_2015/BJNR257600015.html",
+   "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 10 of the Gesetz über Bausparkassen, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 1 V v. 23.7.2021 I 3206); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-bausparkv-2015",
+    "titles": {
+     "de": "Verordnung zum Gesetz über Bausparkassen (Bausparkassen-Verordnung - BausparkV)",
+     "en": "Building and Loan Associations Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "BausparkV",
+    "officialRef": "Bausparkassen-Verordnung vom 29. Dezember 2015 (BGBl. I S. 2576)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Validate the building savings simulation model yearly and document base and stress simulations",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__1.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 1 Abs. 2 und § 2 Abs. 1, 2 und 6",
+     "payload": {
+      "key": "obl-de-bausparkv-simulation-validation-and-scenarios",
+      "titles": {
+       "en": "Validate the building savings simulation model yearly and document base and stress simulations"
+      },
+      "summaries": {
+       "en": "A Bausparkasse back-tests its simulation model and compares planned with actual simulation parameters at least once a year, sums the results up in a validation report and files it with BaFin each year in the collective status report. Its simulations and forecasts always cover a base scenario and suitable stress scenarios, and it documents their results in a report that sets out and justifies the assumptions, parameters and dependencies behind them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1 Abs. 2 und § 2 Abs. 1, 2 und 6",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File the collective status report with BaFin by the end of each calendar year",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__3.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 3",
+     "payload": {
+      "key": "obl-de-bausparkv-collective-status-report",
+      "titles": {
+       "en": "File the collective status report with BaFin by the end of each calendar year"
+      },
+      "summaries": {
+       "en": "A Bausparkasse files a collective status report with BaFin by the end of each calendar year, unless BaFin sets other dates, describing the current state of its savings collective and the economic setting with its simulation and forecast results. It sets out in particular the risks of tariffs whose interest differs markedly from market rates, the share and effects of tariffs with an individual saver-lender ratio above 1.000, how it hedges long-term liabilities and whether it can meet its obligations over the simulation period, and adds thresholds whose breach would call for countermeasures, describing those measures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Build allocation conditions and a minimum saver-lender ratio of 0.400 into every tariff",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__4.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 4 Abs. 1 und 2",
+     "payload": {
+      "key": "obl-de-bausparkv-tariff-minimum-requirements",
+      "titles": {
+       "en": "Build allocation conditions and a minimum saver-lender ratio of 0.400 into every tariff"
+      },
+      "summaries": {
+       "en": "The general terms for building savings contracts must contain minimum valuation figures or other allocation conditions meant to secure collective liquidity over time. The lowest individual saver-lender performance ratio of a tariff must be at least 0.400 at allocation, unless BaFin sets another minimum in the individual case."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4 Abs. 1 und 2",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Limit loans refinanced from the allocation pool to twelve years and monitor the pool against plan",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__5.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 5 Abs. 2 und 3",
+     "payload": {
+      "key": "obl-de-bausparkv-pool-funded-loans",
+      "titles": {
+       "en": "Limit loans refinanced from the allocation pool to twelve years and monitor the pool against plan"
+      },
+      "summaries": {
+       "en": "Pre-financing, bridging and other building loans refinanced from the allocation pool must not run longer than twelve years unless BaFin allows an exception. A Bausparkasse that has applied for or holds BaFin's approval to use the pool this way compares projected with actual savings deposits and building loans at least once a year and files the result at year end, and where the figures deviate seriously it analyses the deviation, reports it to BaFin with its causes and shows how it will prevent it in future."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5 Abs. 2 und 3",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell BaFin in writing without delay when collective liquidity no longer seems secure",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__5.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 5 Abs. 4",
+     "payload": {
+      "key": "obl-de-bausparkv-collective-liquidity-warning",
+      "titles": {
+       "en": "Tell BaFin in writing without delay when collective liquidity no longer seems secure"
+      },
+      "summaries": {
+       "en": "A Bausparkasse must notify BaFin in writing without delay as soon as its simulation or forecast results or other figures indicate that it may not be able, on the basis of lasting collective liquidity, to pay out building loans and savings balances at any time."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5 Abs. 4",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Add six tenths of any excess interest income to the fund for technical security each year",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__7.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 7",
+     "payload": {
+      "key": "obl-de-bausparkv-technical-security-fund",
+      "titles": {
+       "en": "Add six tenths of any excess interest income to the fund for technical security each year"
+      },
+      "summaries": {
+       "en": "At the end of each financial year a Bausparkasse adds to its fund for technical security six tenths of the amount by which its actual interest income, calculated as the section sets out, exceeds its target interest income on the collective funds."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep large building savings contracts above 700,000 euros within the 15 and 30 per cent limits",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__9.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, § 9",
+     "payload": {
+      "key": "obl-de-bausparkv-large-contract-limits",
+      "titles": {
+       "en": "Keep large building savings contracts above 700,000 euros within the 15 and 30 per cent limits"
+      },
+      "summaries": {
+       "en": "Contracts with a building savings sum above 700,000 euros, counting all contracts of one saver within twelve months as one, may make up no more than 15 per cent of the sums of all contracts not yet allocated, and no more than 30 per cent of the total sum of contracts concluded in a calendar year. Contracts on which the minimum savings needed for allocation were paid in within the first year count towards these shares."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 9",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep loans to participations, unsecured loans and loans without land charges within the set limits",
+     "source": "https://www.gesetze-im-internet.de/bausparkv_2015/__11.html",
+     "sourceLabel": "Gesetze im Internet, Bausparkassen-Verordnung (BausparkV), BGBl. I S. 2576, §§ 11 bis 13",
+     "payload": {
+      "key": "obl-de-bausparkv-lending-limits",
+      "titles": {
+       "en": "Keep loans to participations, unsecured loans and loans without land charges within the set limits"
+      },
+      "summaries": {
+       "en": "Loans to undertakings in which the Bausparkasse holds a participation may total no more than 60 per cent of its own funds, and no more than 20 per cent for any one undertaking. Loans against a declaration of commitment or without security are capped at 50,000 euros each and at 30 per cent of all loan receivables, and together with loans backed by substitute collateral they may not exceed 45 per cent of all loan receivables."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§§ 11 bis 13",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SchiffsBelWertV, the German regulation on determining the mortgage lending values of ships and ships under construction under the Pfandbrief Act (Schiffsbeleihungswertermittlungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/BJNR085100008.html",
+   "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 24 Abs. 5 Satz 1 und 2 PfandBG, with the regulation transferring the power to BaFin (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 6 V v. 4.10.2022 I 1614); entry into force read in § 15",
+   "payload": {
+    "key": "de-schiffsbelwertv",
+    "titles": {
+     "de": "Verordnung über die Ermittlung der Beleihungswerte von Schiffen und Schiffsbauwerken nach § 24 Abs. 1 bis 3 des Pfandbriefgesetzes (Schiffsbeleihungswertermittlungsverordnung - SchiffsBelWertV)",
+     "en": "Regulation on Determining Ship Mortgage Lending Values"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "SchiffsBelWertV",
+    "officialRef": "Schiffsbeleihungswertermittlungsverordnung vom 6. Mai 2008 (BGBl. I S. 851)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:banking",
+    "inForceFrom": "2008-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set a ship's lending value no higher than its current and ten-year average market value",
+     "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, § 3 und § 4",
+     "payload": {
+      "key": "obl-de-schiffsbelwertv-value-caps",
+      "titles": {
+       "en": "Set a ship's lending value no higher than its current and ten-year average market value"
+      },
+      "summaries": {
+       "en": "A Pfandbrief bank determines the lending value of a ship from its current market value, its average market value over the last ten years and its new-build or purchase price, taking account of the ship's lasting qualities, age and uses and leaving out speculative elements. The value may exceed neither the current nor the average market value, nor the new-build price of a new ship or the purchase price of a bought one; where market values cover less than ten years the current value is cut by 15 per cent, or at least 25 per cent for three years or less, and where no market value can be found another method is used with a cap of the new-build or purchase price less at least 25 per cent."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3 und § 4",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Base a ship's lending value on a report from a valuer the bank appoints, never one the borrower commissioned",
+     "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/__5.html",
+     "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, § 5",
+     "payload": {
+      "key": "obl-de-schiffsbelwertv-valuation-report",
+      "titles": {
+       "en": "Base a ship's lending value on a report from a valuer the bank appoints, never one the borrower commissioned"
+      },
+      "summaries": {
+       "en": "The lending value is set through a report by one or more valuers the Pfandbrief bank appoints, covering the valuation parameters and the ship's type, practical uses, equipment, merits and defects. A report prepared for another credit institution may be used only if it meets the regulation and a competent employee outside the credit decision checks its plausibility and documents the result, and a report the borrower or owner provided or commissioned may never be used."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inspect the ship and its papers and check the classification certificates are genuine",
+     "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/__6.html",
+     "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, § 6",
+     "payload": {
+      "key": "obl-de-schiffsbelwertv-ship-inspection",
+      "titles": {
+       "en": "Inspect the ship and its papers and check the classification certificates are genuine"
+      },
+      "summaries": {
+       "en": "The ship is inspected as part of the valuation, by the valuer or a recognised technical expert, with all papers on board examined and the hull and machinery classifications and the validity of their certificates established. The inspection may be skipped only where a recognised classification society inspected the ship within the last 15 months, or the ship is no older than three years, or five years with an interim class certificate, and the bank checks that the classification documents are genuine."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Use ship valuers with market expertise who are independent of lending, brokerage and chartering",
+     "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, § 7 und § 8",
+     "payload": {
+      "key": "obl-de-schiffsbelwertv-valuer-expertise-and-independence",
+      "titles": {
+       "en": "Use ship valuers with market expertise who are independent of lending, brokerage and chartering"
+      },
+      "summaries": {
+       "en": "The Pfandbrief bank satisfies itself that the valuer has long experience in valuing ships and the knowledge of the ship market such reports need. The valuer, and any broker, estimator or technical expert the report relies on, must be independent of acquiring and deciding the loan and of brokering, selling, letting or chartering the ship, have no link to the borrower or interest in the result, and neither set the lending value nor handle the loan; an in-house valuer counts only if placed outside the ship finance line up to management level."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7 und § 8",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor each ship lending value at least yearly and reduce it when its basis worsens",
+     "source": "https://www.gesetze-im-internet.de/schiffsbelwertv/__14.html",
+     "sourceLabel": "Gesetze im Internet, Schiffsbeleihungswertermittlungsverordnung (SchiffsBelWertV), BGBl. I S. 851, § 14",
+     "payload": {
+      "key": "obl-de-schiffsbelwertv-annual-monitoring",
+      "titles": {
+       "en": "Monitor each ship lending value at least yearly and reduce it when its basis worsens"
+      },
+      "summaries": {
+       "en": "The bank monitors each ship lending value at least once a year and reviews its basis where there are signs of more than minor deterioration, in particular when price levels in the relevant ship market have fallen far enough to endanger the security or the secured claim is at least 90 days materially in arrears. It reduces the value where needed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 14",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add FlugBelWertV, the German regulation on determining the mortgage lending values of aircraft under the Pfandbrief Act (Flugzeugbeleihungswertermittlungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/flugbelwertv/BJNR103600009.html",
+   "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, made by the Bundesministerium der Finanzen under § 26d Abs. 3 Satz 1 und 2 PfandBG (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 7 V v. 4.10.2022 I 1614); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-flugbelwertv",
+    "titles": {
+     "de": "Verordnung über die Ermittlung der Beleihungswerte von Flugzeugen nach § 26d Absatz 1 und 2 des Pfandbriefgesetzes (Flugzeugbeleihungswertermittlungsverordnung - FlugBelWertV)",
+     "en": "Regulation on Determining Aircraft Mortgage Lending Values"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "FlugBelWertV",
+    "officialRef": "Flugzeugbeleihungswertermittlungsverordnung vom 20. April 2009 (BGBl. I S. 1036)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmf-de",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep an aircraft's lending value within its current, average and balanced-market values",
+     "source": "https://www.gesetze-im-internet.de/flugbelwertv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, § 3 und § 4",
+     "payload": {
+      "key": "obl-de-flugbelwertv-value-caps",
+      "titles": {
+       "en": "Keep an aircraft's lending value within its current, average and balanced-market values"
+      },
+      "summaries": {
+       "en": "A Pfandbrief bank draws on an aircraft's current market value, its average market value over the last ten years and its value under balanced market conditions in average condition, and sets a lending value reflecting the aircraft's lasting qualities, age and uses without speculative elements. The lending value may exceed none of these three values; with less than ten years of market values, or none for the aircraft type, the balanced-market value is cut by 10 per cent, and where no current market value can be found another suitable method is used with a cap of that value less 25 per cent."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3 und § 4",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Set an aircraft's lending value through a report by an appointed valuer, not one from the borrower",
+     "source": "https://www.gesetze-im-internet.de/flugbelwertv/__5.html",
+     "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, § 5",
+     "payload": {
+      "key": "obl-de-flugbelwertv-valuation-report",
+      "titles": {
+       "en": "Set an aircraft's lending value through a report by an appointed valuer, not one from the borrower"
+      },
+      "summaries": {
+       "en": "The aircraft lending value rests on a report by valuers the Pfandbrief bank appoints in general or case by case, dealing with the valuation parameters and with the aircraft type and its practical use, such as payload and range, performance, fuel burn, avionics and engine variant, and with its merits and defects. Reports made for another credit institution may serve only if they comply and a competent employee not involved in the credit decision checks and documents their plausibility, while reports the borrower or aircraft owner supplied or ordered are excluded."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inspect the aircraft and the papers it must carry, or rely on an approved maintenance programme",
+     "source": "https://www.gesetze-im-internet.de/flugbelwertv/__6.html",
+     "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, § 6",
+     "payload": {
+      "key": "obl-de-flugbelwertv-aircraft-inspection",
+      "titles": {
+       "en": "Inspect the aircraft and the papers it must carry, or rely on an approved maintenance programme"
+      },
+      "summaries": {
+       "en": "The aircraft is inspected for the valuation, by the valuer or a recognised technical expert, with the papers it must carry on board examined, the features of airframe, equipment and engines recorded and its maintenance state established. Inspection may be dispensed with only for an aircraft on first delivery and acceptance by its operator, or where the owner assures maintenance under a programme approved by the manufacturer and the aviation authority and presents current maintenance records, which is taken as given for aircraft operated by a licensed air carrier."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Choose aircraft valuers with proven market knowledge and keep them apart from lending and leasing",
+     "source": "https://www.gesetze-im-internet.de/flugbelwertv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, § 7 und § 8",
+     "payload": {
+      "key": "obl-de-flugbelwertv-valuer-expertise-and-independence",
+      "titles": {
+       "en": "Choose aircraft valuers with proven market knowledge and keep them apart from lending and leasing"
+      },
+      "summaries": {
+       "en": "Before choosing a valuer the bank satisfies itself of long experience in valuing aircraft and knowledge of the aircraft market, which ISTAT certification is taken to prove. Valuers, and the estimators or technical experts they rely on, stay independent of loan acquisition and decision and of brokering, selling, leasing or chartering the aircraft, have no tie to the borrower or stake in the outcome and do not set the value or process the loan, and in-house valuers count only when organised outside the aircraft lending line up to management."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7 und § 8",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Check each aircraft lending value at least once a year and lower it where needed",
+     "source": "https://www.gesetze-im-internet.de/flugbelwertv/__12.html",
+     "sourceLabel": "Gesetze im Internet, Flugzeugbeleihungswertermittlungsverordnung (FlugBelWertV), BGBl. I S. 1036, § 12",
+     "payload": {
+      "key": "obl-de-flugbelwertv-annual-monitoring",
+      "titles": {
+       "en": "Check each aircraft lending value at least once a year and lower it where needed"
+      },
+      "summaries": {
+       "en": "Each aircraft lending value is monitored at intervals of no more than a year, and its basis is reviewed whenever it appears to have worsened more than slightly, notably after a fall in aircraft market prices that threatens the security or once the secured claim is materially in arrears for 90 days or more. The bank lowers the value as needed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 12",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ZIEV, the German regulation on the own funds and liability cover of payment and e-money institutions (ZAG-Instituts-Eigenmittelverordnung)",
+   "source": "https://www.gesetze-im-internet.de/ziev/BJNR364300009.html",
+   "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, made by the Bundesministerium der Finanzen under § 12 Abs. 6 Satz 1 und 3, also in conjunction with Abs. 4 Satz 2, of the ZAG of 25 June 2009 (Eingangsformel); full text page with the Vollzitat and the Stand (Zuletzt geändert durch Art. 1 V v. 10.12.2018 I 2330); entry into force read in § 14",
+   "payload": {
+    "key": "de-ziev",
+    "titles": {
+     "de": "Verordnung über die angemessene Eigenmittelausstattung und die erforderliche Absicherung für den Haftungsfall von Instituten nach dem Zahlungsdiensteaufsichtsgesetz (ZAG-Instituts-Eigenmittelverordnung - ZIEV)",
+     "en": "Own Funds Regulation for Institutions under the Payment Services Supervision Act"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "ZIEV",
+    "officialRef": "ZAG-Instituts-Eigenmittelverordnung vom 15. Oktober 2009 (BGBl. I S. 3643)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmf-de",
+    "regime": "regime:payments",
+    "inForceFrom": "2009-10-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold own funds at all times at the level the applicable calculation method requires",
+     "source": "https://www.gesetze-im-internet.de/ziev/__1.html",
+     "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, § 1 Abs. 1 und 3 und § 2",
+     "payload": {
+      "key": "obl-de-ziev-adequate-own-funds",
+      "titles": {
+       "en": "Hold own funds at all times at the level the applicable calculation method requires"
+      },
+      "summaries": {
+       "en": "A payment or e-money institution that does more than payment initiation or account information services must hold adequate own funds at all times, whatever its initial capital, meaning own funds at least equal to the result of the calculation method that applies to it. A payment institution calculates by method B unless BaFin has set another method, applying a scaling factor of 0.5 if it provides only the payment service in § 1 Abs. 1 Satz 2 Nr. 6 of the Act and 1.0 if it provides any of those in numbers 1 to 5, and a payment institution offering only payment initiation keeps its initial capital as its own funds."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1 Abs. 1 und 3 und § 2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Hold own funds of at least 2 per cent of average e-money outstanding plus the payment services requirement",
+     "source": "https://www.gesetze-im-internet.de/ziev/__9.html",
+     "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, § 7 und § 9",
+     "payload": {
+      "key": "obl-de-ziev-emoney-own-funds",
+      "titles": {
+       "en": "Hold own funds of at least 2 per cent of average e-money outstanding plus the payment services requirement"
+      },
+      "summaries": {
+       "en": "An e-money institution must always hold own funds at least equal to the sum of the requirement for the payment services it provides and, for issuing e-money, 2 per cent of its average e-money outstanding. Where it also provides payment services unrelated to e-money and the amount outstanding is not known in advance, BaFin may allow it to calculate on a representative share or, without enough business history, on the amount its business plan expects."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7 und § 9",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep liability cover for payment initiation and account information services in line with the risk",
+     "source": "https://www.gesetze-im-internet.de/ziev/__10.html",
+     "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, § 1 Abs. 2, § 10 und § 11",
+     "payload": {
+      "key": "obl-de-ziev-liability-cover",
+      "titles": {
+       "en": "Keep liability cover for payment initiation and account information services in line with the risk"
+      },
+      "summaries": {
+       "en": "An institution that provides payment initiation or account information services must hold liability cover at all times in an amount its risk profile, the nature of its activity and its scale require, measured in particular by the refund claims received, the number of payments initiated or accounts accessed, and the total value of payments or number of customers."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1 Abs. 2, § 10 und § 11",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report own funds each quarter on form ZEM to the Bundesbank by the 20th business day",
+     "source": "https://www.gesetze-im-internet.de/ziev/__12.html",
+     "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, § 12",
+     "payload": {
+      "key": "obl-de-ziev-quarterly-own-funds-report",
+      "titles": {
+       "en": "Report own funds each quarter on form ZEM to the Bundesbank by the 20th business day"
+      },
+      "summaries": {
+       "en": "An institution that does more than account information services reports the data needed to check its own funds as at the end of each calendar quarter on the form in the annex, by the 20th business day of the following month unless BaFin extends the deadline. It files paperless with the Deutsche Bundesbank, which forwards the report to BaFin, and adds calculations under the other methods when BaFin asks for them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 12",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify BaFin and the Bundesbank in writing without delay of an own funds shortfall between reporting dates",
+     "source": "https://www.gesetze-im-internet.de/ziev/__13.html",
+     "sourceLabel": "Gesetze im Internet, ZAG-Instituts-Eigenmittelverordnung (ZIEV), BGBl. I S. 3643, § 13",
+     "payload": {
+      "key": "obl-de-ziev-shortfall-notification",
+      "titles": {
+       "en": "Notify BaFin and the Bundesbank in writing without delay of an own funds shortfall between reporting dates"
+      },
+      "summaries": {
+       "en": "A payment or e-money institution that fails to meet its own funds requirement between reporting dates must notify BaFin and the Deutsche Bundesbank in writing without delay, stating the amount of the shortfall."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 13",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add AgNwV, the German regulation on the evidence a payment or e-money institution needs on its agents (Agentennachweisverordnung)",
+   "source": "https://www.gesetze-im-internet.de/agnwv/BJNR364100009.html",
+   "sourceLabel": "Gesetze im Internet, Agentennachweisverordnung (AgNwV), BGBl. I S. 3641, made by the Bundesministerium der Finanzen under § 19 Abs. 5 Satz 1 und 3 of the ZAG of 25 June 2009 (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 7 Abs. 37 G v. 12.5.2021 I 990); entry into force read in § 4",
+   "payload": {
+    "key": "de-agnwv",
+    "titles": {
+     "de": "Verordnung über Art, Umfang und Form der erforderlichen Nachweise im Sinne des § 25 Absatz 2 Satz 2 des Zahlungsdiensteaufsichtsgesetzes (Agentennachweisverordnung - AgNwV)",
+     "en": "Agent Evidence Regulation under the Payment Services Supervision Act"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "AgNwV",
+    "officialRef": "Agentennachweisverordnung vom 15. Oktober 2009 (BGBl. I S. 3641)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmf-de",
+    "regime": "regime:payments",
+    "inForceFrom": "2009-10-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Collect the listed evidence of an agent's reliability and competence and clear up every gap",
+     "source": "https://www.gesetze-im-internet.de/agnwv/__1.html",
+     "sourceLabel": "Gesetze im Internet, Agentennachweisverordnung (AgNwV), BGBl. I S. 3641, § 1",
+     "payload": {
+      "key": "obl-de-agnwv-agent-fitness-evidence",
+      "titles": {
+       "en": "Collect the listed evidence of an agent's reliability and competence and clear up every gap"
+      },
+      "summaries": {
+       "en": "Before relying on an agent, a payment or e-money institution must obtain at least the twelve items the section lists for the agent and its managers, among them current certificates of conduct, extracts from the central trade register, the debtor register and the commercial register, tax clearance certificates, signed complete CVs with proof of training and work, permits needed for their activities, and the agent's latest accounts. It must actively follow up and clear up any gaps, defects or contradictions, obtain further evidence where needed, and for an agent under § 25 Abs. 4 of the Act obtain comparable official information where the agent's state of residence issues it, and any further evidence that state's law requires."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Sign a written agreement with each agent setting its duties and the institution's control rights",
+     "source": "https://www.gesetze-im-internet.de/agnwv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Agentennachweisverordnung (AgNwV), BGBl. I S. 3641, § 2 Abs. 1",
+     "payload": {
+      "key": "obl-de-agnwv-agent-agreement",
+      "titles": {
+       "en": "Sign a written agreement with each agent setting its duties and the institution's control rights"
+      },
+      "summaries": {
+       "en": "To make sure the agent stays reliable and competent, complies with the law and meets its information duties, the institution concludes a written agreement with it that sets the agent's duties and the institution's rights, including rights to give instructions, to terminate and to control, and control rights for its auditors."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 Abs. 1",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Document the checks on each agent and renew its evidence at regular intervals",
+     "source": "https://www.gesetze-im-internet.de/agnwv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Agentennachweisverordnung (AgNwV), BGBl. I S. 3641, § 2 Abs. 2 und § 3",
+     "payload": {
+      "key": "obl-de-agnwv-agent-review-records",
+      "titles": {
+       "en": "Document the checks on each agent and renew its evidence at regular intervals"
+      },
+      "summaries": {
+       "en": "The institution documents its checks of each agent and renews the evidence of the agent's reliability and competence regularly at appropriate intervals. None of this applies where the agent is itself an institution supervised in Germany or another EEA state under the payment services, banking or investment firms rules."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 Abs. 2 und § 3",
+      "dutyType": "record_keeping",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add FinStabDEV, the German regulation on data collections by the Deutsche Bundesbank for its tasks under the Financial Stability Act (Finanzstabilitätsdatenerhebungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/finstabdev/BJNR011000021.html",
+   "sourceLabel": "Gesetze im Internet, Finanzstabilitätsdatenerhebungsverordnung (FinStabDEV), BGBl. I S. 110, 1165, made by the Bundesministerium der Finanzen under § 6 Abs. 2 of the Finanzstabilitätsgesetz of 28 November 2012 (Eingangsformel); full text page with the Vollzitat and no Stand line (text as enacted); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-finstabdev",
+    "titles": {
+     "de": "Verordnung zur Durchführung von Datenerhebungen durch die Deutsche Bundesbank zur Erfüllung der Aufgaben nach dem Finanzstabilitätsgesetz (Finanzstabilitätsdatenerhebungsverordnung - FinStabDEV)",
+     "en": "Financial Stability Data Collection Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "FinStabDEV",
+    "officialRef": "Finanzstabilitätsdatenerhebungsverordnung vom 28. Januar 2021 (BGBl. I S. 110, 1165)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmf-de",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send the residential property loan data the Bundesbank requests in its schema and channel",
+     "source": "https://www.gesetze-im-internet.de/finstabdev/__5.html",
+     "sourceLabel": "Gesetze im Internet, Finanzstabilitätsdatenerhebungsverordnung (FinStabDEV), BGBl. I S. 110, 1165, § 5 Abs. 1 und 3",
+     "payload": {
+      "key": "obl-de-finstabdev-requested-data-transmission",
+      "titles": {
+       "en": "Send the residential property loan data the Bundesbank requests in its schema and channel"
+      },
+      "summaries": {
+       "en": "A financial corporation based in Germany that the Deutsche Bundesbank asks for data on residential property loans to natural persons must send the data as the request sets out, using any schema the Bundesbank has published with it and the electronic channels the Bundesbank offers."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5 Abs. 1 und 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Never pass personal data to the Bundesbank and say so where data cannot be sent without it",
+     "source": "https://www.gesetze-im-internet.de/finstabdev/__5.html",
+     "sourceLabel": "Gesetze im Internet, Finanzstabilitätsdatenerhebungsverordnung (FinStabDEV), BGBl. I S. 110, 1165, § 5 Abs. 2",
+     "payload": {
+      "key": "obl-de-finstabdev-no-personal-data",
+      "titles": {
+       "en": "Never pass personal data to the Bundesbank and say so where data cannot be sent without it"
+      },
+      "summaries": {
+       "en": "The reporting corporation must not transmit personal data. If it cannot meet that condition for part of the data on a reporting date, it tells the Bundesbank within the transmission deadline, still sends the rest, and under a recurring request includes the missing data in anonymised form in the next possible transmission."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5 Abs. 2",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Meet the financial stability reporting dates and deadlines for the frequency requested",
+     "source": "https://www.gesetze-im-internet.de/finstabdev/__6.html",
+     "sourceLabel": "Gesetze im Internet, Finanzstabilitätsdatenerhebungsverordnung (FinStabDEV), BGBl. I S. 110, 1165, § 6",
+     "payload": {
+      "key": "obl-de-finstabdev-reporting-dates-and-deadlines",
+      "titles": {
+       "en": "Meet the financial stability reporting dates and deadlines for the frequency requested"
+      },
+      "summaries": {
+       "en": "Data are reported as at the end of the month, quarter, half-year or year the request specifies, and sent by close of business on the tenth business day after a month end for monthly data, on 15 May, 15 August, 15 November and 15 February for quarterly data, on 15 August and 15 February for half-yearly data and on 15 February for yearly data. A deadline falling on a weekend or public holiday moves to the next business day."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Allow the Bundesbank to check reported data and help keep borrowers unidentifiable",
+     "source": "https://www.gesetze-im-internet.de/finstabdev/__7.html",
+     "sourceLabel": "Gesetze im Internet, Finanzstabilitätsdatenerhebungsverordnung (FinStabDEV), BGBl. I S. 110, 1165, § 7 Abs. 1 und 3",
+     "payload": {
+      "key": "obl-de-finstabdev-data-checks",
+      "titles": {
+       "en": "Allow the Bundesbank to check reported data and help keep borrowers unidentifiable"
+      },
+      "summaries": {
+       "en": "The reporting corporation must tolerate the Bundesbank's checks of the accuracy and quality of the data it sent, even without a specific reason, and meet its requests to present documents, inspect and copy books and records, give explanations and enter business premises during normal hours. It supports the Bundesbank with suitable measures in making sure no borrower or other natural person can be identified in the process."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7 Abs. 1 und 3",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add KMAnzV, the German regulation on notifications and the submission of documents under the Crypto Markets Supervision Act (Kryptomärkteanzeigenverordnung)",
+   "source": "https://www.gesetze-im-internet.de/kmanzv/BJNR0990A0026.html",
+   "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 1g Nr. 1 of the regulation transferring powers to BaFin of 13 December 2002, as amended in 2026 (Eingangsformel); full text page with the Vollzitat and no Stand line (text as enacted); entry into force read in § 9",
+   "payload": {
+    "key": "de-kmanzv",
+    "titles": {
+     "de": "Verordnung über die Anzeigen und die Vorlage von Unterlagen nach dem Kryptomärkteaufsichtsgesetz (Kryptomärkteanzeigenverordnung - KMAnzV)",
+     "en": "Notification Regulation under the Crypto Markets Supervision Act"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "KMAnzV",
+    "officialRef": "Kryptomärkteanzeigenverordnung vom 20. Mai 2026 (BGBl. 2026 I Nr. 153)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File Crypto Markets Supervision Act notifications with BaFin and the Bundesbank regional office",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__1.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 1 Abs. 1, 2 und 4",
+     "payload": {
+      "key": "obl-de-kmanzv-filing-channel",
+      "titles": {
+       "en": "File Crypto Markets Supervision Act notifications with BaFin and the Bundesbank regional office"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider files the notifications and documents the Crypto Markets Supervision Act requires in one copy each with BaFin and with the Bundesbank regional office responsible for it, unless a rule says otherwise, and electronically whenever either authority asks. It may file wholly or partly in English, but provides a translation, certified where BaFin has reason to ask, whenever BaFin requests one, and the German version then prevails."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1 Abs. 1, 2 und 4",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify cross-border crypto-asset services and a new branch with the set details",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 2 und § 1 Abs. 3",
+     "payload": {
+      "key": "obl-de-kmanzv-cross-border-and-branch",
+      "titles": {
+       "en": "Notify cross-border crypto-asset services and a new branch with the set details"
+      },
+      "summaries": {
+       "en": "A notice of the intention to provide crypto-asset services across borders carries the details Article 65(1) of the MiCA Regulation lists, and a notice of a new branch names the state, the crypto-asset services and their start date, any other activities outside MiCA, an address for service and documents in that state, and the branch managers. A firm that provides crypto-asset services under Article 59(1)(b) of MiCA, such as a bank, and files equivalent notices under other law, files these notices in addition."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 und § 1 Abs. 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify qualifying holdings in the provider and its passive close links on the set form",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__3.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 3",
+     "payload": {
+      "key": "obl-de-kmanzv-holdings-in-the-provider",
+      "titles": {
+       "en": "Notify qualifying holdings in the provider and its passive close links on the set form"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider notifies each holding in it and each passive close link on the form in Annex 1, and again when a change reaches, exceeds or falls below 20, 30 or 50 per cent, it becomes or stops being a subsidiary or sister undertaking, or shares move to or between intermediate holders. It files a collective return as at 31 December by 15 June of the following year, uses the form in Annex 2 for complex structures and as a rule files paperless with the Bundesbank."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify the provider's own close links to other undertakings, singly and in a yearly return",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 4",
+     "payload": {
+      "key": "obl-de-kmanzv-active-close-links",
+      "titles": {
+       "en": "Notify the provider's own close links to other undertakings, singly and in a yearly return"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider notifies its close links to other undertakings on the form in Annex 3, and again when a change reaches, exceeds or falls below 30 or 50 per cent, the undertaking becomes or stops being its subsidiary, or the shares move or the chain of intermediate holders changes. It files a collective return of numbered partial notices as at 31 December by 15 June of the following year, or only an informal confirmation where nothing has changed since the last one, and gives book values and prices when asked."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify material outsourcing and material changes to it through BaFin's platform with the listed data",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__5.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 5 Abs. 1 bis 3",
+     "payload": {
+      "key": "obl-de-kmanzv-outsourcing-notifications",
+      "titles": {
+       "en": "Notify material outsourcing and material changes to it through BaFin's platform with the listed data"
+      },
+      "summaries": {
+       "en": "A notice of an intended or completed material outsourcing gives the nineteen items the section lists, from a reference number, term and notice periods, activities and data, provider, group links and locations to the cloud model, materiality and risk assessments, approval, governing law, audits, sub-outsourcing, replaceability and annual budget, and the contract is handed over on request. Material changes, such as important contract changes, a changed materiality or replaceability assessment, new sub-outsourcing, a move to a third country, termination or a change of control over the provider, are notified too, all electronically through BaFin's reporting and publication platform."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5 Abs. 1 bis 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify serious incidents in an existing material outsourcing",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__5.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 5 Abs. 4",
+     "payload": {
+      "key": "obl-de-kmanzv-outsourcing-incidents",
+      "titles": {
+       "en": "Notify serious incidents in an existing material outsourcing"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider notifies serious incidents in an existing material outsourcing that may materially affect its business, such as a lasting interruption of the service, serious breaches of contract or law by the provider, significant security incidents, weak risk and contingency management or resources at the provider, doubts about the reliability of its managers, its threatened insolvency, serious damage to its reputation or conflicts at its seat in a third country."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 5 Abs. 4",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report managers' side activities and holdings on the set forms",
+     "source": "https://www.gesetze-im-internet.de/kmanzv/__7.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärkteanzeigenverordnung (KMAnzV), BGBl. 2026 I Nr. 153, § 7",
+     "payload": {
+      "key": "obl-de-kmanzv-manager-side-activities",
+      "titles": {
+       "en": "Report managers' side activities and holdings on the set forms"
+      },
+      "summaries": {
+       "en": "Notices of a managing director's side activities give the undertaking, the start and end, the nature and the time taken, on the form in Annex 4. Notices of holdings of managing directors and those responsible for management give the acquisition, change or disposal, the undertaking and the percentage held, on the form in Annex 5."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add KMMV, the German regulation on notifying BaFin of disclosed inside information under § 36 of the Crypto Markets Supervision Act (Kryptomärktemitteilungs-Verordnung)",
+   "source": "https://www.gesetze-im-internet.de/kmmv/BJNR0C50A0025.html",
+   "sourceLabel": "Gesetze im Internet, Kryptomärktemitteilungs-Verordnung (KMMV), BGBl. 2025 I Nr. 197, made by the Bundesanstalt für Finanzdienstleistungsaufsicht under § 1g Nr. 2 of the regulation transferring powers to BaFin of 13 December 2002, as amended in 2025 (Eingangsformel); full text page with the Vollzitat and no Stand line (text as enacted); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-kmmv",
+    "titles": {
+     "de": "Verordnung zur Konkretisierung von Mitteilungspflichten zur Offenlegung von Insiderinformationen nach § 36 des Kryptomärkteaufsichtsgesetzes (Kryptomärktemitteilungs-Verordnung - KMMV)",
+     "en": "Crypto Markets Inside Information Notification Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "KMMV",
+    "officialRef": "Kryptomärktemitteilungs-Verordnung vom 25. August 2025 (BGBl. 2025 I Nr. 197)",
+    "level": "authority_regulation",
+    "jurisdiction": "de",
+    "authority": "bafin",
+    "regime": "regime:securities"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Tell BaFin electronically the text, time and media of each inside information publication and a contact person",
+     "source": "https://www.gesetze-im-internet.de/kmmv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärktemitteilungs-Verordnung (KMMV), BGBl. 2025 I Nr. 197, § 2 und § 3",
+     "payload": {
+      "key": "obl-de-kmmv-inside-information-notice",
+      "titles": {
+       "en": "Tell BaFin electronically the text, time and media of each inside information publication and a contact person"
+      },
+      "summaries": {
+       "en": "An issuer, offeror or person seeking admission to trading of crypto-assets that must send BaFin the inside information it has published under Article 88(1) of the MiCA Regulation states the wording, the time and the specific media channels of the publication, and a contact person with telephone number and e-mail address. It sends this electronically on the channel BaFin announces on its website, which may be BaFin's reporting and publication system."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 und § 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: List every review of the reasons and everyone involved in a notice of delayed disclosure",
+     "source": "https://www.gesetze-im-internet.de/kmmv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Kryptomärktemitteilungs-Verordnung (KMMV), BGBl. 2025 I Nr. 197, § 4",
+     "payload": {
+      "key": "obl-de-kmmv-deferral-notice-content",
+      "titles": {
+       "en": "List every review of the reasons and everyone involved in a notice of delayed disclosure"
+      },
+      "summaries": {
+       "en": "A notice to BaFin that disclosure of inside information was delayed under Article 88(3) of the MiCA Regulation gives, beyond what Implementing Regulation (EU) 2024/2861 requires, every date on which the continued grounds for delay were reviewed, and the names, business addresses, business telephone numbers and e-mail addresses of everyone involved in the decision to delay. It is sent on the same electronic channel."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add TrDüV, the German regulation on transmitting data to the transparency register (Transparenzregisterdatenübermittlungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/trd_v/BJNR209000017.html",
+   "sourceLabel": "Gesetze im Internet, Transparenzregisterdatenübermittlungsverordnung (TrDüV), BGBl. I S. 2090, made by the Bundesministerium der Finanzen under § 22 Abs. 4 GwG (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 10 G v. 25.6.2021 I 2083); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-trd-v",
+    "titles": {
+     "de": "Verordnung zur Datenübermittlung durch Mitteilungsverpflichtete und durch den Betreiber des Unternehmensregisters an das Transparenzregister (Transparenzregisterdatenübermittlungsverordnung - TrDüV)",
+     "en": "Transparency Register Data Transmission Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "TrDüV",
+    "officialRef": "Transparenzregisterdatenübermittlungsverordnung vom 30. Juni 2017 (BGBl. I S. 2090)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmf-de",
+    "regime": "regime:aml"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Register an account with the transparency register and file the minimum details",
+     "source": "https://www.gesetze-im-internet.de/trd_v/__1.html",
+     "sourceLabel": "Gesetze im Internet, Transparenzregisterdatenübermittlungsverordnung (TrDüV), BGBl. I S. 2090, § 1",
+     "payload": {
+      "key": "obl-de-trduev-register-account",
+      "titles": {
+       "en": "Register an account with the transparency register and file the minimum details"
+      },
+      "summaries": {
+       "en": "A legal entity or arrangement that must report its beneficial owners registers on the transparency register's website with a valid e-mail address and a password, itself or through someone acting for it, and activates the account. It then files the minimum details the section lists, its name, the person responsible for the registration with address, e-mail and telephone, on the register's forms and over the secured connection the register sets."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Update the transparency register registration details without delay when they change",
+     "source": "https://www.gesetze-im-internet.de/trd_v/__2.html",
+     "sourceLabel": "Gesetze im Internet, Transparenzregisterdatenübermittlungsverordnung (TrDüV), BGBl. I S. 2090, § 2",
+     "payload": {
+      "key": "obl-de-trduev-registration-changes",
+      "titles": {
+       "en": "Update the transparency register registration details without delay when they change"
+      },
+      "summaries": {
+       "en": "When any of the minimum registration details change, the registered entity must change them in the transparency register without delay, itself or through someone it engages."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: File beneficial owner details on the register's forms over its secure connection",
+     "source": "https://www.gesetze-im-internet.de/trd_v/__3.html",
+     "sourceLabel": "Gesetze im Internet, Transparenzregisterdatenübermittlungsverordnung (TrDüV), BGBl. I S. 2090, § 3",
+     "payload": {
+      "key": "obl-de-trduev-beneficial-owner-filing",
+      "titles": {
+       "en": "File beneficial owner details on the register's forms over its secure connection"
+      },
+      "summaries": {
+       "en": "The details of the entity's beneficial owners that the Anti-Money Laundering Act requires are filed on the transparency register's website, on the forms the register provides and over the secured internet connection it specifies. The register confirms receipt in the user account."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EdWBeitrV, the German regulation on contributions to the investor compensation scheme of securities trading firms at the KfW (EdW-Beitragsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/kredanstwiawphev/BJNR189100999.html",
+   "sourceLabel": "Gesetze im Internet, EdW-Beitragsverordnung (EdWBeitrV), BGBl. I S. 1891, made by the Bundesministerium der Finanzen under § 8 Abs. 3 Satz 1 und 2 of the Einlagensicherungs- und Anlegerentschädigungsgesetz of 16 July 1998 (Eingangsformel); full text page with the Vollzitat and the Stand (Zuletzt geändert durch Art. 10 G v. 9.4.2026 I Nr. 97); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-kredanstwiawphev",
+    "titles": {
+     "de": "Verordnung über die Beiträge zu der Entschädigungseinrichtung der Wertpapierhandelsunternehmen bei der Kreditanstalt für Wiederaufbau (EdW-Beitragsverordnung - EdWBeitrV)",
+     "en": "Regulation on Contributions to the Compensation Scheme of Securities Trading Firms"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "EdWBeitrV",
+    "officialRef": "EdW-Beitragsverordnung vom 19. August 1999 (BGBl. I S. 1891)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmf-de",
+    "regime": "regime:securities"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Pay the annual contribution to the EdW by 30 September, at least the set minimum",
+     "source": "https://www.gesetze-im-internet.de/kredanstwiawphev/__1.html",
+     "sourceLabel": "Gesetze im Internet, EdW-Beitragsverordnung (EdWBeitrV), BGBl. I S. 1891, § 1 Abs. 1 und 1a",
+     "payload": {
+      "key": "obl-de-edwbeitrv-annual-contribution",
+      "titles": {
+       "en": "Pay the annual contribution to the EdW by 30 September, at least the set minimum"
+      },
+      "summaries": {
+       "en": "An institution assigned to the compensation scheme of securities trading firms on 1 January pays an annual contribution by 30 September, calculated from its contribution-relevant income and capped at 10 per cent of its annual surplus, but at least 1,050 euros, or 2,100 euros if it may hold clients' money or securities. It reports to the scheme, with its adopted annual accounts, the amounts of any provisions for contribution duties formed, released or used and of any notional manager's salary deducted."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 1 Abs. 1 und 1a",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: File auditor-confirmed contribution figures with the EdW by 1 July",
+     "source": "https://www.gesetze-im-internet.de/kredanstwiawphev/__2.html",
+     "sourceLabel": "Gesetze im Internet, EdW-Beitragsverordnung (EdWBeitrV), BGBl. I S. 1891, § 2 Abs. 3 bis 5",
+     "payload": {
+      "key": "obl-de-edwbeitrv-contribution-data",
+      "titles": {
+       "en": "File auditor-confirmed contribution figures with the EdW by 1 July"
+      },
+      "summaries": {
+       "en": "The institution files the figures needed to calculate its annual contribution, with an auditor's confirmation that they are materially and arithmetically correct, by 1 July of each settlement year, based on its adopted and audited accounts for the last financial year ending before 1 March. Figures filed late but before 15 August cost a 10 per cent surcharge; after that the scheme estimates the income and sets 1.35 times the contribution as a payment on account."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 Abs. 3 bis 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pay a one-off amount equal to the annual contribution when newly assigned to the EdW",
+     "source": "https://www.gesetze-im-internet.de/kredanstwiawphev/__3.html",
+     "sourceLabel": "Gesetze im Internet, EdW-Beitragsverordnung (EdWBeitrV), BGBl. I S. 1891, § 3",
+     "payload": {
+      "key": "obl-de-edwbeitrv-one-off-payment",
+      "titles": {
+       "en": "Pay a one-off amount equal to the annual contribution when newly assigned to the EdW"
+      },
+      "summaries": {
+       "en": "An institution newly assigned to the scheme after 18 July 2013 pays, together with its first annual contribution, a one-off amount equal to that contribution, or the minimum contribution if it owes no annual contribution, and pays the minimum contribution first on assignment, which is credited against it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add RStruktFV, the German regulation on raising contributions to the restructuring fund for credit institutions (Restrukturierungsfonds-Verordnung)",
+   "source": "https://www.gesetze-im-internet.de/rstruktfv_2015/BJNR126800015.html",
+   "sourceLabel": "Gesetze im Internet, Restrukturierungsfonds-Verordnung (RStruktFV), BGBl. I S. 1268, made by the Bundesregierung under § 12g of the Restrukturierungsfondsgesetz (Eingangsformel); full text page with the Vollzitat and the Stand (Geändert durch Art. 9 G v. 23.12.2016 I 3171); entry into force not read, the regulation naming only the day after its promulgation",
+   "payload": {
+    "key": "de-rstruktfv-2015",
+    "titles": {
+     "de": "Verordnung über die Erhebung der Beiträge zum Restrukturierungsfonds für Kreditinstitute (Restrukturierungsfonds-Verordnung - RStruktFV)",
+     "en": "Restructuring Fund Contributions Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "RStruktFV",
+    "officialRef": "Restrukturierungsfonds-Verordnung vom 14. Juli 2015 (BGBl. I S. 1268)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bundesregierung-de",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send the resolution authority the extra data for the restructuring fund risk indicators",
+     "source": "https://www.gesetze-im-internet.de/rstruktfv_2015/__6.html",
+     "sourceLabel": "Gesetze im Internet, Restrukturierungsfonds-Verordnung (RStruktFV), BGBl. I S. 1268, § 6 Abs. 1 und 8",
+     "payload": {
+      "key": "obl-de-rstruktfv-risk-indicator-data",
+      "titles": {
+       "en": "Send the resolution authority the extra data for the restructuring fund risk indicators"
+      },
+      "summaries": {
+       "en": "A CRR credit institution or investment firm liable to contribute to the restructuring fund, other than the investment firms § 1 Abs. 1 names, sends the resolution authority, beside the data the EU contributions regulation already requires, the data it needs for the additional risk indicators, for the year of the relevant annual accounts. These include the trading book items and the off-balance-sheet items of form 1 of the bank accounting regulation, the notional volume of forward transactions, the share of derivatives cleared through a central counterparty, its institutional protection scheme, and the end date of any restructuring plan or term of any liquidation plan after public support, all within the deadlines of Articles 14 and 20 of Delegated Regulation (EU) 2015/63."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6 Abs. 1 und 8",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report total liabilities, covered deposits and own funds as a lump-sum contributor",
+     "source": "https://www.gesetze-im-internet.de/rstruktfv_2015/__6.html",
+     "sourceLabel": "Gesetze im Internet, Restrukturierungsfonds-Verordnung (RStruktFV), BGBl. I S. 1268, § 6 Abs. 2 und 8 und § 1 Abs. 3",
+     "payload": {
+      "key": "obl-de-rstruktfv-investment-firm-and-branch-data",
+      "titles": {
+       "en": "Report total liabilities, covered deposits and own funds as a lump-sum contributor"
+      },
+      "summaries": {
+       "en": "The investment firms § 1 Abs. 1 describes by reference to Article 96(1) of the CRR and Annex I of Directive 2004/39/EC, and German branches of EU institutions, which pay a contribution set by bands of their liabilities, send the resolution authority at single entity level their total liabilities, their covered deposits and their own funds as the regulation defines them, for the year of the relevant annual accounts and within the EU deadlines."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6 Abs. 2 und 8 und § 1 Abs. 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Confirm that contribution data are correct and have them confirmed by the auditor on request",
+     "source": "https://www.gesetze-im-internet.de/rstruktfv_2015/__6.html",
+     "sourceLabel": "Gesetze im Internet, Restrukturierungsfonds-Verordnung (RStruktFV), BGBl. I S. 1268, § 6 Abs. 4 bis 6",
+     "payload": {
+      "key": "obl-de-rstruktfv-data-correctness-confirmation",
+      "titles": {
+       "en": "Confirm that contribution data are correct and have them confirmed by the auditor on request"
+      },
+      "summaries": {
+       "en": "Every institution liable to contribute confirms to the resolution authority that the information it sends under the EU contributions regulation and this regulation is materially and arithmetically correct. Where the resolution authority asks, an institution outside the small institution rules has the correctness confirmed by its auditor, or by its auditing association for a cooperative or by the savings banks association's audit office for a savings bank, and it answers requests for further evidence."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6 Abs. 4 bis 6",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give planned balance sheet figures where no annual accounts exist yet for the reference year",
+     "source": "https://www.gesetze-im-internet.de/rstruktfv_2015/__6.html",
+     "sourceLabel": "Gesetze im Internet, Restrukturierungsfonds-Verordnung (RStruktFV), BGBl. I S. 1268, § 6 Abs. 7",
+     "payload": {
+      "key": "obl-de-rstruktfv-new-institution-plan-figures",
+      "titles": {
+       "en": "Give planned balance sheet figures where no annual accounts exist yet for the reference year"
+      },
+      "summaries": {
+       "en": "An institution that cannot present annual accounts for the reference year because it was not yet active has its contribution calculated on planned balance sheets, provides one for each contribution period when the resolution authority asks, and estimates and sends any positions and indicators the planned balance sheet does not show."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 6 Abs. 7",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  }
+ ]
+}
