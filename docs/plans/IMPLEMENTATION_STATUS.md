@@ -503,7 +503,10 @@ the Netherlands, Austria and Switzerland.
   99 of 103 duties carry their text, and four do not, because FMA-PIV § 3 sets its rates
   out as a table and VERA-V § 6a publishes its formulas only as images. Then Latvia's
   regulations (`provisions/lv-noteikumi.json`): 450 numbered points with English and
-  Swedish beside each; all 131 duties carry their text. The baseline's
+  Swedish beside each; all 131 duties carry their text. Then Estonia's regulations
+  (`provisions/ee-maarused.json`): 139 sections and 5 annex points with English and Swedish
+  beside each; 98 of 100 duties carry their text, and two do not, because the housing loan
+  limits regulation publishes its formulas only as pictures. The baseline's
   tests filed and approved everything on the branch together (39 tests, 798 s).
 - **In work on this branch:** the
   law's own words for the other regulations, each

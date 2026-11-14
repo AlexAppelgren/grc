@@ -208,6 +208,12 @@ library takes their law in its own language. What needs you, most urgent first.
       check them against the issuers' versions. Also: "utsedd representant" for a credit
       intermediary's appointed representative (from the Mortgage Credit Directive), where
       the laws file says "anknutet ombud"; "förvaltningsråd" for a padome.
+- [ ] **A reader on Estonia's regulations' law text.** Worth a look: the housing loan
+      limits (Eesti Pank, RT I, 16.12.2014, 17) whose §§ 3 and 4 hold their formulas only
+      as pictures, so two duties carry no text and the loan-to-value duty carries part;
+      "andelsägare" for the "osanikud" of the fund prospectus regulation § 9 p 8; the
+      national terms with no EU source ("överkollateraliseringsgrad", "god redovisningssed
+      i Estland").
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
