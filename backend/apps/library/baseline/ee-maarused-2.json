@@ -1,0 +1,2387 @@
+{
+  "tranche": "ee-maarused-2",
+  "researchedOn": "2026-11-14",
+  "instruments": [
+    {
+      "title": "Add Süsteemse riski puhvri arvutamine, the Governor of Eesti Pank's regulation on calculating the systemic risk buffer (Eesti Panga presidendi 02.06.2021 määrus nr 9)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021006/txt",
+      "sourceLabel": "Riigi Teataja, Süsteemse riski puhvri arvutamise kord (Eesti Panga presidendi 02.06.2021 määrus nr 9), RT I, 09.06.2021, 2, consolidated text RT I, 03.12.2021, 6, in force from 06.12.2021, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 86⁴⁹ lg 2 p 2, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2021-06-09-2",
+        "titles": {
+          "et": "Süsteemse riski puhvri arvutamise kord",
+          "en": "Procedure for calculating the systemic risk buffer"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Süsteemse riski puhvri arvutamine",
+        "officialRef": "Süsteemse riski puhvri arvutamise kord (RT I, 09.06.2021, 2)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2021-06-12"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Calculate the systemic risk buffer with the regulation's formula on every level of consolidation",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021006/txt",
+          "sourceLabel": "Riigi Teataja, Süsteemse riski puhvri arvutamise kord (Eesti Panga presidendi 02.06.2021 määrus nr 9, RT I, 09.06.2021, 2), § 2 ja § 3 lg 1, consolidated text RT I, 03.12.2021, 6, in force from 06.12.2021",
+          "payload": {
+            "key": "obl-ee-susteemse-riski-puhvri-arvutamine-buffer-formula",
+            "titles": {
+              "en": "Calculate the systemic risk buffer with the regulation's formula on every level of consolidation"
+            },
+            "summaries": {
+              "en": "A credit institution licensed in Estonia calculates, individually and on a sub-consolidated and a consolidated basis, the own funds it holds as systemic risk buffer: the rate set for its total risk exposure times that exposure, plus, for each subset of exposures the Credit Institutions Act names, the rate set for that subset times the exposures in it. Each exposure amount is computed under Article 92(3) of Regulation (EU) No 575/2013."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 ja § 3 lg 1",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Apply the higher of Eesti Pank's and the ECB's systemic risk buffer rate from the day the requirement takes effect",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021006/txt",
+          "sourceLabel": "Riigi Teataja, Süsteemse riski puhvri arvutamise kord (Eesti Panga presidendi 02.06.2021 määrus nr 9, RT I, 09.06.2021, 2), § 3 lg 2 ja 3, consolidated text RT I, 03.12.2021, 6, in force from 06.12.2021",
+          "payload": {
+            "key": "obl-ee-susteemse-riski-puhvri-arvutamine-applicable-rate",
+            "titles": {
+              "en": "Apply the higher of Eesti Pank's and the ECB's systemic risk buffer rate from the day the requirement takes effect"
+            },
+            "summaries": {
+              "en": "For each relevant set of exposures the institution uses the systemic risk buffer rate set by Eesti Pank or the one the European Central Bank set under Article 5(2) of Regulation (EU) No 1024/2013, whichever is higher, and counts it from the date the requirement enters into force. Where no rate has been set, the buffer is zero."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 2 ja 3",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Krediidiasutuse bilansiväline aruandlus, the Governor of Eesti Pank's regulation on credit institutions' off-balance-sheet reporting (Eesti Panga presidendi 09.11.2007 määrus nr 16)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026005/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuse bilansivälise aruandluse kehtestamine (Eesti Panga presidendi 09.11.2007 määrus nr 16), RTL 2007, 88, 1479, consolidated text RT I, 27.02.2026, 5, in force from 02.03.2026, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 91 lg 1, Riikliku statistika seadus § 30¹ lg 3¹, Article 5 of the ESCB Statute and Article 4 of Regulation (EC) No 2533/98, read through the gazette's own interface; entry into force read in § 18 of the regulation",
+      "payload": {
+        "key": "ee-rtl-2007-88-1479",
+        "titles": {
+          "et": "Krediidiasutuse bilansivälise aruandluse kehtestamine",
+          "en": "Off-balance-sheet reporting of credit institutions"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Krediidiasutuse bilansiväline aruandlus",
+        "officialRef": "Krediidiasutuse bilansivälise aruandluse kehtestamine (RTL 2007, 88, 1479)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2008-01-01",
+        "implementsNote": "Serves ECB Regulation (EU) No 1011/2012 on securities holdings statistics (ECB/2012/24), as § 1 lg 2 of the regulation states"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report investment services to Finantsinspektsioon every month by the tenth bank day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026005/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuse bilansivälise aruandluse kehtestamine (Eesti Panga presidendi 09.11.2007 määrus nr 16, RTL 2007, 88, 1479), § 2, § 3 p 3, § 4 ja § 12, consolidated text RT I, 27.02.2026, 5, in force from 02.03.2026",
+          "payload": {
+            "key": "obl-ee-bilansivaline-aruandlus-investment-services-report",
+            "titles": {
+              "en": "Report investment services to Finantsinspektsioon every month by the tenth bank day"
+            },
+            "summaries": {
+              "en": "Every credit institution operating in Estonia, branches of foreign ones included, draws up the investment services report (code 246) in annex 3 for each calendar month and submits it to Finantsinspektsioon by the tenth bank day after the month ends. Clients are classified under the European system of accounts and instruments as Eesti Pank's supplementary balance sheet reporting regulation defines them."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3 p 3, § 4 ja § 12",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the investment services report in XML with ISO codes, correct it on errors and file it empty when there is no data",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026005/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuse bilansivälise aruandluse kehtestamine (Eesti Panga presidendi 09.11.2007 määrus nr 16, RTL 2007, 88, 1479), § 5 ja § 6, consolidated text RT I, 27.02.2026, 5, in force from 02.03.2026",
+          "payload": {
+            "key": "obl-ee-bilansivaline-aruandlus-xml-corrections-codes",
+            "titles": {
+              "en": "File the investment services report in XML with ISO codes, correct it on errors and file it empty when there is no data"
+            },
+            "summaries": {
+              "en": "The report goes to Finantsinspektsioon electronically as an XML document under Eesti Pank's regulation on electronic reporting, with currency codes under ISO 4217 and country codes under ISO 3166-1 in capitals. On finding an error or changing its accounting policies the institution submits a corrected report, and it submits an empty report when it has no data to report."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 ja § 6",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Krediidiasutuste maksebilansi aruandlus, the Governor of Eesti Pank's regulation on credit institutions' balance of payments reporting (Eesti Panga presidendi 01.10.2007 määrus nr 14)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025011/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuste maksebilansi aruandluse kehtestamine (Eesti Panga presidendi 01.10.2007 määrus nr 14), RTL 2007, 77, 1338, consolidated text RT I, 27.05.2025, 11, in force from 01.01.2026, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 91 lg 3 ja Riikliku statistika seadus § 30¹ lg 3¹, read through the gazette's own interface; entry into force read in § 12 of the regulation",
+      "payload": {
+        "key": "ee-rtl-2007-77-1338",
+        "titles": {
+          "et": "Krediidiasutuste maksebilansi aruandluse kehtestamine",
+          "en": "Balance of payments reporting of credit institutions"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Krediidiasutuste maksebilansi aruandlus",
+        "officialRef": "Krediidiasutuste maksebilansi aruandluse kehtestamine (RTL 2007, 77, 1338)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2008-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report services sold to and bought from non-residents to Eesti Pank every quarter by the tenth bank day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025011/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuste maksebilansi aruandluse kehtestamine (Eesti Panga presidendi 01.10.2007 määrus nr 14, RTL 2007, 77, 1338), § 2, § 3 ja § 4, consolidated text RT I, 27.05.2025, 11, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-krediidiasutuste-maksebilanss-services-report",
+            "titles": {
+              "en": "Report services sold to and bought from non-residents to Eesti Pank every quarter by the tenth bank day"
+            },
+            "summaries": {
+              "en": "Every credit institution operating in Estonia, branches of foreign ones included, draws up for its unit in Estonia (the head office) the report on services sold to and bought from non-residents (code 221) in annex 2 for each quarter, and submits it to Eesti Pank by the tenth bank day after the quarter ends."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3 ja § 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the services report in XML with ISO codes, correct it on errors and file it empty when there is no data",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025011/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuste maksebilansi aruandluse kehtestamine (Eesti Panga presidendi 01.10.2007 määrus nr 14, RTL 2007, 77, 1338), § 5 ja § 6, consolidated text RT I, 27.05.2025, 11, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-krediidiasutuste-maksebilanss-xml-corrections-codes",
+            "titles": {
+              "en": "File the services report in XML with ISO codes, correct it on errors and file it empty when there is no data"
+            },
+            "summaries": {
+              "en": "The report goes to Eesti Pank electronically as an XML document under Eesti Pank's regulation on electronic reporting, with ISO 4217 currency codes and ISO 3166-1 country codes in capitals. The institution submits a corrected report when it finds an error or changes its accounting policies, and an empty report when there is no data."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 ja § 6",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Maksebilansi andmete esitamine, the Governor of Eesti Pank's regulation on reporting clients' payments for the balance of payments (Eesti Panga presidendi 22.10.2013 määrus nr 7)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026007/txt",
+      "sourceLabel": "Riigi Teataja, Maksebilansi koostamiseks vajalike andmete esitamine (Eesti Panga presidendi 22.10.2013 määrus nr 7), RT I, 25.10.2013, 1, consolidated text RT I, 27.02.2026, 7, in force from 02.03.2026, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 91 lg 3 ja Riikliku statistika seadus § 30¹ lg 3¹, read through the gazette's own interface; entry into force read in § 10 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2013-10-25-1",
+        "titles": {
+          "et": "Maksebilansi koostamiseks vajalike andmete esitamine",
+          "en": "Submission of data needed for compiling the balance of payments"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Maksebilansi andmete esitamine",
+        "officialRef": "Maksebilansi koostamiseks vajalike andmete esitamine (RT I, 25.10.2013, 1)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:payments",
+        "inForceFrom": "2014-02-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report residents' cross-border and non-residents' domestic payments of 10,000 euros or more to Eesti Pank every month by the seventh bank day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026007/txt",
+          "sourceLabel": "Riigi Teataja, Maksebilansi koostamiseks vajalike andmete esitamine (Eesti Panga presidendi 22.10.2013 määrus nr 7, RT I, 25.10.2013, 1), § 2, § 4 lg 1, § 5 ja § 6, consolidated text RT I, 27.02.2026, 7, in force from 02.03.2026",
+          "payload": {
+            "key": "obl-ee-maksebilansi-andmed-monthly-payment-reports",
+            "titles": {
+              "en": "Report residents' cross-border and non-residents' domestic payments of 10,000 euros or more to Eesti Pank every month by the seventh bank day"
+            },
+            "summaries": {
+              "en": "Every credit institution operating in Estonia, branches included, reports for the payment services provided in its Estonian units the cross-border payments of residents (code 227) and the domestic payments of non-residents (code 228) on the regulation's annexes, counting each payment of 10,000 euros or more or the equivalent in another currency. The period is a calendar month and the reports are due by the seventh bank day after it ends."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 4 lg 1, § 5 ja § 6",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Classify payments as domestic or cross-border by the providers' location and leave out pass-through and returned payments",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026007/txt",
+          "sourceLabel": "Riigi Teataja, Maksebilansi koostamiseks vajalike andmete esitamine (Eesti Panga presidendi 22.10.2013 määrus nr 7, RT I, 25.10.2013, 1), § 3 lg 2 ja 3 ja § 4 lg 2–6, consolidated text RT I, 27.02.2026, 7, in force from 02.03.2026",
+          "payload": {
+            "key": "obl-ee-maksebilansi-andmed-scope-of-payments",
+            "titles": {
+              "en": "Classify payments as domestic or cross-border by the providers' location and leave out pass-through and returned payments"
+            },
+            "summaries": {
+              "en": "A payment is domestic when both the payer's and the payee's provider are in Estonia and cross-border when either is outside it, whatever the currency; a payment between clients of the same institution counts as domestic and a group account as a notional account. The reports leave out payments passing through intermediary or correspondent accounts between other institutions and payments returned to the payer for missing details."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 2 ja 3 ja § 4 lg 2–6",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the payment reports in XML, file empty reports when there is no data and keep them for one year",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026007/txt",
+          "sourceLabel": "Riigi Teataja, Maksebilansi koostamiseks vajalike andmete esitamine (Eesti Panga presidendi 22.10.2013 määrus nr 7, RT I, 25.10.2013, 1), § 7 lg 1 ja 3 ja § 8, consolidated text RT I, 27.02.2026, 7, in force from 02.03.2026",
+          "payload": {
+            "key": "obl-ee-maksebilansi-andmed-xml-empty-and-retention",
+            "titles": {
+              "en": "File the payment reports in XML, file empty reports when there is no data and keep them for one year"
+            },
+            "summaries": {
+              "en": "The reports go to Eesti Pank electronically as XML documents under Eesti Pank's regulation on electronic reporting, with an empty report where there is no data. The institution keeps the reports it has submitted for one year."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7 lg 1 ja 3 ja § 8",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Pangandusmääruse aruannete edastamise vorm, the Governor of Eesti Pank's regulation on the format of supervisory reports under the Capital Requirements Regulation (Eesti Panga presidendi 02.07.2014 määrus nr 11)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/128052021002/txt",
+      "sourceLabel": "Riigi Teataja, Pangandusmääruse alusel kehtestatud järelevalveliste aruannete edastamise vorm (Eesti Panga presidendi 02.07.2014 määrus nr 11), RT I, 03.07.2014, 40, consolidated text RT I, 28.05.2021, 2, in force from 28.06.2021, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 91 lg 1, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2014-07-03-40",
+        "titles": {
+          "et": "Pangandusmääruse alusel kehtestatud järelevalveliste aruannete edastamise vorm",
+          "en": "Format for transmitting supervisory reports required under the Capital Requirements Regulation"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Pangandusmääruse aruannete edastamise vorm",
+        "officialRef": "Pangandusmääruse alusel kehtestatud järelevalveliste aruannete edastamise vorm (RT I, 03.07.2014, 40)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2014-07-06",
+        "implementsNote": "Sets the technical requirements for submitting the supervisory reports of Commission Implementing Regulations (EU) 2021/451 and (EU) 2021/453 under Regulation (EU) No 575/2013, as § 1 of the regulation states"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Submit the supervisory reports due under the Capital Requirements Regulation in XBRL to Finantsinspektsioon",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/128052021002/txt",
+          "sourceLabel": "Riigi Teataja, Pangandusmääruse alusel kehtestatud järelevalveliste aruannete edastamise vorm (Eesti Panga presidendi 02.07.2014 määrus nr 11, RT I, 03.07.2014, 40), § 1, § 2, § 3 lg 1 ja 4 ja § 5, consolidated text RT I, 28.05.2021, 2, in force from 28.06.2021",
+          "payload": {
+            "key": "obl-ee-pangandusmaaruse-aruannete-vorm-xbrl-to-finantsinspektsioon",
+            "titles": {
+              "en": "Submit the supervisory reports due under the Capital Requirements Regulation in XBRL to Finantsinspektsioon"
+            },
+            "summaries": {
+              "en": "Every credit institution operating in Estonia, and every branch of a foreign one, that has a reporting duty under the supervisory reporting standards of Implementing Regulations (EU) 2021/451 and 2021/453 submits those reports to Finantsinspektsioon in the XBRL format. It follows the regulation and the requirements the European Banking Authority publishes on its website, and sends the reports to the address fiaruanded@fi.ee."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1, § 2, § 3 lg 1 ja 4 ja § 5",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Use ISO codes, business register codes and the set precision in the supervisory reports",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/128052021002/txt",
+          "sourceLabel": "Riigi Teataja, Pangandusmääruse alusel kehtestatud järelevalveliste aruannete edastamise vorm (Eesti Panga presidendi 02.07.2014 määrus nr 11, RT I, 03.07.2014, 40), § 6 ja § 8 lg 1 ja 2, consolidated text RT I, 28.05.2021, 2, in force from 28.06.2021",
+          "payload": {
+            "key": "obl-ee-pangandusmaaruse-aruannete-vorm-codes-identifiers-precision",
+            "titles": {
+              "en": "Use ISO codes, business register codes and the set precision in the supervisory reports"
+            },
+            "summaries": {
+              "en": "Currency codes follow ISO 4217 and country codes ISO 3166, in capitals, and the institution, holding company, counterparty or connected persons are identified by their business register code unless the reporting standard requires otherwise, or else by an identifier the institution assigns, with no <, >, &, apostrophe or quotation mark in identifiers or text. Amounts are given in whole euros or to the cent, and percentages as i/100 rounded to four decimals."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 ja § 8 lg 1 ja 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Operatsiooniriski aruanded, the Governor of Eesti Pank's regulation on operational risk reports (Eesti Panga presidendi 02.01.2014 määrus nr 2)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025014/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuse ja krediidiasutuse konsolideerimisgrupi operatsiooniriski aruannete kehtestamine (Eesti Panga presidendi 02.01.2014 määrus nr 2), RT I, 07.01.2014, 10, consolidated text RT I, 27.05.2025, 14, in force from 01.01.2026, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 91 lg 1, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2014-01-07-10",
+        "titles": {
+          "et": "Krediidiasutuse ja krediidiasutuse konsolideerimisgrupi operatsiooniriski aruannete kehtestamine",
+          "en": "Operational risk reports of credit institutions and credit institution consolidation groups"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Operatsiooniriski aruanded",
+        "officialRef": "Krediidiasutuse ja krediidiasutuse konsolideerimisgrupi operatsiooniriski aruannete kehtestamine (RT I, 07.01.2014, 10)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2014-01-10"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report operational risk losses and incidents, key risk indicators and lawsuits to Finantsinspektsioon every quarter",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025014/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuse ja krediidiasutuse konsolideerimisgrupi operatsiooniriski aruannete kehtestamine (Eesti Panga presidendi 02.01.2014 määrus nr 2, RT I, 07.01.2014, 10), § 2, § 3, § 5 ja § 6 lg 4, consolidated text RT I, 27.05.2025, 14, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-operatsiooniriski-aruanded-quarterly-reports",
+            "titles": {
+              "en": "Report operational risk losses and incidents, key risk indicators and lawsuits to Finantsinspektsioon every quarter"
+            },
+            "summaries": {
+              "en": "Every credit institution operating in Estonia draws up the operational risk loss and incident report (code 672), the key risk indicators report (673) and the lawsuits report (674) on the annexes for each quarter and submits them to Finantsinspektsioon within the month after the quarter ends. A parent, or a subsidiary of a financial or mixed financial holding company acting as parent in Estonia, reports on a consolidated basis only; any other institution reports on a solo basis only."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3, § 5 ja § 6 lg 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Prepare the operational risk reports in Estonian and in whole euros as at the end of the quarter",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025014/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuse ja krediidiasutuse konsolideerimisgrupi operatsiooniriski aruannete kehtestamine (Eesti Panga presidendi 02.01.2014 määrus nr 2, RT I, 07.01.2014, 10), § 4 ja § 7, consolidated text RT I, 27.05.2025, 14, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-operatsiooniriski-aruanded-preparation-basis",
+            "titles": {
+              "en": "Prepare the operational risk reports in Estonian and in whole euros as at the end of the quarter"
+            },
+            "summaries": {
+              "en": "The reports are written in Estonian, amounts are in euros rounded to whole units, foreign currency amounts are converted at the ECB rate of the period's last bank day and data are given as at the end of the period unless the regulation says otherwise. Country codes follow ISO 3166-1 in capitals and dates ISO 8601-1."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 ja § 7",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the operational risk reports in XML, resubmit them corrected on errors and file empty ones when there is no data",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025014/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuse ja krediidiasutuse konsolideerimisgrupi operatsiooniriski aruannete kehtestamine (Eesti Panga presidendi 02.01.2014 määrus nr 2, RT I, 07.01.2014, 10), § 6 lg 1–3, consolidated text RT I, 27.05.2025, 14, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-operatsiooniriski-aruanded-xml-corrections-empty",
+            "titles": {
+              "en": "File the operational risk reports in XML, resubmit them corrected on errors and file empty ones when there is no data"
+            },
+            "summaries": {
+              "en": "The reports go to Finantsinspektsioon electronically as XML documents under Eesti Pank's regulation on electronic reporting. A report found to contain errors is resubmitted in corrected form, and a report with no data to show is submitted empty."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 lg 1–3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Pangandusgrupi väärtpaberiosaluste aruanded, the Governor of Eesti Pank's regulation on banking groups' securities holdings reports (Eesti Panga presidendi 13.05.2025 määrus nr 2)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025001/txt",
+      "sourceLabel": "Riigi Teataja, Pangandusgrupi väärtpaberiosaluste aruannete esitamise nõuded (Eesti Panga presidendi 13.05.2025 määrus nr 2), RT I, 27.05.2025, 1, original text RT I, 27.05.2025, 1, in force from 01.01.2026, issued by the Governor of Eesti Pank under Eesti Panga seadus § 2 lg 2 p 7 ja Krediidiasutuste seadus § 91 lg 3, read through the gazette's own interface; entry into force read in § 7 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2025-05-27-1",
+        "titles": {
+          "et": "Pangandusgrupi väärtpaberiosaluste aruannete esitamise nõuded",
+          "en": "Requirements for reporting the securities holdings of banking groups"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Pangandusgrupi väärtpaberiosaluste aruanded",
+        "officialRef": "Pangandusgrupi väärtpaberiosaluste aruannete esitamise nõuded (RT I, 27.05.2025, 1)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2026-01-01",
+        "implementsNote": "Sets the content and filing of the securities holdings data banking groups report under Article 3a of ECB Regulation (EU) No 1011/2012 on securities holdings statistics (ECB/2012/24), as § 1 of the regulation states"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report the banking group's securities holdings to Eesti Pank every quarter by the 20th bank day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025001/txt",
+          "sourceLabel": "Riigi Teataja, Pangandusgrupi väärtpaberiosaluste aruannete esitamise nõuded (Eesti Panga presidendi 13.05.2025 määrus nr 2, RT I, 27.05.2025, 1), § 2, § 3 lg 1 ja 2 ja § 4, original text RT I, 27.05.2025, 1, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-vaartpaberiosaluste-aruanded-quarterly-reports",
+            "titles": {
+              "en": "Report the banking group's securities holdings to Eesti Pank every quarter by the 20th bank day"
+            },
+            "summaries": {
+              "en": "A banking group operating in Estonia, as Article 2(1)(b) of ECB Regulation (EU) No 1011/2012 defines it, draws up the report on securities without an ISIN (code 2230), the group-level securities report (2231) and the entity-level securities report (2232) under Article 3a of that regulation. It submits them to Eesti Pank for each quarter by the 20th bank day after the quarter ends."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3 lg 1 ja 2 ja § 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the securities holdings reports in XML, resubmit them on errors and keep barred characters out",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127052025001/txt",
+          "sourceLabel": "Riigi Teataja, Pangandusgrupi väärtpaberiosaluste aruannete esitamise nõuded (Eesti Panga presidendi 13.05.2025 määrus nr 2, RT I, 27.05.2025, 1), § 5, original text RT I, 27.05.2025, 1, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-vaartpaberiosaluste-aruanded-xml-corrections",
+            "titles": {
+              "en": "File the securities holdings reports in XML, resubmit them on errors and keep barred characters out"
+            },
+            "summaries": {
+              "en": "The reports go to Eesti Pank electronically as XML documents under Eesti Pank's regulation on electronic reporting, and new corrected reports follow when errors are found or accounting policies change. Texts and identifiers in them may not contain <, >, &, apostrophes or quotation marks."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Leibkondade uuringu aruandlus, the Governor of Eesti Pank's regulation on reporting for the household finance and consumption survey (Eesti Panga presidendi 08.06.2026 määrus nr 7)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/110062026015/txt",
+      "sourceLabel": "Riigi Teataja, Leibkondade uuringu aruandlus (Eesti Panga presidendi 08.06.2026 määrus nr 7), RT I, 10.06.2026, 15, original text RT I, 10.06.2026, 15, in force from 01.07.2026, issued by the Governor of Eesti Pank under Eesti Panga seadus § 2 lg 2 p 7, Krediidiasutuste seadus § 91 lg 3, Riikliku statistika seadus § 30¹ lg 3¹, Article 5 of the ESCB Statute and Article 4 of Regulation (EC) No 2533/98, read through the gazette's own interface; entry into force read in § 7 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2026-06-10-15",
+        "titles": {
+          "et": "Leibkondade finantskäitumise ja tarbimisharjumuste uuringu aruandluse kehtestamine",
+          "en": "Reporting for the survey of household finance and consumption"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Leibkondade uuringu aruandlus",
+        "officialRef": "Leibkondade finantskäitumise ja tarbimisharjumuste uuringu aruandluse kehtestamine (RT I, 10.06.2026, 15)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2026-07-01",
+        "implementsNote": "Serves ECB Guideline (EU) 2025/333 on reporting statistical information on household wealth, income and consumption (ECB/2025/3), as § 1 lg 2 of the regulation states"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Name a person to receive the survey's pseudonymous codes by 10 September and report any change at once",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/110062026015/txt",
+          "sourceLabel": "Riigi Teataja, Leibkondade finantskäitumise ja tarbimisharjumuste uuringu aruandluse kehtestamine (Eesti Panga presidendi 08.06.2026 määrus nr 7, RT I, 10.06.2026, 15), § 2 lg 1 ja § 4 lg 1–3, original text RT I, 10.06.2026, 15, in force from 01.07.2026",
+          "payload": {
+            "key": "obl-ee-leibkondade-uuringu-aruandlus-authorised-person",
+            "titles": {
+              "en": "Name a person to receive the survey's pseudonymous codes by 10 September and report any change at once"
+            },
+            "summaries": {
+              "en": "Every credit institution operating in Estonia, branches included, sends Eesti Pank at aruandlus@eestipank.ee, by 10 September of the year after the reporting period, the name, personal identification code and e-mail address of the person authorised to receive the pseudonymous survey codes, which Eesti Pank sends to that person encrypted by 30 September. The institution tells Eesti Pank without delay when the authorised person changes."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 1 ja § 4 lg 1–3",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report the loans, deposits and securities of the sampled private persons as at the end of the survey year",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/110062026015/txt",
+          "sourceLabel": "Riigi Teataja, Leibkondade finantskäitumise ja tarbimisharjumuste uuringu aruandluse kehtestamine (Eesti Panga presidendi 08.06.2026 määrus nr 7, RT I, 10.06.2026, 15), § 3 lg 1–6 ja § 5, original text RT I, 10.06.2026, 15, in force from 01.07.2026",
+          "payload": {
+            "key": "obl-ee-leibkondade-uuringu-aruandlus-sample-reports",
+            "titles": {
+              "en": "Report the loans, deposits and securities of the sampled private persons as at the end of the survey year"
+            },
+            "summaries": {
+              "en": "For the private persons in the survey sample the institution reports their loan obligations, deposits and securities on the regulation's three annexes, as at 31 December 2026 first, then as at 31 December 2028 and every three years after that, by 30 November of the following year. Amounts are in euros rounded to whole units, interest rates are given as i/100 to four decimals, dates as yyyy-mm-dd and foreign currency is converted at the ECB rate of the period's last bank day."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 1–6 ja § 5",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Identify the sampled persons in the survey reports only by their pseudonymous codes",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/110062026015/txt",
+          "sourceLabel": "Riigi Teataja, Leibkondade finantskäitumise ja tarbimisharjumuste uuringu aruandluse kehtestamine (Eesti Panga presidendi 08.06.2026 määrus nr 7, RT I, 10.06.2026, 15), § 6 lg 2, original text RT I, 10.06.2026, 15, in force from 01.07.2026",
+          "payload": {
+            "key": "obl-ee-leibkondade-uuringu-aruandlus-pseudonymous-codes-only",
+            "titles": {
+              "en": "Identify the sampled persons in the survey reports only by their pseudonymous codes"
+            },
+            "summaries": {
+              "en": "The reports identify the persons in the sample only by the pseudonymous survey codes Eesti Pank assigned, and never by their personal identification codes."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 lg 2",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the survey reports in XML, resubmit them on errors and file empty ones when there is no data",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/110062026015/txt",
+          "sourceLabel": "Riigi Teataja, Leibkondade finantskäitumise ja tarbimisharjumuste uuringu aruandluse kehtestamine (Eesti Panga presidendi 08.06.2026 määrus nr 7, RT I, 10.06.2026, 15), § 2 lg 2 ja § 6 lg 1, 3 ja 4, original text RT I, 10.06.2026, 15, in force from 01.07.2026",
+          "payload": {
+            "key": "obl-ee-leibkondade-uuringu-aruandlus-xml-corrections-empty",
+            "titles": {
+              "en": "File the survey reports in XML, resubmit them on errors and file empty ones when there is no data"
+            },
+            "summaries": {
+              "en": "The reports go to Eesti Pank electronically as XML documents under Eesti Pank's regulation on electronic reporting; corrected reports follow when errors are found or accounting policies change, and an empty report is filed where there is no data. Eesti Pank may release an institution that reported no resident private persons' loans, deposits or securities under its off-balance-sheet or supplementary balance sheet reporting regulations."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 2 ja § 6 lg 1, 3 ja 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Krediidiasutuste kontod Eesti Pangas, the Governor of Eesti Pank's regulation on credit institutions' accounts at Eesti Pank (Eesti Panga presidendi 22.09.2022 määrus nr 7)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/124092022003/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas (Eesti Panga presidendi 22.09.2022 määrus nr 7), RT I, 24.09.2022, 3, original text RT I, 24.09.2022, 3, in force from 21.11.2022, issued by the Governor of Eesti Pank under Krediidiasutuste seadus § 87 lg 1, read through the gazette's own interface; entry into force read in § 22 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2022-09-24-3",
+        "titles": {
+          "et": "Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas",
+          "en": "Terms for opening and using credit institutions' accounts at Eesti Pank"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Krediidiasutuste kontod Eesti Pangas",
+        "officialRef": "Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas (RT I, 24.09.2022, 3)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2022-11-21"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Apply for an Eesti Pank account on its form with proof of legal status, powers and ownership",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/124092022003/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas (Eesti Panga presidendi 22.09.2022 määrus nr 7, RT I, 24.09.2022, 3), § 2 ja § 3 lg 1 ja 2, original text RT I, 24.09.2022, 3, in force from 21.11.2022",
+          "payload": {
+            "key": "obl-ee-eesti-panga-kontod-account-application",
+            "titles": {
+              "en": "Apply for an Eesti Pank account on its form with proof of legal status, powers and ownership"
+            },
+            "summaries": {
+              "en": "An Estonian credit institution, an Estonian branch of a foreign one or a credit institution being founded in Estonia applies for an account at Eesti Pank on the form on Eesti Pank's website, with documents proving its legal status and its representatives' powers. It supplies the further data Eesti Pank asks for on its legal status, its managers' powers, an ownership and control structure that lets the beneficial owners be identified, and the expected number, counterparties and purposes of its transactions through the account."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 ja § 3 lg 1 ja 2",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Use the Eesti Pank account only for its purposes and through authorised representatives, and report changes in them at once",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/124092022003/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas (Eesti Panga presidendi 22.09.2022 määrus nr 7, RT I, 24.09.2022, 3), § 5 lg 1, 3 ja 4, original text RT I, 24.09.2022, 3, in force from 21.11.2022",
+          "payload": {
+            "key": "obl-ee-eesti-panga-kontod-authorised-use",
+            "titles": {
+              "en": "Use the Eesti Pank account only for its purposes and through authorised representatives, and report changes in them at once"
+            },
+            "summaries": {
+              "en": "The institution may use the account only to hold euros, make payments, secure payment obligations and hold its minimum reserves, and only through representatives it has authorised or who represent it by law. When the representatives authorised to dispose of the account or the scope of their powers change, it gives Eesti Pank without delay all the data needed for the legal certainty of their dealings."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 lg 1, 3 ja 4",
+            "dutyType": "governance",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Send Eesti Pank payment orders electronically with the required payer and payee details",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/124092022003/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas (Eesti Panga presidendi 22.09.2022 määrus nr 7, RT I, 24.09.2022, 3), § 6 lg 1 ja 3, original text RT I, 24.09.2022, 3, in force from 21.11.2022",
+          "payload": {
+            "key": "obl-ee-eesti-panga-kontod-electronic-orders",
+            "titles": {
+              "en": "Send Eesti Pank payment orders electronically with the required payer and payee details"
+            },
+            "summaries": {
+              "en": "The institution gives its orders, payment orders included, to Eesti Pank electronically, and in another reliable written form only when electronic submission is temporarily blocked or too risky and Eesti Pank accepts that form. A payment order identifies at least the payer and payee by name and IBAN, the payer's identifying data, the payee's address, the amount and currency and the value date, with the purpose or reference and the intermediary's details where needed."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 lg 1 ja 3",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Tell Eesti Pank and return the money at once when the account is credited by mistake",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/124092022003/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiasutuste kontode avamise ja kasutamise tingimused Eesti Pangas (Eesti Panga presidendi 22.09.2022 määrus nr 7, RT I, 24.09.2022, 3), § 10 lg 1, original text RT I, 24.09.2022, 3, in force from 21.11.2022",
+          "payload": {
+            "key": "obl-ee-eesti-panga-kontod-mistaken-credits",
+            "titles": {
+              "en": "Tell Eesti Pank and return the money at once when the account is credited by mistake"
+            },
+            "summaries": {
+              "en": "When Eesti Pank has credited the institution's account by mistake or without a legal basis, the institution informs Eesti Pank and returns the amount immediately after discovering the entry."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 10 lg 1",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Maksejuhiste aktsepteerimise tingimused, the Governor of Eesti Pank's regulation on accepting payment orders (Eesti Panga presidendi 11.05.2010 määrus nr 4)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/13312807/xml",
+      "sourceLabel": "Riigi Teataja, Maksejuhiste aktsepteerimise tingimused (Eesti Panga presidendi 11.05.2010 määrus nr 4), RTL 2010, 25, 446, original text RTL 2010, 25, 446, in force from 22.05.2010, issued by the Governor of Eesti Pank under Eesti Panga seadus § 2 lg 1, § 14 p 3 ja § 15 lg 3 ning Võlaõigusseadus § 709 lg 17, read through the gazette's own interface (its XML); entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rtl-2010-25-446",
+        "titles": {
+          "et": "Maksejuhiste aktsepteerimise tingimused",
+          "en": "Conditions for accepting payment orders"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Maksejuhiste aktsepteerimise tingimused",
+        "officialRef": "Maksejuhiste aktsepteerimise tingimused (RTL 2010, 25, 446)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:payments",
+        "inForceFrom": "2010-05-22"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report a payment order that does not clearly express the initiator's will by the next settlement day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/13312807/xml",
+          "sourceLabel": "Riigi Teataja, Maksejuhiste aktsepteerimise tingimused (Eesti Panga presidendi 11.05.2010 määrus nr 4, RTL 2010, 25, 446), § 4 lg 2 ja § 5, original text RTL 2010, 25, 446, in force from 22.05.2010",
+          "payload": {
+            "key": "obl-ee-maksejuhiste-aktsepteerimine-unclear-orders",
+            "titles": {
+              "en": "Report a payment order that does not clearly express the initiator's will by the next settlement day"
+            },
+            "summaries": {
+              "en": "A credit or financial institution licensed in Estonia that receives a payment order which does not clearly express the initiator's will, for instance because required data are missing or contradict each other, informs the initiator, or the initiator's institution or intermediary when it is not the initiator's own institution, by the next settlement day at the latest, unless the initiator has decided otherwise."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 lg 2 ja § 5",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Accept a payment order when the agreed conditions are met, and return the funds at once when it is not accepted",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/13312807/xml",
+          "sourceLabel": "Riigi Teataja, Maksejuhiste aktsepteerimise tingimused (Eesti Panga presidendi 11.05.2010 määrus nr 4, RTL 2010, 25, 446), § 6, original text RTL 2010, 25, 446, in force from 22.05.2010",
+          "payload": {
+            "key": "obl-ee-maksejuhiste-aktsepteerimine-acceptance-conditions",
+            "titles": {
+              "en": "Accept a payment order when the agreed conditions are met, and return the funds at once when it is not accepted"
+            },
+            "summaries": {
+              "en": "The institution must accept a payment order delivered on the agreed terms when the funds for it have been provided, the fees have been agreed, the execution date lets the deadline be met and making the payment breaches no legal duty. Where it does not accept the order, it returns the funds handed over for it to the payer without delay, allowing the time reasonably needed for the repayment."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Pass payment orders along the chain without truncating or distorting their data",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/13312807/xml",
+          "sourceLabel": "Riigi Teataja, Maksejuhiste aktsepteerimise tingimused (Eesti Panga presidendi 11.05.2010 määrus nr 4, RTL 2010, 25, 446), § 7, original text RTL 2010, 25, 446, in force from 22.05.2010",
+          "payload": {
+            "key": "obl-ee-maksejuhiste-aktsepteerimine-pass-on-full-data",
+            "titles": {
+              "en": "Pass payment orders along the chain without truncating or distorting their data"
+            },
+            "summaries": {
+              "en": "When a credit or debit payment order passes between the payer's institution, intermediaries and the payee's institution, each passes it on so that all data needed to execute it reach every institution and intermediary without truncation or distortion, and the institution at the receiving end can tell its client who initiated the payment and for what purpose."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7",
+            "dutyType": "conduct",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Investeerimisfondi statistilised aruanded, the Governor of Eesti Pank's regulation on investment fund statistical reports (Eesti Panga presidendi 24.06.2025 määrus nr 7)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102072025001/txt",
+      "sourceLabel": "Riigi Teataja, Investeerimisfondi statistiliste aruannete koostamise nõuded ning aruannete esitamise kord (Eesti Panga presidendi 24.06.2025 määrus nr 7), RT I, 02.07.2025, 1, original text RT I, 02.07.2025, 1, in force from 01.12.2025, issued by the Governor of Eesti Pank under Eesti Panga seadus § 34 lg 1, Article 5 of the ESCB Statute and Article 4 of Regulation (EC) No 2533/98, read through the gazette's own interface; entry into force read in § 8 lg 1 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2025-07-02-1",
+        "titles": {
+          "et": "Investeerimisfondi statistiliste aruannete koostamise nõuded ning aruannete esitamise kord",
+          "en": "Requirements for drawing up investment fund statistical reports and the procedure for submitting them"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Investeerimisfondi statistilised aruanded",
+        "officialRef": "Investeerimisfondi statistiliste aruannete koostamise nõuded ning aruannete esitamise kord (RT I, 02.07.2025, 1)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:securities",
+        "inForceFrom": "2025-12-01",
+        "implementsNote": "Serves ECB Regulation (EU) No 1011/2012 on securities holdings statistics (ECB/2012/24) and ECB Regulation (EU) 2024/1988 on investment fund statistics (ECB/2024/17), as § 1 lg 2 of the regulation states"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report each non-public fund's investments, liabilities and units to Eesti Pank every month by the 15th",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102072025001/txt",
+          "sourceLabel": "Riigi Teataja, Investeerimisfondi statistiliste aruannete koostamise nõuded ning aruannete esitamise kord (Eesti Panga presidendi 24.06.2025 määrus nr 7, RT I, 02.07.2025, 1), § 2 lg 1, § 3 p 1–3, § 5 lg 1–3 ja 5 ja § 6 lg 2, original text RT I, 02.07.2025, 1, in force from 01.12.2025",
+          "payload": {
+            "key": "obl-ee-investeerimisfondi-statistika-monthly-reports",
+            "titles": {
+              "en": "Report each non-public fund's investments, liabilities and units to Eesti Pank every month by the 15th"
+            },
+            "summaries": {
+              "en": "A management company of non-public investment funds, and a non-public fund set up as a public limited company, reports for each non-public fund its investments (code 580), its liabilities, fees and distributions (581) and its units, shares or stock (582) on the annexes, for each month by the 15th day of the following month; a fund company reports its units quarterly. A deadline that falls on a day off moves to the next working day."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 1, § 3 p 1–3, § 5 lg 1–3 ja 5 ja § 6 lg 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report the fund's characteristics once, by the 15th of the month after the reporting duty arises",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102072025001/txt",
+          "sourceLabel": "Riigi Teataja, Investeerimisfondi statistiliste aruannete koostamise nõuded ning aruannete esitamise kord (Eesti Panga presidendi 24.06.2025 määrus nr 7, RT I, 02.07.2025, 1), § 3 p 4, § 5 lg 4 ja § 6 lg 2, original text RT I, 02.07.2025, 1, in force from 01.12.2025",
+          "payload": {
+            "key": "obl-ee-investeerimisfondi-statistika-characteristics-report",
+            "titles": {
+              "en": "Report the fund's characteristics once, by the 15th of the month after the reporting duty arises"
+            },
+            "summaries": {
+              "en": "The report on the fund's characteristics (code 583) is submitted once, by the 15th day of the month after the reporting duty arises; funds that entered the reporting sample before 1 December 2025 submit it by 15 January 2026."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 p 4, § 5 lg 4 ja § 6 lg 2",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: File the fund statistics in XML, show matching identifiers on one line, correct errors and file empty reports",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102072025001/txt",
+          "sourceLabel": "Riigi Teataja, Investeerimisfondi statistiliste aruannete koostamise nõuded ning aruannete esitamise kord (Eesti Panga presidendi 24.06.2025 määrus nr 7, RT I, 02.07.2025, 1), § 4 lg 1 ja § 6 lg 1 ja 3–5, original text RT I, 02.07.2025, 1, in force from 01.12.2025",
+          "payload": {
+            "key": "obl-ee-investeerimisfondi-statistika-xml-corrections-empty",
+            "titles": {
+              "en": "File the fund statistics in XML, show matching identifiers on one line, correct errors and file empty reports"
+            },
+            "summaries": {
+              "en": "The reports are drawn up in monetary amounts, except the characteristics report, and go to Eesti Pank electronically as XML documents under Eesti Pank's regulation on electronic reporting, with values whose identifiers coincide shown on one line. Corrected reports follow when errors are found or accounting policies change, and an empty report is filed where there is no data."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 lg 1 ja § 6 lg 1 ja 3–5",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Europangatähtede ja -müntide saatmine, the Governor of Eesti Pank's regulation on sending euro banknotes and coins to Eesti Pank (Eesti Panga presidendi 15.12.2010 määrus nr 24)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/120122010008/txt",
+      "sourceLabel": "Riigi Teataja, Europangatähtede ja -müntide Eesti Panka saatmise kord (Eesti Panga presidendi 15.12.2010 määrus nr 24), RT I, 20.12.2010, 8, original text RT I, 20.12.2010, 8, in force from 01.01.2011, issued by the Governor of Eesti Pank under Eesti Panga seadus § 14 p 8 ja § 14¹ lg 3, read through the gazette's own interface; entry into force read in § 2 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2010-12-20-8",
+        "titles": {
+          "et": "Europangatähtede ja -müntide Eesti Panka saatmise kord",
+          "en": "Procedure for sending euro banknotes and coins to Eesti Pank"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Europangatähtede ja -müntide saatmine",
+        "officialRef": "Europangatähtede ja -müntide Eesti Panka saatmise kord (RT I, 20.12.2010, 8)",
+        "level": "authority_regulation",
+        "jurisdiction": "ee",
+        "authority": "eesti-pank",
+        "regime": "regime:banking",
+        "inForceFrom": "2011-01-01",
+        "implementsNote": "Applies the ECB decision of 16 September 2010 on the authenticity and fitness checking and recirculation of euro banknotes, which annex 1 of the regulation names for unfit banknotes"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Send Eesti Pank the unfit euro cash found in processing, packed apart from fit cash",
+          "source": "https://www.riigiteataja.ee/aktilisa/1201/2201/0008/EP24_lisa1.pdf",
+          "sourceLabel": "Riigi Teataja, Europangatähtede ja -müntide Eesti Panka saatmise kord (Eesti Panga presidendi 15.12.2010 määrus nr 24, RT I, 20.12.2010, 8), lisa 1 p 1.3, 3.9 ja 3.13, original text RT I, 20.12.2010, 8, in force from 01.01.2011, annex as the gazette publishes it with the text (EP24_lisa1.pdf)",
+          "payload": {
+            "key": "obl-ee-europangatahtede-saatmine-send-unfit-cash",
+            "titles": {
+              "en": "Send Eesti Pank the unfit euro cash found in processing, packed apart from fit cash"
+            },
+            "summaries": {
+              "en": "A credit institution sends Eesti Pank, for withdrawal from circulation, the unfit euro banknotes and coins that it or a cash handler it has authorised finds while processing cash, under the ECB decision of 16 September 2010, the rules and its contract with Eesti Pank. Unfit banknotes and coins travel packed separately from fit ones, with the block's label marked accordingly."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 1 p 1.3, 3.9 ja 3.13",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Pack euro banknotes and coins for Eesti Pank in the set bundles, blocks and bags with the required labels",
+          "source": "https://www.riigiteataja.ee/aktilisa/1201/2201/0008/EP24_lisa1.pdf",
+          "sourceLabel": "Riigi Teataja, Europangatähtede ja -müntide Eesti Panka saatmise kord (Eesti Panga presidendi 15.12.2010 määrus nr 24, RT I, 20.12.2010, 8), lisa 1 p 3.1–3.8, 3.10–3.12 ja 3.14, original text RT I, 20.12.2010, 8, in force from 01.01.2011, annex as the gazette publishes it with the text (EP24_lisa1.pdf)",
+          "payload": {
+            "key": "obl-ee-europangatahtede-saatmine-packing-rules",
+            "titles": {
+              "en": "Pack euro banknotes and coins for Eesti Pank in the set bundles, blocks and bags with the required labels"
+            },
+            "summaries": {
+              "en": "Banknotes go in banded bundles of 100 of one denomination facing the same way, and ten bundles make a block, wrapped in film with an information label or bound between cardboard sheets with a header that shows the institution, the number and denomination of the notes, their total value, the packer and the date. Coins go in sealed bags of one denomination up to the quantities the rules set, labelled with the same kind of data, and any other packing needs Eesti Pank's permission."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 1 p 3.1–3.8, 3.10–3.12 ja 3.14",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Accept damaged euro cash from the public and send it to Eesti Pank for exchange with the holder's application",
+          "source": "https://www.riigiteataja.ee/aktilisa/1201/2201/0008/EP24_lisa2.pdf",
+          "sourceLabel": "Riigi Teataja, Europangatähtede ja -müntide Eesti Panka saatmise kord (Eesti Panga presidendi 15.12.2010 määrus nr 24, RT I, 20.12.2010, 8), lisa 2 p 2 ja 3, original text RT I, 20.12.2010, 8, in force from 01.01.2011, annex as the gazette publishes it with the text (EP24_lisa2.pdf)",
+          "payload": {
+            "key": "obl-ee-europangatahtede-saatmine-accept-damaged-cash",
+            "titles": {
+              "en": "Accept damaged euro cash from the public and send it to Eesti Pank for exchange with the holder's application"
+            },
+            "summaries": {
+              "en": "A credit institution must accept damaged or mutilated euro banknotes and coins from legal and natural persons and send them to Eesti Pank for exchange in packaging that keeps them in the condition and quantity presented, each case packed separately, with the holder's completed application on the form annexed to the rules. Damaged cash that is also suspected of being counterfeit is handled as suspected counterfeit."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 2 p 2 ja 3",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Send damaged euro cash found in processing to Eesti Pank separately with a covering letter",
+          "source": "https://www.riigiteataja.ee/aktilisa/1201/2201/0008/EP24_lisa2.pdf",
+          "sourceLabel": "Riigi Teataja, Europangatähtede ja -müntide Eesti Panka saatmise kord (Eesti Panga presidendi 15.12.2010 määrus nr 24, RT I, 20.12.2010, 8), lisa 2 p 4 ja 5, original text RT I, 20.12.2010, 8, in force from 01.01.2011, annex as the gazette publishes it with the text (EP24_lisa2.pdf)",
+          "payload": {
+            "key": "obl-ee-europangatahtede-saatmine-damaged-cash-from-processing",
+            "titles": {
+              "en": "Send damaged euro cash found in processing to Eesti Pank separately with a covering letter"
+            },
+            "summaries": {
+              "en": "Damaged or mutilated cash found while processing, such as a banknote missing more than a quarter of its size, taped together from more than two pieces or too damaged to authenticate or process, or coins whose value or authenticity cannot be told without laboratory tests, goes to Eesti Pank packed apart from fit and unfit cash. A covering letter lists the denominations and quantities and, where possible, the banknotes' serial numbers."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 2 p 4 ja 5",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add E-raha asutuste omavahendid ja aruanded, the Minister of Finance's regulation on e-money institutions' own funds and reports (Rahandusministri 05.09.2019 määrus nr 42)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023003/txt",
+      "sourceLabel": "Riigi Teataja, E-raha asutuste omavahendid ja aruanded (Rahandusministri 05.09.2019 määrus nr 42), RT I, 10.09.2019, 2, consolidated text RT I, 13.01.2023, 3, in force from 16.01.2023, issued by the Minister of Finance under Makseasutuste ja e-raha asutuste seadus § 65 lg 8 ja § 82 lg 5, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2019-09-10-2",
+        "titles": {
+          "et": "E-raha asutuste omavahendite aruandluse kord, omavahendite minimaalsuuruse arvutamise põhimõtted ning Finantsinspektsioonile esitatavate aruannete skeemid, aruannete koostamise metoodika ja esitamise kord",
+          "en": "Own funds reporting of e-money institutions, principles for calculating minimum own funds, and the schemes, methodology and procedure of reports to Finantsinspektsioon"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "E-raha asutuste omavahendid ja aruanded",
+        "officialRef": "Rahandusministri 05.09.2019 määrus nr 42 (RT I, 10.09.2019, 2)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:payments",
+        "inForceFrom": "2019-09-13"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Calculate own funds and minimum own funds by the Act's methods with the regulation's specific rules",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023003/txt",
+          "sourceLabel": "Riigi Teataja, E-raha asutuste omavahendid ja aruanded (Rahandusministri 05.09.2019 määrus nr 42, RT I, 10.09.2019, 2), § 2 ja § 6–10, consolidated text RT I, 13.01.2023, 3, in force from 16.01.2023",
+          "payload": {
+            "key": "obl-ee-e-raha-asutuste-aruanded-own-funds-calculation",
+            "titles": {
+              "en": "Calculate own funds and minimum own funds by the Act's methods with the regulation's specific rules"
+            },
+            "summaries": {
+              "en": "An e-money institution licensed in Estonia calculates its own funds under the Payment Institutions and E-money Institutions Act, taking items at balance sheet value and applying the Act's limits, and its minimum own funds for issuing e-money under § 71(2) of the Act. Under the fixed overheads and the indicator methods it uses the last annual report approved by the general meeting, under the payment volume method it sums every payment transaction at its value, and under the indicator method it leaves out extraordinary income and insurance payouts, averages only the positive years and scales a short or long financial year to twelve months."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 ja § 6–10",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:emoney_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Submit the six e-money institution reports to Finantsinspektsioon on the regulation's schemes",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023003/txt",
+          "sourceLabel": "Riigi Teataja, E-raha asutuste omavahendid ja aruanded (Rahandusministri 05.09.2019 määrus nr 42, RT I, 10.09.2019, 2), § 11 lg 1 ja § 12 lg 1–6, 9 ja 10, consolidated text RT I, 13.01.2023, 3, in force from 16.01.2023",
+          "payload": {
+            "key": "obl-ee-e-raha-asutuste-aruanded-full-reports",
+            "titles": {
+              "en": "Submit the six e-money institution reports to Finantsinspektsioon on the regulation's schemes"
+            },
+            "summaries": {
+              "en": "An e-money institution that does not use the exemption in § 12 of the Act submits the reports on e-money issued and redeemed (code 5800), payment transactions (5801), client assets (5802), own funds (5803), balance sheet (5804) and income statement (5805) on the annexes. Amounts are in whole units and in euros, e-money at its nominal value and foreign currency at the ECB rate of the period's last working day, and the balance sheet and income statement follow the Estonian financial reporting standard or IFRS with the regulation's specific rules."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 11 lg 1 ja § 12 lg 1–6, 9 ja 10",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:emoney_institution",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: As an exempt e-money institution, submit the five reports for exempt institutions with every month filled in",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023003/txt",
+          "sourceLabel": "Riigi Teataja, E-raha asutuste omavahendid ja aruanded (Rahandusministri 05.09.2019 määrus nr 42, RT I, 10.09.2019, 2), § 11 lg 2 ja § 12 lg 7 ja 8, consolidated text RT I, 13.01.2023, 3, in force from 16.01.2023",
+          "payload": {
+            "key": "obl-ee-e-raha-asutuste-aruanded-exempt-reports",
+            "titles": {
+              "en": "As an exempt e-money institution, submit the five reports for exempt institutions with every month filled in"
+            },
+            "summaries": {
+              "en": "An e-money institution using the exemption in § 12(1) of the Act submits the client assets report, the balance sheet and income statement, and the reports on its average outstanding e-money (code 5806) and on its payment transactions (5807). The last two show every calendar month, with zero where nothing was issued or no service was provided and for the months before the exemption licence."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 11 lg 2 ja § 12 lg 7 ja 8",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:emoney_institution",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report the minimum liability insurance where initiation or account information services are provided, and file all reports in XML",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023003/txt",
+          "sourceLabel": "Riigi Teataja, E-raha asutuste omavahendid ja aruanded (Rahandusministri 05.09.2019 määrus nr 42, RT I, 10.09.2019, 2), § 11 lg 3 ja § 13, consolidated text RT I, 13.01.2023, 3, in force from 16.01.2023",
+          "payload": {
+            "key": "obl-ee-e-raha-asutuste-aruanded-liability-insurance-report-and-filing",
+            "titles": {
+              "en": "Report the minimum liability insurance where initiation or account information services are provided, and file all reports in XML"
+            },
+            "summaries": {
+              "en": "An e-money institution providing payment initiation or account information services also submits the report on the minimum value of its professional liability insurance (code 5808). All reports go to Finantsinspektsioon electronically in XML under the technical requirements on its website, and a report with no data is submitted empty."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 11 lg 3 ja § 13",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:emoney_institution",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Makseasutuste vastutuskindlustus, the Minister of Finance's regulation on payment institutions' professional liability insurance (Rahandusministri 22.12.2017 määrus nr 104)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/123122017053/txt",
+      "sourceLabel": "Riigi Teataja, Makseasutuste vastutuskindlustus (Rahandusministri 22.12.2017 määrus nr 104), RT I, 23.12.2017, 53, original text RT I, 23.12.2017, 53, in force from 13.01.2018, issued by the Minister of Finance under Makseasutuste ja e-raha asutuste seadus § 63⁷ lg 4, read through the gazette's own interface; entry into force read in § 10 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2017-12-23-53",
+        "titles": {
+          "et": "Makseasutuste vastutuskindlustuse kindlustussumma miinimumväärtuse arvutamise kord ja metoodika ning tagatise rakendamise tingimused",
+          "en": "Procedure and methodology for calculating the minimum sum insured of payment institutions' liability insurance and conditions for applying a guarantee"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Makseasutuste vastutuskindlustus",
+        "officialRef": "Makseasutuste vastutuskindlustuse kindlustussumma miinimumväärtuse arvutamise kord ja metoodika ning tagatise rakendamise tingimused (RT I, 23.12.2017, 53)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:payments",
+        "inForceFrom": "2018-01-13"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Calculate the minimum sum insured or guarantee every year as the sum of the risk, content and scale indicators",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/123122017053/txt",
+          "sourceLabel": "Riigi Teataja, Makseasutuste vastutuskindlustus (Rahandusministri 22.12.2017 määrus nr 104, RT I, 23.12.2017, 53), § 2, § 3 ja § 4, original text RT I, 23.12.2017, 53, in force from 13.01.2018",
+          "payload": {
+            "key": "obl-ee-makseasutuste-vastutuskindlustus-annual-minimum-sum",
+            "titles": {
+              "en": "Calculate the minimum sum insured or guarantee every year as the sum of the risk, content and scale indicators"
+            },
+            "summaries": {
+              "en": "A payment institution licensed in Estonia, or applying for a licence, that provides payment initiation or account information services, or both, calculates for each financial year, in euros, the minimum sum insured of its professional liability insurance or of an equivalent guarantee by adding up the indicators for its risks (claims made against it, payments initiated and accounts accessed), for the content of its services and for their scale. For a guarantee it also takes the guarantee's conditions into account."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3 ja § 4",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:payment_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Compute each indicator in the regulation's bands, using licence forecasts and floors without twelve months of service",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/123122017053/txt",
+          "sourceLabel": "Riigi Teataja, Makseasutuste vastutuskindlustus (Rahandusministri 22.12.2017 määrus nr 104, RT I, 23.12.2017, 53), § 5–7, § 8 lg 4 ja 5 ja § 9, original text RT I, 23.12.2017, 53, in force from 13.01.2018",
+          "payload": {
+            "key": "obl-ee-makseasutuste-vastutuskindlustus-indicator-bands",
+            "titles": {
+              "en": "Compute each indicator in the regulation's bands, using licence forecasts and floors without twelve months of service"
+            },
+            "summaries": {
+              "en": "Claims for losses made against the institution in the last 12 months count at their total, while the number of payments initiated, the number of accounts accessed, the value of payments initiated and the number of account information clients each count in descending bands from 40 down to 0.025 per cent. Services and activities other than payment services add 50,000 unless they are covered by an insurance or guarantee contract or provided through a separate subsidiary, and a firm that has not provided payment services in the preceding 12 months uses the forecasts in its licence application, each taken as at least 50,000."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5–7, § 8 lg 4 ja 5 ja § 9",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:payment_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Where both services are provided, calculate the minimum sum for each separately and cover them together",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/123122017053/txt",
+          "sourceLabel": "Riigi Teataja, Makseasutuste vastutuskindlustus (Rahandusministri 22.12.2017 määrus nr 104, RT I, 23.12.2017, 53), § 8 lg 1–3, original text RT I, 23.12.2017, 53, in force from 13.01.2018",
+          "payload": {
+            "key": "obl-ee-makseasutuste-vastutuskindlustus-both-services-separately",
+            "titles": {
+              "en": "Where both services are provided, calculate the minimum sum for each separately and cover them together"
+            },
+            "summaries": {
+              "en": "A payment institution licensed for both payment initiation and account information services calculates the minimum sum insured for each service separately, and the content indicator is their combined total, which covers its liability for the losses named in § 63⁷(1) points 1 and 2 of the Act. Where it provides only one of the two services the content indicator is zero, and other payment services it provides are counted independently of the own funds methods."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 8 lg 1–3",
+            "dutyType": "technical",
+            "terms": [
+              "legal_entity:payment_institution"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Fondivalitseja aruanded, the Minister of Finance's regulation on management company reports to Finantsinspektsioon (Rahandusministri 31.01.2017 määrus nr 12)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023004/txt",
+      "sourceLabel": "Riigi Teataja, Fondivalitseja aruanded (Rahandusministri 31.01.2017 määrus nr 12), RT I, 02.02.2017, 4, consolidated text RT I, 13.01.2023, 4, in force from 16.01.2023, issued by the Minister of Finance under Investeerimisfondide seadus § 334 lg 10 ja § 370 lg 9, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2017-02-02-4",
+        "titles": {
+          "et": "Finantsinspektsioonile esitatavate fondivalitseja aruannete sisu, koostamise alused ja esitamise ning fondivalitseja omavahendite aruandluse kord",
+          "en": "Content, basis and submission of management company reports to Finantsinspektsioon, and own funds reporting of management companies"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Fondivalitseja aruanded",
+        "officialRef": "Finantsinspektsioonile esitatavate fondivalitseja aruannete sisu, koostamise alused ja esitamise ning fondivalitseja omavahendite aruandluse kord (RT I, 02.02.2017, 4)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2017-02-05"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Submit the management company's seven supervisory reports to Finantsinspektsioon in XML",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023004/txt",
+          "sourceLabel": "Riigi Teataja, Fondivalitseja aruanded (Rahandusministri 31.01.2017 määrus nr 12, RT I, 02.02.2017, 4), § 2, § 3 ja § 4, consolidated text RT I, 13.01.2023, 4, in force from 16.01.2023",
+          "payload": {
+            "key": "obl-ee-fondivalitseja-aruanded-seven-reports",
+            "titles": {
+              "en": "Submit the management company's seven supervisory reports to Finantsinspektsioon in XML"
+            },
+            "summaries": {
+              "en": "A management company licensed by Finantsinspektsioon under the Investment Funds Act, other than a small fund manager reporting under § 454 of the Act, submits its balance sheet (code 51), income statement (52), fee income report (521), assets under management report (513), own funds report (53), financial assets report (514) and fixed overheads report (522) on the annexes and their explanations. The reports go electronically in XML under the data security requirements on Finantsinspektsioon's website, and a report with no data is submitted empty."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3 ja § 4",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Prepare the reports in euros under Estonian GAAP or IFRS, keeping client assets off the balance sheet",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023004/txt",
+          "sourceLabel": "Riigi Teataja, Fondivalitseja aruanded (Rahandusministri 31.01.2017 määrus nr 12, RT I, 02.02.2017, 4), § 5, § 6 ja § 7, consolidated text RT I, 13.01.2023, 4, in force from 16.01.2023",
+          "payload": {
+            "key": "obl-ee-fondivalitseja-aruanded-preparation-basis",
+            "titles": {
+              "en": "Prepare the reports in euros under Estonian GAAP or IFRS, keeping client assets off the balance sheet"
+            },
+            "summaries": {
+              "en": "The reports are in euros and whole units except where the annexes say otherwise, foreign currency converted at the ECB rate of the period's last working day; stock items show the end of the period and income items the year to date. The balance sheet and income statement follow Estonian good accounting practice or IFRS with the regulation's specific rules: client assets under management stay off the balance sheet, fair value changes go through profit or loss without a revaluation reserve, fixed overheads follow § 335 of the Act and any measurement Finantsinspektsioon has set applies."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5, § 6 ja § 7",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Avalikustatavad fondi aruanded, the Minister of Finance's regulation on published fund reports (Rahandusministri 18.01.2017 määrus nr 8)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026013/txt",
+      "sourceLabel": "Riigi Teataja, Nõuded avalikustamisele kuuluvate fondi aruannetele (Rahandusministri 18.01.2017 määrus nr 8), RT I, 20.01.2017, 11, consolidated text RT I, 04.09.2026, 13, in force from 07.09.2026, issued by the Minister of Finance under Investeerimisfondide seadus § 83 lg 7, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2017-01-20-11",
+        "titles": {
+          "et": "Nõuded avalikustamisele kuuluvate fondi aruannetele",
+          "en": "Requirements for fund reports subject to disclosure"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Avalikustatavad fondi aruanded",
+        "officialRef": "Nõuded avalikustamisele kuuluvate fondi aruannetele (RT I, 20.01.2017, 11)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2017-01-23",
+        "implementsNote": "Requires in UCITS and AIF reports the data of Section A of the annex to Regulation (EU) 2015/2365 on securities financing transactions and what Commission Delegated Regulation (EU) No 231/2013 requires, as § 9 of the regulation states"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Prepare each public fund's annual and half-yearly report with accounts, an investment report and a transaction fee report under IFRS",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026013/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded avalikustamisele kuuluvate fondi aruannetele (Rahandusministri 18.01.2017 määrus nr 8, RT I, 20.01.2017, 11), § 1 lg 2 ja 3, § 2, § 3 ja § 4 lg 1 ja 2, consolidated text RT I, 04.09.2026, 13, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-fondi-aruanded-annual-half-year-reports",
+            "titles": {
+              "en": "Prepare each public fund's annual and half-yearly report with accounts, an investment report and a transaction fee report under IFRS"
+            },
+            "summaries": {
+              "en": "For every public fund formed under the Investment Funds Act, pension funds and each sub-fund included, the annual and half-yearly report consists of the fund's accounts, its investment report and its transaction and brokerage fee report, prepared in euros under IFRS as adopted in the EU, taking account of the net asset value rules, with the precision of figures stated. A contractual fund's accounts include at least a balance sheet, an income statement, a statement of changes in net asset value and a cash flow statement, with the minimum items in annex 1."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 lg 2 ja 3, § 2, § 3 ja § 4 lg 1 ja 2",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Show and explain any difference between the fund's net asset value and the net assets in its accounts",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026013/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded avalikustamisele kuuluvate fondi aruannetele (Rahandusministri 18.01.2017 määrus nr 8, RT I, 20.01.2017, 11), § 5, consolidated text RT I, 04.09.2026, 13, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-fondi-aruanded-nav-reconciliation",
+            "titles": {
+              "en": "Show and explain any difference between the fund's net asset value and the net assets in its accounts"
+            },
+            "summaries": {
+              "en": "Where the net asset value calculated at the balance sheet date under the valuation regulation differs from the net assets attributable to unitholders or shareholders in the balance sheet, extra lines after the balance sheet show the difference and the notes explain its reasons. Where the difference also exists per unit or share, the net asset value per unit or share is disclosed for this and the previous period."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: List every investment and its share of net asset value, and set apart securities whose price is not reliably observable",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026013/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded avalikustamisele kuuluvate fondi aruannetele (Rahandusministri 18.01.2017 määrus nr 8, RT I, 20.01.2017, 11), § 6 ja § 8, consolidated text RT I, 04.09.2026, 13, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-fondi-aruanded-investment-report",
+            "titles": {
+              "en": "List every investment and its share of net asset value, and set apart securities whose price is not reliably observable"
+            },
+            "summaries": {
+              "en": "The investment report, on annex 2, shows all of the fund's investments and each one's share of its net asset value, and the transaction fee report follows annex 3. A UCITS sets apart the securities admitted to a regulated market, and other funds set apart securities that cannot be priced reliably from market prices, those valued by a system independent of the issuer and those whose price is constantly available to the market."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 ja § 8",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: In a mandatory pension fund's investment report, disclose group-related and illiquid investments and how they are valued",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026013/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded avalikustamisele kuuluvate fondi aruannetele (Rahandusministri 18.01.2017 määrus nr 8, RT I, 20.01.2017, 11), § 7, consolidated text RT I, 04.09.2026, 13, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-fondi-aruanded-mandatory-pension-fund-extras",
+            "titles": {
+              "en": "In a mandatory pension fund's investment report, disclose group-related and illiquid investments and how they are valued"
+            },
+            "summaries": {
+              "en": "A mandatory pension fund's investment report also lists separately its investments in other funds of the same manager or group and in securities issued, underwritten or arranged by group companies or by companies in which the manager's managers or significant shareholders hold a significant stake, and sets apart fund investments by type, investments whose value changed materially and illiquid debt securities. For the illiquid debt securities it explains material value changes and write-downs over ten per cent under the manager's own method, the valuation method and the risk to the fund's assets."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Add the securities financing and AIF disclosures to UCITS and AIF reports",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026013/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded avalikustamisele kuuluvate fondi aruannetele (Rahandusministri 18.01.2017 määrus nr 8, RT I, 20.01.2017, 11), § 9, consolidated text RT I, 04.09.2026, 13, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-fondi-aruanded-ucits-aif-extras",
+            "titles": {
+              "en": "Add the securities financing and AIF disclosures to UCITS and AIF reports"
+            },
+            "summaries": {
+              "en": "Where a UCITS's or an AIF's investment policy provides for securities financing transactions, its report gives the data in Section A of the annex to Regulation (EU) 2015/2365. An AIF's report also carries what Delegated Regulation (EU) No 231/2013 requires, an activity report, the changes in the information given to investors and the remuneration the AIF manager paid during the year, in total and to staff whose work materially affects the fund's risk profile."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 9",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Krediidiandja ja -vahendaja aruanded, the Minister of Finance's regulation on the reports of credit providers and credit intermediaries (Rahandusministri 19.12.2015 määrus nr 50)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/114102025004/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiandja ja -vahendaja aruanded (Rahandusministri 19.12.2015 määrus nr 50), RT I, 29.12.2015, 52, consolidated text RT I, 14.10.2025, 4, in force from 01.01.2026, issued by the Minister of Finance under Krediidiandjate ja -vahendajate seadus § 57 lg 5 ja Riikliku statistika seadus § 30¹ lg 3, read through the gazette's own interface; entry into force read in § 7 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2015-12-29-52",
+        "titles": {
+          "et": "Finantsinspektsioonile esitatavate krediidiandja või -vahendaja ning välisriigi krediidiandja või -vahendaja filiaali aruannete vormid, koostamise metoodika ja esitamise kord",
+          "en": "Forms, methodology and submission of reports of credit providers and credit intermediaries and of Estonian branches of foreign ones to Finantsinspektsioon"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Krediidiandja ja -vahendaja aruanded",
+        "officialRef": "Finantsinspektsioonile esitatavate krediidiandja või -vahendaja ning välisriigi krediidiandja või -vahendaja filiaali aruannete vormid, koostamise metoodika ja esitamise kord (RT I, 29.12.2015, 52)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: As a credit provider, submit the balance sheet, income statement and consumer credit reports to Finantsinspektsioon",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/114102025004/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiandja ja -vahendaja aruanded (Rahandusministri 19.12.2015 määrus nr 50, RT I, 29.12.2015, 52), § 2 lg 1 ja 3–5, consolidated text RT I, 14.10.2025, 4, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-krediidiandja-aruanded-provider-reports",
+            "titles": {
+              "en": "As a credit provider, submit the balance sheet, income statement and consumer credit reports to Finantsinspektsioon"
+            },
+            "summaries": {
+              "en": "A credit provider, or the Estonian branch of a foreign one, submits to Finantsinspektsioon its balance sheet (code 6101), income statement (6102), reports on the flows (6107) and balances (6108) of consumer credit issued in Estonia, its consumers report (6105), the report on consumer credit claims assigned or written off (6106) and the balances of consumer credit issued abroad (6109). A savings and loan association files its balance sheet and income statement through Eesti Pank, and a provider that is a payment institution follows the payment institutions' reporting regulation for those two reports."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 1 ja 3–5",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:credit_market_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: As a credit intermediary, submit the balance sheet, income statement and the report on consumer credit intermediated",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/114102025004/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiandja ja -vahendaja aruanded (Rahandusministri 19.12.2015 määrus nr 50, RT I, 29.12.2015, 52), § 2 lg 2 ja 3, consolidated text RT I, 14.10.2025, 4, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-krediidiandja-aruanded-intermediary-reports",
+            "titles": {
+              "en": "As a credit intermediary, submit the balance sheet, income statement and the report on consumer credit intermediated"
+            },
+            "summaries": {
+              "en": "A credit intermediary, or the Estonian branch of a foreign one, submits its balance sheet, its income statement and the report on the flows of consumer credit intermediated in Estonia (code 6110) to Finantsinspektsioon."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 2 ja 3",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report other loans issued in Estonia to Eesti Pank through Finantsinspektsioon within a month",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/114102025004/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiandja ja -vahendaja aruanded (Rahandusministri 19.12.2015 määrus nr 50, RT I, 29.12.2015, 52), § 2¹, consolidated text RT I, 14.10.2025, 4, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-krediidiandja-aruanded-other-loans-for-eesti-pank",
+            "titles": {
+              "en": "Report other loans issued in Estonia to Eesti Pank through Finantsinspektsioon within a month"
+            },
+            "summaries": {
+              "en": "A credit provider also reports, through Finantsinspektsioon to Eesti Pank, the flows (code 6111) and balances (6112) of other loans issued in Estonia for each quarter within one month after it ends, unless it is a savings and loan association, reports leasing data to Eesti Pank under an agreement or has been exempted by Eesti Pank. A provider in a credit institution's consolidation group that does not report leasing under such an agreement also reports its consumer credit balances for the months that are not quarter ends and its other loans balances every month."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2¹",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:credit_market_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Prepare the reports under Estonian GAAP or IFRS, file them in XML and correct any deficiency",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/114102025004/txt",
+          "sourceLabel": "Riigi Teataja, Krediidiandja ja -vahendaja aruanded (Rahandusministri 19.12.2015 määrus nr 50, RT I, 29.12.2015, 52), § 3, § 4 ja § 5, consolidated text RT I, 14.10.2025, 4, in force from 01.01.2026",
+          "payload": {
+            "key": "obl-ee-krediidiandja-aruanded-basis-xml-corrections",
+            "titles": {
+              "en": "Prepare the reports under Estonian GAAP or IFRS, file them in XML and correct any deficiency"
+            },
+            "summaries": {
+              "en": "The reports are in the official currency and whole units, the balance sheet and income statement follow the Estonian financial reporting standard or IFRS with the regulation's specific rules, and the consumer credit reports leave out the contracts in § 403(2) of the Law of Obligations Act. They go electronically in XML under Finantsinspektsioon's technical requirements, an empty report is filed where there is no data, and a corrected report follows whenever a deficiency is found, by the authority or by the firm itself."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3, § 4 ja § 5",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Pandikirjade tagatisregistri andmed, the Minister of Finance's regulation on the data entered in the covered bond cover register (Rahandusministri 11.11.2019 määrus nr 52)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113112019001/txt",
+      "sourceLabel": "Riigi Teataja, Pandikirjade tagatisregistrisse kantavate andmete koosseis (Rahandusministri 11.11.2019 määrus nr 52), RT I, 13.11.2019, 1, original text RT I, 13.11.2019, 1, in force from 16.11.2019, issued by the Minister of Finance under Pandikirjaseadus § 11 lg 8, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2019-11-13-1",
+        "titles": {
+          "et": "Pandikirjade tagatisregistrisse kantavate andmete koosseis",
+          "en": "Content of entries in the cover register of covered bonds"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Pandikirjade tagatisregistri andmed",
+        "officialRef": "Pandikirjade tagatisregistrisse kantavate andmete koosseis (RT I, 13.11.2019, 1)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:banking",
+        "inForceFrom": "2019-11-16"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Log every entry and change in the cover register to the second and keep extracts available for past dates",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113112019001/txt",
+          "sourceLabel": "Riigi Teataja, Pandikirjade tagatisregistrisse kantavate andmete koosseis (Rahandusministri 11.11.2019 määrus nr 52, RT I, 13.11.2019, 1), § 2 ja § 3, original text RT I, 13.11.2019, 1, in force from 16.11.2019",
+          "payload": {
+            "key": "obl-ee-tagatisregistri-andmed-timestamp-log",
+            "titles": {
+              "en": "Log every entry and change in the cover register to the second and keep extracts available for past dates"
+            },
+            "summaries": {
+              "en": "A credit institution operating in Estonia that holds Finantsinspektsioon's additional licence to issue covered bonds ensures that its cover register shows when each entry was made, changed, deleted or otherwise processed, at least to the second, and that extracts can also be made for past points in time."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 ja § 3",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Enter the set data on each mortgage-backed credit in the cover register, one credit per entry",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113112019001/txt",
+          "sourceLabel": "Riigi Teataja, Pandikirjade tagatisregistrisse kantavate andmete koosseis (Rahandusministri 11.11.2019 määrus nr 52, RT I, 13.11.2019, 1), § 4 lg 1 ja 2, original text RT I, 13.11.2019, 1, in force from 16.11.2019",
+          "payload": {
+            "key": "obl-ee-tagatisregistri-andmed-mortgage-cover-entries",
+            "titles": {
+              "en": "Enter the set data on each mortgage-backed credit in the cover register, one credit per entry"
+            },
+            "summaries": {
+              "en": "For each credit secured by a mortgage that serves as cover, the register shows the borrower, the currency, the outstanding amount, the contract date and number, the property's land register or cadastral reference and address, its market value under the Covered Bonds Act and the valuation date, the mortgage amount and the name of the security right in the language of the property's country. Each entry covers a single credit with every property securing it, and a property securing several credits appears in each of their entries."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 lg 1 ja 2",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Enter the set data on public sector exposures, substitute assets and liquidity buffer assets",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113112019001/txt",
+          "sourceLabel": "Riigi Teataja, Pandikirjade tagatisregistrisse kantavate andmete koosseis (Rahandusministri 11.11.2019 määrus nr 52, RT I, 13.11.2019, 1), § 5 lg 1 ja § 7 lg 1, original text RT I, 13.11.2019, 1, in force from 16.11.2019",
+          "payload": {
+            "key": "obl-ee-tagatisregistri-andmed-public-and-substitute-assets",
+            "titles": {
+              "en": "Enter the set data on public sector exposures, substitute assets and liquidity buffer assets"
+            },
+            "summaries": {
+              "en": "For public sector debt used as cover the register shows the debtor or issuer, the contract or ISIN, the currency, the amount outstanding and any guarantee or collateral and its provider. For substitute assets, liquidity buffer assets and assets received to secure derivative claims it shows the debtor, deposit-taker or issuer, the contract, deposit or ISIN reference, the currency, the outstanding amount and remarks."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 lg 1 ja § 7 lg 1",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Enter the set data on each derivative in the cover register",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113112019001/txt",
+          "sourceLabel": "Riigi Teataja, Pandikirjade tagatisregistrisse kantavate andmete koosseis (Rahandusministri 11.11.2019 määrus nr 52, RT I, 13.11.2019, 1), § 6 lg 1, original text RT I, 13.11.2019, 1, in force from 16.11.2019",
+          "payload": {
+            "key": "obl-ee-tagatisregistri-andmed-derivative-entries",
+            "titles": {
+              "en": "Enter the set data on each derivative in the cover register"
+            },
+            "summaries": {
+              "en": "For claims and liabilities under derivatives in the cover pool the register shows the instrument's name under its master agreement, the trade number or other identifier, the trade date, the start and end dates, the master agreement's date and number, the notional currencies and amounts, the fixed and floating rates and the net present value with its currency."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 6 lg 1",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Esindajakonto volitus üldkoosolekul, the Minister of Finance's regulation on proxies of nominee account holders at general meetings (Rahandusministri 21.03.2003 määrus nr 52)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129032018019/txt",
+      "sourceLabel": "Riigi Teataja, Aktsionäride üldkoosolekul esindajakonto omaja esindamiseks ühtse nimekirjana volituse andmise kord (Rahandusministri 21.03.2003 määrus nr 52), RTL 2003, 43, 625, consolidated text RT I, 29.03.2018, 19, in force from 01.04.2018, issued by the Minister of Finance under Väärtpaberite registri pidamise seadus § 6 lg 7, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rtl-2003-43-625",
+        "titles": {
+          "et": "Aktsionäride üldkoosolekul esindajakonto omaja esindamiseks ühtse nimekirjana volituse andmise kord",
+          "en": "Procedure for granting a single list authorisation to represent a nominee account holder at a general meeting of shareholders"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Esindajakonto volitus üldkoosolekul",
+        "officialRef": "Aktsionäride üldkoosolekul esindajakonto omaja esindamiseks ühtse nimekirjana volituse andmise kord (RTL 2003, 43, 625)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2003-04-07"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Give the issuer a written single-list proxy for the clients who asked to vote, by the time of the general meeting",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129032018019/txt",
+          "sourceLabel": "Riigi Teataja, Aktsionäride üldkoosolekul esindajakonto omaja esindamiseks ühtse nimekirjana volituse andmise kord (Rahandusministri 21.03.2003 määrus nr 52, RTL 2003, 43, 625), § 2 ja § 3 lg 1 ja 2, consolidated text RT I, 29.03.2018, 19, in force from 01.04.2018",
+          "payload": {
+            "key": "obl-ee-esindajakonto-volitus-single-list-proxy",
+            "titles": {
+              "en": "Give the issuer a written single-list proxy for the clients who asked to vote, by the time of the general meeting"
+            },
+            "summaries": {
+              "en": "A nominee account holder whose clients have asked, by the agreed deadline, to exercise shareholder rights at a general meeting gives the issuer that convened it a written proxy by the time the meeting is held. The proxy states its date, time and term, the issuer and the meeting, each requesting client or their representative with address and identification code, the ISIN and number of shares attributed to each, and the holder's confirmation that they may represent it for those shares."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 ja § 3 lg 1 ja 2",
+            "dutyType": "conduct",
+            "terms": [
+              "service_type:custody"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Provide a certified Estonian translation of a foreign-language proxy on request, and amend the proxy when shares are sold",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129032018019/txt",
+          "sourceLabel": "Riigi Teataja, Aktsionäride üldkoosolekul esindajakonto omaja esindamiseks ühtse nimekirjana volituse andmise kord (Rahandusministri 21.03.2003 määrus nr 52, RTL 2003, 43, 625), § 3 lg 3 ja 4, consolidated text RT I, 29.03.2018, 19, in force from 01.04.2018",
+          "payload": {
+            "key": "obl-ee-esindajakonto-volitus-translation-and-changes",
+            "titles": {
+              "en": "Provide a certified Estonian translation of a foreign-language proxy on request, and amend the proxy when shares are sold"
+            },
+            "summaries": {
+              "en": "Where the proxy is in a foreign language, the nominee account holder provides at the issuer's request an Estonian translation certified by a notary or a sworn translator. If shares named in the proxy are sold afterwards, it may give the issuer an amended proxy that reflects the change in the representatives' rights."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 3 ja 4",
+            "dutyType": "conduct",
+            "terms": [
+              "service_type:custody"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Kindlustusmaakleri aruanded, the Minister of Finance's regulation on insurance broker reports (Rahandusministri 20.10.2015 määrus nr 38)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/109122021014/txt",
+      "sourceLabel": "Riigi Teataja, Kindlustusmaakleri ja välisriigi kindlustusmaakleri Eesti filiaali aruannete sisu, vorm ja esitamise kord (Rahandusministri 20.10.2015 määrus nr 38), RT I, 23.10.2015, 6, consolidated text RT I, 09.12.2021, 14, in force from 01.01.2022, issued by the Minister of Finance under Kindlustustegevuse seadus § 193 lg 2, read through the gazette's own interface; entry into force read in § 6 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2015-10-23-6",
+        "titles": {
+          "et": "Kindlustusmaakleri ja välisriigi kindlustusmaakleri Eesti filiaali aruannete sisu, vorm ja esitamise kord",
+          "en": "Content, form and submission of reports of insurance brokers and of Estonian branches of foreign insurance brokers"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Kindlustusmaakleri aruanded",
+        "officialRef": "Kindlustusmaakleri ja välisriigi kindlustusmaakleri Eesti filiaali aruannete sisu, vorm ja esitamise kord (RT I, 23.10.2015, 6)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:insurance",
+        "inForceFrom": "2016-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report the non-life, life and reinsurance contracts brokered for each half year and year within a month",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/109122021014/txt",
+          "sourceLabel": "Riigi Teataja, Kindlustusmaakleri ja välisriigi kindlustusmaakleri Eesti filiaali aruannete sisu, vorm ja esitamise kord (Rahandusministri 20.10.2015 määrus nr 38, RT I, 23.10.2015, 6), § 1 p 1–3, § 2 lg 1 ja § 3 lg 3 ja 5, consolidated text RT I, 09.12.2021, 14, in force from 01.01.2022",
+          "payload": {
+            "key": "obl-ee-kindlustusmaakleri-aruanded-contract-reports",
+            "titles": {
+              "en": "Report the non-life, life and reinsurance contracts brokered for each half year and year within a month"
+            },
+            "summaries": {
+              "en": "An insurance broker, or the Estonian branch of a foreign one, reports to Finantsinspektsioon the non-life, life and reinsurance contracts it brokered, on annexes 1 to 3, for the first half of the calendar year and for the whole year, within one month after each period ends; a deadline falling on a day off moves to the next working day."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 p 1–3, § 2 lg 1 ja § 3 lg 3 ja 5",
+            "dutyType": "reporting",
+            "terms": [
+              "service_type:insurance_distribution",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Report the year's total commission income by 31 July of the following year",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/109122021014/txt",
+          "sourceLabel": "Riigi Teataja, Kindlustusmaakleri ja välisriigi kindlustusmaakleri Eesti filiaali aruannete sisu, vorm ja esitamise kord (Rahandusministri 20.10.2015 määrus nr 38, RT I, 23.10.2015, 6), § 1 p 4, § 2 lg 2, § 3 lg 4 ja § 5, consolidated text RT I, 09.12.2021, 14, in force from 01.01.2022",
+          "payload": {
+            "key": "obl-ee-kindlustusmaakleri-aruanded-commissions-report",
+            "titles": {
+              "en": "Report the year's total commission income by 31 July of the following year"
+            },
+            "summaries": {
+              "en": "Once a year, by 31 July of the following year, the broker reports its total commissions recognised as income (code 8250): a broker the amount in its annual income statement, a branch the amount recognised in its accounts for the calendar year."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 p 4, § 2 lg 2, § 3 lg 4 ja § 5",
+            "dutyType": "reporting",
+            "terms": [
+              "service_type:insurance_distribution",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Show brokered contracts by class and insurer at gross premium, and file the reports in XML",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/109122021014/txt",
+          "sourceLabel": "Riigi Teataja, Kindlustusmaakleri ja välisriigi kindlustusmaakleri Eesti filiaali aruannete sisu, vorm ja esitamise kord (Rahandusministri 20.10.2015 määrus nr 38, RT I, 23.10.2015, 6), § 3 lg 1, 2, 6 ja 7 ja § 4, consolidated text RT I, 09.12.2021, 14, in force from 01.01.2022",
+          "payload": {
+            "key": "obl-ee-kindlustusmaakleri-aruanded-content-and-filing",
+            "titles": {
+              "en": "Show brokered contracts by class and insurer at gross premium, and file the reports in XML"
+            },
+            "summaries": {
+              "en": "The reports show the number of contracts brokered in the period, their premiums gross of the broker's commission and the commissions received or receivable, by class of insurance and for each Estonian insurer and branch separately, with foreign insurers summed for the EEA and outside it, and leave out contracts brokered to another broker and the unpaid premiums of contracts cancelled in the same period. They go electronically in XML under Finantsinspektsioon's technical requirements, empty where there is no data and corrected when an error is found."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 1, 2, 6 ja 7 ja § 4",
+            "dutyType": "reporting",
+            "terms": [
+              "service_type:insurance_distribution",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Investorikaitse osafondi osamakse aruandlus, the Minister of Finance's regulation on reporting quarterly contributions to the investor protection sub-fund (Rahandusministri 23.10.2002 määrus nr 123)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129112018014/txt",
+      "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse aruandluse kord (Rahandusministri 23.10.2002 määrus nr 123), RTL 2002, 121, 1764, consolidated text RT I, 29.11.2018, 14, in force from 01.01.2019, issued by the Minister of Finance under Tagatisfondi seadus § 92 lg 2, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rtl-2002-121-1764",
+        "titles": {
+          "et": "Investorikaitse osafondi kvartaliosamakse aruandluse kord",
+          "en": "Procedure for reporting quarterly contributions to the investor protection sub-fund"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Investorikaitse osafondi osamakse aruandlus",
+        "officialRef": "Investorikaitse osafondi kvartaliosamakse aruandluse kord (RTL 2002, 121, 1764)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2002-11-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report the quarterly investor protection contribution to Finantsinspektsioon by the 20th of the following month",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129112018014/txt",
+          "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse aruandluse kord (Rahandusministri 23.10.2002 määrus nr 123, RTL 2002, 121, 1764), § 1 lg 2, § 2, § 4 lg 1, 2 ja 2¹ ja § 5 lg 1, 2 ja 4, consolidated text RT I, 29.11.2018, 14, in force from 01.01.2019",
+          "payload": {
+            "key": "obl-ee-investorikaitse-osamakse-aruanne-quarterly-report",
+            "titles": {
+              "en": "Report the quarterly investor protection contribution to Finantsinspektsioon by the 20th of the following month"
+            },
+            "summaries": {
+              "en": "Every investment institution within the meaning of § 43(1) of the Guarantee Fund Act, and each Estonian branch of a foreign one that the Act covers, draws up the contribution report in the annex for each quarter and submits it to Finantsinspektsioon electronically in XML under its published technical requirements, by the 20th day of the month after the quarter or the next working day. Its consolidation group is treated as a credit institution group where it includes a credit institution, otherwise as an investment firm group or as a group under the Commercial Code."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 lg 2, § 2, § 4 lg 1, 2 ja 2¹ ja § 5 lg 1, 2 ja 4",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Correct the contribution report when Finantsinspektsioon or the firm finds a deficiency",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129112018014/txt",
+          "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse aruandluse kord (Rahandusministri 23.10.2002 määrus nr 123, RTL 2002, 121, 1764), § 4 lg 5, consolidated text RT I, 29.11.2018, 14, in force from 01.01.2019",
+          "payload": {
+            "key": "obl-ee-investorikaitse-osamakse-aruanne-corrections",
+            "titles": {
+              "en": "Correct the contribution report when Finantsinspektsioon or the firm finds a deficiency"
+            },
+            "summaries": {
+              "en": "When Finantsinspektsioon reports a deficiency in the contribution report, the institution remedies it and submits a corrected report; it does the same when it finds an error in data it submitted earlier or when the accounting policies of earlier periods have changed."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4 lg 5",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Investorikaitse osafondi osamakse arvutamine, the Minister of Finance's regulation on calculating investor protection contributions and valuing investments (Rahandusministri 23.10.2002 määrus nr 121)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026012/txt",
+      "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord (Rahandusministri 23.10.2002 määrus nr 121), RTL 2002, 121, 1762, consolidated text RT I, 04.09.2026, 12, in force from 07.09.2026, issued by the Minister of Finance under Tagatisfondi seadus § 42 lg 3, § 53 lg 6 ja § 54 lg 2, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rtl-2002-121-1762",
+        "titles": {
+          "et": "Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord",
+          "en": "Procedure for calculating quarterly contributions to the investor protection sub-fund and for determining the value of investments"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Investorikaitse osafondi osamakse arvutamine",
+        "officialRef": "Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord (RTL 2002, 121, 1762)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2002-11-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Calculate the quarterly contribution as the investment volumes times the Fund's rates, at least the statutory minimum",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026012/txt",
+          "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord (Rahandusministri 23.10.2002 määrus nr 121, RTL 2002, 121, 1762), § 1 lg 2 ja § 3 lg 1–4, consolidated text RT I, 04.09.2026, 12, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-investorikaitse-osamakse-arvutamine-contribution-amount",
+            "titles": {
+              "en": "Calculate the quarterly contribution as the investment volumes times the Fund's rates, at least the statutory minimum"
+            },
+            "summaries": {
+              "en": "An investment institution, or a covered branch counting only its own figures, calculates its quarterly contribution by multiplying each investment volume under §§ 4 to 6 by the rate the Guarantee Fund's supervisory board has set and adding the results; where the total is below the minimum in § 53(4) of the Guarantee Fund Act, the contribution is that minimum. Figures of a foreign branch of an Estonian institution that the Act does not cover are left out."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 lg 2 ja § 3 lg 1–4",
+            "dutyType": "technical",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Measure the trading volume as the average turnover of the quarter's last ten working days, leaving out the excluded trades",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026012/txt",
+          "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord (Rahandusministri 23.10.2002 määrus nr 121, RTL 2002, 121, 1762), § 4, consolidated text RT I, 04.09.2026, 12, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-investorikaitse-osamakse-arvutamine-turnover-volume",
+            "titles": {
+              "en": "Measure the trading volume as the average turnover of the quarter's last ten working days, leaving out the excluded trades"
+            },
+            "summaries": {
+              "en": "For buying and selling securities the volume is the average daily turnover of the last ten working days of the preceding quarter, each trade counted at its purchase or sale price, or at the contract price when the institution intermediates. Trades with professional investors and with the persons in § 48(1) points 1 to 4 of the Act, derivatives other than option premiums, repos, securities lending, pledges, corporate actions and clients' trades in which the institution takes no part are left out."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4",
+            "dutyType": "technical",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Measure the portfolio management and custody volumes at market value on the quarter's last working day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026012/txt",
+          "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord (Rahandusministri 23.10.2002 määrus nr 121, RTL 2002, 121, 1762), § 3 lg 5, § 5 ja § 6, consolidated text RT I, 04.09.2026, 12, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-investorikaitse-osamakse-arvutamine-portfolio-and-custody-volumes",
+            "titles": {
+              "en": "Measure the portfolio management and custody volumes at market value on the quarter's last working day"
+            },
+            "summaries": {
+              "en": "For portfolio management the volume is the clients' cash at the institution's disposal and the market value of their securities on the last working day of the preceding quarter, without netting clients' liabilities; for custody it is the market value of the securities held on that day, at nominal value where no price is available. Both leave out the assets of professional investors and of the persons in § 48(1) points 1 to 4 of the Act and investments on central register accounts that the Fund does not cover; portfolio management also leaves out client deposits already contributing to the deposit guarantee sub-fund, and custody leaves out assets counted under portfolio management."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 5, § 5 ja § 6",
+            "dutyType": "technical",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Value investments mainly at market value under the regulation's rules and justify the calculations in writing on request",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026012/txt",
+          "sourceLabel": "Riigi Teataja, Investorikaitse osafondi kvartaliosamakse arvutamise ning investeeringu väärtuse määramise kord (Rahandusministri 23.10.2002 määrus nr 121, RTL 2002, 121, 1762), § 3 lg 6, § 7 lg 1 ja 3, § 10 ja § 11, consolidated text RT I, 04.09.2026, 12, in force from 07.09.2026",
+          "payload": {
+            "key": "obl-ee-investorikaitse-osamakse-arvutamine-valuation-and-justification",
+            "titles": {
+              "en": "Value investments mainly at market value under the regulation's rules and justify the calculations in writing on request"
+            },
+            "summaries": {
+              "en": "Investments are valued mainly at market value under chapter 3 of the regulation: a listed security at the closing price of the regulated market in the issuer's home country, with fallbacks when there is no recent trade, an unlisted one at its probable sale price set prudently, in good faith and in the clients' best interests, and a fund unit at its last redemption price or net asset value. At the request of the Guarantee Fund or Finantsinspektsioon the institution justifies its contribution calculations and valuation decisions in writing."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 3 lg 6, § 7 lg 1 ja 3, § 10 ja § 11",
+            "dutyType": "record_keeping",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Väärtpaberite registri pidamise kord, the Minister of Finance's regulation on maintaining the securities register and the pension register (Rahandusministri 20.01.2018 määrus nr 7)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021028/txt",
+      "sourceLabel": "Riigi Teataja, Väärtpaberite registri ja pensioniregistri pidamise kord (Rahandusministri 20.01.2018 määrus nr 7), RT I, 24.01.2018, 2, consolidated text RT I, 03.12.2021, 28, in force from 06.12.2021, issued by the Minister of Finance under Väärtpaberite registri pidamise seadus § 3 lg 5 ja § 8 lg 1, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2018-01-24-2",
+        "titles": {
+          "et": "Väärtpaberite registri ja pensioniregistri pidamise kord",
+          "en": "Procedure for maintaining the securities register and the pension register"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Väärtpaberite registri pidamise kord",
+        "officialRef": "Väärtpaberite registri ja pensioniregistri pidamise kord (RT I, 24.01.2018, 2)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2018-01-27"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: As account operator, pass register orders to the registrar without delay",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021028/txt",
+          "sourceLabel": "Riigi Teataja, Väärtpaberite registri ja pensioniregistri pidamise kord (Rahandusministri 20.01.2018 määrus nr 7, RT I, 24.01.2018, 2), § 11 lg 1 ja 2, consolidated text RT I, 03.12.2021, 28, in force from 06.12.2021",
+          "payload": {
+            "key": "obl-ee-vaartpaberite-registri-pidamine-forward-orders",
+            "titles": {
+              "en": "As account operator, pass register orders to the registrar without delay"
+            },
+            "summaries": {
+              "en": "An account operator gives the registrar the order for a register operation it has received from a person entitled to give it without delay after receiving it, unless the mandate set another time, following the timing, blocking and settlement rules of the Act, the regulation and the registrar's data processing rules."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 11 lg 1 ja 2",
+            "dutyType": "conduct",
+            "terms": [
+              "service_type:custody"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: After losing or giving up account operator status, follow the registrar's instructions and archive order records for ten years",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021028/txt",
+          "sourceLabel": "Riigi Teataja, Väärtpaberite registri ja pensioniregistri pidamise kord (Rahandusministri 20.01.2018 määrus nr 7, RT I, 24.01.2018, 2), § 17, consolidated text RT I, 03.12.2021, 28, in force from 06.12.2021",
+          "payload": {
+            "key": "obl-ee-vaartpaberite-registri-pidamine-former-operator-archive",
+            "titles": {
+              "en": "After losing or giving up account operator status, follow the registrar's instructions and archive order records for ten years"
+            },
+            "summaries": {
+              "en": "A person whose account operator status has been revoked or who has given it up complies with the instructions and demands of the registrar or the pension registrar meant to protect account holders and the other operators. It archives the data and documents behind every order it was given so that they stay available to entitled persons and authorities for at least ten years from the revocation or from the end of its contract with the registrar."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 17",
+            "dutyType": "record_keeping",
+            "terms": [
+              "service_type:custody"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Forward a nominee account application only for an eligible applicant, and as nominee holder report any deviation at once",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021028/txt",
+          "sourceLabel": "Riigi Teataja, Väärtpaberite registri ja pensioniregistri pidamise kord (Rahandusministri 20.01.2018 määrus nr 7, RT I, 24.01.2018, 2), § 18, consolidated text RT I, 03.12.2021, 28, in force from 06.12.2021",
+          "payload": {
+            "key": "obl-ee-vaartpaberite-registri-pidamine-nominee-account-conditions",
+            "titles": {
+              "en": "Forward a nominee account application only for an eligible applicant, and as nominee holder report any deviation at once"
+            },
+            "summaries": {
+              "en": "An account operator sends the registrar an application to open a nominee account only where the applicant meets the requirements of the Act and the regulation. A nominee account holder notifies the supervisor under § 38(1) of the Act, the registrar and the account operator without delay of any departure from the requirements that apply to it."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 18",
+            "dutyType": "conduct",
+            "terms": [
+              "service_type:custody"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: As nominee account holder, disclose the client data the supervisor or the registrar requests within the set time",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/103122021028/txt",
+          "sourceLabel": "Riigi Teataja, Väärtpaberite registri ja pensioniregistri pidamise kord (Rahandusministri 20.01.2018 määrus nr 7, RT I, 24.01.2018, 2), § 19, consolidated text RT I, 03.12.2021, 28, in force from 06.12.2021",
+          "payload": {
+            "key": "obl-ee-vaartpaberite-registri-pidamine-nominee-disclosure",
+            "titles": {
+              "en": "As nominee account holder, disclose the client data the supervisor or the registrar requests within the set time"
+            },
+            "summaries": {
+              "en": "On a written or reproducible request of the supervisor or the registrar that names the security, the reference date and time, the clients concerned, the scope and form of the data and the way and deadline for delivery, the nominee account holder delivers the data in § 6(7) of the Act on those terms and within that deadline, which may not be shorter than three working days."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 19",
+            "dutyType": "disclosure",
+            "terms": [
+              "service_type:custody"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Investorile ja Tagatisfondile esitatavad andmed, the Minister of Finance's regulation on data for investors and the Guarantee Fund after an investor compensation event (Rahandusministri 15.08.2002 määrus nr 104)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/191725/xml",
+      "sourceLabel": "Riigi Teataja, Investorile ja Tagatisfondile esitatavate andmete loetelu ja esitamise kord (Rahandusministri 15.08.2002 määrus nr 104), RTL 2002, 93, 1455, original text RTL 2002, 93, 1455, in force from 31.08.2002, issued by the Minister of Finance under Tagatisfondi seadus § 57 lg 2, read through the gazette's own interface (its XML); entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rtl-2002-93-1455",
+        "titles": {
+          "et": "Investorile ja Tagatisfondile esitatavate andmete loetelu ja esitamise kord",
+          "en": "List of data to be submitted to investors and the Guarantee Fund and the procedure for submitting it"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Investorile ja Tagatisfondile esitatavad andmed",
+        "officialRef": "Investorile ja Tagatisfondile esitatavate andmete loetelu ja esitamise kord (RTL 2002, 93, 1455)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2002-08-31"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Send each investor the data on their investment within 45 days of the compensation day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/191725/xml",
+          "sourceLabel": "Riigi Teataja, Investorile ja Tagatisfondile esitatavate andmete loetelu ja esitamise kord (Rahandusministri 15.08.2002 määrus nr 104, RTL 2002, 93, 1455), § 1 ja § 3 lg 1, original text RTL 2002, 93, 1455, in force from 31.08.2002",
+          "payload": {
+            "key": "obl-ee-investori-andmed-investor-statement",
+            "titles": {
+              "en": "Send each investor the data on their investment within 45 days of the compensation day"
+            },
+            "summaries": {
+              "en": "When investor compensation is triggered, the management board member, bankruptcy or moratorium administrator or liquidator of an investment institution sends each investor, by post or e-mail to the contact address the institution knows, within 45 days after the compensation day, the investor's name and identification code, the compensation day, the value of the investment or of the investor's share in a joint investment on that day, its currency and compensable value, the legal ground where it is not covered, the investor's known bank account with the deadline to change or give it, and the deadline for the investor's position."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 ja § 3 lg 1",
+            "dutyType": "disclosure",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Give the Guarantee Fund the data on every investor and investment within 45 days of the compensation day",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/191725/xml",
+          "sourceLabel": "Riigi Teataja, Investorile ja Tagatisfondile esitatavate andmete loetelu ja esitamise kord (Rahandusministri 15.08.2002 määrus nr 104, RTL 2002, 93, 1455), § 2 ja § 3 lg 2, original text RTL 2002, 93, 1455, in force from 31.08.2002",
+          "payload": {
+            "key": "obl-ee-investori-andmed-fund-data",
+            "titles": {
+              "en": "Give the Guarantee Fund the data on every investor and investment within 45 days of the compensation day"
+            },
+            "summaries": {
+              "en": "Within the same 45 days the management board member, administrator or liquidator gives the Guarantee Fund, in writing and in a form that can be reproduced in writing, the same data on each investor of the institution and their investment, with the investor's known contact address."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 ja § 3 lg 2",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Hoiustaja teabeleht, the Minister of Finance's regulation on the depositor information sheet (Rahandusministri 09.03.2016 määrus nr 16)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111032016011/txt",
+      "sourceLabel": "Riigi Teataja, Hoiustaja teabelehe andmekoosseis (Rahandusministri 09.03.2016 määrus nr 16), RT I, 11.03.2016, 11, original text RT I, 11.03.2016, 11, in force from 31.05.2016, issued by the Minister of Finance under Tagatisfondi seadus § 31 lg 1¹, read through the gazette's own interface; entry into force read in § 4 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2016-03-11-11",
+        "titles": {
+          "et": "Hoiustaja teabelehe andmekoosseis",
+          "en": "Data set of the depositor information sheet"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Hoiustaja teabeleht",
+        "officialRef": "Hoiustaja teabelehe andmekoosseis (RT I, 11.03.2016, 11)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-05-31"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Draw up the depositor information sheet on the regulation's template",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6011/RM_m16_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Hoiustaja teabelehe andmekoosseis (Rahandusministri 09.03.2016 määrus nr 16, RT I, 11.03.2016, 11), § 2, § 3 ja lisa, original text RT I, 11.03.2016, 11, in force from 31.05.2016, annex as the gazette publishes it with the text (RM_m16_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-hoiustaja-teabeleht-template",
+            "titles": {
+              "en": "Draw up the depositor information sheet on the regulation's template"
+            },
+            "summaries": {
+              "en": "Every credit institution founded in Estonia and every Estonian branch of a foreign credit institution draws up the information sheet it gives depositors on the template annexed to the regulation. The sheet names the institution and the deposit guarantee scheme protecting the deposits, states the cover of 100,000 euros per depositor per institution with all deposits at the same institution added together and the limit applying to each holder of a joint deposit, repayment within seven working days, the currency of repayment and the scheme's contacts and website, and leaves room for the depositor's acknowledgement of receipt."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2, § 3 ja lisa",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Complete the information sheet with the template's explanations that apply to the institution",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6011/RM_m16_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Hoiustaja teabelehe andmekoosseis (Rahandusministri 09.03.2016 määrus nr 16, RT I, 11.03.2016, 11), lisa p 1–5, original text RT I, 11.03.2016, 11, in force from 31.05.2016, annex as the gazette publishes it with the text (RM_m16_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-hoiustaja-teabeleht-explanations",
+            "titles": {
+              "en": "Complete the information sheet with the template's explanations that apply to the institution"
+            },
+            "summaries": {
+              "en": "Where they apply, the institution adds the template's explanations: that the deposit is covered by a contractual or institutional protection scheme recognised as a deposit guarantee scheme, the trade names it operates under with the same licence, how joint accounts and higher cover in certain cases work, the responsible scheme and its repayment period, and that it tells depositors on request whether a product is covered and confirms cover on account statements."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa p 1–5",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Pensionikaitse osafondi osamakse aruandlus, the Minister of Finance's regulation on reporting quarterly contributions to the pension protection sub-fund (Rahandusministri 27.05.2009 määrus nr 35)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129112018016/txt",
+      "sourceLabel": "Riigi Teataja, Pensionikaitse osafondi kvartaliosamakse aruandluse kord (Rahandusministri 27.05.2009 määrus nr 35), RTL 2009, 45, 624, consolidated text RT I, 29.11.2018, 16, in force from 01.01.2019, issued by the Minister of Finance under Tagatisfondi seadus § 92 lg 2, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rtl-2009-45-624",
+        "titles": {
+          "et": "Pensionikaitse osafondi kvartaliosamakse aruandluse kord",
+          "en": "Procedure for reporting quarterly contributions to the pension protection sub-fund"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Pensionikaitse osafondi osamakse aruandlus",
+        "officialRef": "Pensionikaitse osafondi kvartaliosamakse aruandluse kord (RTL 2009, 45, 624)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2009-06-06"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report the quarterly pension protection contribution to Finantsinspektsioon by the tenth day of the following month",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129112018016/txt",
+          "sourceLabel": "Riigi Teataja, Pensionikaitse osafondi kvartaliosamakse aruandluse kord (Rahandusministri 27.05.2009 määrus nr 35, RTL 2009, 45, 624), § 2 lg 1 ja 2, § 3, § 4 lg 1, 2 ja 4–6 ja § 6, consolidated text RT I, 29.11.2018, 16, in force from 01.01.2019",
+          "payload": {
+            "key": "obl-ee-pensionikaitse-osamakse-aruanne-quarterly-report",
+            "titles": {
+              "en": "Report the quarterly pension protection contribution to Finantsinspektsioon by the tenth day of the following month"
+            },
+            "summaries": {
+              "en": "A management company licensed to manage a mandatory pension fund, or the depositary that has taken over a fund's management, reports for each quarter, on report code 437 with the fund's code, the fund's net asset value at the end of the quarter, the contribution rate set by the Guarantee Fund's supervisory board as m/100 and the contribution, net asset value times rate, rounded to whole units. The report goes to Finantsinspektsioon in XML under its published technical requirements by the tenth calendar day of the following month, or the next working day, and is filed empty where there is no data."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 1 ja 2, § 3, § 4 lg 1, 2 ja 4–6 ja § 6",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Correct the pension protection contribution report when a deficiency is found",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129112018016/txt",
+          "sourceLabel": "Riigi Teataja, Pensionikaitse osafondi kvartaliosamakse aruandluse kord (Rahandusministri 27.05.2009 määrus nr 35, RTL 2009, 45, 624), § 5 lg 3, consolidated text RT I, 29.11.2018, 16, in force from 01.01.2019",
+          "payload": {
+            "key": "obl-ee-pensionikaitse-osamakse-aruanne-corrections",
+            "titles": {
+              "en": "Correct the pension protection contribution report when a deficiency is found"
+            },
+            "summaries": {
+              "en": "When Finantsinspektsioon reports a deficiency, the reporting company remedies it and submits a corrected report, as it also does on finding an error in data it submitted earlier or when the accounting policies of earlier periods change."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 5 lg 3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:fund_company",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Kohustuslike pensionifondide valitsemise aruanne, the Minister of Finance's regulation on the report on managing mandatory pension funds (Rahandusministri 13.01.2017 määrus nr 4)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129032018026/txt",
+      "sourceLabel": "Riigi Teataja, Kohustuslike pensionifondide valitsemise aruande vormi ja selle täitmise juhendi kehtestamine (Rahandusministri 13.01.2017 määrus nr 4), RT I, 17.01.2017, 11, consolidated text RT I, 29.03.2018, 26, in force from 01.04.2018, issued by the Minister of Finance under Investeerimisfondide seadus § 374 lg 2, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2017-01-17-11",
+        "titles": {
+          "et": "Kohustuslike pensionifondide valitsemise aruande vormi ja selle täitmise juhendi kehtestamine",
+          "en": "Form of the report on managing mandatory pension funds and instructions for completing it"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Kohustuslike pensionifondide valitsemise aruanne",
+        "officialRef": "Kohustuslike pensionifondide valitsemise aruande vormi ja selle täitmise juhendi kehtestamine (RT I, 17.01.2017, 11)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2017-01-20"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Include the report on managing mandatory pension funds in the notes to the annual accounts",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129032018026/txt",
+          "sourceLabel": "Riigi Teataja, Kohustuslike pensionifondide valitsemise aruande vormi ja selle täitmise juhendi kehtestamine (Rahandusministri 13.01.2017 määrus nr 4, RT I, 17.01.2017, 11), § 2 lg 1 ja 4 ja § 3 lg 1, consolidated text RT I, 29.03.2018, 26, in force from 01.04.2018",
+          "payload": {
+            "key": "obl-ee-pensionifondide-valitsemise-aruanne-annual-report-note",
+            "titles": {
+              "en": "Include the report on managing mandatory pension funds in the notes to the annual accounts"
+            },
+            "summaries": {
+              "en": "A manager of mandatory pension funds presents, in the notes to its annual accounts, the report on managing mandatory pension funds on the scheme and item explanations in the regulation's annex, for reporting periods beginning on or after 1 January 2017."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 1 ja 4 ja § 3 lg 1",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Match the report's income and costs to the income statement and explain how costs are allocated",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/129032018026/txt",
+          "sourceLabel": "Riigi Teataja, Kohustuslike pensionifondide valitsemise aruande vormi ja selle täitmise juhendi kehtestamine (Rahandusministri 13.01.2017 määrus nr 4, RT I, 17.01.2017, 11), § 2 lg 2 ja 3, consolidated text RT I, 29.03.2018, 26, in force from 01.04.2018",
+          "payload": {
+            "key": "obl-ee-pensionifondide-valitsemise-aruanne-cost-allocation",
+            "titles": {
+              "en": "Match the report's income and costs to the income statement and explain how costs are allocated"
+            },
+            "summaries": {
+              "en": "The income and costs of managing mandatory pension funds in the report agree with those in the manager's income statement, costs are split between managing those funds and the manager's other activities on the principles in its internal rules, and the report ends with an explanation of those principles."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 2 lg 2 ja 3",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:fund_company"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Fondi likvideerimisaruanne, the Minister of Finance's regulation on the liquidation report of a fund (Rahandusministri 31.01.2017 määrus nr 10)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102022017002/txt",
+      "sourceLabel": "Riigi Teataja, Nõuded fondi likvideerimisaruandele (Rahandusministri 31.01.2017 määrus nr 10), RT I, 02.02.2017, 2, original text RT I, 02.02.2017, 2, in force from 05.02.2017, issued by the Minister of Finance under Investeerimisfondide seadus § 179 lg 3, read through the gazette's own interface; entry into force read in the text's header in Riigi Teataja",
+      "payload": {
+        "key": "ee-rt-i-2017-02-02-2",
+        "titles": {
+          "et": "Nõuded fondi likvideerimisaruandele",
+          "en": "Requirements for the liquidation report of a fund"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Fondi likvideerimisaruanne",
+        "officialRef": "Nõuded fondi likvideerimisaruandele (RT I, 02.02.2017, 2)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "rahandusministeerium",
+        "regime": "regime:securities",
+        "inForceFrom": "2017-02-05"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report to Finantsinspektsioon after a fund's liquidation with the data and documents the regulation lists",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102022017002/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded fondi likvideerimisaruandele (Rahandusministri 31.01.2017 määrus nr 10, RT I, 02.02.2017, 2), § 1, § 2 ja § 3, original text RT I, 02.02.2017, 2, in force from 05.02.2017",
+          "payload": {
+            "key": "obl-ee-fondi-likvideerimisaruanne-report-content",
+            "titles": {
+              "en": "Report to Finantsinspektsioon after a fund's liquidation with the data and documents the regulation lists"
+            },
+            "summaries": {
+              "en": "Once the liquidation of a contractual fund, a sub-fund or a fund set up as a public limited company has ended, the liquidation report to Finantsinspektsioon gives the fund, its manager, depositary and liquidators, the liquidation decision and its publication, the fund's assets on the decision day and at the start of liquidation (net asset value, units, value per unit and a list of every asset), its liabilities and how they were met, transactions with its assets, the distribution notice, court rulings and the key dates. Where the depositary or liquidators appointed by Finantsinspektsioon complete the liquidation, the report adds when it passed to them and the assets at that time, and a pension fund's report adds the manager's account of handing over its management."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1, § 2 ja § 3",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Detail each creditor's claim, each liquidation cost and each payout to investors in the liquidation report",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102022017002/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded fondi likvideerimisaruandele (Rahandusministri 31.01.2017 määrus nr 10, RT I, 02.02.2017, 2), § 4, § 5 ja § 6, original text RT I, 02.02.2017, 2, in force from 05.02.2017",
+          "payload": {
+            "key": "obl-ee-fondi-likvideerimisaruanne-creditors-costs-payouts",
+            "titles": {
+              "en": "Detail each creditor's claim, each liquidation cost and each payout to investors in the liquidation report"
+            },
+            "summaries": {
+              "en": "The report names each creditor with the size, origin, ground and settlement of the claim and any deposit of money, shows unsettled management and depositary fees separately, gives each liquidation cost's type, size, ground and timing with, for a contractual fund, their total and share of net asset value, and lists each payment or asset handed over or deposited for every unitholder or shareholder."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 4, § 5 ja § 6",
+            "dutyType": "reporting",
+            "terms": []
+          }
+        },
+        {
+          "title": "Add the duty: Have the liquidation report approved and signed by a management board member or the liquidators",
+          "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102022017002/txt",
+          "sourceLabel": "Riigi Teataja, Nõuded fondi likvideerimisaruandele (Rahandusministri 31.01.2017 määrus nr 10, RT I, 02.02.2017, 2), § 7, original text RT I, 02.02.2017, 2, in force from 05.02.2017",
+          "payload": {
+            "key": "obl-ee-fondi-likvideerimisaruanne-approval",
+            "titles": {
+              "en": "Have the liquidation report approved and signed by a management board member or the liquidators"
+            },
+            "summaries": {
+              "en": "A management board member of the management company approves a contractual fund's liquidation report, unless the law or its articles say otherwise; the liquidators approve jointly the report of a fund company or of a liquidation they completed on Finantsinspektsioon's appointment, and a management board member of the depositary approves it where the depositary completed the liquidation. The approval carries each approver's name, signature and date."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 7",
+            "dutyType": "governance",
+            "terms": []
+          }
+        }
+      ]
+    }
+  ]
+}
