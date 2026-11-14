@@ -1,0 +1,214 @@
+{
+  "tranche": "at-verordnungen",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "at-bgbl-ii-2013-487",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40160095/NOR40160095.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Kreditinstitute-Risikomanagementverordnung (KI-RMV), BGBl. II Nr. 487/2013, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 316/2024)",
+      "text": {
+        "en": "The FMA's regulation that spells out how a credit institution manages each type of banking risk under the Banking Act. It binds credit institutions, and groups on a consolidated basis. In practice a bank keeps written risk strategies and limit systems tied to its business strategy, grants credit on defined criteria with its own credit assessment, has written policies for concentration, market, operational and leverage risk, keeps tested continuity plans, and runs liquidity stress tests with a contingency plan it reviews at least once a year."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2021-542",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40239983/NOR40239983.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), CRR-Begleitverordnung 2021 (CRR-BV 2021), BGBl. II Nr. 542/2021, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 327/2025)",
+      "text": {
+        "en": "The FMA's regulation that exercises the options the Capital Requirements Regulation leaves to the national authority. It binds institutions that calculate own funds under that regulation. In practice a bank holds eligible capital for holdings outside the financial sector that exceed the limits, counts an overdue amount as material for default above 1 per cent and 100 or 500 euros for more than 90 days, and uses the equity method for prudential consolidation of financial holdings unless full or proportional consolidation applies."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2025-112",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40269674/NOR40269674.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Kapitalpuffer-Verordnung 2025 (KP-V 2025), BGBl. II Nr. 112/2025, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 150/2026)",
+      "text": {
+        "en": "The FMA's regulation that sets Austria's capital buffer rates under the Banking Act, following the recommendations of the Financial Market Stability Board. It binds credit institutions, and by name the institutions it lists as systemically important. In practice a bank applies a countercyclical rate of 0 per cent to Austrian exposures, holds a systemic risk buffer of 2 per cent on its Austrian commercial real estate exposures, and, if it is named, holds the buffer for systemically important institutions and the systemic risk buffer at the rate set for it."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2006-471",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR30005634/NOR30005634.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Vermögens-, Erfolgs- und Risikoausweis-Verordnung (VERA-V), BGBl. II Nr. 471/2006, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 235/2025)",
+      "text": {
+        "en": "The FMA's regulation on the periodic supervisory statements a credit institution files under the Banking Act. It binds credit institutions, Austrian branches of banks from other member states and the responsible undertaking of a banking group. In practice a bank sends its asset and income statements to the Oesterreichische Nationalbank after each quarter, reports its new and existing residential property loans to consumers each quarter, files pay data and complaints figures after the year, and sends everything electronically in the standard form."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2006-470",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR30005628/NOR30005628.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Jahres- und Konzernabschluss-Verordnung (JKAB-V), BGBl. II Nr. 470/2006, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 102/2021)",
+      "text": {
+        "en": "The FMA's regulation on how a credit institution reports the figures of its audited annual and consolidated accounts. It binds credit institutions, Austrian branches of banks from other member states and parent institutions that draw up consolidated accounts. In practice a bank sets out the audited figures in the forms annexed to the regulation and sends them electronically to the Oesterreichische Nationalbank within six months of the end of the financial year."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2016-371",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40188334/NOR40188334.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Stammdatenmeldungsverordnung 2016 (StDMV 2016), BGBl. II Nr. 371/2016, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 322/2026)",
+      "text": {
+        "en": "The FMA's regulation on the master data a credit institution keeps current with the supervisors: company data, the risk approaches it uses for own funds and its holdings. It binds credit institutions and, for company data, Austrian branches of banks from other member states. In practice a bank reports every change to the Oesterreichische Nationalbank within 20 banking days, reports its staff numbers once a year by 31 January, lists each direct and indirect holding, and confirms after each half-year that the stored data are correct."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2010-184",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40118911/NOR40118911.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), FMA-Incoming-Plattformverordnung (FMA-IPV), BGBl. II Nr. 184/2010, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 181/2026)",
+      "text": {
+        "en": "The FMA's regulation that makes its Incoming Platform the only channel for a long list of statutory notifications and filings. It binds every firm that owes one of the listed filings: credit institutions, payment and e-money institutions, investment firms, fund managers, insurers and others. In practice a firm files the notifications named in the regulation, such as changes of managers, outsourcing notices and annual accounts, electronically through the platform, and a significant bank files certain notices through the portal of the Single Supervisory Mechanism instead."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2015-425",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40205731/NOR40205731.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Eigentümerkontrollverordnung 2016 (EKV 2016), BGBl. II Nr. 425/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 195/2018)",
+      "text": {
+        "en": "The FMA's regulation on what a person files when it intends to acquire, raise, reduce or give up a qualifying holding in a credit institution, an insurer, an investment services undertaking, a payment institution or an e-money institution. It binds the person who owes the notice, which is often a bank or another group company. In practice the acquirer files the notice with the authority on the prescribed form, answers for its accuracy, declares proceedings that bear on its reliability, shows where the purchase money comes from and adds a business plan when it takes control."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2017-5",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40189881/NOR40189881.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Online-Identifikationsverordnung (Online-IDV), BGBl. II Nr. 5/2017, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 470/2022)",
+      "text": {
+        "en": "The FMA's regulation on the safeguards a firm must apply when it identifies a customer who is not physically present by a video procedure instead. It binds credit and financial institutions under the Financial Markets Anti-Money Laundering Act. In practice a bank uses only trained staff in a closed room, records the identification call in full with screenshots of face and identity document, checks the document's security features and a one-time code, breaks off when anything is doubtful, and stays responsible when a service provider runs the procedure."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2017-7",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40190074/NOR40190074.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Anderkonten-Sorgfaltspflichtenverordnung (AndKo-SoV), BGBl. II Nr. 7/2017, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The FMA's regulation that sets a low money laundering risk for certain escrow accounts and lets credit institutions apply simplified due diligence to them: pooled, estate, guardianship and insolvency accounts of lawyers and notaries, and accounts of property managers for owners' communities. In practice a bank may skip or simplify identifying the trustors of such accounts, but keeps monitoring the accounts, drops the relief where its information points to a higher risk, and asks the account holder for further identity details when it needs them."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2017-394",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199782/NOR40199782.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Querverkaufsverordnung (QVV), BGBl. II Nr. 394/2017, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The FMA's regulation on how a firm under the Securities Supervision Act 2018 offers an investment service together with other products or services as a package. It binds credit institutions and investment firms that cross-sell to clients other than eligible counterparties. In practice a bank shows the price and costs of the package and of each part, explains how the risks differ, does not make the package look compulsory, aligns sales pay with fair treatment, keeps every withdrawal right and lets the client split the package later without undue penalties."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2019-118",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40214398/NOR40214398.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), FMA-Produktinterventionsverordnung (FMA-PIV), BGBl. II Nr. 118/2019, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The FMA's national product intervention measures under Article 42 of MiFIR and the PRIIPs Regulation. They bind every firm that markets, distributes or sells binary options or contracts for difference in or from Austria. In practice a bank offers binary options to retail clients only in the narrow forms the regulation allows, and offers contracts for difference to retail clients only with the minimum initial margins, margin close-out at half the margin, negative balance protection, no incentives and the prescribed risk warning in every marketing communication."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2017-392",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40199760/NOR40199760.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Transparenz-Verordnung 2018 (TransV 2018), BGBl. II Nr. 392/2017, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 358/2022)",
+      "text": {
+        "en": "The FMA's regulation that fills in the transparency rules of the Stock Exchange Act 2018: what an issuer's condensed half-year accounts contain, how holders notify changes in major holdings and when third-country rules count as equivalent. It binds issuers whose home member state is Austria and the holders and market makers who owe notifications. In practice a bank that issues listed securities follows the minimum content for its interim accounts, and as a holder or market maker it files holding notifications through the FMA's web application within the set deadlines."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2017-205",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40196187/NOR40196187.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verbreitungs- und Meldeverordnung 2018 (VMV 2018), BGBl. II Nr. 205/2017, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The FMA's regulation on how an issuer pre-notifies inside information and spreads regulated information. It binds issuers whose home member state is Austria, and as regards the exchange operator those admitted to its regulated market. In practice a listed bank sends the authority and the exchange a written advance notice with the wording, time and contact person before publishing inside information, and spreads regulated information in full through at least one of the named news services and to the Kontrollbank, the authority and the exchange, securely and with a clear header."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2022-219",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40244770/NOR40244770.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Zahlungsbetrugsmeldeverordnung (ZBMV), BGBl. II Nr. 219/2022, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The FMA's regulation on the statistical data on fraud that payment service providers report under the Payment Services Act 2018. It binds every payment service provider, banks included. In practice a bank reports its payment transactions and fraudulent transactions by payment instrument, broken down as the annex sets out, as at 30 June and 31 December, to the Oesterreichische Nationalbank within two months; a provider that files the payment statistics report under the Nationalbank's data model regulation meets the duty with that report."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2009-352",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40135179/NOR40135179.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Zahlungs- und E-Geld-Institute-Meldeverordnung (ZEIMV), BGBl. II Nr. 352/2009, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 328/2020)",
+      "text": {
+        "en": "The FMA's regulation on the periodic supervisory reports of payment institutions and e-money institutions. It binds payment institutions and e-money institutions licensed in Austria, not banks. In practice such an institution sends the Oesterreichische Nationalbank its balance sheet, income and safeguarding data each quarter and its own funds data each month by the tenth banking day, reports changes in its master data at once and confirms them each half-year, and repeats the year-end reports on audited figures within six months."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2017-117",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40192975/NOR40192975.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Investmentfonds-Liquiditätsrisikomanagementverordnung (InvF-LRMV), BGBl. II Nr. 117/2017, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The FMA's regulation on the liquidity risk management process a management company runs for each UCITS under the Investment Funds Act 2011. It binds management companies when they manage UCITS. In practice a fund manager keeps each fund's liquidity in line with its liabilities and redemption policy, monitors the liquidity profile of its assets and investor base, sets liquidity limits with escalation steps, runs liquidity stress tests at least monthly and keeps the asset liquidity consistent with its investment strategy."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2015-266",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40174819/NOR40174819.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Alternative Investmentfonds Manager-Meldeverordnung (AIFM-MV), BGBl. II Nr. 266/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 351/2019)",
+      "text": {
+        "en": "The FMA's regulation on the periodic reports alternative investment fund managers send to the authority under the AIFMG and Delegated Regulation (EU) No 231/2013. It binds licensed and registered AIFMs. In practice a fund manager reports yearly, half-yearly or quarterly as the provisions it reports under require, within one month of the reporting date and fifteen days later for funds of funds, adds the extra national data on high-frequency trading, geographic split, hedging and risk measures, and files in the FMA's XML format."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2015-25",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40168914/NOR40168914.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bankensanierungsplanverordnung (BaSaPV), BGBl. II Nr. 25/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 98/2025)",
+      "text": {
+        "en": "The FMA's regulation on how detailed the recovery plans of banks outside the ECB's direct supervision must be and when they are filed. It binds institutions and EU parent undertakings under the Recovery and Resolution Act that are less significant, in four categories by size, foreign and interbank business. In practice such a bank builds its recovery plan with the scenarios and indicators its category requires, files the first plan within six months of its licence, and updates it every one, two or three years by the date set for its category."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2022-355",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40247175/NOR40247175.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Pfandbrief-Meldeverordnung (PB-MV), BGBl. II Nr. 355/2022, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 406/2022)",
+      "text": {
+        "en": "The FMA's regulation on the quarterly reports a covered bond issuer sends about its programmes under the Covered Bonds Act. It binds credit institutions established in Austria that have covered bonds outstanding. In practice such a bank reports, for each cover pool, the cover assets by type, the cover requirements and the 180-day liquidity buffer, and data on each covered bond, as at each quarter end, electronically to the Oesterreichische Nationalbank by the next quarterly reporting date."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2016-92",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40180633/NOR40180633.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Kontenregister-Durchführungsverordnung (KontReg-DV), BGBl. II Nr. 92/2016, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 579/2020)",
+      "text": {
+        "en": "The Finance Minister's regulation on how credit institutions transmit account data to the central account register under the Account Register and Account Inspection Act. It binds credit institutions. In practice a bank sends the account data the Act lists through FinanzOnline by data stream or web service, names any data centre it uses, includes beneficial owners and trustors where the regulation requires, records who presents disposition slips for securities accounts, and transmits openings, closures and changes by the 25th of the following month."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2021-176",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40233101/NOR40233101.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), 2. Kontenregister-Durchführungsverordnung (2. KontReg-DV), BGBl. II Nr. 176/2021, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The Finance Minister's regulation on how credit and financial institutions report credit accounts, payment accounts of payment service providers and safe deposit boxes to the account register. It binds the credit and financial institutions the Account Register Act names, commercial safe deposit box providers included. In practice a bank sends these data through FinanzOnline by data stream or web service with its BIC, names any processor it uses, and transmits openings, closures, rental periods and changes by the 25th of the following month."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2016-91",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40180628/NOR40180628.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Kapitalabfluss-Durchführungsverordnung (KapAbfl-DV), BGBl. II Nr. 91/2016, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 579/2020)",
+      "text": {
+        "en": "The Finance Minister's regulation on how credit institutions and payment institutions report capital outflows and inflows under the Capital Outflow Reporting Act. It binds credit institutions, payment institutions and the federal financing agency. In practice a bank sends the reports through FinanzOnline by data stream or web service with its BIC and tax number, treats transfers of securities by free delivery as outflows, checks smaller inflows from Switzerland and Liechtenstein against depots of the same holder, and adds up linked outflows per quarter against the 50,000 euro threshold."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2020-573",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40228943/NOR40228943.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung ZABIL 1/2022 der Oesterreichischen Nationalbank, BGBl. II Nr. 573/2020, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "The Oesterreichische Nationalbank's regulation on reports of cross-border capital transactions for the balance of payments statistics, under the Foreign Exchange Act 2004. It binds residents above the thresholds it sets, banks in particular as deposit-taking institutions and custodians. In practice a bank files electronically in German under the Nationalbank's standards and reports direct investment transactions, its loans and deposits with foreign group companies, cross-border derivatives and the securities it holds and keeps for others each month by the set deadlines."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2024-87",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40266240/NOR40266240.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Meldeverordnung FinStab 2024, BGBl. II Nr. 87/2024, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 305/2024)",
+      "text": {
+        "en": "The Oesterreichische Nationalbank's regulation on the reports it needs for financial stability analysis under the Nationalbank Act. It binds deposit-taking credit institutions and the parent institutions of banking groups. In practice a bank reports residual maturities and foreign currency loans, credit risk and, above 100 million euros of foreign exposures, country risk each quarter, a parent also reports country and credit risk for the group and financial information on its foreign subsidiary banks, by the deadlines the regulation sets."
+      }
+    },
+    {
+      "key": "at-bgbl-ii-2024-88",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40261120/NOR40261120.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Datenmodellverordnung 2024, BGBl. II Nr. 88/2024, consolidated text read through the RIS open-data interface (last amended by BGBl. II Nr. 304/2024)",
+      "text": {
+        "en": "The Oesterreichische Nationalbank's regulation that makes its data model the format for the statistical and supervisory reports banks send it: monetary and interest rate statistics, financial stability data, granular credit data and payment statistics. It binds deposit-taking institutions, CRR credit and financial institutions and payment service providers. In practice a bank reports credit, deposit and securities data, granular credit data and payment statistics as single transactions in the Nationalbank's cubes, by the deadlines the regulation sets."
+      }
+    }
+  ]
+}
