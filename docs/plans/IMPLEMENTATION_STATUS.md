@@ -495,7 +495,14 @@ the Netherlands, Austria and Switzerland.
   image. Last of the statutes, Germany's (`provisions/de-acts.json`): 155 sections from
   Gesetze im Internet's XML and section pages, read a third time from the full-act pages,
   with English and Swedish beside each; all 169 duties carry their text, so every statute
-  tranche of the seven markets now carries the law's own words.
+  tranche of the seven markets now carries the law's own words. Then the United Kingdom's
+  statutory instruments (`provisions/gb-si.json`): 135 provisions with Swedish beside each;
+  106 of 109 duties carry their text, and three do not, because legislation.gov.uk holds
+  the 2023 disclosable arrangements regulations only as made. And Austria's regulations
+  (`provisions/at-verordnungen.json`): 88 sections with English and Swedish beside each;
+  99 of 103 duties carry their text, and four do not, because FMA-PIV § 3 sets its rates
+  out as a table and VERA-V § 6a publishes its formulas only as images. The baseline's
+  tests filed and approved everything on the branch together (39 tests, 798 s).
 - **In work on this branch:** the
   law's own words for the other regulations, each
   provision in its original
