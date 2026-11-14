@@ -60,6 +60,23 @@ library takes their law in its own language. What needs you, most urgent first.
       every act's name stays whole in German; "administration and management" for
       "Verwaltung und Geschäftsführung"; "depåbank" for a Depotbank; "dagsböter" for a
       Geldstrafe (Art. 34 StGB).
+- [ ] **Where the EU law the United Kingdom kept belongs.** Six EU regulations still bind a
+      United Kingdom bank as United Kingdom law, read on legislation.gov.uk on 14
+      November: the UK GDPR, UK MAR and UK EMIR in force; the UK CRR and UK MiFIR in force
+      in part, as the PRA's and the FCA's rules replace them article by article; the UK
+      PRIIPs Regulation revoked on 6 April 2026. The library has no level for them: they
+      are neither Acts nor regulations made in the United Kingdom, and an EU level is
+      refused for a United Kingdom record. Default: record them as `gb` instruments of
+      level `government_regulation`, issued by `hm-government`, with a note that they are
+      assimilated law, in a later tranche. Say if you want a level of their own instead.
+- [ ] **A UK lawyer on the statutory instruments.** The researcher's own doubts: the
+      Distance Marketing Regulations reach a bank mainly through payment services (reg.
+      4(2)); FSMA 2023 will revoke the two consumer credit regulations of 2010, the
+      Electronic Money Regulations and the Distance Marketing Regulations on a day not yet
+      set; two Payment Accounts duties (regs. 8 and 10) read as in force from 2016, which
+      is too early, because the day they began was not on any page read; the sanctions
+      prohibitions are offences written as duties; the Belarus regime was left out
+      because legislation.gov.uk lists 72 changes not yet applied to its text.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
