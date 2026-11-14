@@ -1,0 +1,2261 @@
+{
+ "tranche": "nl-besluiten-2",
+ "researchedOn": "2026-11-14",
+ "instruments": [
+  {
+   "title": "Add Sanctieregeling terrorisme 2002, the Dutch Minister of Foreign Affairs' regulation enforcing the EU counter-terrorism measures of Regulation (EC) No 2580/2001",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013736/2026-04-08_0/xml/BWBR0013736_2026-04-08_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002, BWBR0013736, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2002, 104; consolidated text in force from 2026-04-08, read in its XML file; entry into force on 2002-06-07 read in the file's source data for the title, which name Stcrt. 2002, 104",
+   "payload": {
+    "key": "nl-bwbr0013736",
+    "titles": {
+     "nl": "Regeling inzake specifieke beperkende maatregelen tegen bepaalde personen en entiteiten met het oog op de strijd tegen het terrorisme",
+     "en": "Terrorism Sanctions Regulation 2002"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling terrorisme 2002",
+    "officialRef": "Sanctieregeling terrorisme 2002 (Stcrt. 2002, 104)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2002-06-07"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the articles of Regulation (EC) No 2580/2001 that the regulation lists",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013736/2026-04-08_0/xml/BWBR0013736_2026-04-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002, BWBR0013736, art. 1 lid 1, text in force from 2026-04-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0013736&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2002-eu-measures-prohibition",
+      "titles": {
+       "en": "Do not act against the articles of Regulation (EC) No 2580/2001 that the regulation lists"
+      },
+      "summaries": {
+       "en": "Acting against Articles 2(1) and (2), 3(1) and 4(1) of Regulation (EC) No 2580/2001, the EU regulation on specific restrictive measures against certain persons and entities to combat terrorism, is prohibited under this Dutch regulation, which is made under the Sanctions Act 1977."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Depart from the prohibition only where an authorisation under the EU regulation's derogations applies",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013736/2026-04-08_0/xml/BWBR0013736_2026-04-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002, BWBR0013736, art. 1 lid 2 en 3, text in force from 2026-04-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0013736&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2002-authorised-exceptions",
+      "titles": {
+       "en": "Depart from the prohibition only where an authorisation under the EU regulation's derogations applies"
+      },
+      "summaries": {
+       "en": "The prohibition does not apply where Article 2a(1), 2b(1), 2c(1), 5(1) or (2) or 6(1) or (2) of Regulation (EC) No 2580/2001 has been applied. The competent authority under Articles 2a(1), 2b(1), 2c(1) and 6(2) and (3) of that regulation is the Minister of Finance or the Minister for Foreign Trade and Development Cooperation, each within their own competence."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 2 en 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the information Article 4(1) of Regulation (EC) No 2580/2001 asks for to De Nederlandsche Bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013736/2026-04-08_0/xml/BWBR0013736_2026-04-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002, BWBR0013736, art. 1 lid 4, text in force from 2026-04-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0013736&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2002-information-to-dnb",
+      "titles": {
+       "en": "Give the information Article 4(1) of Regulation (EC) No 2580/2001 asks for to De Nederlandsche Bank"
+      },
+      "summaries": {
+       "en": "A bank, an e-money institution, a payment service provider, an insurer and the other institutions under Article 10(2)(a), (c) and (e) to (j) of the Sanctions Act 1977 give the information Article 4(1) of Regulation (EC) No 2580/2001 asks for to De Nederlandsche Bank. Investment firms, fund managers and the other institutions under points (b), (d) and (k) give it to the Authority for the Financial Markets, and the Minister of Finance is the competent authority under Articles 4 and 5 of that regulation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 4",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling terrorisme 2002 II, the Dutch Minister of Foreign Affairs' regulation extending the EU counter-terrorism freeze to the persons and groups marked with a star in Common Position 2001/931/CFSP",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013904/2022-01-28_0/xml/BWBR0013904_2022-01-28_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002 II, BWBR0013904, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2002, 138; consolidated text in force from 2022-01-28, read in its XML file; entry into force on 2002-07-25 read in the file's source data for the title, which name Stcrt. 2002, 138",
+   "payload": {
+    "key": "nl-bwbr0013904",
+    "titles": {
+     "nl": "Regeling houdende beperkende maatregelen tegen bepaalde personen en entiteiten met het oog op de strijd tegen het terrorisme",
+     "en": "Terrorism Sanctions Regulation 2002 II"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling terrorisme 2002 II",
+    "officialRef": "Sanctieregeling terrorisme 2002 II (Stcrt. 2002, 138)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2002-07-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Apply the EU counter-terrorism freeze rules to the persons, groups and entities marked with a star",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013904/2022-01-28_0/xml/BWBR0013904_2022-01-28_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002 II, BWBR0013904, art. 1 lid 1 en art. 2, text in force from 2022-01-28; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0013904&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2002-ii-starred-persons-prohibition",
+      "titles": {
+       "en": "Apply the EU counter-terrorism freeze rules to the persons, groups and entities marked with a star"
+      },
+      "summaries": {
+       "en": "Articles 1, 2(1) and (2), 3(1), 4(1), first and second indents, and 4(2), and 5(1) of Regulation (EC) No 2580/2001 apply equally to the persons, groups and entities marked with a star in the annex to Common Position 2001/931/CFSP. Breaching Articles 2(1) and (2), 3 and 4(1), first and second indents, as applied to them is prohibited."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en art. 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Bring the information Article 3(2) of Regulation (EC) No 2580/2001 refers to only to the Ministry of Finance",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013904/2022-01-28_0/xml/BWBR0013904_2022-01-28_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002 II, BWBR0013904, art. 1 lid 2, text in force from 2022-01-28; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0013904&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2002-ii-information-to-finance-ministry",
+      "titles": {
+       "en": "Bring the information Article 3(2) of Regulation (EC) No 2580/2001 refers to only to the Ministry of Finance"
+      },
+      "summaries": {
+       "en": "Article 3(2) of Regulation (EC) No 2580/2001 applies equally to the starred persons, groups and entities, with this difference: the information that article refers to is brought only to the attention of the Ministry of Finance."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Act outside the starred-persons prohibitions only under an exemption the minister grants on request",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0013904/2022-01-28_0/xml/BWBR0013904_2022-01-28_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2002 II, BWBR0013904, art. 3, text in force from 2022-01-28; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0013904&artikel=3",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2002-ii-exemption-on-request",
+      "titles": {
+       "en": "Act outside the starred-persons prohibitions only under an exemption the minister grants on request"
+      },
+      "summaries": {
+       "en": "On request, the Minister of Finance or the Minister for Foreign Trade and Development Cooperation, each within their own competence and in agreement with the Minister of Foreign Affairs, can grant an exemption from the application of the articles the regulation applies to the starred persons, groups and entities."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling terrorisme 2007, the Dutch Minister of Foreign Affairs' regulation freezing the assets of the persons named in its annex under Security Council Resolution 1373",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0021311/2019-11-20_0/xml/BWBR0021311_2019-11-20_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007, BWBR0021311, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2007, 39; consolidated text in force from 2019-11-20, read in its XML file; entry into force on 2007-02-25 read in the file's source data for the title, which name Stcrt. 2007, 39",
+   "payload": {
+    "key": "nl-bwbr0021311",
+    "titles": {
+     "nl": "Regeling van 21 februari 2007, nr. DJZ/BR/0185-07, houdende beperkende maatregelen tegen enkele aan Al Qa’ida gelieerde personen met het oog op de strijd tegen het terrorisme (Sanctieregeling terrorisme 2007)",
+     "en": "Terrorism Sanctions Regulation 2007"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling terrorisme 2007",
+    "officialRef": "Sanctieregeling terrorisme 2007 (Stcrt. 2007, 39)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2007-02-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze all assets belonging to the persons named in the annex",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0021311/2019-11-20_0/xml/BWBR0021311_2019-11-20_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007, BWBR0021311, art. 2 lid 1 en art. 1, text in force from 2019-11-20; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0021311&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2007-freeze-annex-persons",
+      "titles": {
+       "en": "Freeze all assets belonging to the persons named in the annex"
+      },
+      "summaries": {
+       "en": "All assets belonging to the persons named in the annex are frozen. Assets are property of any kind and the documents showing ownership of or an interest in it, such as bank credits, cheques, shares and bonds; freezing means preventing any change, transfer or use that would alter their amount, location, ownership or destination or allow their use, the management of an investment portfolio included."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1 en art. 1",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Provide no financial services to the persons named in the annex and make no assets available to them",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0021311/2019-11-20_0/xml/BWBR0021311_2019-11-20_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007, BWBR0021311, art. 2 lid 2 en 3, text in force from 2019-11-20; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0021311&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2007-no-services-or-assets",
+      "titles": {
+       "en": "Provide no financial services to the persons named in the annex and make no assets available to them"
+      },
+      "summaries": {
+       "en": "It is prohibited to provide financial services, which cover services of a financial nature such as banking services, for or for the benefit of the persons named in the annex. It is also prohibited to make assets available to them, whether directly or indirectly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 2 en 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Depart from the annex freeze and its bans only under an exemption granted on request",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0021311/2019-11-20_0/xml/BWBR0021311_2019-11-20_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007, BWBR0021311, art. 3, text in force from 2019-11-20; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0021311&artikel=3",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2007-exemption-on-request",
+      "titles": {
+       "en": "Depart from the annex freeze and its bans only under an exemption granted on request"
+      },
+      "summaries": {
+       "en": "The Minister of Finance or the Minister for Foreign Trade and Development Cooperation, each within their own competence and in agreement with the Minister of Foreign Affairs, can on request grant an exemption from the prohibitions of article 2, which otherwise apply in full."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling terrorisme 2007-II, the Dutch Minister of Foreign Affairs' regulation on the national designation and asset freeze of persons and organisations under Security Council Resolution 1373",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0023131/2019-11-20_0/xml/BWBR0023131_2019-11-20_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007-II, BWBR0023131, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2007, 248; consolidated text in force from 2019-11-20, read in its XML file; entry into force on 2007-12-23 read in the file's source data for the title, which name Stcrt. 2007, 248",
+   "payload": {
+    "key": "nl-bwbr0023131",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken in overeenstemming met de Minister van Financiën van 18 december 2007, nr. DJZ/BR/1222-07, houdende beperkende maatregelen met het oog op de strijd tegen het terrorisme (Sanctieregeling terrorisme 2007-II)",
+     "en": "Terrorism Sanctions Regulation 2007-II"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling terrorisme 2007-II",
+    "officialRef": "Sanctieregeling terrorisme 2007-II (Stcrt. 2007, 248)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2007-12-23"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze all assets of the persons and organisations designated by ministerial decision",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0023131/2019-11-20_0/xml/BWBR0023131_2019-11-20_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007-II, BWBR0023131, art. 2 lid 1, 2 en 5, text in force from 2019-11-20; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0023131&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2007-ii-freeze-designated-parties",
+      "titles": {
+       "en": "Freeze all assets of the persons and organisations designated by ministerial decision"
+      },
+      "summaries": {
+       "en": "The Minister of Foreign Affairs, in agreement with the Ministers of Justice and of Finance, can adopt a designation decision for persons or organisations found to belong to the circle that Security Council Resolution 1373 describes, and announces each designation in the Staatscourant. All assets belonging to a designated person or organisation are frozen."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1, 2 en 5",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Provide no financial services to designated persons or organisations and make no assets available to them",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0023131/2019-11-20_0/xml/BWBR0023131_2019-11-20_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007-II, BWBR0023131, art. 2 lid 3 en 4 en art. 3a, text in force from 2019-11-20; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0023131&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2007-ii-no-services-or-assets",
+      "titles": {
+       "en": "Provide no financial services to designated persons or organisations and make no assets available to them"
+      },
+      "summaries": {
+       "en": "It is prohibited to provide financial services for or for the benefit of a designated person or organisation and to make assets available to them, directly or indirectly. The freeze and these bans do not apply to persons and organisations on the list of Article 2(3) of Regulation (EC) No 2580/2001 or in Annex I to Regulation (EC) No 881/2002, or covered by the Sanctieregeling terrorisme 2002-II."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 3 en 4 en art. 3a",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Depart from the national freeze only under an exemption granted on request",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0023131/2019-11-20_0/xml/BWBR0023131_2019-11-20_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling terrorisme 2007-II, BWBR0023131, art. 3, text in force from 2019-11-20; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0023131&artikel=3",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-terrorisme-2007-ii-exemption-on-request",
+      "titles": {
+       "en": "Depart from the national freeze only under an exemption granted on request"
+      },
+      "summaries": {
+       "en": "On request, the Minister of Finance or the Minister for Foreign Trade and Development Cooperation, each within their own competence and in agreement with the Minister of Foreign Affairs, can grant an exemption from the freeze and the bans of article 2(2) to (4)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling ISIS en Al Qaida 2016, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions against ISIS (Da'esh), Al-Qaida and associated persons",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0038916/2025-12-25_0/xml/BWBR0038916_2025-12-25_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling ISIS en Al Qaida 2016, BWBR0038916, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2016, 67860; consolidated text in force from 2025-12-25, read in its XML file; entry into force on 2016-12-24 read in the file's source data for the title, which name Stcrt. 2016, 67860",
+   "payload": {
+    "key": "nl-bwbr0038916",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 5 december 2016, nr. MinBuza-2016.822620, houdende beperkende maatregelen tegen personen en entiteiten die banden hebben met ISIS en Al Qaida (Sanctieregeling ISIS en Al Qaida 2016)",
+     "en": "ISIS and Al-Qaida Sanctions Regulation 2016"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling ISIS en Al Qaida 2016",
+    "officialRef": "Sanctieregeling ISIS en Al Qaida 2016 (Stcrt. 2016, 67860)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2016-12-24"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EC) No 881/2002 on the Al-Qaida network",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0038916/2025-12-25_0/xml/BWBR0038916_2025-12-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling ISIS en Al Qaida 2016, BWBR0038916, art. 2 lid 1, text in force from 2025-12-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0038916&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-isis-en-al-qaida-2016-regulation-881-2002-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EC) No 881/2002 on the Al-Qaida network"
+      },
+      "summaries": {
+       "en": "Acting against Articles 2(1), 2(2) and 2(2a), 3, 4 and 5(1) and (2) of Regulation (EC) No 881/2002 is prohibited under Dutch law. As regards Article 2(1), (2) and (2a), the prohibition does not apply where Article 2(5), 2a or 2b of that regulation applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) 2016/1686 on ISIS (Da'esh) and Al-Qaida",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0038916/2025-12-25_0/xml/BWBR0038916_2025-12-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling ISIS en Al Qaida 2016, BWBR0038916, art. 5 lid 1 en 2, text in force from 2025-12-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0038916&artikel=5",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-isis-en-al-qaida-2016-regulation-2016-1686-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) 2016/1686 on ISIS (Da'esh) and Al-Qaida"
+      },
+      "summaries": {
+       "en": "Acting against Articles 2(1) and (2), 9, 10(1) and 11 of Regulation (EU) 2016/1686 is prohibited, except, as regards Article 2(1) and (2), where Article 2(3), 5, 6, 7 or 8 of that regulation applies. Nor does the prohibition reach the Allied Democratic Forces where Article 2(1) or (2) of Regulation (EC) No 1183/2005 on the Democratic Republic of the Congo applies to that entity."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Deal with the Minister of Finance or the Minister for Foreign Trade on the matters both EU regulations leave to the competent authority",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0038916/2025-12-25_0/xml/BWBR0038916_2025-12-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling ISIS en Al Qaida 2016, BWBR0038916, art. 2 lid 2 en art. 5 lid 3, text in force from 2025-12-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0038916&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-isis-en-al-qaida-2016-competent-ministers",
+      "titles": {
+       "en": "Deal with the Minister of Finance or the Minister for Foreign Trade on the matters both EU regulations leave to the competent authority"
+      },
+      "summaries": {
+       "en": "The competent authority under Articles 2a, 2b and 4 of Regulation (EC) No 881/2002 and under Articles 5 to 8 and 10(1) and (3) of Regulation (EU) 2016/1686 is the Minister of Finance or the Minister for Foreign Trade and Development Cooperation, each within their own competence. Information under Article 5 of Regulation (EC) No 881/2002 and Article 11(2) of Regulation (EU) 2016/1686 goes to one of those two ministers, depending on its nature."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 2 en art. 5 lid 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling territoriale integriteit Oekraïne 2014, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions of Regulation (EU) No 269/2014 and Regulation (EU) No 833/2014 over the war against Ukraine",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0034955/2026-08-04_0/xml/BWBR0034955_2026-08-04_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling territoriale integriteit Oekraïne 2014, BWBR0034955, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2014, 8792; consolidated text in force from 2026-08-04, read in its XML file; entry into force on 2014-03-25 read in the file's source data for the title, which name Stcrt. 2014, 8792",
+   "payload": {
+    "key": "nl-bwbr0034955",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 19 maart 2014, nr. MinBuZa.2014.119597, houdende beperkende maatregelen in verband met acties die de territoriale integriteit, soevereiniteit en onafhankelijkheid van Oekraïne ondermijnen of bedreigen (Sanctieregeling territoriale integriteit Oekraïne 2014)",
+     "en": "Territorial Integrity of Ukraine Sanctions Regulation 2014"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling territoriale integriteit Oekraïne 2014",
+    "officialRef": "Sanctieregeling territoriale integriteit Oekraïne 2014 (Stcrt. 2014, 8792)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2014-03-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) No 269/2014",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0034955/2026-08-04_0/xml/BWBR0034955_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling territoriale integriteit Oekraïne 2014, BWBR0034955, art. 1 lid 1 en 2, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0034955&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-territoriale-integriteit-oekraine-2014-regulation-269-2014-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) No 269/2014"
+      },
+      "summaries": {
+       "en": "Acting against Articles 2, 6h(2), 8(1), (1a), (1b), third sentence, and (1c), 9(1) and (2) and 15a of Regulation (EU) No 269/2014 is prohibited under Dutch law. As regards Article 2 the prohibition does not apply where one of the derogations of that regulation the article lists applies, among them Articles 2a, 4 to 7 and 9(5)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) No 833/2014, its financial restrictions included",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0034955/2026-08-04_0/xml/BWBR0034955_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling territoriale integriteit Oekraïne 2014, BWBR0034955, art. 1a lid 1 en 2, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0034955&artikel=1a",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-territoriale-integriteit-oekraine-2014-regulation-833-2014-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) No 833/2014, its financial restrictions included"
+      },
+      "summaries": {
+       "en": "Acting against a long list of provisions of Regulation (EU) No 833/2014 is prohibited under Dutch law, among them Articles 2, 3, 5, the articles lettered after Article 5, 11(1) and 12. The prohibition does not apply where one of the derogations of that regulation the article lists applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1a lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the information Article 8(1) of Regulation (EU) No 269/2014 asks for to De Nederlandsche Bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0034955/2026-08-04_0/xml/BWBR0034955_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling territoriale integriteit Oekraïne 2014, BWBR0034955, art. 2 lid 1, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0034955&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-territoriale-integriteit-oekraine-2014-information-to-dnb-269-2014",
+      "titles": {
+       "en": "Give the information Article 8(1) of Regulation (EU) No 269/2014 asks for to De Nederlandsche Bank"
+      },
+      "summaries": {
+       "en": "A bank, an e-money institution, a payment service provider, an insurer and the other institutions under Article 10(2)(a), (c) and (e) to (j) of the Sanctions Act 1977 give the information of Article 8(1) of Regulation (EU) No 269/2014 to De Nederlandsche Bank, and investment firms, fund managers and the institutions under points (b), (d) and (k) give it to the Authority for the Financial Markets. The Minister of Finance is the competent authority for the release or making available of funds or financial information under the articles of that regulation the paragraph lists."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give De Nederlandsche Bank the information Articles 5a and 5g of Regulation (EU) No 833/2014 ask of credit institutions",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0034955/2026-08-04_0/xml/BWBR0034955_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling territoriale integriteit Oekraïne 2014, BWBR0034955, art. 2 lid 4, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0034955&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-territoriale-integriteit-oekraine-2014-credit-institution-information-833-2014",
+      "titles": {
+       "en": "Give De Nederlandsche Bank the information Articles 5a and 5g of Regulation (EU) No 833/2014 ask of credit institutions"
+      },
+      "summaries": {
+       "en": "Credit institutions give De Nederlandsche Bank the information of Article 5a(4a) to (4d) and of Article 5g, points (a), (aa) and (b), of Regulation (EU) No 833/2014, and De Nederlandsche Bank may pass it to the Minister of Finance. The Minister of Finance is the competent authority for financing, financial assistance, financial services or transactions and information or notifications about them under the articles of that regulation the paragraph lists."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 4",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the Minister of Economic Affairs and Climate the information needed for the sanctions on request",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0034955/2026-08-04_0/xml/BWBR0034955_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling territoriale integriteit Oekraïne 2014, BWBR0034955, art. 2c lid 7 en 9, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0034955&artikel=2c",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-territoriale-integriteit-oekraine-2014-information-on-request",
+      "titles": {
+       "en": "Give the Minister of Economic Affairs and Climate the information needed for the sanctions on request"
+      },
+      "summaries": {
+       "en": "Where the data that persons, entities and bodies supplied and the data gathered from registers, public sources and other authorities do not give the minister what is needed, persons, entities and bodies give the Minister of Economic Affairs and Climate, on request, all information needed to carry out the Sanctions Act 1977 and binding international decisions. The information is given free of charge."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2c lid 7 en 9",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling destabiliserende activiteiten Russische Federatie 2024, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions over Russia's destabilising activities, Regulation (EU) 2024/2642",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0050553/2026-06-30_0/xml/BWBR0050553_2026-06-30_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling destabiliserende activiteiten Russische Federatie 2024, BWBR0050553, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2024, 41510; consolidated text in force from 2026-06-30, read in its XML file; entry into force on 2024-12-13 read in the file's source data for the title, which name Stcrt. 2024, 41510",
+   "payload": {
+    "key": "nl-bwbr0050553",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 11 december 2024, nr. BZ2410228, houdende beperkende maatregelen naar aanleiding van destabiliserende activiteiten door de Russische Federatie (Sanctieregeling destabiliserende activiteiten Russische Federatie 2024)",
+     "en": "Russian Federation Destabilising Activities Sanctions Regulation 2024"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling destabiliserende activiteiten Russische Federatie 2024",
+    "officialRef": "Sanctieregeling destabiliserende activiteiten Russische Federatie 2024 (Stcrt. 2024, 41510)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-12-13"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) 2024/2642",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0050553/2026-06-30_0/xml/BWBR0050553_2026-06-30_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling destabiliserende activiteiten Russische Federatie 2024, BWBR0050553, art. 2 lid 1 en 2, text in force from 2026-06-30; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0050553&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-destabiliserende-activiteiten-russische-federatie-2024-eu-measures-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) 2024/2642"
+      },
+      "summaries": {
+       "en": "Acting against Articles 1a(1), 1b(1), 1c(1) and (3), 2(1) and (2), 8(1) and 9(1) and (2) of Regulation (EU) 2024/2642 is prohibited under Dutch law. The prohibition does not apply where Article 1a(3), (4) or (5), 1b(2), 3(1), 4(1) or (3), 5(1), 6(1) or 7 of that regulation applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the information Article 8(1) of Regulation (EU) 2024/2642 asks for to De Nederlandsche Bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0050553/2026-06-30_0/xml/BWBR0050553_2026-06-30_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling destabiliserende activiteiten Russische Federatie 2024, BWBR0050553, art. 3 lid 1 en 3, text in force from 2026-06-30; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0050553&artikel=3",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-destabiliserende-activiteiten-russische-federatie-2024-information-to-dnb",
+      "titles": {
+       "en": "Give the information Article 8(1) of Regulation (EU) 2024/2642 asks for to De Nederlandsche Bank"
+      },
+      "summaries": {
+       "en": "A bank, an e-money institution, a payment service provider, an insurer and the other institutions under Article 10(2)(a), (c) and (e) to (j) of the Sanctions Act 1977 give the information of Article 8(1) of Regulation (EU) 2024/2642 to De Nederlandsche Bank, and investment firms, fund managers and the institutions under points (b), (d) and (k) give it to the Authority for the Financial Markets. The Minister of Finance is the competent authority for the release or making available of funds or financial information, and under Article 9(2) as far as funds are concerned."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 1 en 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling Belarus 2006, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions against Belarus, Regulation (EC) No 765/2006",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020371/2026-08-04_0/xml/BWBR0020371_2026-08-04_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Belarus 2006, BWBR0020371, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2006, 196; consolidated text in force from 2026-08-04, read in its XML file; entry into force on 2006-10-11 read in the file's source data for the title, which name Stcrt. 2006, 196",
+   "payload": {
+    "key": "nl-bwbr0020371",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 29 september 2006, nr. DJZ/BR/0965-06, betreffende beperkende maatregelen tegen president Loekasjenko en bepaalde functionarissen van Belarus (Sanctieregeling Belarus 2006)",
+     "en": "Belarus Sanctions Regulation 2006"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling Belarus 2006",
+    "officialRef": "Sanctieregeling Belarus 2006 (Stcrt. 2006, 196)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2006-10-11"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EC) No 765/2006",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020371/2026-08-04_0/xml/BWBR0020371_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Belarus 2006, BWBR0020371, art. 1 lid 1 en 2, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020371&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-belarus-2006-regulation-765-2006-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EC) No 765/2006"
+      },
+      "summaries": {
+       "en": "Acting against a long list of articles of Regulation (EC) No 765/2006, on restrictive measures in view of the situation in Belarus and its involvement in the Russian aggression against Ukraine, is prohibited under Dutch law, among them Articles 2 and 5. The prohibition does not apply where one of the derogations of that regulation the article lists applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give De Nederlandsche Bank the information Article 1z of Regulation (EC) No 765/2006 asks of credit institutions",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020371/2026-08-04_0/xml/BWBR0020371_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Belarus 2006, BWBR0020371, art. 1a lid 4 en 5, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020371&artikel=1a",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-belarus-2006-information-routes",
+      "titles": {
+       "en": "Give De Nederlandsche Bank the information Article 1z of Regulation (EC) No 765/2006 asks of credit institutions"
+      },
+      "summaries": {
+       "en": "Credit institutions give De Nederlandsche Bank the information of Article 1z, points (a) and (b), of Regulation (EC) No 765/2006, and De Nederlandsche Bank may pass it to the Minister of Finance. The Minister of Finance is the competent authority under Article 5(1) of that regulation and for financing, financial assistance, financial services or transactions and information or notifications about them under the articles the paragraph lists."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1a lid 4 en 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the Minister of Economic Affairs the information needed for the Belarus sanctions on request",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020371/2026-08-04_0/xml/BWBR0020371_2026-08-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Belarus 2006, BWBR0020371, art. 1ac lid 7 en 9, text in force from 2026-08-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020371&artikel=1ac",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-belarus-2006-information-on-request",
+      "titles": {
+       "en": "Give the Minister of Economic Affairs the information needed for the Belarus sanctions on request"
+      },
+      "summaries": {
+       "en": "Where the data supplied and the data gathered from registers, public sources and other authorities fall short, persons, entities and bodies give the Minister of Economic Affairs, on request and free of charge, all information needed to carry out the Sanctions Act 1977 and binding international decisions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1ac lid 7 en 9",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling Iran 2012, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions against Iran of Regulations (EU) No 267/2012, No 359/2011 and 2023/1529",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031496/2026-03-06_0/xml/BWBR0031496_2026-03-06_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Iran 2012, BWBR0031496, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2012, 8001; consolidated text in force from 2026-03-06, read in its XML file; entry into force on 2012-04-26 read in the file's source data for the title, which name Stcrt. 2012, 8001",
+   "payload": {
+    "key": "nl-bwbr0031496",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 17 april 2012, nr. Minbuza-2012.7941, houdende beperkende maatregelen jegens Iran (Sanctieregeling Iran 2012)",
+     "en": "Iran Sanctions Regulation 2012"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling Iran 2012",
+    "officialRef": "Sanctieregeling Iran 2012 (Stcrt. 2012, 8001)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2012-04-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) No 267/2012",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031496/2026-03-06_0/xml/BWBR0031496_2026-03-06_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Iran 2012, BWBR0031496, art. 1 lid 1 en 2, text in force from 2026-03-06; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0031496&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-iran-2012-regulation-267-2012-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) No 267/2012"
+      },
+      "summaries": {
+       "en": "Acting against a long list of articles of Regulation (EU) No 267/2012 is prohibited under Dutch law, among them Articles 23, 30, 33, 34, 40(1) and 41. The prohibition does not apply where one of the derogations of that regulation the article lists applies, among them Articles 24 to 28a."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) No 359/2011 and Regulation (EU) 2023/1529",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031496/2026-03-06_0/xml/BWBR0031496_2026-03-06_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Iran 2012, BWBR0031496, art. 2 en art. 2a, text in force from 2026-03-06; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0031496&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-iran-2012-other-iran-regimes-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) No 359/2011 and Regulation (EU) 2023/1529"
+      },
+      "summaries": {
+       "en": "Acting against Articles 1a, 1b(1), 1c(1), 2 and 9(1) of Regulation (EU) No 359/2011 on the situation in Iran is prohibited, and so is acting against Articles 2(1) and (2), 2a(1), 3, 3f(2), 5(1) and 12(1) and (2) of Regulation (EU) 2023/1529 on Iran's military support to Russia's war against Ukraine. Neither prohibition applies where a derogation of the EU regulation concerned that the article lists applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 en art. 2a",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Address the matters Articles 24 to 31 of Regulation (EU) No 267/2012 leave to the competent authority to the Minister of Finance",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031496/2026-03-06_0/xml/BWBR0031496_2026-03-06_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Iran 2012, BWBR0031496, art. 3 lid 3 en 4, text in force from 2026-03-06; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0031496&artikel=3",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-iran-2012-finance-minister-and-fiu",
+      "titles": {
+       "en": "Address the matters Articles 24 to 31 of Regulation (EU) No 267/2012 leave to the competent authority to the Minister of Finance"
+      },
+      "summaries": {
+       "en": "The Minister of Finance is the competent authority for the release or making available of funds under Articles 24 to 28a of Regulation (EU) No 267/2012, and under Articles 29, 30(3) and (5), 30a(1) and (3), 30b(1) and (3) and 31(1) of that regulation. The competent authority under Article 30(6) is the Financial Intelligence Unit-Netherlands."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 3 en 4",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the information Article 40(1) of Regulation (EU) No 267/2012 and Article 5(1) of Regulation (EU) 2023/1529 ask for to De Nederlandsche Bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031496/2026-03-06_0/xml/BWBR0031496_2026-03-06_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Iran 2012, BWBR0031496, art. 3 lid 6 en 12, text in force from 2026-03-06; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0031496&artikel=3",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-iran-2012-information-to-dnb",
+      "titles": {
+       "en": "Give the information Article 40(1) of Regulation (EU) No 267/2012 and Article 5(1) of Regulation (EU) 2023/1529 ask for to De Nederlandsche Bank"
+      },
+      "summaries": {
+       "en": "A bank, an e-money institution, a payment service provider, an insurer and the other institutions under Article 10(2)(a), (c) and (e) to (j) of the Sanctions Act 1977 give the information of Article 40(1) of Regulation (EU) No 267/2012 and of Article 5(1) of Regulation (EU) 2023/1529 to De Nederlandsche Bank. Investment firms, fund managers and the institutions under points (b), (d) and (k) give it to the Authority for the Financial Markets."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 6 en 12",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling Syrië 2012, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions over the situation in Syria, Regulation (EU) No 36/2012",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031305/2025-07-05_0/xml/BWBR0031305_2025-07-05_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Syrië 2012, BWBR0031305, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2012, 3549; consolidated text in force from 2025-07-05, read in its XML file; entry into force on 2012-02-25 read in the file's source data for the title, which name Stcrt. 2012, 3549",
+   "payload": {
+    "key": "nl-bwbr0031305",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 15 februari 2012, nr. DJZ/BR/0065-2012, houdende beperkende maatregelen jegens Syrië (Sanctieregeling Syrië 2012)",
+     "en": "Syria Sanctions Regulation 2012"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling Syrië 2012",
+    "officialRef": "Sanctieregeling Syrië 2012 (Stcrt. 2012, 3549)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2012-02-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) No 36/2012",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031305/2025-07-05_0/xml/BWBR0031305_2025-07-05_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Syrië 2012, BWBR0031305, art. 1 lid 1 en 2, text in force from 2025-07-05; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0031305&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-syrie-2012-eu-measures-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) No 36/2012"
+      },
+      "summaries": {
+       "en": "Acting against Articles 2a(1), 2b(1), 2c(1), 3(1) and (4), 3a, 4(1), 5(1), 11c(1), 14, 15a(4), 19(2), 27a and 29(1) of Regulation (EU) No 36/2012 is prohibited under Dutch law. The prohibition does not apply where one of the derogations of that regulation the article lists applies, among them Articles 16 to 20."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Address requests and information under Regulation (EU) No 36/2012 to the Minister of Foreign Affairs or the Minister of Finance",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0031305/2025-07-05_0/xml/BWBR0031305_2025-07-05_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Syrië 2012, BWBR0031305, art. 2, text in force from 2025-07-05; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0031305&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-syrie-2012-competent-ministers",
+      "titles": {
+       "en": "Address requests and information under Regulation (EU) No 36/2012 to the Minister of Foreign Affairs or the Minister of Finance"
+      },
+      "summaries": {
+       "en": "The competent authority under the articles of Regulation (EU) No 36/2012 the regulation lists, among them Articles 16 to 20a and 29(1), is the Minister of Foreign Affairs or the Minister of Finance, each within their own competence."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling Libië 2016, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions over the situation in Libya, Regulation (EU) 2016/44",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0037684/2026-07-04_0/xml/BWBR0037684_2026-07-04_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Libië 2016, BWBR0037684, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2016, 11586; consolidated text in force from 2026-07-04, read in its XML file; entry into force on 2016-03-05 read in the file's source data for the title, which name Stcrt. 2016, 11586",
+   "payload": {
+    "key": "nl-bwbr0037684",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 26 februari 2016, nr. MinBuza-2016.1102262, houdende beperkende maatregelen jegens Libië (Sanctieregeling Libië 2016)",
+     "en": "Libya Sanctions Regulation 2016"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling Libië 2016",
+    "officialRef": "Sanctieregeling Libië 2016 (Stcrt. 2016, 11586)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2016-03-05"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) 2016/44",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0037684/2026-07-04_0/xml/BWBR0037684_2026-07-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Libië 2016, BWBR0037684, art. 1 lid 1 en 2, text in force from 2026-07-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0037684&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-libie-2016-eu-measures-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) 2016/44"
+      },
+      "summaries": {
+       "en": "Acting against Articles 2(1) and (2), 2a(1), 3(1) and (2), 3a, 4, 5(1) to (4), 15(1), (2), (4) and (6) and 18(1) and (2) of Regulation (EU) 2016/44 is prohibited under Dutch law. The prohibition does not apply where one of the derogations of that regulation the article lists applies, among them Articles 7 to 14."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Turn to the Minister of Finance for releases of funds, financing and information under Regulation (EU) 2016/44",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0037684/2026-07-04_0/xml/BWBR0037684_2026-07-04_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Libië 2016, BWBR0037684, art. 2 lid 1, 2, 4 en 5, text in force from 2026-07-04; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0037684&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-libie-2016-finance-minister",
+      "titles": {
+       "en": "Turn to the Minister of Finance for releases of funds, financing and information under Regulation (EU) 2016/44"
+      },
+      "summaries": {
+       "en": "The Minister of Finance is the competent authority for the release or making available of funds under Articles 8, 9(1) and (2), 10, 11, 11a(1), 11b(1), 13 and 14 of Regulation (EU) 2016/44, for the information and notifications of Articles 12(2) and 18(1), and for financing and financial assistance under Articles 2(5), 2a(3) to (5) and 3(5). Economic resources and technical assistance are for the Minister for Foreign Trade and Development Cooperation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1, 2, 4 en 5",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling Noord-Korea 2017, the Dutch Minister of Foreign Affairs' regulation enforcing the EU sanctions against the Democratic People's Republic of Korea, Regulation (EU) 2017/1509",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040211/2023-05-02_0/xml/BWBR0040211_2023-05-02_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Noord-Korea 2017, BWBR0040211, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2017, 66076; consolidated text in force from 2023-05-02, read in its XML file; entry into force on 2017-11-18 read in the file's source data for the title, which name Stcrt. 2017, 66076",
+   "payload": {
+    "key": "nl-bwbr0040211",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 25 oktober 2017, nr. MinBuza-2017.1143609, betreffende beperkende maatregelen ten aanzien van de Democratische Volksrepubliek Korea (Sanctieregeling Noord-Korea 2017)",
+     "en": "North Korea Sanctions Regulation 2017"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling Noord-Korea 2017",
+    "officialRef": "Sanctieregeling Noord-Korea 2017 (Stcrt. 2017, 66076)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2017-11-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) 2017/1509",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040211/2023-05-02_0/xml/BWBR0040211_2023-05-02_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Noord-Korea 2017, BWBR0040211, art. 1 lid 1 en 2, text in force from 2023-05-02; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040211&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-noord-korea-2017-eu-measures-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) 2017/1509"
+      },
+      "summaries": {
+       "en": "Acting against a long list of articles of Regulation (EU) 2017/1509 on restrictive measures against the Democratic People's Republic of Korea is prohibited under Dutch law, among them Article 34(1) to (3) and Article 50(1). The prohibition does not apply where one of the derogations of that regulation the article lists applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Send the information Regulation (EU) 2017/1509 asks for to the Minister of Finance or the FIU-Netherlands",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040211/2023-05-02_0/xml/BWBR0040211_2023-05-02_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Noord-Korea 2017, BWBR0040211, art. 5 lid 2 en 3, text in force from 2023-05-02; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040211&artikel=5",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-noord-korea-2017-information-routes",
+      "titles": {
+       "en": "Send the information Regulation (EU) 2017/1509 asks for to the Minister of Finance or the FIU-Netherlands"
+      },
+      "summaries": {
+       "en": "The competent authority for the information of Article 50(1)(a) and (b) of Regulation (EU) 2017/1509 is, depending on its nature, the Minister of Finance or the Minister for Foreign Trade and Development Cooperation. The competent authority under Article 23(1)(e) and (g) and (2) of that regulation is the Financial Intelligence Unit-Netherlands."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5 lid 2 en 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Address the matters the listed articles of Regulation (EU) 2017/1509 leave to the competent authority to the Minister of Finance",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040211/2023-05-02_0/xml/BWBR0040211_2023-05-02_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling Noord-Korea 2017, BWBR0040211, art. 5 lid 4, text in force from 2023-05-02; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040211&artikel=5",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-noord-korea-2017-finance-minister-authorisations",
+      "titles": {
+       "en": "Address the matters the listed articles of Regulation (EU) 2017/1509 leave to the competent authority to the Minister of Finance"
+      },
+      "summaries": {
+       "en": "The Minister of Finance is the competent authority under Articles 17a(1) and (2), 17b, 22(1) and (4), 25(1), 27(1), 29(1) and (2), 33(1), 34(8) and 44(5) of Regulation (EU) 2017/1509."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5 lid 4",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctieregeling mensenrechtenschendingen 2020, the Dutch Minister of Foreign Affairs' regulation enforcing the EU global human rights sanctions, Regulation (EU) 2020/1998",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0044518/2024-06-12_0/xml/BWBR0044518_2024-06-12_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling mensenrechtenschendingen 2020, BWBR0044518, regulation of the Minister of Foreign Affairs made under arts. 2 lid 2 and 3 of the Sanctiewet 1977 (preamble); first published in Stcrt. 2020, 66141; consolidated text in force from 2024-06-12, read in its XML file; entry into force on 2020-12-19 read in the file's source data for the title, which name Stcrt. 2020, 66141",
+   "payload": {
+    "key": "nl-bwbr0044518",
+    "titles": {
+     "nl": "Regeling van de Minister van Buitenlandse Zaken van 10 december 2020, nr. Min-BuZa.2020.6281-10, houdende beperkende maatregelen tegen mensenrechtenschending (Sanctieregeling mensenrechtenschendingen 2020)",
+     "en": "Human Rights Violations Sanctions Regulation 2020"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctieregeling mensenrechtenschendingen 2020",
+    "officialRef": "Sanctieregeling mensenrechtenschendingen 2020 (Stcrt. 2020, 66141)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-buitenlandse-zaken",
+    "regime": "regime:aml",
+    "inForceFrom": "2020-12-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act against the listed articles of Regulation (EU) 2020/1998",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0044518/2024-06-12_0/xml/BWBR0044518_2024-06-12_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling mensenrechtenschendingen 2020, BWBR0044518, art. 1 lid 1 en 2, text in force from 2024-06-12; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0044518&artikel=1",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-mensenrechtenschendingen-2020-eu-measures-prohibition",
+      "titles": {
+       "en": "Do not act against the listed articles of Regulation (EU) 2020/1998"
+      },
+      "summaries": {
+       "en": "Acting against Articles 3(1) and (2), 9(1) and 10 of Regulation (EU) 2020/1998 and against paragraph -1 bis of its Article 5 is prohibited under Dutch law. As regards Article 3(1) and (2) the prohibition does not apply where Article 4(1), 5(-1) or (1), 6(1), 7(1) or 8 of that regulation applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Turn to the Minister of Finance to release frozen funds and with financial information under Regulation (EU) 2020/1998",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0044518/2024-06-12_0/xml/BWBR0044518_2024-06-12_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctieregeling mensenrechtenschendingen 2020, BWBR0044518, art. 2 lid 1, text in force from 2024-06-12; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0044518&artikel=2",
+     "payload": {
+      "key": "obl-nl-sanctieregeling-mensenrechtenschendingen-2020-finance-minister",
+      "titles": {
+       "en": "Turn to the Minister of Finance to release frozen funds and with financial information under Regulation (EU) 2020/1998"
+      },
+      "summaries": {
+       "en": "The Minister of Finance is the competent authority under Articles 4(1), 5(1) and (1a), 6(1), 7(1), 8(1) and 9(1) of Regulation (EU) 2020/1998 as far as the release or making available of funds, or information of a financial nature, is concerned."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bmfo Wft, the Dutch decree on the data that licence applications and passport notifications of financial undertakings contain (Besluit Markttoegang financiële ondernemingen Wft)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, royal decree made under arts. 1:102 and 2:5 to 2:130 of the Wft (preamble); first published in Stb. 2006, 506; consolidated text in force from 2026-09-22, read in its XML file; entry into force on 2007-01-01 read in the royal decree in Stb. 2006, 664 (official repository)",
+   "fieldSources": {
+    "inForceFrom": "https://repository.officiele-overheidspublicaties.nl/officielepublicaties/stb/2006/stb-2006-664/1/xml/stb-2006-664.xml"
+   },
+   "payload": {
+    "key": "nl-bwbr0020413",
+    "titles": {
+     "nl": "Besluit van 12 oktober 2006, houdende regels ter uitvoering van de Wet op het financieel toezicht met betrekking tot de reikwijdte en toegang tot de financiële markten (Besluit Markttoegang financiële ondernemingen Wft)",
+     "en": "Decree on Market Access of Financial Undertakings under the Financial Supervision Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Bmfo Wft",
+    "officialRef": "Besluit Markttoegang financiële ondernemingen Wft (Stb. 2006, 506)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "regering-nl",
+    "regime": "regime:banking",
+    "inForceFrom": "2007-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File a licence application on the supervisor's form, in a single copy and in assessable form",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 2 en art. 3, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=2",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-application-form",
+      "titles": {
+       "en": "File a licence application on the supervisor's form, in a single copy and in assessable form"
+      },
+      "summaries": {
+       "en": "An application under the Wft provisions the article lists, among them Articles 2:3b(1), 2:10b(1) and 2:12(1), is made on the form the supervisor sets and provides on request, and the form and the data go in as a single copy. The data are given in a form that lets the supervisor assess them properly, and the authors of statements and reports sign or certify them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 en art. 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the data the decree lists in an application for a bank licence",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 8 lid 1 tot en met 4, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=8",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-bank-licence-application-data",
+      "titles": {
+       "en": "Give the data the decree lists in an application for a bank licence"
+      },
+      "summaries": {
+       "en": "A bank licence application contains the bank's identity, legal form, registration and certified articles, its intended activities, data on the suitability and reliability of its policymakers and supervisory board members, descriptions of its integrity policy, control structure and business organisation, any consolidated supervision, and documents showing its own funds, expected solvency and liquidity. Where relevant it adds the qualifying holders or twenty largest shareholders with data on their reliability, financial position and group structure, and, for a subsidiary of a foreign bank, its home supervisor's or the ECB's approval; personal data come with a CV, diplomas, identity document, antecedents and referees, and reliability data are not needed for persons whose reliability a supervisor has already established."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8 lid 1 tot en met 4",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the data the decree lists when applying under Article 2:17 of the Wft to operate from a branch in the Netherlands",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 10 lid 1 tot en met 4, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=10",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-branch-application-data",
+      "titles": {
+       "en": "Give the data the decree lists when applying under Article 2:17 of the Wft to operate from a branch in the Netherlands"
+      },
+      "summaries": {
+       "en": "A bank that applies under Article 2:17 of the Wft gives its identity, legal form, registration and articles, the branch address and the activities it intends to carry on from the branch, data on the suitability and reliability of the persons concerned, descriptions of the integrity policy and business organisation of the branch, any consolidated supervision, and data showing the bank's own funds, expected solvency and liquidity."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10 lid 1 tot en met 4",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the data the decree lists in an application for a payment or e-money licence",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 3a lid 1, 2 en 6, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=3a",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-payment-licence-application-data",
+      "titles": {
+       "en": "Give the data the decree lists in an application for a payment or e-money licence"
+      },
+      "summaries": {
+       "en": "A payment service provider or e-money institution applying for a licence gives, among other data, a business plan with a budget forecast for the first three financial years, its internal controls against money laundering and terrorist financing, its organisational structure, agents, branches and outsourcing, its qualifying holders, its auditor, data on its policymakers, how it safeguards users' funds, and its own funds. It also describes its procedures for security incidents and complaints, for sensitive payment data and for business continuity, its statistics on performance, transactions and fraud, and its security policy with a detailed risk analysis; a provider that offers only account information services leaves out the items the article excludes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3a lid 1, 2 en 6",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the data the decree lists when notifying the use of a passport or a branch abroad",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 44 en art. 45, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=44",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-bank-passport-data",
+      "titles": {
+       "en": "Give the data the decree lists when notifying the use of a passport or a branch abroad"
+      },
+      "summaries": {
+       "en": "A bank's notification under Article 2:108 of the Wft contains the data of Article 3 of Commission Delegated Regulation (EU) No 1151/2014 on exercising the right of establishment and the freedom to provide services. A bank that intends to operate from a branch in another state under Article 2:111 gives that state, the branch address and activities, the names and private addresses of the persons who will run the branch, and descriptions of the integrity policy and of the business organisation for sound and ethical operation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 44 en art. 45",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the data the decree lists when providing investment services through a branch or tied agent in another member state, and report changes",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 58 lid 1 en 2, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=58",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-investment-services-passport-data",
+      "titles": {
+       "en": "Give the data the decree lists when providing investment services through a branch or tied agent in another member state, and report changes"
+      },
+      "summaries": {
+       "en": "An investment firm, or a bank under Article 2:128a of the Wft, that notifies a branch or the use of a tied agent in another member state gives its contact details, the member state, a programme of operations, the branch's organisational structure and any tied agent, the address where documents can be obtained, the persons who run the branch, and the information of Article 6 of Delegated Regulation (EU) 2017/2018. It reports changes to those subjects in line with Article 7 of that regulation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 58 lid 1 en 2",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:investment_firm",
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify De Nederlandsche Bank when relying on the payment exclusions of Article 1:5a, points (k) and (l), of the Wft",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020413/2026-09-22_0/xml/BWBR0020413_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit Markttoegang financiële ondernemingen Wft, BWBR0020413, art. 1a lid 1 tot en met 4, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020413&artikel=1a",
+     "payload": {
+      "key": "obl-nl-bmfo-wft-payment-exclusion-notifications",
+      "titles": {
+       "en": "Notify De Nederlandsche Bank when relying on the payment exclusions of Article 1:5a, points (k) and (l), of the Wft"
+      },
+      "summaries": {
+       "en": "A service provider that carries on one or both activities under Article 1:5a, point (k)(i) and (ii), of the Wft, where the payment transactions of the previous twelve months exceed EUR 1 million in total, notifies De Nederlandsche Bank with a description of the services and the exclusion relied on. A provider of an activity under point (l) notifies De Nederlandsche Bank with an auditor's statement, given every year, that the activity stays within the maximum amounts of that point."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1a lid 1 tot en met 4",
+      "dutyType": "reporting",
+      "terms": [],
+      "effectiveFrom": "2019-02-19"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Vr Wft, the Dutch Minister of Finance's regulation exempting firms from parts of the Financial Supervision Act on conditions (Vrijstellingsregeling Wft)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020536/2026-09-29_0/xml/BWBR0020536_2026-09-29_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Vrijstellingsregeling Wft, BWBR0020536, regulation of the Minister of Finance made under arts. 2:59 to 5:87 of the Wft (preamble); first published in Stcrt. 2006, 229; consolidated text in force from 2026-09-29, read in its XML file; entry into force on 2007-01-01 read in the royal decree in Stb. 2006, 664 (official repository)",
+   "fieldSources": {
+    "inForceFrom": "https://repository.officiele-overheidspublicaties.nl/officielepublicaties/stb/2006/stb-2006-664/1/xml/stb-2006-664.xml"
+   },
+   "payload": {
+    "key": "nl-bwbr0020536",
+    "titles": {
+     "nl": "Vrijstellingsregeling Wft",
+     "en": "Financial Supervision Act Exemption Regulation"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Vr Wft",
+    "officialRef": "Vrijstellingsregeling Wft (Stcrt. 2006, 229)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-financien",
+    "regime": "regime:banking",
+    "inForceFrom": "2007-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use the small payment service provider exemption only within its conditions and report changes",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020536/2026-09-29_0/xml/BWBR0020536_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Vrijstellingsregeling Wft, BWBR0020536, art. 1a lid 1, 2 en 4, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020536&artikel=1a",
+     "payload": {
+      "key": "obl-nl-vr-wft-small-payment-provider-conditions",
+      "titles": {
+       "en": "Use the small payment service provider exemption only within its conditions and report changes"
+      },
+      "summaries": {
+       "en": "A payment service provider is exempt from the licence requirement only for payment services 1 to 5 of the annex to the payment services directive, while its payment transactions over the previous twelve months, agents included, average no more than EUR 3,000,000 a month, none of its policymakers has the antecedents on money laundering, terrorist financing, property crime or financial supervision offences the article names, and it has notified De Nederlandsche Bank. The safeguarding rules of Article 3:29a of the Wft and Articles 26e to 26h of the Bpr apply to it, and it tells De Nederlandsche Bank of every change relevant to these conditions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1a lid 1, 2 en 4",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:payment_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Use the small e-money institution exemption only within its conditions and report changes without delay",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020536/2026-09-29_0/xml/BWBR0020536_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Vrijstellingsregeling Wft, BWBR0020536, art. 1d lid 1 en 3, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020536&artikel=1d",
+     "payload": {
+      "key": "obl-nl-vr-wft-small-emoney-institution-conditions",
+      "titles": {
+       "en": "Use the small e-money institution exemption only within its conditions and report changes without delay"
+      },
+      "summaries": {
+       "en": "An e-money institution with legal personality is exempt from the licence requirement only while it issues e-money in the Netherlands, its financial liabilities tied to issued e-money average no more than EUR 5,000,000, none of its policymakers has the antecedents the article names, it issues e-money only on instruments or accounts that can hold at most EUR 150 at a time, and it has notified De Nederlandsche Bank. It tells De Nederlandsche Bank without delay of every change relevant to these conditions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1d lid 1 en 3",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File yearly returns with De Nederlandsche Bank to keep the prudential exemption of a small e-money institution",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020536/2026-09-29_0/xml/BWBR0020536_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Vrijstellingsregeling Wft, BWBR0020536, art. 18a, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020536&artikel=18a",
+     "payload": {
+      "key": "obl-nl-vr-wft-small-emoney-yearly-returns",
+      "titles": {
+       "en": "File yearly returns with De Nederlandsche Bank to keep the prudential exemption of a small e-money institution"
+      },
+      "summaries": {
+       "en": "A small e-money institution exempt under article 1d is also exempt from the prudential rules of the Wft, except Articles 3:5, 3:6, 3:7, 3:29a, 3:29b, 3:29c(4) and 3:34, but only on condition that it files returns with De Nederlandsche Bank once a year under Article 130(3)(c) of the Besluit prudentiële regels Wft."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 18a",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:emoney_institution",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Regeling specifieke bepalingen IFR en IFD, De Nederlandsche Bank's regulation on investment firm capital rules for fund managers and the options of the IFR and IFD",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0045790/2026-02-11_0/xml/BWBR0045790_2026-02-11_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling specifieke bepalingen IFR en IFD, BWBR0045790, regulation of De Nederlandsche Bank made under art. 59 lid 10 of the Besluit prudentiële regels Wft (preamble); first published in Stcrt. 2021, 45420; consolidated text in force from 2026-02-11, read in its XML file; entry into force on 2021-11-26 read in the file's source data for the title, which name Stb. 2021, 571",
+   "payload": {
+    "key": "nl-bwbr0045790",
+    "titles": {
+     "nl": "Regeling van De Nederlandsche Bank N.V. van 28 oktober 2021 houdende regels met betrekking tot de berekening van het solvabiliteitsvereiste uit de verordening prudentiële vereisten voor beleggingsondernemingen voor beheerders van beleggingsinstellingen en icbe’s die tevens beleggingsdiensten verlenen, en regels met betrekking tot de implementatie van specifieke bepalingen uit de richtlijn prudentiële vereisten voor beleggingsondernemingen en de uitvoering van specifieke bepalingen van de verordening kapitaalvereisten (Regeling specifieke bepalingen IFR en IFD)",
+     "en": "Regulation on Specific Provisions of the IFR and IFD"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Regeling specifieke bepalingen IFR en IFD",
+    "officialRef": "Regeling specifieke bepalingen IFR en IFD (Stcrt. 2021, 45420)",
+    "level": "authority_regulation",
+    "jurisdiction": "nl",
+    "authority": "dnb",
+    "regime": "regime:securities",
+    "inForceFrom": "2021-11-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold the higher of the fund-manager capital requirement and the IFR capital requirement",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0045790/2026-02-11_0/xml/BWBR0045790_2026-02-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling specifieke bepalingen IFR en IFD, BWBR0045790, art. 2:1, art. 2:2 en art. 1:2 lid 1, text in force from 2026-02-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0045790&artikel=2:1",
+     "payload": {
+      "key": "obl-nl-regeling-specifieke-bepalingen-ifr-en-ifd-manager-capital-requirement",
+      "titles": {
+       "en": "Hold the higher of the fund-manager capital requirement and the IFR capital requirement"
+      },
+      "summaries": {
+       "en": "A manager of an investment fund or UCITS that carries on an activity or provides an investment service under Article 2:67a(2) or 2:69c(2) of the Wft is subject to the higher of the capital requirement of the UCITS or AIFM rules and the capital requirement of the IFR. Under the IFR that requirement is the highest of the fixed overheads requirement, the permanent minimum capital requirement and the K-factor requirement, or of the first two only where the manager meets the small and non-interconnected conditions of Article 12(1) IFR."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2:1, art. 2:2 en art. 1:2 lid 1",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the IFR capital elements over the whole business and the investment services provided",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0045790/2026-02-11_0/xml/BWBR0045790_2026-02-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling specifieke bepalingen IFR en IFD, BWBR0045790, art. 2:3 tot en met 2:6, text in force from 2026-02-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0045790&artikel=2:3",
+     "payload": {
+      "key": "obl-nl-regeling-specifieke-bepalingen-ifr-en-ifd-manager-ifr-calculation",
+      "titles": {
+       "en": "Calculate the IFR capital elements over the whole business and the investment services provided"
+      },
+      "summaries": {
+       "en": "The manager calculates the fixed overheads requirement under Article 13 IFR over the total costs of its business, the permanent minimum capital requirement under Article 14 IFR as if it were an investment firm under Article 9 IFD and by the investment services it provides, and the K-factor requirement under Part Three of the IFR on the scale of those services. It applies the Commission's regulatory technical standards for these calculations and the transitional provisions of Article 57 IFR."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2:3 tot en met 2:6",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Carry out the internal capital and liquidity assessment of the Bpr even as a small and non-interconnected investment firm",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0045790/2026-02-11_0/xml/BWBR0045790_2026-02-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling specifieke bepalingen IFR en IFD, BWBR0045790, art. 3:1, text in force from 2026-02-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0045790&artikel=3:1",
+     "payload": {
+      "key": "obl-nl-regeling-specifieke-bepalingen-ifr-en-ifd-small-firm-internal-capital-assessment",
+      "titles": {
+       "en": "Carry out the internal capital and liquidity assessment of the Bpr even as a small and non-interconnected investment firm"
+      },
+      "summaries": {
+       "en": "An investment firm that qualifies as small and non-interconnected under Article 12(1) IFR, and a manager that meets those conditions, complies with Article 24a1(1) of the Besluit prudentiële regels Wft. This does not apply where it provides only the investment services of points (a) or (d) of the definition in Article 1:1 of the Wft."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:1",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:investment_firm",
+       "legal_entity:fund_company"
+      ],
+      "effectiveFrom": "2022-11-04"
+     }
+    },
+    {
+     "title": "Add the duty: Use the CRR delta formulas for options and swaptions only where they give a correct result",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0045790/2026-02-11_0/xml/BWBR0045790_2026-02-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling specifieke bepalingen IFR en IFD, BWBR0045790, art. 3:2, text in force from 2026-02-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0045790&artikel=3:2",
+     "payload": {
+      "key": "obl-nl-regeling-specifieke-bepalingen-ifr-en-ifd-crr-delta-formula",
+      "titles": {
+       "en": "Use the CRR delta formulas for options and swaptions only where they give a correct result"
+      },
+      "summaries": {
+       "en": "An investment firm may use the delta formulas and parameters of Article 279a CRR to calculate the supervisory delta of options and swaptions under Article 29(6) IFR and the delta of Article 329(1) CRR. When it does, it applies Delegated Regulation (EU) 2021/931 where relevant, and it does not use them where they give no result or a delta that does not correctly approximate the change in the option price against the price of the underlying."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:2",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:investment_firm"
+      ],
+      "effectiveFrom": "2022-11-04"
+     }
+    },
+    {
+     "title": "Add the duty: Replace missing historical data in the K-factor calculations with the firm's business projections",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0045790/2026-02-11_0/xml/BWBR0045790_2026-02-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling specifieke bepalingen IFR en IFD, BWBR0045790, art. 3:4, text in force from 2026-02-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0045790&artikel=3:4",
+     "payload": {
+      "key": "obl-nl-regeling-specifieke-bepalingen-ifr-en-ifd-business-projections-for-missing-history",
+      "titles": {
+       "en": "Replace missing historical data in the K-factor calculations with the firm's business projections"
+      },
+      "summaries": {
+       "en": "An investment firm replaces missing historical data under Articles 17(2), 18(2), 19(3), 20(3) and 33(4) IFR with data based on the business projections it submitted under Article 7 of Directive 2014/65/EU."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:4",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:investment_firm"
+      ],
+      "effectiveFrom": "2026-02-11"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bptfg Wft, the Dutch decree on supplementary supervision of banks and investment firms in financial groups and conglomerates (Besluit prudentieel toezicht financiële groepen Wft)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, royal decree made under arts. 3:270, 3:280, 3:284 to 3:286 and 3:296 to 3:299 of the Wft (preamble); first published in Stb. 2006, 508; consolidated text in force from 2026-09-22, read in its XML file; entry into force on 2007-01-01 read in the royal decree in Stb. 2006, 664 (official repository)",
+   "fieldSources": {
+    "inForceFrom": "https://repository.officiele-overheidspublicaties.nl/officielepublicaties/stb/2006/stb-2006-664/1/xml/stb-2006-664.xml"
+   },
+   "payload": {
+    "key": "nl-bwbr0020415",
+    "titles": {
+     "nl": "Besluit van 12 oktober 2006, houdende regels met betrekking tot aanvullend prudentieel toezicht op banken, levensverzekeraars, schadeverzekeraars en beleggingsondernemingen die tot een financiële groep behoren (Besluit prudentieel toezicht financiële groepen Wft)",
+     "en": "Decree on Prudential Supervision of Financial Groups under the Financial Supervision Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Bptfg Wft",
+    "officialRef": "Besluit prudentieel toezicht financiële groepen Wft (Stb. 2006, 508)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "regering-nl",
+    "regime": "regime:banking",
+    "inForceFrom": "2007-01-01",
+    "implementsNote": "Financial Conglomerates Directive, Directive 2002/87/EC (its preamble names it, beside Directives 2000/12/EC and 98/78/EC)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep capital adequacy procedures, reporting systems and conglomerate-wide risk governance",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, art. 2a lid 1 en 2, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020415&artikel=2a",
+     "payload": {
+      "key": "obl-nl-bptfg-wft-conglomerate-risk-management",
+      "titles": {
+       "en": "Keep capital adequacy procedures, reporting systems and conglomerate-wide risk governance"
+      },
+      "summaries": {
+       "en": "A firm under Article 3:269a(1) of the Wft has adequate capital adequacy procedures to identify and measure all material risks and match its own funds to them, and sound reporting and accounting systems to identify, measure, monitor and control intragroup transactions and risk concentration. For risk management it also has sound governance in which the bodies concerned approve and periodically review strategies and policies at conglomerate level, an adequate capital adequacy policy, and procedures that integrate the risk monitoring systems of the regulated entities so that risks can be measured, monitored and controlled for the conglomerate as a whole."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2a lid 1 en 2",
+      "dutyType": "governance",
+      "terms": [],
+      "effectiveFrom": "2014-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Report significant intragroup transactions with a mixed-activity holding to the supervisor once a year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, art. 4 lid 1 en 2, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020415&artikel=4",
+     "payload": {
+      "key": "obl-nl-bptfg-wft-mixed-holding-intragroup-report",
+      "titles": {
+       "en": "Report significant intragroup transactions with a mixed-activity holding to the supervisor once a year"
+      },
+      "summaries": {
+       "en": "A bank or investment firm whose parent is a mixed-activity holding files the report on significant intragroup transactions and positions with that holding and its subsidiaries with De Nederlandsche Bank or the European Central Bank once a year, or more often if either decides so because its solvency is or could be at risk. Significant means above a threshold, tied to the solvency held, that De Nederlandsche Bank sets after consulting the bank or investment firm."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4 lid 1 en 2",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the financial conglomerate's supplementary capital adequacy by an Annex B method",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, art. 23 lid 1 tot en met 3, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020415&artikel=23",
+     "payload": {
+      "key": "obl-nl-bptfg-wft-supplementary-capital-adequacy",
+      "titles": {
+       "en": "Calculate the financial conglomerate's supplementary capital adequacy by an Annex B method"
+      },
+      "summaries": {
+       "en": "A firm under Article 3:296(1) of the Wft, which heads a financial conglomerate, calculates the conglomerate's supplementary capital adequacy under the rules of the decree, using one of the methods in Annex B. The supplementary capital adequacy is sufficient when the result of that calculation is not negative."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 23 lid 1 tot en met 3",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Provide the supplementary capital adequacy calculation and the management information on it every year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, art. 24 lid 1 en 3, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020415&artikel=24",
+     "payload": {
+      "key": "obl-nl-bptfg-wft-capital-adequacy-reporting",
+      "titles": {
+       "en": "Provide the supplementary capital adequacy calculation and the management information on it every year"
+      },
+      "summaries": {
+       "en": "The head of the conglomerate provides the calculation of supplementary capital adequacy once a year, or more often if De Nederlandsche Bank decides so because of developments in it. Once a year, at a time it sets after consulting De Nederlandsche Bank, it also provides the information on supplementary capital adequacy given to the conglomerate's group management."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 24 lid 1 en 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the conglomerate's significant risk concentrations and the management information on them every year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, art. 26 lid 1, 2 en 5, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020415&artikel=26",
+     "payload": {
+      "key": "obl-nl-bptfg-wft-risk-concentration-reporting",
+      "titles": {
+       "en": "Report the conglomerate's significant risk concentrations and the management information on them every year"
+      },
+      "summaries": {
+       "en": "A firm under Article 3:297(1) of the Wft reports the conglomerate's significant risk concentrations once a year, or more often if De Nederlandsche Bank decides so, where significant means above a threshold De Nederlandsche Bank sets after consulting the other supervisors and the conglomerate. Once a year it also provides the information on risk concentrations given to the conglomerate's group management."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 26 lid 1, 2 en 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the conglomerate's significant intragroup transactions and the management information on them every year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020415/2026-09-22_0/xml/BWBR0020415_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit prudentieel toezicht financiële groepen Wft, BWBR0020415, art. 27 lid 1, 2 en 5, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020415&artikel=27",
+     "payload": {
+      "key": "obl-nl-bptfg-wft-intragroup-transactions-reporting",
+      "titles": {
+       "en": "Report the conglomerate's significant intragroup transactions and the management information on them every year"
+      },
+      "summaries": {
+       "en": "A firm under Article 3:298(1) of the Wft reports the conglomerate's significant intragroup transactions and positions once a year, or more often if De Nederlandsche Bank decides so, where significant means above a threshold De Nederlandsche Bank sets after consulting the other supervisors and the conglomerate. Once a year it also provides the information on intragroup transactions and positions given to the conglomerate's group management."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 27 lid 1, 2 en 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Rptfg Wft, De Nederlandsche Bank's regulation on the forms, thresholds and deadlines of financial group reports (Regeling prudentieel toezicht financiële groepen Wft)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020705/2009-01-01_0/xml/BWBR0020705_2009-01-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling prudentieel toezicht financiële groepen Wft, BWBR0020705, regulation of De Nederlandsche Bank made under arts. 4, 5, 6, 24, 26 and 27 of the Besluit prudentieel toezicht financiële groepen Wft (preamble); first published in Stcrt. 2006, 246; consolidated text in force from 2009-01-01, read in its XML file; entry into force on 2007-01-01 read in the royal decree in Stb. 2006, 664 (official repository)",
+   "fieldSources": {
+    "inForceFrom": "https://repository.officiele-overheidspublicaties.nl/officielepublicaties/stb/2006/stb-2006-664/1/xml/stb-2006-664.xml"
+   },
+   "payload": {
+    "key": "nl-bwbr0020705",
+    "titles": {
+     "nl": "Regeling van de Nederlandsche Bank N.V. van 11 december 2006, nr. Juza/2006/02412/IH, houdende regels met betrekking tot aanvullend prudentieel toezicht op kredietinstellingen, levensverzekeraars, schadeverzekeraars en beleggingsondernemingen die tot een financiële groep behoren (Regeling prudentieel toezicht financiële groepen Wft)",
+     "en": "Regulation on Prudential Supervision of Financial Groups under the Financial Supervision Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Rptfg Wft",
+    "officialRef": "Regeling prudentieel toezicht financiële groepen Wft (Stcrt. 2006, 246)",
+    "level": "authority_regulation",
+    "jurisdiction": "nl",
+    "authority": "dnb",
+    "regime": "regime:banking",
+    "inForceFrom": "2007-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report intragroup positions above 20 per cent of the capital requirement with a mixed-activity holding within two months after year end",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020705/2009-01-01_0/xml/BWBR0020705_2009-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling prudentieel toezicht financiële groepen Wft, BWBR0020705, art. 2 lid 1 tot en met 3 en art. 3, text in force from 2009-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020705&artikel=2",
+     "payload": {
+      "key": "obl-nl-rptfg-wft-mixed-holding-report-content",
+      "titles": {
+       "en": "Report intragroup positions above 20 per cent of the capital requirement with a mixed-activity holding within two months after year end"
+      },
+      "summaries": {
+       "en": "A credit institution whose parent is a mixed-activity holding reports all significant intragroup transactions and positions with the holding and its subsidiaries on sheet 1 of the annex form, at the latest two months after the end of the financial year. A single transaction, and a total position, is significant when it exceeds 20 per cent of the institution's capital adequacy requirement; for each the report gives the amount of the claim, asset items and comparable off-balance sheet instruments only, and the group company concerned, sorted into the categories of the table. A credit institution also under conglomerate supervision may report under paragraph 7 instead."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1 tot en met 3 en art. 3",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File the conglomerate's capital adequacy calculation within four months after year end and say if method 1 is not used",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020705/2009-01-01_0/xml/BWBR0020705_2009-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling prudentieel toezicht financiële groepen Wft, BWBR0020705, art. 7, text in force from 2009-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020705&artikel=7",
+     "payload": {
+      "key": "obl-nl-rptfg-wft-capital-adequacy-calculation-deadline",
+      "titles": {
+       "en": "File the conglomerate's capital adequacy calculation within four months after year end and say if method 1 is not used"
+      },
+      "summaries": {
+       "en": "The head of a financial conglomerate files the supplementary capital adequacy calculation with De Nederlandsche Bank at the latest four months after the end of the financial year, on sheet 6 of the annex form when it uses method 1 of Annex B to the decree. If it does not use method 1, it tells De Nederlandsche Bank straight after the end of the financial year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report risk concentrations above 20 per cent of the conglomerate's own funds within four months, by type of exposure",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020705/2009-01-01_0/xml/BWBR0020705_2009-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling prudentieel toezicht financiële groepen Wft, BWBR0020705, art. 8 lid 1 tot en met 3 en art. 9 lid 1, text in force from 2009-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020705&artikel=8",
+     "payload": {
+      "key": "obl-nl-rptfg-wft-risk-concentration-report-content",
+      "titles": {
+       "en": "Report risk concentrations above 20 per cent of the conglomerate's own funds within four months, by type of exposure"
+      },
+      "summaries": {
+       "en": "The firm reports, on sheet 7 and at the latest four months after the end of the financial year, all significant risk concentrations at conglomerate level towards one person or institution or a group of connected ones, leaving out insurance risks and exposures to or guaranteed by the Dutch State or Dutch lower authorities. A concentration is significant above 20 per cent of the conglomerate's own funds, and for each the report gives the name and a split into loans, guarantees given including derivatives, and other exposures, with an explanation of the guarantees and other exposures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8 lid 1 tot en met 3 en art. 9 lid 1",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the conglomerate's intragroup positions above 20 per cent of an entity's capital requirements within four months",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020705/2009-01-01_0/xml/BWBR0020705_2009-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling prudentieel toezicht financiële groepen Wft, BWBR0020705, art. 10 lid 1 tot en met 3 en art. 11 lid 1 tot en met 3, text in force from 2009-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020705&artikel=10",
+     "payload": {
+      "key": "obl-nl-rptfg-wft-conglomerate-intragroup-report-content",
+      "titles": {
+       "en": "Report the conglomerate's intragroup positions above 20 per cent of an entity's capital requirements within four months"
+      },
+      "summaries": {
+       "en": "The firm reports all significant intragroup transactions and positions of the conglomerate's regulated entities, single ones and total positions towards one group company, on sheet 1 at the latest four months after the end of the financial year. Significant means above 20 per cent of the capital adequacy requirements of the regulated entity concerned, and for each the report gives the amount and the counterparty, sorted into investments, current account claims, loans and other claims, with an explanation of the other claims."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10 lid 1 tot en met 3 en art. 11 lid 1 tot en met 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verbod op binaire opties, the Authority for the Financial Markets' ban on selling binary options to retail clients (Besluit verbod op de markt brengen, verspreiden of verkopen van binaire opties aan niet-professionele cliënten ex Verordening (EU) nr. 600/2014 en Wet op het financieel toezicht)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0042121/2019-04-19_0/xml/BWBR0042121_2019-04-19_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Verbod op binaire opties, BWBR0042121, regulation of the Autoriteit Financiële Markten made under Article 42 of MiFIR, Regulation (EU) No 600/2014, and art. 1:77f of the Wft (preamble); first published in Stcrt. 2019, 21122; consolidated text in force from 2019-04-19; entry into force on 2019-04-19 read in its own art. 3",
+   "payload": {
+    "key": "nl-bwbr0042121",
+    "titles": {
+     "nl": "Besluit van 18 april 2019, houdende het verbod op het op de markt brengen, verspreiden of het verkopen van binaire opties aan niet-professionele cliënten in verband met Verordening (EU) nr. 600/2014 van het Europees Parlement en de Raad van 15 mei 2014 en de Wet op het financieel toezicht (Verbod op binaire opties)",
+     "en": "Decision prohibiting the sale of binary options to retail clients"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Verbod op binaire opties",
+    "officialRef": "Besluit verbod op de markt brengen, verspreiden of verkopen van binaire opties aan niet-professionele cliënten ex Verordening (EU) nr. 600/2014 en Wet op het financieel toezicht (Stcrt. 2019, 21122)",
+    "level": "authority_regulation",
+    "jurisdiction": "nl",
+    "authority": "afm",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-04-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Market, distribute or sell no binary options to retail clients in or from the Netherlands",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0042121/2019-04-19_0/xml/BWBR0042121_2019-04-19_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verbod op de markt brengen, verspreiden of verkopen van binaire opties aan niet-professionele cliënten ex Verordening (EU) nr. 600/2014 en Wet op het financieel toezicht, BWBR0042121, art. 1 lid 1 tot en met 3, text in force from 2019-04-19; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0042121&artikel=1",
+     "payload": {
+      "key": "obl-nl-verbod-op-binaire-opties-retail-ban",
+      "titles": {
+       "en": "Market, distribute or sell no binary options to retail clients in or from the Netherlands"
+      },
+      "summaries": {
+       "en": "Marketing, distributing or selling binary options to retail clients in or from the Netherlands is prohibited. A binary option is a derivative, traded on a venue or not, that is or may be settled in cash other than on default, pays only at early termination or at expiry, and pays a predetermined fixed amount or zero depending on whether the underlying meets predetermined conditions. The ban does not cover an option whose lower fixed amount at least equals everything the retail client pays for it, fees included, or one that runs for at least ninety calendar days, has an approved prospectus available to the public and exposes the firm to no market risk and no profit or loss beyond disclosed fees."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1 tot en met 3",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Take no part in activities that get round the binary options ban",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0042121/2019-04-19_0/xml/BWBR0042121_2019-04-19_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verbod op de markt brengen, verspreiden of verkopen van binaire opties aan niet-professionele cliënten ex Verordening (EU) nr. 600/2014 en Wet op het financieel toezicht, BWBR0042121, art. 2, text in force from 2019-04-19; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0042121&artikel=2",
+     "payload": {
+      "key": "obl-nl-verbod-op-binaire-opties-no-circumvention",
+      "titles": {
+       "en": "Take no part in activities that get round the binary options ban"
+      },
+      "summaries": {
+       "en": "Knowingly taking part in activities whose object or result is to get round the binary options ban is prohibited, and so is acting as a substitute for the person who markets, distributes or sells binary options for that purpose."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Besluit verwijzingsportaal bankgegevens, the Dutch decree on the bank data referral portal through which authorities request client data from banks",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0043903/2022-01-01_0/xml/BWBR0043903_2022-01-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verwijzingsportaal bankgegevens, BWBR0043903, royal decree made under arts. 1:81 and 3:267i of the Wft and arts. 126nc and 126nd of the Wetboek van Strafvordering (preamble); first published in Stb. 2020, 264; consolidated text in force from 2022-01-01, read in its XML file; entry into force on 2020-09-10 read in the royal decree in Stb. 2020, 320 (official repository)",
+   "fieldSources": {
+    "inForceFrom": "https://repository.officiele-overheidspublicaties.nl/officielepublicaties/stb/2020/stb-2020-320/1/xml/stb-2020-320.xml"
+   },
+   "payload": {
+    "key": "nl-bwbr0043903",
+    "titles": {
+     "nl": "Besluit van 7 juli 2020, houdende regels met betrekking tot het via een centraal elektronisch systeem geautomatiseerd ontsluiten van identificerende gegevens alsmede enkele andere gegevens door banken en andere betaaldienstverleners (Besluit verwijzingsportaal bankgegevens)",
+     "en": "Bank Data Referral Portal Decree"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Besluit verwijzingsportaal bankgegevens",
+    "officialRef": "Besluit verwijzingsportaal bankgegevens (Stb. 2020, 264)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "regering-nl",
+    "regime": "regime:aml",
+    "inForceFrom": "2020-09-10"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Supply through the portal the identifying data the decree lists on clients held in the bank's records",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0043903/2022-01-01_0/xml/BWBR0043903_2022-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verwijzingsportaal bankgegevens, BWBR0043903, art. 9 lid 1 en art. 2, text in force from 2022-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0043903&artikel=9",
+     "payload": {
+      "key": "obl-nl-besluit-verwijzingsportaal-bankgegevens-identifying-data",
+      "titles": {
+       "en": "Supply through the portal the identifying data the decree lists on clients held in the bank's records"
+      },
+      "summaries": {
+       "en": "A bank or payment service provider connected to the bank data referral portal makes the technical and organisational arrangements to supply client data through the portal, as far as its records hold them. For a natural person these are the name, the name on the product, address and address type, date of birth, role as holder or authorised person, client and product status, product number and type, whether the account is suitable for benefit payments and any issuing contracting party; for a legal person the name, the name on the product, address, Chamber of Commerce or comparable number and client and product data."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 9 lid 1 en art. 2",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Secure the portal connection and answer account checks within five seconds and other requests within thirty",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0043903/2022-01-01_0/xml/BWBR0043903_2022-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verwijzingsportaal bankgegevens, BWBR0043903, art. 3 lid 1, 3 en 4, text in force from 2022-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0043903&artikel=3",
+     "payload": {
+      "key": "obl-nl-besluit-verwijzingsportaal-bankgegevens-secure-fast-connection",
+      "titles": {
+       "en": "Secure the portal connection and answer account checks within five seconds and other requests within thirty"
+      },
+      "summaries": {
+       "en": "Each connected party makes the technical and organisational arrangements its duties under the decree need. The security of its systems and of the connection to the portal guarantees the confidentiality and integrity of the data supplied, and its systems answer requests to verify a bank account number within five seconds of receipt and other demands and requests within 30 seconds."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 1, 3 en 4",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep a properly functioning connection and give the portal automated access 24 hours a day",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0043903/2022-01-01_0/xml/BWBR0043903_2022-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verwijzingsportaal bankgegevens, BWBR0043903, art. 8 en art. 10 lid 1, text in force from 2022-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0043903&artikel=8",
+     "payload": {
+      "key": "obl-nl-besluit-verwijzingsportaal-bankgegevens-round-the-clock-access",
+      "titles": {
+       "en": "Keep a properly functioning connection and give the portal automated access 24 hours a day"
+      },
+      "summaries": {
+       "en": "A connected party ensures a properly functioning connection to the portal and gives the portal automated access, 24 hours a day, to a facility through which data can be retrieved, except during maintenance announced in advance or force majeure."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8 en art. 10 lid 1",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Supply portal data no more than 48 hours older than the data used in the business",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0043903/2022-01-01_0/xml/BWBR0043903_2022-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verwijzingsportaal bankgegevens, BWBR0043903, art. 9 lid 2, text in force from 2022-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0043903&artikel=9",
+     "payload": {
+      "key": "obl-nl-besluit-verwijzingsportaal-bankgegevens-data-freshness",
+      "titles": {
+       "en": "Supply portal data no more than 48 hours older than the data used in the business"
+      },
+      "summaries": {
+       "en": "The data a connected party supplies through the portal may be no more than 48 hours older than the current data it uses for its own operations."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 9 lid 2",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Destroy at once the request data of a portal request the bank holds no data for",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0043903/2022-01-01_0/xml/BWBR0043903_2022-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit verwijzingsportaal bankgegevens, BWBR0043903, art. 10 lid 2, text in force from 2022-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0043903&artikel=10",
+     "payload": {
+      "key": "obl-nl-besluit-verwijzingsportaal-bankgegevens-delete-unmatched-requests",
+      "titles": {
+       "en": "Destroy at once the request data of a portal request the bank holds no data for"
+      },
+      "summaries": {
+       "en": "Where a connected party holds no data on the subject of a demand or request, it destroys at once the data in the demand or request that show whom it concerns."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10 lid 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Regeling eed of belofte financiële sector 2015, the Dutch Minister of Finance's regulation on the oath or affirmation of the financial sector",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0036152/2015-04-01_0/xml/BWBR0036152_2015-04-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling eed of belofte financiële sector 2015, BWBR0036152, regulation of the Minister of Finance made under arts. 3:8, 3:17b, 4:9 and 4:15a of the Wft (preamble); first published in Stcrt. 2014, 37261; consolidated text in force from 2015-04-01, read in its XML file; entry into force on 2015-04-01 read in its own art. 7",
+   "payload": {
+    "key": "nl-bwbr0036152",
+    "titles": {
+     "nl": "Regeling van de Minister van Financiën van 12 december 2014, kenmerk: FM 2014/1237 M, directie Financiële Markten, houdende regels met betrekking tot de door personen als bedoeld in de artikelen 3:8, eerste lid, 3:17b, eerste en tweede lid, 4:9, eerste lid, en 4:15a, eerste lid, van de Wet op het financieel toezicht af te leggen eed of belofte (Regeling eed of belofte financiële sector 2015)",
+     "en": "Financial Sector Oath or Affirmation Regulation 2015"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Regeling eed of belofte financiële sector 2015",
+    "officialRef": "Regeling eed of belofte financiële sector 2015 (Stcrt. 2014, 37261)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "ministerie-van-financien",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have policymakers, supervisory board members and staff take the oath or affirmation within three months of starting",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0036152/2015-04-01_0/xml/BWBR0036152_2015-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling eed of belofte financiële sector 2015, BWBR0036152, art. 1 lid 1, 2 en 4, text in force from 2015-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0036152&artikel=1",
+     "payload": {
+      "key": "obl-nl-regeling-eed-of-belofte-financiele-sector-2015-oath-within-three-months",
+      "titles": {
+       "en": "Have policymakers, supervisory board members and staff take the oath or affirmation within three months of starting"
+      },
+      "summaries": {
+       "en": "The persons the Wft requires to take the oath or affirmation, policymakers, supervisory board members and the staff of Articles 3:17b and 4:15a, take it within three months of starting work for the firm, where possible before a person in a higher position as the article defines one. Someone who returns to the firm and can show they took the same oath there before need not take it again, unless more than five years have passed since they left."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1 lid 1, 2 en 4",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Use the prescribed oath forms and set a staff form with at least the five required elements",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0036152/2015-04-01_0/xml/BWBR0036152_2015-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling eed of belofte financiële sector 2015, BWBR0036152, art. 2 lid 1 tot en met 4, text in force from 2015-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0036152&artikel=2",
+     "payload": {
+      "key": "obl-nl-regeling-eed-of-belofte-financiele-sector-2015-oath-forms",
+      "titles": {
+       "en": "Use the prescribed oath forms and set a staff form with at least the five required elements"
+      },
+      "summaries": {
+       "en": "Policymakers use the form of Annex 1 and supervisory board members the form of Annex 2. For staff the firm sets its own form, which at least covers acting with integrity and care, weighing the interests of all parties carefully with clients and society first, putting the client's interest first, complying with laws, regulations and codes of conduct, and keeping and promoting trust in the financial sector."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 lid 1 tot en met 4",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Take the oath by reading out the form and the closing words, and have the form signed on the spot",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0036152/2015-04-01_0/xml/BWBR0036152_2015-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling eed of belofte financiële sector 2015, BWBR0036152, art. 3 en art. 4, text in force from 2015-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0036152&artikel=3",
+     "payload": {
+      "key": "obl-nl-regeling-eed-of-belofte-financiele-sector-2015-oath-ceremony-and-signature",
+      "titles": {
+       "en": "Take the oath by reading out the form and the closing words, and have the form signed on the spot"
+      },
+      "summaries": {
+       "en": "The person before whom the oath or affirmation is taken reads out the text of the form, after which the person taking it speaks the prescribed closing words of the oath or of the affirmation. The person who took it then signs the form in the presence of the person before whom it was taken; a self-employed person without staff may simply sign the form."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 en art. 4",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep the signed oath or affirmation accessible for as long as the person works for the firm",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0036152/2015-04-01_0/xml/BWBR0036152_2015-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Regeling eed of belofte financiële sector 2015, BWBR0036152, art. 5, text in force from 2015-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0036152&artikel=5",
+     "payload": {
+      "key": "obl-nl-regeling-eed-of-belofte-financiele-sector-2015-keep-signed-oath",
+      "titles": {
+       "en": "Keep the signed oath or affirmation accessible for as long as the person works for the firm"
+      },
+      "summaries": {
+       "en": "The firm keeps the signed oath or affirmation in an accessible way at least for as long as the person works for it, or ensures that the taking of the oath or affirmation is recorded in another way."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bm Wft, the Dutch decree on inside information, private transactions and the cluster munitions investment ban for financial firms (Besluit marktmisbruik Wft)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, royal decree made under arts. 5:56 to 5:65 and 5:68 lid 1 of the Wft (preamble) and the articles its art. 1a names; first published in Stb. 2006, 510; consolidated text in force from 2024-04-01, read in its XML file; entry into force on 2007-01-01 read in the royal decree in Stb. 2006, 664 (official repository)",
+   "fieldSources": {
+    "inForceFrom": "https://repository.officiele-overheidspublicaties.nl/officielepublicaties/stb/2006/stb-2006-664/1/xml/stb-2006-664.xml"
+   },
+   "payload": {
+    "key": "nl-bwbr0020417",
+    "titles": {
+     "nl": "Besluit van 12 oktober 2006, houdende regels tot uitvoering van diverse bepalingen van hoofdstuk 5.4 van de Wet op het financieel toezicht (Besluit marktmisbruik Wft)",
+     "en": "Market Abuse Decree under the Financial Supervision Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Bm Wft",
+    "officialRef": "Besluit marktmisbruik Wft (Stb. 2006, 510)",
+    "level": "government_regulation",
+    "jurisdiction": "nl",
+    "authority": "regering-nl",
+    "regime": "regime:securities",
+    "inForceFrom": "2007-01-01",
+    "implementsNote": "Market Abuse Directive, Directive 2003/6/EC, and Commission Directives 2003/124/EC and 2003/125/EC (its preamble names them among other directives)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Control conflicts of interest in financial instrument transactions and keep inside information within need-to-know circles",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, art. 20 en art. 21, text in force from 2024-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020417&artikel=21",
+     "payload": {
+      "key": "obl-nl-bm-wft-inside-information-and-conflicts",
+      "titles": {
+       "en": "Control conflicts of interest in financial instrument transactions and keep inside information within need-to-know circles"
+      },
+      "summaries": {
+       "en": "A firm under Article 5:68(1) of the Wft takes adequate measures to control conflicts of interest relating to transactions in financial instruments. It also takes adequate measures to keep inside information from becoming known outside the circle of people who need it for their work, and to make sure that persons connected to it handle information they know or ought to suspect is inside information with the utmost care."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 20 en art. 21",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not invest in, lend to or take unlisted stakes in producers of cluster munitions",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, art. 21a lid 1 tot en met 4, text in force from 2024-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020417&artikel=21a",
+     "payload": {
+      "key": "obl-nl-bm-wft-cluster-munitions-ban",
+      "titles": {
+       "en": "Do not invest in, lend to or take unlisted stakes in producers of cluster munitions"
+      },
+      "summaries": {
+       "en": "A firm under Article 5:68(1) of the Wft, other than a clearing institution, takes adequate measures to avoid trading to acquire or offer financial instruments issued by a firm that produces, sells or distributes cluster munitions or their key components, lending to such a firm, or acquiring non-tradable stakes in it, and the same for a firm holding more than half of its share capital. The ban does not cover index trades and third-party managed funds with less than five per cent in such firms, or finance for well-defined projects that does not serve cluster munitions, and holdings already in place are sold or ended within a reasonable period."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 21a lid 1 tot en met 4",
+      "dutyType": "conduct",
+      "terms": [],
+      "effectiveFrom": "2013-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint a person to oversee these rules internally and let staff report market abuse breaches internally",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, art. 22 lid 1 en 2, text in force from 2024-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020417&artikel=22",
+     "payload": {
+      "key": "obl-nl-bm-wft-compliance-officer-and-internal-reporting",
+      "titles": {
+       "en": "Appoint a person to oversee these rules internally and let staff report market abuse breaches internally"
+      },
+      "summaries": {
+       "en": "A firm under Article 5:68(1) of the Wft appoints a person responsible for internal supervision of compliance with this chapter of the decree and sets rules for that supervision. A firm under Article 5:68(1) or (4) has appropriate procedures that let its employees report possible or actual breaches of the Market Abuse Regulation internally."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 22 lid 1 en 2",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Record every own-account transaction in financial instruments with its date, time, instrument and price",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, art. 23, text in force from 2024-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020417&artikel=23",
+     "payload": {
+      "key": "obl-nl-bm-wft-own-account-records",
+      "titles": {
+       "en": "Record every own-account transaction in financial instruments with its date, time, instrument and price"
+      },
+      "summaries": {
+       "en": "A firm under Article 5:68(1) of the Wft keeps records of the transactions in financial instruments it carries out for its own account, showing the transactions of each day, the instrument concerned, the date and time each was carried out, the identity of any third party that carried it out, and the price or prices."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 23",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep a code of conduct for private transactions, designate insiders and keep a list of them",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, art. 24 lid 1 tot en met 4 en art. 25, text in force from 2024-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020417&artikel=24",
+     "payload": {
+      "key": "obl-nl-bm-wft-private-transactions-code",
+      "titles": {
+       "en": "Keep a code of conduct for private transactions, designate insiders and keep a list of them"
+      },
+      "summaries": {
+       "en": "A clearing institution, and a bank not authorised to provide investment services, a fund manager, an insurer and the other firms the article names that hold a qualifying holding in an issuer or traded EUR 20 million or more in financial instruments in the past calendar year, keep a code of conduct for private transactions by connected persons involved in the firm's transactions or regularly holding inside information, make it known to everyone concerned and monitor compliance, unless the firm decides under article 25(3) to designate no one as an insider. The code has rules for all those persons and extra rules for insiders, whom the firm designates, with procedures for doing so, and it keeps a list of designated insiders."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 24 lid 1 tot en met 4 en art. 25",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Make the code require avoiding mixed interests and have insiders report their private transactions",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020417/2024-04-01_0/xml/BWBR0020417_2024-04-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit marktmisbruik Wft, BWBR0020417, art. 26 en art. 27, text in force from 2024-04-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020417&artikel=26",
+     "payload": {
+      "key": "obl-nl-bm-wft-code-content-and-insider-reporting",
+      "titles": {
+       "en": "Make the code require avoiding mixed interests and have insiders report their private transactions"
+      },
+      "summaries": {
+       "en": "The code requires the persons it covers to avoid any mixing of business and private interests, or its reasonably foreseeable appearance, connected with transactions in financial instruments. It requires insiders to report their private transactions as the code prescribes and to do their best to have third parties whose investments they influence give the internal supervisor information on their private transactions on request; it may exempt categories of instruments whose reporting serves no purpose."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 26 en art. 27",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Besluit erkenning 4,5% systeemrisicobuffer Noorwegen 2023, De Nederlandsche Bank's decision recognising Norway's 4.5 per cent systemic risk buffer for Dutch banks' Norwegian exposures",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0048576/2025-12-01_0/xml/BWBR0048576_2025-12-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit erkenning 4,5% systeemrisicobuffer Noorwegen 2023, BWBR0048576, regulation of De Nederlandsche Bank made under art. 3:62a of the Wft and arts. 105 and 105e of the Besluit prudentiële regels Wft (preamble); first published in Stcrt. 2023, 23927; consolidated text in force from 2025-12-01, read in its XML file; entry into force on 2023-08-30 read in the file's source data for the title, which name Stcrt. 2023, 23927",
+   "payload": {
+    "key": "nl-bwbr0048576",
+    "titles": {
+     "nl": "Besluit van De Nederlandsche Bank N.V. van 21 augustus 2023 tot erkenning van de sinds 31 december 2022 van toepassing zijnde macroprudentiële maatregel van het Ministerie van Financiën van Noorwegen inhoudende een systeemrisicobufferpercentage van 4,5% (Besluit erkenning 4,5% systeemrisicobuffer Noorwegen 2023)",
+     "en": "Decision recognising the 4.5% Norwegian systemic risk buffer 2023"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Besluit erkenning 4,5% systeemrisicobuffer Noorwegen 2023",
+    "officialRef": "Besluit erkenning 4,5% systeemrisicobuffer Noorwegen 2023 (Stcrt. 2023, 23927)",
+    "level": "authority_regulation",
+    "jurisdiction": "nl",
+    "authority": "dnb",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-08-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold a 4.5 per cent systemic risk buffer on Norwegian exposures once they exceed NOK 5 billion",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0048576/2025-12-01_0/xml/BWBR0048576_2025-12-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit erkenning 4,5% systeemrisicobuffer Noorwegen 2023, BWBR0048576, art. 2 en art. 1, text in force from 2025-12-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0048576&artikel=2",
+     "payload": {
+      "key": "obl-nl-besluit-erkenning-systeemrisicobuffer-noorwegen-2023-norwegian-buffer",
+      "titles": {
+       "en": "Hold a 4.5 per cent systemic risk buffer on Norwegian exposures once they exceed NOK 5 billion"
+      },
+      "summaries": {
+       "en": "A bank with its seat in the Netherlands, or an investment firm under the CRR, whose risk-weighted exposures in Norway exceed NOK 5 billion holds a systemic risk buffer of 4.5 per cent for its exposures in Norway, calculated under Article 133(2) CRD, on an individual, sub-consolidated and consolidated basis as Part One, Title II, of the CRR applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 en art. 1",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Besluit erkenning 1% systeemrisicobuffer Duitsland 2025, De Nederlandsche Bank's decision recognising Germany's systemic risk buffer for Dutch banks' German residential real estate exposures",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0047799/2025-12-01_0/xml/BWBR0047799_2025-12-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit erkenning 1% systeemrisicobuffer Duitsland 2025, BWBR0047799, regulation of De Nederlandsche Bank made under art. 3:62a of the Wft and arts. 105 and 105e of the Besluit prudentiële regels Wft (preamble); first published in Stcrt. 2023, 2784; consolidated text in force from 2025-12-01, read in its XML file; entry into force on 2023-02-01 read in its own art. 3",
+   "payload": {
+    "key": "nl-bwbr0047799",
+    "titles": {
+     "nl": "Besluit van De Nederlandsche Bank N.V. van 12 januari 2023 tot erkenning van de op 30 maart 2022 door de Duitse financiële toezichthouder BaFin gepubliceerde systeemrisicobufferpercentage (Besluit erkenning 2% systeemrisicobuffer Duitsland 2022)",
+     "en": "Decision recognising the 1% German systemic risk buffer 2025"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Besluit erkenning 1% systeemrisicobuffer Duitsland 2025",
+    "officialRef": "Besluit erkenning 1% systeemrisicobuffer Duitsland 2025 (Stcrt. 2023, 2784)",
+    "level": "authority_regulation",
+    "jurisdiction": "nl",
+    "authority": "dnb",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-02-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold a 1 per cent systemic risk buffer on German residential real estate exposures above EUR 10 billion",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0047799/2025-12-01_0/xml/BWBR0047799_2025-12-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit erkenning 1% systeemrisicobuffer Duitsland 2025, BWBR0047799, art. 2 en art. 1, text in force from 2025-12-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0047799&artikel=2",
+     "payload": {
+      "key": "obl-nl-besluit-erkenning-systeemrisicobuffer-duitsland-2025-german-residential-buffer",
+      "titles": {
+       "en": "Hold a 1 per cent systemic risk buffer on German residential real estate exposures above EUR 10 billion"
+      },
+      "summaries": {
+       "en": "A Dutch bank or an investment firm under the CRR whose exposures secured by residential real estate in Germany exceed EUR 10 billion, and which risk-weights them under the standardised approach with full cover by that real estate under Article 125(2) CRR or under the internal ratings based approach, holds a systemic risk buffer of 1 per cent for those exposures, calculated under Article 133(2) CRD, on an individual, sub-consolidated and consolidated basis as Part One, Title II, of the CRR applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2 en art. 1",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Besluit erkenning 1% systeemrisicobuffer Italië 2026, De Nederlandsche Bank's decision recognising Banca d'Italia's 1 per cent systemic risk buffer for Dutch banks' Italian exposures",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0052606/2026-05-09_0/xml/BWBR0052606_2026-05-09_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit erkenning 1% systeemrisicobuffer Italië 2026, BWBR0052606, regulation of De Nederlandsche Bank made under art. 3:62a of the Wft and arts. 105 and 105e of the Besluit prudentiële regels Wft (preamble); first published in Stcrt. 2026, 17078; consolidated text in force from 2026-05-09, read in its XML file; entry into force on 2026-05-09 read in the file's source data for the title, which name Stcrt. 2026, 17078",
+   "payload": {
+    "key": "nl-bwbr0052606",
+    "titles": {
+     "nl": "Besluit van De Nederlandsche Bank N.V. van 23 april 2026 tot erkenning van de sinds 30 juni 2025 van toepassing zijnde macroprudentiële maatregel van Banca d’Italia inhoudende een systeemrisicobufferpercentage van 1,0%",
+     "en": "Decision recognising the 1% Italian systemic risk buffer 2026"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Besluit erkenning 1% systeemrisicobuffer Italië 2026",
+    "officialRef": "Besluit erkenning 1% systeemrisicobuffer Italië 2026 (Stcrt. 2026, 17078)",
+    "level": "authority_regulation",
+    "jurisdiction": "nl",
+    "authority": "dnb",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-05-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold a 1 per cent systemic risk buffer on Italian exposures once they exceed EUR 25 billion",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0052606/2026-05-09_0/xml/BWBR0052606_2026-05-09_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Besluit erkenning 1% systeemrisicobuffer Italië 2026, BWBR0052606, art. II en art. I, text in force from 2026-05-09; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0052606&artikel=II",
+     "payload": {
+      "key": "obl-nl-besluit-erkenning-systeemrisicobuffer-italie-2026-italian-buffer",
+      "titles": {
+       "en": "Hold a 1 per cent systemic risk buffer on Italian exposures once they exceed EUR 25 billion"
+      },
+      "summaries": {
+       "en": "A Dutch bank or an investment firm under the CRR whose credit risk and counterparty credit risk exposures located in Italy exceed EUR 25 billion holds a systemic risk buffer of 1.0 per cent for those exposures, calculated under Article 133(2) CRD, on an individual, sub-consolidated and consolidated basis as Part One, Title II, of the CRR applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. II en art. I",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
