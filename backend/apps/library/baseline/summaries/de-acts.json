@@ -1,0 +1,198 @@
+{
+  "tranche": "de-acts",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "de-kredwg",
+      "source": "https://www.gesetze-im-internet.de/kredwg/BJNR008810961.html",
+      "sourceLabel": "Gesetze im Internet, Kreditwesengesetz (KWG), BGBl. I S. 2776, consolidated text (Neugefasst durch Bek. v. 9.9.1998 I 2776; zuletzt geändert durch Art. 9 G v. 12.5.2026 I Nr. 139)",
+      "text": {
+        "en": "Germany's central banking statute: it sets who needs a licence for banking business and financial services and how institutions are organised and supervised by BaFin and the Deutsche Bundesbank. It binds every institution licensed under it. In practice a bank keeps a proper business organisation with risk management, compliance, internal audit and a whistleblowing process, caps variable pay, controls outsourcing, notifies changes in management and ownership, checks consumers' creditworthiness, reports large loans and keeps the account file that BaFin can query."
+      }
+    },
+    {
+      "key": "de-pfandbg",
+      "source": "https://www.gesetze-im-internet.de/pfandbg/BJNR137310005.html",
+      "sourceLabel": "Gesetze im Internet, Pfandbriefgesetz (PfandBG), BGBl. I S. 1373, consolidated text (Zuletzt geändert durch Art. 23 G v. 25.3.2026 I Nr. 81)",
+      "text": {
+        "en": "Germany's covered bond statute: it governs the issue of mortgage, public-sector, ship and aircraft Pfandbriefe and the cover assets behind them. It binds credit institutions that carry on Pfandbrief business. In practice such a bank keeps the bonds covered at all times by present and nominal value with an excess of 2 per cent, covers its liquidity needs for the next 180 days, enters every cover asset in a cover register, counts mortgages only up to 60 per cent of a prudently set mortgage lending value, runs a risk management system for the business and publishes cover pool data each quarter."
+      }
+    },
+    {
+      "key": "de-sag",
+      "source": "https://www.gesetze-im-internet.de/sag/BJNR209110014.html",
+      "sourceLabel": "Gesetze im Internet, Sanierungs- und Abwicklungsgesetz (SAG), BGBl. I S. 2091, consolidated text (Zuletzt geändert durch Art. 5 G v. 25.9.2026 I Nr. 275)",
+      "text": {
+        "en": "Germany's recovery and resolution statute: it sets how institutions prepare for a crisis and how a failing one can be restructured or wound up. It binds institutions and their group companies. In practice a bank draws up a recovery plan and updates it at least once a year, supports resolution planning with information, keeps its financial contracts retrievable when told to, meets the minimum requirement for own funds and eligible liabilities set for it, writes bail-in and stay recognition clauses into contracts under third-country law, and reports at once when its existence is threatened."
+      }
+    },
+    {
+      "key": "de-einsig",
+      "source": "https://www.gesetze-im-internet.de/einsig/BJNR078610015.html",
+      "sourceLabel": "Gesetze im Internet, Einlagensicherungsgesetz (EinSiG), BGBl. I S. 786, consolidated text (Zuletzt geändert durch Art. 26 Abs. 5 G v. 25.3.2026 I Nr. 81)",
+      "text": {
+        "en": "Germany's deposit guarantee statute: it requires deposit-taking credit institutions to belong to a deposit guarantee scheme and gives depositors a claim to compensation of up to 100,000 euros. It binds CRR credit institutions, including German branches of foreign firms that take deposits and lend. In practice a bank belongs to a scheme, pays annual contributions to it, marks eligible deposits so that each depositor's total can be produced at once in machine-readable form, sends the scheme its audited annual accounts and reports changes that raise the risk of a compensation case."
+      }
+    },
+    {
+      "key": "de-wpapg",
+      "source": "https://www.gesetze-im-internet.de/wpapg/BJNR001710937.html",
+      "sourceLabel": "Gesetze im Internet, Depotgesetz (DepotG), BGBl. I S. 34, consolidated text (Neugefasst durch Bek. v. 11.1.1995 I 34; zuletzt geändert durch Art. 24 G v. 23.10.2024 I Nr. 323)",
+      "text": {
+        "en": "Germany's statute on the safe custody of securities: it sets how a firm that holds clients' securities in the course of its business keeps, sub-deposits, pledges and records them, and what a commission agent owes a client after a purchase. It binds every custodian. In practice a custodian keeps securities separately per client unless collective custody is allowed, answers for the sub-custodians it chooses, pledges or takes ownership of client securities only on an express authorisation for the single transaction, and keeps a custody ledger of every depositor and holding."
+      }
+    },
+    {
+      "key": "de-zkg",
+      "source": "https://www.gesetze-im-internet.de/zkg/BJNR072010016.html",
+      "sourceLabel": "Gesetze im Internet, Zahlungskontengesetz (ZKG), BGBl. I S. 720; 2018 I S. 668, consolidated text (Zuletzt geändert durch Art. 15 G v. 9.4.2026 I Nr. 97)",
+      "text": {
+        "en": "Germany's payment accounts statute: it makes the fees of consumer payment accounts comparable, helps consumers switch accounts and gives them a right to a basic account. It binds providers that keep payment accounts for consumers. In practice a bank gives a fee information document before the contract and a statement of fees at least once a year, reports its fees to BaFin for the comparison website, completes its part of an account switch within five business days, offers a basic account to every eligible consumer within ten business days and charges only reasonable fees for it."
+      }
+    },
+    {
+      "key": "de-bgb",
+      "source": "https://www.gesetze-im-internet.de/bgb/BJNR001950896.html",
+      "sourceLabel": "Gesetze im Internet, Bürgerliches Gesetzbuch (BGB), BGBl. I S. 42, 2909; 2003 I S. 738, consolidated text (Neugefasst durch Bek. v. 2.1.2002 I 42, 2909; 2003, 738; zuletzt geändert durch Art. 6 G v. 23.7.2026 I Nr. 226)",
+      "text": {
+        "en": "Germany's Civil Code: the library holds it for its rules on consumer loans and on payment services, which shape the contract with the customer. These parts bind every lender to consumers and every payment service provider. In practice a bank gives pre-contract information and explanations, checks creditworthiness, puts consumer loans in writing and announces rate changes; for payments it informs users, protects payment instruments, executes payments by the end of the next business day and refunds an unauthorised payment by the end of the business day after it learns of it."
+      }
+    },
+    {
+      "key": "de-wphg",
+      "source": "https://www.gesetze-im-internet.de/wphg/BJNR174910994.html",
+      "sourceLabel": "Gesetze im Internet, Wertpapierhandelsgesetz (WpHG), BGBl. I S. 2708, consolidated text (Neugefasst durch Bek. v. 9.9.1998 I 2708; zuletzt geändert durch Art. 11 G v. 26.5.2026 I Nr. 156)",
+      "text": {
+        "en": "Germany's securities trading statute: it sets conduct and organisation rules for firms providing investment services, the notification of major holdings in listed companies and BaFin's supervision of the securities markets. It binds every investment services enterprise, banks that provide such services included. In practice a bank acts in clients' best interests, checks suitability and gives retail clients a suitability statement, limits inducements, manages conflicts, approves products for a target market, executes orders on the best terms, records calls and protects client money."
+      }
+    },
+    {
+      "key": "de-wpig",
+      "source": "https://www.gesetze-im-internet.de/wpig/BJNR099010021.html",
+      "sourceLabel": "Gesetze im Internet, Wertpapierinstitutsgesetz (WpIG), BGBl. I S. 990, consolidated text (Zuletzt geändert durch Art. 9 G v. 9.4.2026 I Nr. 97)",
+      "text": {
+        "en": "Germany's statute for investment firms that are not banks: it sets their licence, capital, governance and supervision by BaFin and the Deutsche Bundesbank, graded for small, medium-sized and large firms. It binds the investment firms licensed under it. In practice such a firm keeps sound governance with clear reporting lines, risk control and gender-neutral pay, a medium-sized firm secures its risk-bearing capacity and liquidity, outsourcing is registered and controlled, managers must be fit and proper, and changes are notified without delay."
+      }
+    },
+    {
+      "key": "de-kagb",
+      "source": "https://www.gesetze-im-internet.de/kagb/BJNR198110013.html",
+      "sourceLabel": "Gesetze im Internet, Kapitalanlagegesetzbuch (KAGB), BGBl. I S. 1981, consolidated text (Zuletzt geändert durch Art. 3 G v. 9.4.2026 I Nr. 97)",
+      "text": {
+        "en": "Germany's investment funds code: it governs UCITS and alternative investment funds, the companies that manage them, their depositaries and the sale of fund units. It binds fund management companies and reaches depositaries and those who sell fund units. In practice a management company acts solely in investors' interests, keeps a proper organisation with an independent risk control function and liquidity management, delegates only under set conditions, keeps risk-aligned pay, appoints a depositary for every UCITS, reports to BaFin and hands investors the sales documents before they buy."
+      }
+    },
+    {
+      "key": "de-b-rsg-2007",
+      "source": "https://www.gesetze-im-internet.de/b_rsg_2007/BJNR135100007.html",
+      "sourceLabel": "Gesetze im Internet, Börsengesetz (BörsG), BGBl. I S. 1330, 1351, consolidated text (Zuletzt geändert durch Art. 21 G v. 4.2.2026 I Nr. 33)",
+      "text": {
+        "en": "Germany's stock exchange statute: it governs how exchanges are set up, run and supervised, who may trade on them and how securities are admitted to the regulated market. Most of it binds the exchanges and their operators; a bank meets it as a trading participant. In practice a bank needs admission by the exchange's management for itself and for each of its exchange traders, answers for the orders of the indirect participants it gives access to, tests its trading algorithms in the environment the exchange provides, and must not lead inexperienced people into speculative exchange transactions."
+      }
+    },
+    {
+      "key": "de-wppg",
+      "source": "https://www.gesetze-im-internet.de/wppg/BJNR169810005.html",
+      "sourceLabel": "Gesetze im Internet, Wertpapierprospektgesetz (WpPG), BGBl. I S. 1698, consolidated text (Zuletzt geändert durch Art. 18 G v. 4.2.2026 I Nr. 33)",
+      "text": {
+        "en": "Germany's securities prospectus statute: it adds national rules to the EU Prospectus Regulation on the short securities information sheet, advertising, liability for prospectuses and BaFin's powers. It binds offerors and issuers of securities and banks that apply for admission to trading with an issuer. In practice an offeror using the small-offer exemption files and publishes an information sheet of at most three pages and refers to it in advertising, credit institutions are exempt from that sheet, and a bank applying for a listing with the issuer takes responsibility for the prospectus."
+      }
+    },
+    {
+      "key": "de-zag-2018",
+      "source": "https://www.gesetze-im-internet.de/zag_2018/BJNR244610017.html",
+      "sourceLabel": "Gesetze im Internet, Zahlungsdiensteaufsichtsgesetz (ZAG), BGBl. I S. 2446; 2019 I S. 1113, consolidated text (Zuletzt geändert durch Art. 17 G v. 25.3.2026 I Nr. 81)",
+      "text": {
+        "en": "Germany's payment services supervision statute: it governs the supervision of payment institutions and e-money institutions and sets security duties for every payment service provider, CRR credit institutions included. In practice an institution safeguards customer funds, keeps a proper organisation, controls outsourcing, registers its agents, notifies changes and keeps records for five years, while every provider controls operational and security risks, sends BaFin a yearly risk assessment, reports major incidents without delay and applies strong customer authentication."
+      }
+    },
+    {
+      "key": "de-vag-2016",
+      "source": "https://www.gesetze-im-internet.de/vag_2016/BJNR043410015.html",
+      "sourceLabel": "Gesetze im Internet, Versicherungsaufsichtsgesetz (VAG), BGBl. I S. 434, consolidated text (Zuletzt geändert durch Art. 2 G v. 25.9.2026 I Nr. 275; Änderung durch Art. 3 G v. 25.9.2026 I Nr. 275 textlich nachgewiesen, dokumentarisch noch nicht abschließend bearbeitet)",
+      "text": {
+        "en": "Germany's insurance supervision statute: it sets how insurance undertakings are organised, managed and supervised and how they distribute their products. It binds insurance undertakings, including those of a banking group. In practice an insurer keeps an effective organisation with written policies, fit and proper key persons, risk management with an own risk and solvency assessment, an internal control system with a compliance function, controlled outsourcing and a product approval process, works only with authorised intermediaries and publishes a solvency and financial condition report."
+      }
+    },
+    {
+      "key": "de-vvg-2008",
+      "source": "https://www.gesetze-im-internet.de/vvg_2008/BJNR263110007.html",
+      "sourceLabel": "Gesetze im Internet, Versicherungsvertragsgesetz (VVG), BGBl. I S. 2631, consolidated text (Zuletzt geändert durch Art. 12 G v. 26.5.2026 I Nr. 156)",
+      "text": {
+        "en": "Germany's insurance contract statute: it sets the contract between insurer and policyholder and the advice and information owed before and during it by insurer and intermediary. It binds insurers and insurance intermediaries, which includes a bank that sells insurance as an intermediary. In practice the seller asks about the customer's wishes and needs, advises, gives reasons and documents the advice, hands over the policy terms and required information in text form before the customer commits, explains bundled products and recommends only suitable insurance-based investment products."
+      }
+    },
+    {
+      "key": "de-gwg-2017",
+      "source": "https://www.gesetze-im-internet.de/gwg_2017/BJNR182210017.html",
+      "sourceLabel": "Gesetze im Internet, Geldwäschegesetz (GwG), BGBl. I S. 1822, consolidated text (Zuletzt geändert durch Art. 12 Abs. 4 G v. 29.6.2026 I Nr. 197)",
+      "text": {
+        "en": "Germany's anti-money laundering statute: it requires banks and the other obliged entities it lists to know their customers and to detect and report money laundering and terrorist financing. It binds credit, payment, securities and insurance firms directly. In practice a bank names a responsible member of management, analyses its risks, keeps internal safeguards and an AML officer, identifies customers and beneficial owners, applies enhanced checks to higher risks, reports suspicions to the Financial Intelligence Unit without tipping off the customer, and keeps records for five years."
+      }
+    },
+    {
+      "key": "de-awg-2013",
+      "source": "https://www.gesetze-im-internet.de/awg_2013/BJNR148210013.html",
+      "sourceLabel": "Gesetze im Internet, Außenwirtschaftsgesetz (AWG), BGBl. I S. 1482, consolidated text (Zuletzt geändert durch Art. 1 G v. 3.2.2026 I Nr. 27)",
+      "text": {
+        "en": "Germany's foreign trade and payments statute: it lets the state restrict cross-border trade, capital movements and payments and makes breaches of EU sanctions regulations a criminal or administrative offence. It binds everyone who takes part in foreign trade and payments. In practice a bank must not provide funds, financing, investment services or other financial services against an EU sanctions prohibition, must prevent dealings with frozen funds, must guard against negligent breaches too, and gives the customs office, the Bundesbank and BAFA information and business records on request."
+      }
+    },
+    {
+      "key": "de-sanktdg",
+      "source": "https://www.gesetze-im-internet.de/sanktdg/BJNR260610022.html",
+      "sourceLabel": "Gesetze im Internet, Sanktionsdurchsetzungsgesetz (SanktDG), BGBl. I S. 2606, consolidated text (the page prints no amendment: text as enacted, documented from 28.12.2022)",
+      "text": {
+        "en": "Germany's sanctions enforcement statute: it gives the Central Office for Sanctions Enforcement (Zentralstelle für Sanktionsdurchsetzung) powers to find and secure the assets of persons under EU sanctions. It binds sanctioned persons, who must report their assets in Germany, and anyone the office asks. In practice a bank answers the office's demands for information and documents about such assets, and a company suspected of breaching an asset freeze or a ban on making funds available can be placed under special monitoring, with the office attending the meetings of its governing bodies."
+      }
+    },
+    {
+      "key": "de-bdsg-2018",
+      "source": "https://www.gesetze-im-internet.de/bdsg_2018/BJNR209710017.html",
+      "sourceLabel": "Gesetze im Internet, Bundesdatenschutzgesetz (BDSG), BGBl. I S. 2097, consolidated text (Zuletzt geändert durch Art. 3 G v. 12.5.2026 I Nr. 139; Änderung durch Art. 3 G v. 3.7.2026 I Nr. 199 textlich nachgewiesen, dokumentarisch noch nicht abschließend bearbeitet)",
+      "text": {
+        "en": "Germany's federal data protection statute: it adds national rules to the GDPR, including on data protection officers, scoring, employee data and video surveillance. Its rules for private bodies bind controllers and processors such as banks. In practice a bank appoints a data protection officer once at least 20 people constantly process personal data by automated means, uses probability scores for contract decisions only on a recognised statistical method and never on address data alone, processes employee data only as far as the job needs, and makes video surveillance of public areas visible."
+      }
+    },
+    {
+      "key": "de-fkaustg",
+      "source": "https://www.gesetze-im-internet.de/fkaustg/BJNR253110015.html",
+      "sourceLabel": "Gesetze im Internet, Finanzkonten-Informationsaustauschgesetz (FKAustG), BGBl. I S. 2531, consolidated text (Zuletzt geändert durch Art. 3 G v. 22.12.2025 I Nr. 352)",
+      "text": {
+        "en": "Germany's statute on the automatic exchange of financial account information: it makes financial institutions identify account holders who are tax resident abroad and report their accounts to the Federal Central Tax Office (Bundeszentralamt für Steuern). It binds reporting financial institutions, banks among them. In practice a bank obtains a self-certification of tax residence when an account is opened and checks it against its onboarding data, reports each reportable account electronically by 31 July for the previous year, and keeps its process and account records for ten years."
+      }
+    },
+    {
+      "key": "de-ao-1977",
+      "source": "https://www.gesetze-im-internet.de/ao_1977/BJNR006130976.html",
+      "sourceLabel": "Gesetze im Internet, Abgabenordnung (AO), BGBl. 2025 I Nr. 24, consolidated text (Neugefasst durch Bek. v. 23.1.2025 I Nr. 24; zuletzt geändert durch Art. 6 G v. 22.10.2026 I Nr. 320)",
+      "text": {
+        "en": "Germany's general tax code: the library holds it for the duties it puts on financial firms, to know who stands behind every account and to report cross-border tax arrangements. These rules bind anyone who keeps accounts, holds valuables or lets safe deposit boxes, and intermediaries in tax arrangements. In practice a bank verifies the identity and address of everyone authorised on an account and each beneficial owner before opening it, records their tax identification numbers, can tell the tax authorities which accounts a person controls, and reports a cross-border arrangement within 30 days."
+      }
+    },
+    {
+      "key": "de-kmag",
+      "source": "https://www.gesetze-im-internet.de/kmag/BJNR1B60B0024.html",
+      "sourceLabel": "Gesetze im Internet, Kryptomärkteaufsichtsgesetz (KMAG), BGBl. 2024 I Nr. 438, S. 2, consolidated text (Zuletzt geändert durch Art. 21 G v. 25.3.2026 I Nr. 81)",
+      "text": {
+        "en": "Germany's statute for carrying out the EU Markets in Crypto-Assets Regulation: it gives BaFin its powers over issuers of asset-referenced and e-money tokens and over crypto-asset service providers, and adds national duties on notifications, accounts and inside information. It binds the firms that issue such tokens or provide crypto-asset services under the regulation. In practice such a firm notifies BaFin and the Bundesbank without delay of changes in structure, capital and ownership, files its annual accounts with both, and sends inside information to BaFin as soon as it has published it."
+      }
+    },
+    {
+      "key": "de-ki-mig",
+      "source": "https://www.gesetze-im-internet.de/ki-mig/BJNR0DF0B0026.html",
+      "sourceLabel": "Gesetze im Internet, KI-Marktüberwachungs-und-Innovationsförderungs-Gesetz (KI-MIG), BGBl. 2026 I Nr. 223, consolidated text (the page prints no amendment: text as enacted, documented from 29.7.2026)",
+      "text": {
+        "en": "Germany's statute for carrying out the EU AI Act: it names the authorities that supervise AI systems, supports innovation and adds fines. It makes BaFin the market surveillance authority for AI systems directly connected with a regulated financial activity that institutions under the Banking Act and other firms it supervises place on the market, put into service or use. In practice a bank submits the plan for a real-world test of a high-risk system beforehand, and risks fines for failing the AI Act duties on information, access and the fundamental rights impact assessment."
+      }
+    },
+    {
+      "key": "de-krzwmg",
+      "source": "https://www.gesetze-im-internet.de/krzwmg/BJNR19B0B0023.html",
+      "sourceLabel": "Gesetze im Internet, Kreditzweitmarktgesetz (KrZwMG), BGBl. 2023 I Nr. 411, S. 2, consolidated text (Geändert durch Art. 20 G v. 25.3.2026 I Nr. 81)",
+      "text": {
+        "en": "Germany's statute on the secondary market for non-performing loans: it sets what a bank owes when it sells such loans, licenses the credit servicers that collect them and protects borrowers. It binds selling credit institutions, credit purchasers and credit servicing institutions. In practice a bank gives a prospective purchaser the data needed to value the loans and reports its transfers every six months, a servicer needs BaFin's licence and a proper organisation, and purchasers and servicers treat borrowers fairly and tell them of the transfer before the first enforcement step."
+      }
+    }
+  ]
+}
