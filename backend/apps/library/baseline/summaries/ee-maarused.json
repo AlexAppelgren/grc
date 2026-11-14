@@ -1,0 +1,246 @@
+{
+  "tranche": "ee-maarused",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "ee-rt-i-2014-12-16-17",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113062025028/txt",
+      "sourceLabel": "Riigi Teataja, Eluasemelaenu andmise piirmäärad ja maksimaalne laenutähtaeg (Eesti Panga presidendi 12.12.2014 määrus nr 17), RT I, 16.12.2014, 17, consolidated text RT I, 13.06.2025, 28 (in force from 16.06.2025)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets borrower-based limits for housing loans to natural persons for dwellings in Estonia. It binds every credit institution operating in Estonia, the Estonian branches of foreign banks included. In practice a bank caps the loan at 85 per cent of the collateral's value (90 per cent with a state guarantee), keeps loan payments within half of the borrower's net income at a stressed rate of at least 6 per cent, lends for at most 30 years, and keeps loans outside these limits within 15 per cent of each quarter's new housing loans."
+      }
+    },
+    {
+      "key": "ee-rt-i-2015-12-02-15",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/109062021004/txt",
+      "sourceLabel": "Riigi Teataja, Vastutsüklilise kapitalipuhvri määra arvutamine (Eesti Panga presidendi 01.12.2015 määrus nr 9), RT I, 02.12.2015, 15, consolidated text RT I, 09.06.2021, 4 (in force from 12.06.2021)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets how a credit institution licensed in Estonia calculates its own countercyclical capital buffer rate and which rates of other countries it recognises. It applies individually and on a consolidated basis. In practice a bank weights the buffer rates of the countries where its credit exposures sit by their share of credit-risk own funds requirements, uses the higher of Eesti Pank's and the ECB's rate for Estonia, recognises foreign rates up to 2.5 per cent and uses 0 per cent for a third country that has set no rate."
+      }
+    },
+    {
+      "key": "ee-rt-i-2022-12-01-1",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/101122022001/txt",
+      "sourceLabel": "Riigi Teataja, Vastutsüklilise kapitalipuhvri määra kehtestamine (Eesti Panga presidendi 28.11.2022 määrus nr 11), RT I, 01.12.2022, 1, original text RT I, 01.12.2022, 1 (in force from 01.12.2023)",
+      "text": {
+        "en": "A binding Eesti Pank regulation, in force since 1 December 2023, that sets the countercyclical capital buffer rate for credit exposures located in Estonia at 1.5 per cent and repealed the earlier rate regulation of 2021. It binds credit institutions with credit exposures in Estonia. In practice a bank applies 1.5 per cent to its Estonian exposures when it calculates its institution-specific countercyclical buffer rate under Eesti Pank's regulation on that calculation."
+      }
+    },
+    {
+      "key": "ee-rt-i-2022-05-19-9",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/119052022009/txt",
+      "sourceLabel": "Riigi Teataja, Süsteemse riski puhvri määra kehtestamine elamukinnisvaraga tagatud Leedu jaenõuete suhtes (Eesti Panga presidendi 17.05.2022 määrus nr 4), RT I, 19.05.2022, 9, original text RT I, 19.05.2022, 9 (in force from 01.07.2022)",
+      "text": {
+        "en": "A binding Eesti Pank regulation, in force since 1 July 2022, that sets a systemic risk buffer rate for one subset of exposures. It binds every credit institution licensed in Estonia. In practice a bank with retail exposures to natural persons resident in Lithuania that are secured by residential property applies a 2 per cent systemic risk buffer rate to them when it calculates its systemic risk buffer, cumulatively with any other systemic risk buffer requirement in force in Estonia."
+      }
+    },
+    {
+      "key": "ee-rt-i-2016-06-01-4",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/106122024011/txt",
+      "sourceLabel": "Riigi Teataja, Muu süsteemselt olulise krediidiasutuse puhver (Eesti Panga presidendi 30.05.2016 määrus nr 7), RT I, 01.06.2016, 4, consolidated text RT I, 06.12.2024, 11 (in force from 01.01.2025)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that names Estonia's other systemically important credit institutions and the buffer each must hold, in the version in force since 1 January 2025. It binds the six banks it names. In practice Swedbank, SEB Pank, LHV Pank and Luminor hold a buffer of 2 per cent and Coop Pank and Bigbank one of 0.5 per cent of the total risk exposure amount, both individually and at their group's highest level of consolidation in Estonia."
+      }
+    },
+    {
+      "key": "ee-rt-i-2010-12-15-6",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127062026002/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuse kohustusliku reservi nõude arvestuse aruande kehtestamine (Eesti Panga presidendi 07.12.2010 määrus nr 22), RT I, 15.12.2010, 6, consolidated text RT I, 27.06.2026, 2 (in force from 01.07.2026)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets the report on which credit institutions calculate their minimum reserve requirement, whose base and ratios come from the ECB's minimum reserves regulation. It binds every credit institution operating in Estonia and the branches of foreign ones. In practice a bank submits the report (code 55) to Eesti Pank in XML for each period in Eesti Pank's published calendar, by the 17th bank day of the following month, and resubmits it when it finds an error."
+      }
+    },
+    {
+      "key": "ee-rt-i-2014-05-28-1",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026003/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuse bilansi ning kasumiaruande sisu- ja vorminõuete kehtestamine (Eesti Panga presidendi 23.05.2014 määrus nr 6), RT I, 28.05.2014, 1, consolidated text RT I, 27.02.2026, 3 (in force from 02.03.2026)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets the content, form and deadlines of the balance sheet and income statement reports of credit institutions, which also serve the ECB's balance sheet statistics. It binds every credit institution operating in Estonia, individually. In practice a bank sends its IFRS balance sheet on the FINREP templates to Finantsinspektsioon monthly by the seventh bank day and its income statement to Eesti Pank quarterly by the tenth, reports head office data separately when it has foreign branches, and resubmits on errors."
+      }
+    },
+    {
+      "key": "ee-rt-i-2025-05-27-2",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026002/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuse bilansi täiendava aruandluse kehtestamine (Eesti Panga presidendi 13.05.2025 määrus nr 3), RT I, 27.05.2025, 2, consolidated text RT I, 27.02.2026, 2 (in force from 02.03.2026)",
+      "text": {
+        "en": "A binding Eesti Pank regulation, in force since 1 January 2026, that sets the supplementary balance sheet reports of credit institutions to Finantsinspektsioon and Eesti Pank, which also serve the ECB's securities holdings, interest rate and balance sheet statistics. It binds every credit institution operating in Estonia, branches included. In practice a bank files six reports to Finantsinspektsioon and nine to Eesti Pank, monthly or quarterly by fixed bank-day deadlines, in XML, with head office data separately where it has foreign branches."
+      }
+    },
+    {
+      "key": "ee-rt-i-2016-02-09-19",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/119062018006/txt",
+      "sourceLabel": "Riigi Teataja, Nõuded järelevalvealase finantsteabe aruandluse esitamisele individuaalsel alusel (Eesti Panga presidendi 05.02.2016 määrus nr 3), RT I, 09.02.2016, 19, consolidated text RT I, 19.06.2018, 6 (in force from 01.07.2018)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that requires credit institutions to report supervisory financial information on an individual basis, using the simplified reporting of Annex I to the ECB's supervisory financial reporting regulation. It binds every credit institution established in Estonia and the Estonian branches of foreign ones. In practice a bank files these reports to Finantsinspektsioon quarterly and annually in XBRL, by the last bank day of the month after each reference date, with standard currency and country codes."
+      }
+    },
+    {
+      "key": "ee-rt-i-2017-03-31-6",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026008/txt",
+      "sourceLabel": "Riigi Teataja, Detailsete krediidiandmete aruannete esitamise nõuded (Eesti Panga presidendi 29.03.2017 määrus nr 6), RT I, 31.03.2017, 6, consolidated text RT I, 27.02.2026, 8 (in force from 02.03.2026)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets how credit institutions report loan-by-loan credit and credit risk data under the ECB's granular credit data regulation, for the use of Eesti Pank, Finantsinspektsioon and the Financial Intelligence Unit. It binds every credit institution operating in Estonia and the branches of foreign ones. In practice a bank reports every instrument with no threshold, its foreign branches included, files eleven monthly or quarterly reports by the 15th, 17th or 35th bank day, and corrects errors."
+      }
+    },
+    {
+      "key": "ee-rt-i-2021-06-18-23",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/127022026009/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuste maksestatistilise aruandluse kehtestamine (Eesti Panga presidendi 15.06.2021 määrus nr 11), RT I, 18.06.2021, 23, consolidated text RT I, 27.02.2026, 9 (in force from 02.03.2026)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets the payment statistics credit institutions report for Eesti Pank, Finantsinspektsioon and the Financial Intelligence Unit, which also serve the ECB's payments statistics. It binds every credit institution operating in Estonia, branches included, for its Estonian unit. In practice a bank reports payments and card transactions monthly, cards, terminals and regional cash use quarterly, and card, payment and e-money fraud half-yearly, in XML with the standard codes."
+      }
+    },
+    {
+      "key": "ee-rt-i-2018-06-05-1",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/105062018001/txt",
+      "sourceLabel": "Riigi Teataja, Aruannete elektroonilise esitamise nõuded (Eesti Panga presidendi 29.05.2018 määrus nr 4), RT I, 05.06.2018, 1, original text RT I, 05.06.2018, 1 (in force from 01.01.2019)",
+      "text": {
+        "en": "A binding Eesti Pank regulation that sets the technical rules for reports credit institutions send to Eesti Pank and Finantsinspektsioon. It binds every credit institution operating in Estonia and the branches of foreign ones that report to either. In practice a bank submits its reports through the joint data collection portal in XML or XBRL, encrypts and signs messages sent over open channels, manages its keys, certificates and portal users, and knows that a report counts as filed only when it is correct."
+      }
+    },
+    {
+      "key": "ee-rt-i-2023-09-15-3",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113122023016/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutustele ja virtuaalvääringu teenuse pakkujatele aruandekohustuse kehtestamine (Rahandusministri 12.09.2023 määrus nr 34), RT I, 15.09.2023, 3, consolidated text RT I, 13.12.2023, 16 (in force from 16.12.2023)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the anti-money laundering act that tells credit institutions and virtual currency service providers which reports they owe the Financial Intelligence Unit. In practice a bank sends the Unit copies of set annexes of its Eesti Pank balance sheet, balance of payments, payment statistics and granular credit data reports on the same deadlines, files empty reports where it has no data and corrects deficiencies at once; a virtual currency provider files six quarterly reports within 20 days."
+      }
+    },
+    {
+      "key": "ee-rt-i-2020-11-24-8",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/124112020008/txt",
+      "sourceLabel": "Riigi Teataja, Rahapesu Andmebüroole esitatava teate sisu ja vorm ning teate esitamise juhend (Rahandusministri 20.11.2020 määrus nr 42), RT I, 24.11.2020, 8, original text RT I, 24.11.2020, 8 (in force from 01.01.2021)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance that sets the form of the reports obliged persons send the Financial Intelligence Unit under the anti-money laundering and international sanctions acts, and the instructions for filing them, which its second annex holds. It binds banks and every other obliged person. In practice a bank files suspicious activity and sanctions reports on the Unit's online form or in the agreed XML format over X-tee, completes every mandatory field, and also reports when it applies an EU financial sanction tied to a territory, entity or goods."
+      }
+    },
+    {
+      "key": "ee-rt-i-2025-04-02-7",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102042025007/txt",
+      "sourceLabel": "Riigi Teataja, Erikohustusega isikute Rahapesu Andmebüroole esitatavate aruannete andmete täpsem koosseis, esitajad ja esitamise kord (Rahandusministri 28.03.2025 määrus nr 14), RT I, 02.04.2025, 7, original text RT I, 02.04.2025, 7 (in force from 05.04.2025)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the international sanctions act that sets the reports persons with special obligations send the Financial Intelligence Unit on funds frozen under international financial sanctions. In practice a bank reports every quarter, by the 15th of the following month and in encrypted machine-readable form, the movements on frozen accounts and the other frozen funds it holds, also when nothing changed, and files nothing for a quarter in which it held no frozen funds; other obliged persons report once a year."
+      }
+    },
+    {
+      "key": "ee-rt-i-2025-02-19-9",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/119022025009/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiostja kohta Finantsinspektsioonile esitatava teabe kord ja vormid (Rahandusministri 14.02.2025 määrus nr 12), RT I, 19.02.2025, 9, original text RT I, 19.02.2025, 9 (in force from 22.02.2025)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the credit institutions, creditors and credit servicers acts that sets how lenders report the sale of non-performing loans to credit purchasers. It binds credit institutions, creditors and credit purchasers operating in Estonia. In practice a bank that assigns loans in default reports the purchaser or its representative and every assigned agreement or claim to Finantsinspektsioon on the prescribed forms through the data collection portal in XML, and corrects deficiencies without undue delay."
+      }
+    },
+    {
+      "key": "ee-rt-i-2016-03-01-10",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026020/txt",
+      "sourceLabel": "Riigi Teataja, Hoiuste tagamise osafondi aruandluse kord (Rahandusministri 27.02.2016 määrus nr 14), RT I, 01.03.2016, 10, consolidated text RT I, 04.09.2026, 20 (in force from 01.10.2026)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Guarantee Fund Act that sets the report from which the Guarantee Fund learns the eligible deposits of each credit institution. It binds every credit institution operating in Estonia and the branches whose home scheme covers less than the Estonian one. In practice a bank files the eligible deposits report to Finantsinspektsioon in XML every quarter by the tenth bank day of the next month, in the wording that applies from the period ending 31 December 2026, and corrects deficiencies without delay."
+      }
+    },
+    {
+      "key": "ee-rt-i-2016-06-17-8",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/112032026003/txt",
+      "sourceLabel": "Riigi Teataja, Nõuded elamukinnisvaraga seotud tarbijakrediidilepingu tagatiseks oleva kinnisvara hindamisele (Rahandusministri 15.06.2016 määrus nr 25), RT I, 17.06.2016, 8, consolidated text RT I, 12.03.2026, 3 (in force from 01.04.2026)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the creditors and credit intermediaries act that sets how residential property securing a consumer mortgage credit is valued and documented. It binds creditors and credit intermediaries and, by its own terms, credit institutions that grant such credit. In practice a bank values collateral by good valuation practice on current data, skips inspections or uses statistical models only within set limits, uses qualified valuers, records each valuation in a report of prescribed content, and meets the April 2026 wording by 2027."
+      }
+    },
+    {
+      "key": "ee-rt-i-2016-11-22-23",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/122112016023/txt",
+      "sourceLabel": "Riigi Teataja, Nõuded krediidiandja või -vahendaja juhtide ja töötajate erialastele teadmistele, oskustele ning kogemustele (Rahandusministri 18.11.2016 määrus nr 52), RT I, 22.11.2016, 23, original text RT I, 22.11.2016, 23 (in force from 25.11.2016)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the creditors and credit intermediaries act that sets what managers and staff of lenders and credit intermediaries must know and be able to do; the Credit Institutions Act applies the same requirements to the managers and lending staff of banks that lend to consumers. In practice a bank sets competence requirements for each lending position in internal rules, assesses staff by qualification, training or tests and experience, and makes sure mortgage and advisory staff also know property transactions, valuation and suitability assessment."
+      }
+    },
+    {
+      "key": "ee-rt-i-2010-76-584",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/120072021006/txt",
+      "sourceLabel": "Riigi Teataja, Tarbijakrediidi kulukuse määra arvutamise kord (Rahandusministri 13.10.2010 määrus nr 51), RT I 2010, 76, 584, consolidated text RT I, 20.07.2021, 6 (in force from 23.07.2021)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Law of Obligations Act that sets how the annual percentage rate of charge of consumer credit is calculated. It binds every consumer creditor, banks included. In practice a bank calculates the rate it discloses to consumers with the base equation or simplified formula of the annex, assumes the agreement runs as agreed from the first drawdown, counts time periods by the set conventions and states the result to at least one decimal place."
+      }
+    },
+    {
+      "key": "ee-rt-i-2015-05-22-4",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/118092026010/txt",
+      "sourceLabel": "Riigi Teataja, Maksualase teabevahetuse deklaratsioonid (Rahandusministri 19.05.2015 määrus nr 16), RT I, 22.05.2015, 4, consolidated text RT I, 18.09.2026, 10 (in force from 21.09.2026)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Tax Information Exchange Act that sets the declaration forms and data sets for automatic exchange of tax information and how they are filed. It binds reporting financial institutions and, for crypto-assets, reporting crypto-asset service providers. In practice a bank files its FATCA, CRS and DAC2 financial account declarations on the prescribed XSD forms in XML through the Tax and Customs Board's e-service and notifies the Board electronically when it has nothing to declare."
+      }
+    },
+    {
+      "key": "ee-rt-i-2023-02-10-35",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/110022023035/txt",
+      "sourceLabel": "Riigi Teataja, Pandikirjaportfelli stressitest (Rahandusministri 27.01.2023 määrus nr 4), RT I, 10.02.2023, 35, original text RT I, 10.02.2023, 35 (in force from 13.02.2023)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Covered Bonds Act that sets how a covered bond issuer stress tests its covered bond portfolio and covers a shortfall the tests reveal. It binds credit institutions licensed to issue covered bonds. In practice an issuer tests each risk factor separately and together at least quarterly from the EBA's adverse scenario, runs set sensitivity analyses each year and reports them within three months of the year end, and adds or earmarks assets to cover any shortfall found."
+      }
+    },
+    {
+      "key": "ee-rt-i-2019-09-03-2",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/109062023012/txt",
+      "sourceLabel": "Riigi Teataja, Pandikirjadega seonduvate järelevalvearuannete sisu, nende koostamise alused ja esitamise kord (Rahandusministri 30.08.2019 määrus nr 40), RT I, 03.09.2019, 2, consolidated text RT I, 09.06.2023, 12 (in force from 01.01.2024)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Covered Bonds Act that sets the supervisory reports a covered bond issuer sends Finantsinspektsioon, and the definitions used in them. It binds credit institutions licensed to issue covered bonds. In practice an issuer files the cover pool, liquidity, covered liabilities, stress test and stress scenario reports on the annexed forms, in XML under Finantsinspektsioon's technical requirements, and files an empty report where it has no data."
+      }
+    },
+    {
+      "key": "ee-rt-i-2017-02-02-5",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102022017005/txt",
+      "sourceLabel": "Riigi Teataja, Eurofondi riskide juhtimine ja tehingute registreerimine (Rahandusministri 31.01.2017 määrus nr 13), RT I, 02.02.2017, 5, original text RT I, 02.02.2017, 5 (in force from 05.02.2017)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Investment Funds Act that details how a management company manages the risks of a UCITS, records its orders and transactions and executes its investment decisions. It binds management companies managing a UCITS. In practice a fund manager calculates derivative exposure daily, measures and values OTC derivatives independently, reports derivative use yearly, keeps tamper-proof transaction records for five years, confirms executed orders by the next working day and executes and allocates orders in the fund's best interest."
+      }
+    },
+    {
+      "key": "ee-rt-i-2017-02-02-3",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/102022017003/txt",
+      "sourceLabel": "Riigi Teataja, Investeerimisfondi vara puhasväärtuse määramise kord (Rahandusministri 31.01.2017 määrus nr 11), RT I, 02.02.2017, 3, original text RT I, 02.02.2017, 3 (in force from 05.02.2017)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Investment Funds Act that sets how the net asset value of a public contractual fund or a fund set up as a public limited company is determined. It binds the management companies of such funds. In practice a fund manager deducts the listed claims from the fund's assets, adopts and publishes a valuation procedure and internal control rules and notifies Finantsinspektsioon of them, values assets transparently at market value first, and documents any departure from its procedure."
+      }
+    },
+    {
+      "key": "ee-rtl-2008-97-1348",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/104092026011/txt",
+      "sourceLabel": "Riigi Teataja, Investeerimisühingu aruanded (Rahandusministri 28.11.2008 määrus nr 40), RTL 2008, 97, 1348, consolidated text RT I, 04.09.2026, 11 (in force from 07.09.2026)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Securities Market Act that sets the content, preparation and submission of the supervisory reports of investment firms, their group parents and branches of foreign investment firms. In practice an investment firm files its IFRS-based balance sheet, income statement, claims, securities, derivatives and investment services reports monthly or quarterly depending on its licence, a group parent files consolidated reports, and every report follows the set technical rules and is corrected when a deficiency is found."
+      }
+    },
+    {
+      "key": "ee-rt-i-2010-81-613",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113012023002/txt",
+      "sourceLabel": "Riigi Teataja, Makseasutuste omavahendid ja aruanded (Rahandusministri 21.10.2010 määrus nr 54), RT I 2010, 81, 613, consolidated text RT I, 13.01.2023, 2 (in force from 16.01.2023)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Payment Institutions and E-money Institutions Act that sets how a payment institution calculates and reports its own funds and which reports it files. It binds payment institutions licensed in Estonia. In practice a payment institution calculates own funds under the act's rules, files its payment transactions, clients' assets, own funds, balance sheet and income statement reports quarterly or half-yearly within 20 days, in XML under Finantsinspektsioon's requirements."
+      }
+    },
+    {
+      "key": "ee-rt-i-2017-02-22-24",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/122022017024/txt",
+      "sourceLabel": "Riigi Teataja, Nõuded prospektile ja välisriigi fondi kohta esitatavale lisateabele (Rahandusministri 18.02.2017 määrus nr 16), RT I, 22.02.2017, 24, original text RT I, 22.02.2017, 24 (in force from 25.02.2017)",
+      "text": {
+        "en": "A binding regulation of the Minister of Finance under the Investment Funds Act that sets what the prospectus of a public fund offered in Estonia must contain and what extra information is given on foreign funds. It binds management companies of public funds, pension funds included. In practice a fund manager's prospectus describes the fund and its units, objectives, typical investor and policy, past performance and material risks, the manager, depositary and delegates, all fees and price setting, and where the fund documents can be had free of charge."
+      }
+    },
+    {
+      "key": "ee-rt-i-2025-03-14-31",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/114032025031/txt",
+      "sourceLabel": "Riigi Teataja, Vabariigi Valitsuse sanktsioon Eesti julgeoleku ja huvide kaitseks ning Venemaa Föderatsiooni tegevuse vastu Ukrainas (Vabariigi Valitsuse 13.03.2025 määrus nr 18), RT I, 14.03.2025, 31, original text RT I, 14.03.2025, 31 (in force from 15.03.2025)",
+      "text": {
+        "en": "A binding regulation of the Government under the international sanctions act that imposes a national financial sanction on persons who support activity threatening Ukraine's territorial integrity, sovereignty and independence, as designated by directive of the Minister of Foreign Affairs. It reaches funds and economic resources located in Estonia. In practice a bank freezes the funds and economic resources of designated and connected persons, makes nothing available to them, credits frozen accounts only as frozen and reports such transfers at once, and takes no part in circumvention."
+      }
+    },
+    {
+      "key": "ee-rt-i-2024-04-02-14",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/125032026018/txt",
+      "sourceLabel": "Riigi Teataja, Vabariigi Valitsuse sanktsioon seoses jätkuva rünnakuga Ukraina suveräänsuse ja territoriaalse terviklikkuse vastu (Vabariigi Valitsuse 01.04.2024 määrus nr 18), RT I, 02.04.2024, 14, consolidated text RT I, 25.03.2026, 18 (in force from 26.03.2026)",
+      "text": {
+        "en": "A binding regulation of the Government under the international sanctions act that imposes a national sanction in connection with Russia's continuing attack on Ukraine: a ban on joining, assisting, financing or otherwise supporting the armed forces or armed units of Russia and Belarus. It binds every person in Estonia and Estonian citizens and companies abroad, and since March 2026 it has no end date. For a bank this means it may not finance those forces or units or otherwise support them."
+      }
+    }
+  ]
+}
