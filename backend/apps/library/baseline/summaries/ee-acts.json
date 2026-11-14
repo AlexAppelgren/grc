@@ -1,0 +1,142 @@
+{
+  "tranche": "ee-acts",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "ee-rt-i-1999-23-349",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026016/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiasutuste seadus (KAS), RT I 1999, 23, 349, consolidated text RT I, 11.07.2026, 16 (in force from 01.10.2026 to 30.06.2028)",
+      "text": {
+        "en": "Estonia's central banking statute: it sets who may take deposits and how credit institutions are licensed, governed and supervised by Finantsinspektsioon. It binds every credit institution and the Estonian branches of foreign ones. In practice a bank ensures its managers are fit and proper and notifies their appointment, caps variable pay, runs internal audit, risk control and compliance functions, assesses its capital and liquidity adequacy each year, lends responsibly, limits loans to related persons, keeps banking secrecy and provides basic payment services."
+      }
+    },
+    {
+      "key": "ee-rt-i-2001-89-532",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026030/txt",
+      "sourceLabel": "Riigi Teataja, Väärtpaberituru seadus (VPTS), RT I 2001, 89, 532, consolidated text RT I, 11.07.2026, 30 (in force from 21.07.2026 to 30.12.2038)",
+      "text": {
+        "en": "Estonia's securities market statute: it governs public offers, investment firms and investment services, regulated markets, takeover bids, issuers' disclosure and the national side of the market abuse rules. It binds investment firms, and a bank that provides investment services follows its conduct rules through § 2 of the Credit Institutions Act. In practice a firm acts in the client's best interests, assesses suitability, executes orders on the best terms, keeps client assets separate, records orders and calls, manages conflicts of interest and approves the products it makes."
+      }
+    },
+    {
+      "key": "ee-rt-i-2010-2-3",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026053/txt",
+      "sourceLabel": "Riigi Teataja, Makseasutuste ja e-raha asutuste seadus (MERAS), RT I 2010, 2, 3, consolidated text RT I, 11.07.2026, 53 (in force from 01.10.2026 to 30.03.2029)",
+      "text": {
+        "en": "Estonia's statute on payment institutions and e-money institutions: it sets their licensing, governance, capital and safeguarding rules, and some of its conduct rules reach every payment service provider, banks included. In practice a payment or e-money institution sets internal rules, keeps its data for five years, notifies agents and outsourcing to Finantsinspektsioon and safeguards client funds. Any provider answers complaints within 15 working days and sends a yearly operational risk assessment, and a bank gives payment institutions access to payment account services."
+      }
+    },
+    {
+      "key": "ee-rt-i-2017-11-17-2",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026093/txt",
+      "sourceLabel": "Riigi Teataja, Rahapesu ja terrorismi rahastamise tõkestamise seadus (RahaPTS), RT I, 17.11.2017, 2, consolidated text RT I, 11.07.2026, 93 (in force from 21.07.2026 to 30.03.2029)",
+      "text": {
+        "en": "Estonia's anti-money laundering statute: it sets the duties of obliged entities and the role of the Rahapesu Andmebüroo, the Financial Intelligence Unit. It binds credit and financial institutions and the other obliged entities. In practice a bank documents its risk assessment and risk appetite, sets rules of procedure, names a contact person, applies customer due diligence and monitoring with enhanced measures for higher risks and politically exposed persons, refuses business it cannot check, keeps records for five years and reports suspicions within two working days."
+      }
+    },
+    {
+      "key": "ee-rt-i-2019-03-19-11",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/117052025004/txt",
+      "sourceLabel": "Riigi Teataja, Rahvusvahelise sanktsiooni seadus (RSanS), RT I, 19.03.2019, 11, consolidated text RT I, 17.05.2025, 4 (in force from 01.07.2026)",
+      "text": {
+        "en": "Estonia's sanctions statute: it governs how United Nations, EU and Estonian government sanctions are implemented in Estonia, with special rules for financial sanctions. It binds everyone, and credit and financial institutions carry extra duties as persons with special obligations. In practice a bank names the persons responsible, screens its customers whenever a sanction starts, changes or ends, applies the sanction and notifies the Rahapesu Andmebüroo when it finds or doubts a match, keeps the data for five years, runs a documented sanctions risk system with staff training and files reports."
+      }
+    },
+    {
+      "key": "ee-rt-i-2016-12-31-3",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026070/txt",
+      "sourceLabel": "Riigi Teataja, Investeerimisfondide seadus (IFS), RT I, 31.12.2016, 3, consolidated text RT I, 11.07.2026, 70 (in force from 21.07.2026)",
+      "text": {
+        "en": "Estonia's investment funds statute: it governs UCITS, alternative and pension funds, their management companies and depositaries. It binds management companies, and a bank meets it when it acts as a fund's depositary. In practice a management company acts in the best interests of the fund and its investors, sets internal rules and control functions, manages conflicts of interest, has its remuneration principles reviewed every year, handles investor complaints, delegates only on set conditions and files quarterly reports, while the depositary holds the assets and checks the manager."
+      }
+    },
+    {
+      "key": "ee-rt-i-2015-07-07-1",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026140/txt",
+      "sourceLabel": "Riigi Teataja, Kindlustustegevuse seadus (KindlTS), RT I, 07.07.2015, 1, consolidated text RT I, 11.07.2026, 140 (in force from 21.07.2026)",
+      "text": {
+        "en": "Estonia's insurance statute: it governs insurance undertakings, their solvency and governance, and the distribution of insurance by brokers and agents. It binds insurers and intermediaries, so a bank meets it when selling insurance as an agent. In practice an insurer keeps four key functions, assesses its own risks and solvency, approves products for a target market and trains distributors 15 hours a year. An agent identifies the customer's needs, recommends a fitting contract and discloses its commission, and investment-risk life insurance needs a suitability or appropriateness check."
+      }
+    },
+    {
+      "key": "ee-rt-i-2002-23-131",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026095/txt",
+      "sourceLabel": "Riigi Teataja, Tagatisfondi seadus (TFS), RT I 2002, 23, 131, consolidated text RT I, 11.07.2026, 95 (in force from 21.07.2026)",
+      "text": {
+        "en": "Estonia's statute on the Tagatisfond, the Guarantee Fund that protects deposits up to 100,000 euros per depositor and bank, compensates investors and pension savers and holds the national resolution fund. It binds credit institutions, investment firms and the other fund participants. In practice a bank tells depositors about the cover when the contract is made and once a year, warns them a month before a merger, pays yearly contributions to the deposit guarantee and resolution sub-funds, reports to the Fund through Finantsinspektsioon and never advertises with the guarantee."
+      }
+    },
+    {
+      "key": "ee-rt-i-2015-03-19-3",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026139/txt",
+      "sourceLabel": "Riigi Teataja, Finantskriisi ennetamise ja lahendamise seadus (FELS), RT I, 19.03.2015, 3, consolidated text RT I, 11.07.2026, 139 (in force from 21.07.2026)",
+      "text": {
+        "en": "Estonia's recovery and resolution statute: it sets how credit institutions and the larger investment firms prepare for a crisis and how Finantsinspektsioon, as resolution authority, can restructure a failing one. In practice a bank draws up a recovery plan that both boards approve and reviews it at least once a year, meets the minimum requirement for own funds and eligible liabilities set for it and reports on it, writes bail-in and stay recognition terms into contracts under third-country law, helps with resolution planning and tells Finantsinspektsioon when it is failing or likely to fail."
+      }
+    },
+    {
+      "key": "ee-rt-i-2015-03-19-4",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/120062026024/txt",
+      "sourceLabel": "Riigi Teataja, Krediidiandjate ja -vahendajate seadus (KAVS), RT I, 19.03.2015, 4, consolidated text RT I, 20.06.2026, 24 (in force from 30.06.2026 to 30.06.2028)",
+      "text": {
+        "en": "Estonia's statute on firms that grant or broker consumer credit: it licenses creditors and credit intermediaries and sets how they lend. It binds non-bank lenders directly, and a bank follows its lending rules (§§ 47 to 53¹) through § 83 of the Credit Institutions Act. In practice a lender identifies the consumer, assesses creditworthiness under a set methodology and verifies the data, keeps a credit file for each consumer and the records for three years after the contract, pays staff without volume incentives and values residential collateral independently of the credit decision."
+      }
+    },
+    {
+      "key": "ee-rt-i-2001-81-487",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/120062026018/txt",
+      "sourceLabel": "Riigi Teataja, Võlaõigusseadus (VÕS), RT I 2001, 81, 487, consolidated text RT I, 20.06.2026, 18 (in force from 01.09.2026 to 31.12.2026)",
+      "text": {
+        "en": "Estonia's general contract statute, held here for its chapters on consumer credit (§§ 402 to 421) and on payment orders and payment services (§§ 703 to 733¹⁴). It binds every lender to consumers and every payment service provider. In practice a bank hands over the standard pre-contract credit information, assesses creditworthiness before lending, keeps the cost of credit under the statutory cap. For payments it opens basic payment accounts, sends a yearly statement of fees, applies strong customer authentication and refunds unauthorised payments by the next business day."
+      }
+    },
+    {
+      "key": "ee-rt-i-2019-01-04-11",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/130062026052/txt",
+      "sourceLabel": "Riigi Teataja, Isikuandmete kaitse seadus (IKS), RT I, 04.01.2019, 11, consolidated text RT I, 30.06.2026, 52 (in force from 01.10.2026)",
+      "text": {
+        "en": "Estonia's data protection statute: it supplements the GDPR with national rules, sets out the Andmekaitse Inspektsioon's supervision and penalties, and holds a separate chapter for law enforcement authorities. It binds every controller and processor in Estonia. For a bank its own rules are few and specific: payment default data may be passed on for credit assessment only after it has been checked and logged and within fixed time limits, a child's consent for online services counts from the age of 13, and a customer's consent runs for ten years after death."
+      }
+    },
+    {
+      "key": "ee-rt-i-2014-12-23-15",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/115042026002/txt",
+      "sourceLabel": "Riigi Teataja, Maksualase teabevahetuse seadus (MTVS), RT I, 23.12.2014, 15, consolidated text RT I, 15.04.2026, 2 (in force from 25.04.2026 to 30.12.2027)",
+      "text": {
+        "en": "Estonia's statute on the international exchange of tax information: it carries out the EU directive on administrative cooperation in taxation and the FATCA agreement with the United States. It binds financial institutions, crypto-asset service providers, tax intermediaries and platform operators. In practice a bank tells clients at onboarding that data is exchanged, identifies reportable accounts and files its returns with the Maksu- ja Tolliamet by 30 June each year, registers with the US tax authority, reports cross-border arrangements within 30 days and keeps the evidence for six years."
+      }
+    },
+    {
+      "key": "ee-rt-i-2001-48-267",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026012/txt",
+      "sourceLabel": "Riigi Teataja, Finantsinspektsiooni seadus (FIS), RT I 2001, 48, 267, consolidated text RT I, 11.07.2026, 12 (in force from 01.10.2026 to 30.12.2038)",
+      "text": {
+        "en": "Estonia's statute on Finantsinspektsioon, the financial supervisor that works as an agency with autonomous competence at Eesti Pank. Most of it governs the authority itself: its bodies, cooperation, secrecy and legal acts. What it asks of supervised firms is money and data. In practice a bank, insurer, investment firm, payment institution or other supervised firm pays a yearly supervision fee made up of a capital share and a volume share, in an advance by 31 December and a balance by 1 September, supplies the data for calculating it and pays a processing fee before filing an application."
+      }
+    },
+    {
+      "key": "ee-rt-i-2019-02-28-1",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/113022026012/txt",
+      "sourceLabel": "Riigi Teataja, Pandikirjaseadus (PandiKS), RT I, 28.02.2019, 1, consolidated text RT I, 13.02.2026, 12 (in force from 01.03.2026)",
+      "text": {
+        "en": "Estonia's covered bond statute: it lets a credit institution with an additional licence issue mortgage covered bonds and covered bonds with a mixed cover pool. It binds issuing credit institutions. In practice an issuer keeps a cover register, appoints an independent cover pool monitor, keeps the bonds covered at all times with five per cent to spare, holds a liquidity buffer for the next 180 days, stress tests the portfolio every three months, counts mortgage loans only up to 70 per cent of the property value and publishes cover pool data every quarter."
+      }
+    },
+    {
+      "key": "ee-rt-i-2024-06-21-3",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/121062024003/txt",
+      "sourceLabel": "Riigi Teataja, Krüptovaraturu seadus (KrüTS), RT I, 21.06.2024, 3, original text RT I, 21.06.2024, 3 (in force from 01.07.2024)",
+      "text": {
+        "en": "Estonia's statute that carries out the EU Markets in Crypto-assets Regulation: it sets how crypto-asset service providers and token issuers are licensed, organised and supervised by Finantsinspektsioon. It binds crypto-asset market participants, and a bank or investment firm that offers crypto-asset services follows the parts § 2 names. In practice a provider holds a licence or confirmation, has at least two management board members, notifies management changes 30 days ahead, ensures its advisers are competent, reports major ICT incidents and files regular reports within 20 days."
+      }
+    },
+    {
+      "key": "ee-rt-i-2000-57-373",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026101/txt",
+      "sourceLabel": "Riigi Teataja, Väärtpaberite registri pidamise seadus (EVKS), RT I 2000, 57, 373, consolidated text RT I, 11.07.2026, 101 (in force from 21.07.2026)",
+      "text": {
+        "en": "Estonia's statute on the Estonian register of securities and the pension register: it sets what is registered, how securities accounts and nominee accounts work and what account operators do. It binds the registrar, issuers, and banks and investment firms acting as account operators or nominee account holders. In practice an account operator verifies who gives an order, sends data to the registrar on time and keeps order documents for ten years, a nominee holder keeps client-level records and names the shareholders to a listed issuer on request, and an issuer reports corporate events at once."
+      }
+    }
+  ]
+}
