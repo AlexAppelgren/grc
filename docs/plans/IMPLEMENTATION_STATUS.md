@@ -436,9 +436,12 @@ the Netherlands, Austria and Switzerland.
   Netherlands' (`provisions/nl-acts.json`): 97 articles from the Basiswettenbestand's
   consolidated XML of the version in force on 2026-11-14, read by two separately written
   parsers and a third reader that cuts each article from the raw file, with English and
-  Swedish beside each; all 100 duties carry their text.
+  Swedish beside each; all 100 duties carry their text. Then Switzerland's
+  (`provisions/ch-acts.json`): 167 articles of the consolidation in force on 2026-11-14,
+  read from Fedlex's Akoma Ntoso XML and HTML and a third time from its DOCX, the German
+  text only, with English and Swedish beside each; all 140 duties carry their text.
 - **In work on this branch:** the seven markets' regulations; and the law's own words
-  for the other five statute tranches, each provision in its original
+  for the other four statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only

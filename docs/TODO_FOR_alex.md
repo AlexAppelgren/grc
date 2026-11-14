@@ -52,6 +52,14 @@ library takes their law in its own language. What needs you, most urgent first.
       and "alternative investment fund" for a beleggingsinstelling, which the Wft defines
       by the AIFM Directive. Misprints of the official text are kept as printed (Wwft art.
       3(10) cites "Richtlijn 77/79/EEG", WIBB art. 10ob(5) "Richtlijn 2016/11/EU").
+- [ ] **A Swiss and a Swedish reader on Switzerland's law text.** English and Swedish
+      stand beside the 167 German articles, machine translations written for meaning.
+      Worth a reader's hour: the data protection act rendered without the GDPR's terms
+      ("person responsible" and "den ansvarige", not "controller"), because Swiss law is
+      not EU law; "Bundesrat" translated as "Federal Council" and "förbundsrådet" while
+      every act's name stays whole in German; "administration and management" for
+      "Verwaltung und Geschäftsführung"; "depåbank" for a Depotbank; "dagsböter" for a
+      Geldstrafe (Art. 34 StGB).
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
