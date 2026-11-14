@@ -1,0 +1,2390 @@
+{
+ "tranche": "nl-acts",
+ "researchedOn": "2026-11-14",
+ "instruments": [
+  {
+   "title": "Add Wft, the Dutch Financial Supervision Act (Wet op het financieel toezicht)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, first published in Stb. 2006, 475; consolidated text in force from 2026-09-29, read in its XML file; entry into force on 2007-01-01 read in the royal decree in Stb. 2006, 664 (Officiële bekendmakingen)",
+   "fieldSources": {
+    "inForceFrom": "https://zoek.officielebekendmakingen.nl/stb-2006-664.html"
+   },
+   "payload": {
+    "key": "nl-bwbr0020368",
+    "titles": {
+     "nl": "Wet van 28 september 2006, houdende regels met betrekking tot de financiële markten en het toezicht daarop (Wet op het financieel toezicht)",
+     "en": "Financial Supervision Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Wft",
+    "officialRef": "Wet op het financieel toezicht (Stb. 2006, 475)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "2007-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Cap variable pay at 20 per cent of fixed annual pay",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 1:121 lid 1 tot en met 3 en 7, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=1:121",
+     "payload": {
+      "key": "obl-nl-wft-variable-pay-cap",
+      "titles": {
+       "en": "Cap variable pay at 20 per cent of fixed annual pay"
+      },
+      "summaries": {
+       "en": "A financial undertaking with its seat in the Netherlands may award a person working under its responsibility variable remuneration of at most 20 per cent of that person's fixed annual remuneration. In exceptional cases it may award more, up to 100 per cent, to a person who works mainly in the Netherlands, is not wholly paid under a collective agreement and neither performs an internal control function nor deals directly with financial services to consumers, provided the average ratio for all such staff stays at or below 20 per cent; for staff working mainly in another state the limit is that of the Capital Requirements Directive. The cap does not apply to managers of investment funds and of UCITS or to investment firms that deal only on own account without external clients."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 1:121 lid 1 tot en met 3 en 7",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Have day-to-day policy and internal supervision carried out by suitable persons",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 3:8 lid 1 en 3, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=3:8",
+     "payload": {
+      "key": "obl-nl-wft-suitable-policymakers",
+      "titles": {
+       "en": "Have day-to-day policy and internal supervision carried out by suitable persons"
+      },
+      "summaries": {
+       "en": "The day-to-day policy of a bank, insurer, payment institution, e-money institution or other financial undertaking listed in the article with its seat in the Netherlands must be determined by persons who are suitable for carrying on its business, and any body supervising policy and the general course of affairs must consist of persons suitable for that supervision. The composition and functioning of a bank's management and supervisory body must also meet Article 91 of the Capital Requirements Directive, parts of which the article applies only to significant banks."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:8 lid 1 en 3",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Pursue an adequate policy that safeguards the integrity of the business",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 3:10 lid 1 en 3, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=3:10",
+     "payload": {
+      "key": "obl-nl-wft-integrity-policy",
+      "titles": {
+       "en": "Pursue an adequate policy that safeguards the integrity of the business"
+      },
+      "summaries": {
+       "en": "A bank, insurer, payment institution, e-money institution or other financial undertaking listed in the article with its seat in the Netherlands must pursue an adequate policy that safeguards the integrity of its business: it counters conflicts of interest, offences and other breaches of the law by the firm or its employees, relationships with clients that can harm confidence in the firm or the financial markets, and other conduct contrary to generally accepted standards that can seriously harm that confidence. It must give De Nederlandsche Bank the information on related incidents that is set by decree."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:10 lid 1 en 3",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Organise the business so that it is carried on in a sound and controlled way",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 3:17 lid 1 en 2, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=3:17",
+     "payload": {
+      "key": "obl-nl-wft-sound-and-controlled-operations",
+      "titles": {
+       "en": "Organise the business so that it is carried on in a sound and controlled way"
+      },
+      "summaries": {
+       "en": "A bank, insurer, payment institution, e-money institution or other financial undertaking listed in the article with its seat in the Netherlands must organise its operations so that its business is carried on in a controlled and sound way. The rules set by decree under the article cover the control of business processes and risks, integrity, the firm's financial soundness including, for a bank, a recovery plan, records that do not hinder the deposit guarantee scheme, and the proper working of payments."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:17 lid 1 en 2",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Ensure that a third party to whom work is outsourced follows the prudential rules, and keep designated work in house",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 3:18 lid 1 en 2, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=3:18",
+     "payload": {
+      "key": "obl-nl-wft-outsourcing",
+      "titles": {
+       "en": "Ensure that a third party to whom work is outsourced follows the prudential rules, and keep designated work in house"
+      },
+      "summaries": {
+       "en": "A financial undertaking with its seat in the Netherlands that outsources work to a third party must ensure that the third party complies with the rules of the prudential part of the act that apply to the firm for that work. A bank, insurer, payment institution, e-money institution or other firm listed in the article may not outsource the work that a decree designates."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:18 lid 1 en 2",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Safeguard the funds received from payment service users and for electronic money",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 3:29a, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=3:29a",
+     "payload": {
+      "key": "obl-nl-wft-safeguarding-customer-funds",
+      "titles": {
+       "en": "Safeguard the funds received from payment service users and for electronic money"
+      },
+      "summaries": {
+       "en": "A payment institution or e-money institution with its seat in the Netherlands must safeguard the funds it receives from payment service users or from other payment or e-money institutions, in the way art. 3:29aa sets out or a decree prescribes, and an e-money institution must do the same for funds received in exchange for electronic money. The first duty does not apply to a payment institution that provides only the payment services numbered 7 and 8 in the annex to the Payment Services Directive."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:29a",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File periodic returns with De Nederlandsche Bank within the set deadlines",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 3:72 lid 1 en 7, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=3:72",
+     "payload": {
+      "key": "obl-nl-wft-periodic-returns-to-dnb",
+      "titles": {
+       "en": "File periodic returns with De Nederlandsche Bank within the set deadlines"
+      },
+      "summaries": {
+       "en": "A bank, payment institution, e-money institution, investment firm, manager of a UCITS or Dutch manager of an investment fund, and the other firms listed in the article, must periodically provide De Nederlandsche Bank, within the deadlines set, with the returns it needs to supervise the prudential rules, on a consolidated basis where required. The returns of a bank, manager, payment institution or e-money institution must periodically carry an auditor's statement that they give a true and fair view."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3:72 lid 1 en 7",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Handle complaints through an internal procedure and belong to the designated dispute resolution body",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:17 lid 1 en 2, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:17",
+     "payload": {
+      "key": "obl-nl-wft-complaints-handling",
+      "titles": {
+       "en": "Handle complaints through an internal procedure and belong to the designated dispute resolution body"
+      },
+      "summaries": {
+       "en": "A payment service provider, a financial service provider, an investment firm that provides investment services, a manager of a UCITS, a clearing institution or a credit servicer must ensure that complaints from clients, consumers, participants or borrowers about its services or products are handled adequately. It must have an internal complaints procedure aimed at swift and careful handling and must be affiliated to the dispute resolution body the Minister has designated, unless it provides investment services only to professional investors or acts as a clearing institution."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:17 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Make all information to clients, advertising included, correct, clear and not misleading",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:19 lid 1 tot en met 3, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:19",
+     "payload": {
+      "key": "obl-nl-wft-clear-information",
+      "titles": {
+       "en": "Make all information to clients, advertising included, correct, clear and not misleading"
+      },
+      "summaries": {
+       "en": "A financial undertaking must ensure that information it gives or makes available on a financial product, financial service or ancillary service, including advertising and investment research, is correct, clear and not misleading, does not detract from the information the act requires, and can be recognised as commercial where it has a commercial purpose. The article does not apply to advertising by managers of investment funds, managers of UCITS and credit servicers."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:19 lid 1 tot en met 3",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Base advice and portfolio management on the client's position, knowledge, objectives and risk appetite",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:23 lid 1, 3 en 4, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:23",
+     "payload": {
+      "key": "obl-nl-wft-advice-suitability",
+      "titles": {
+       "en": "Base advice and portfolio management on the client's position, knowledge, objectives and risk appetite"
+      },
+      "summaries": {
+       "en": "A financial undertaking that advises a consumer, or a client in the case of a financial instrument or insurance, or manages an individual portfolio must obtain information on the person's financial position, knowledge, experience, objectives and risk appetite as far as reasonably relevant, and base its advice or management on it; for products other than financial instruments it explains the reasoning behind the advice. An investment firm that advises a retail investor must give a suitability statement on a durable medium with the advice or in any case before the transaction, and a periodic suitability statement when it manages the portfolio."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:23 lid 1, 3 en 4",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess a consumer's financial position before lending and refuse credit that would be irresponsible",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:34 lid 1 en 2, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:34",
+     "payload": {
+      "key": "obl-nl-wft-responsible-lending",
+      "titles": {
+       "en": "Assess a consumer's financial position before lending and refuse credit that would be irresponsible"
+      },
+      "summaries": {
+       "en": "Before a credit agreement is concluded or the credit limit or the amounts made available are raised significantly, an offeror of credit must obtain information on the consumer's financial position and assess, to prevent overindebtedness, whether the agreement or the increase is responsible. It may not conclude the agreement or grant the increase where that would be irresponsible in view of the consumer's overindebtedness."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:34 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Organise an investment fund manager so that conflicts of interest are identified, prevented, managed and monitored",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:37e lid 1 en 2, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:37e",
+     "payload": {
+      "key": "obl-nl-wft-fund-manager-conflicts-of-interest",
+      "titles": {
+       "en": "Organise an investment fund manager so that conflicts of interest are identified, prevented, managed and monitored"
+      },
+      "summaries": {
+       "en": "The manager of an investment fund must organise its operations so that measures can be taken to identify, prevent, manage and monitor possible conflicts of interest, and must take measures to prevent the interests of the funds it manages or their participants from being harmed by a conflict. Where harm to participants' interests cannot be prevented, it must inform potential participants of the nature of the possible conflicts and pursue an adequate policy for dealing with them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:37e lid 1 en 2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer consumers lawfully resident in the EU a basic payment account in euro",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:71f, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:71f",
+     "payload": {
+      "key": "obl-nl-wft-basic-payment-account",
+      "titles": {
+       "en": "Offer consumers lawfully resident in the EU a basic payment account in euro"
+      },
+      "summaries": {
+       "en": "A bank that offers payment accounts to consumers in the Netherlands must let consumers who reside lawfully in the European Union, including those without a fixed address and asylum seekers, apply for and use a basic payment account in euro regardless of nationality or place of residence. It must open the account within ten working days of the complete application unless a ground for refusal in art. 4:71g applies, may not make other products a condition, must offer the services free of charge or for a reasonable fee, and may not offer basic accounts only over the internet."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:71f",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Protect clients' rights to their money and financial instruments and do not use them for own account",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het financieel toezicht, BWBR0020368, art. 4:87 lid 1 en 3, text in force from 2026-09-29; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020368&artikel=4:87",
+     "payload": {
+      "key": "obl-nl-wft-client-assets",
+      "titles": {
+       "en": "Protect clients' rights to their money and financial instruments and do not use them for own account"
+      },
+      "summaries": {
+       "en": "An investment firm must take adequate measures to protect clients' rights to the money and financial instruments that belong to them and to prevent their use for the firm's own account, except, for financial instruments, with the client's express consent. A tied agent may not hold financial instruments or money belonging to a client."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4:87 lid 1 en 3",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Wwft, the Dutch act on preventing money laundering and terrorist financing (Wet ter voorkoming van witwassen en financieren van terrorisme)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, first published in Stb. 2008, 303; consolidated text in force from 2026-07-01, read in its XML file; entry into force on 2008-08-01 read in the royal decree in Stb. 2008, 304 (Officiële bekendmakingen)",
+   "fieldSources": {
+    "inForceFrom": "https://zoek.officielebekendmakingen.nl/stb-2008-304.html"
+   },
+   "payload": {
+    "key": "nl-bwbr0024282",
+    "titles": {
+     "nl": "Wet van 15 juli 2008, houdende samenvoeging van de Wet identificatie bij dienstverlening en de Wet melding ongebruikelijke transacties (Wet ter voorkoming van witwassen en financieren van terrorisme)",
+     "en": "Money Laundering and Terrorist Financing (Prevention) Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Wwft",
+    "officialRef": "Wet ter voorkoming van witwassen en financieren van terrorisme (Stb. 2008, 303)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:aml",
+    "inForceFrom": "2008-08-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify and assess the firm's own money laundering and terrorist financing risks and keep the assessment up to date",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 2b lid 1 tot en met 3, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=2b",
+     "payload": {
+      "key": "obl-nl-wwft-risk-assessment",
+      "titles": {
+       "en": "Identify and assess the firm's own money laundering and terrorist financing risks and keep the assessment up to date"
+      },
+      "summaries": {
+       "en": "An institution must take measures, in proportion to its nature and size, to identify and assess its risks of money laundering and terrorist financing, taking into account at least the risk factors tied to the type of customer, product, service, transaction and delivery channel and to countries or geographic areas. It must record the results, keep them up to date and give them to the supervisory authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2b lid 1 tot en met 3",
+      "dutyType": "governance",
+      "terms": [],
+      "effectiveFrom": "2018-07-25"
+     }
+    },
+    {
+     "title": "Add the duty: Have policies, procedures and measures that limit and control money laundering risks, approved by the day-to-day policymakers",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 2c, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=2c",
+     "payload": {
+      "key": "obl-nl-wwft-policies-and-procedures",
+      "titles": {
+       "en": "Have policies, procedures and measures that limit and control money laundering risks, approved by the day-to-day policymakers"
+      },
+      "summaries": {
+       "en": "An institution must have policies, procedures and measures to limit and effectively control its risks of money laundering and terrorist financing and the risks named in the latest supranational and national risk assessments. They must be proportionate to its nature and size, cover at least risk management, group rules, customer due diligence, the reporting duty, record keeping and training, and be approved by the persons who determine its day-to-day policy. The institution must test them systematically and adjust them where needed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2c",
+      "dutyType": "governance",
+      "terms": [],
+      "effectiveFrom": "2018-07-25"
+     }
+    },
+    {
+     "title": "Add the duty: Name a policymaker responsible for compliance with the act and keep independent compliance and audit functions",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 2d, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=2d",
+     "payload": {
+      "key": "obl-nl-wwft-compliance-and-audit-function",
+      "titles": {
+       "en": "Name a policymaker responsible for compliance with the act and keep independent compliance and audit functions"
+      },
+      "summaries": {
+       "en": "Where two or more persons determine the institution's day-to-day policy, it must designate one of them as responsible for its compliance with the act. As far as fits its nature and size, it must have an independent and effective compliance function, which checks compliance with the law and with internal rules and makes the reports to the Financial Intelligence Unit, and must have an audit function carried out independently that checks compliance with the act and the work of the compliance function."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2d",
+      "dutyType": "governance",
+      "terms": [],
+      "effectiveFrom": "2018-07-25"
+     }
+    },
+    {
+     "title": "Add the duty: Apply group-wide anti-money laundering policies, including in branches and majority-owned subsidiaries abroad",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 2f lid 1 tot en met 4, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=2f",
+     "payload": {
+      "key": "obl-nl-wwft-group-policies",
+      "titles": {
+       "en": "Apply group-wide anti-money laundering policies, including in branches and majority-owned subsidiaries abroad"
+      },
+      "summaries": {
+       "en": "An institution that is part of a group must effectively apply the group's policies and procedures, including those on data protection and on sharing information within the group, as far as they meet the act, and must ensure that its branches and majority-owned subsidiaries established outside the Netherlands apply them. Where the law of a non-member state prevents this, it must inform the supervisory authority and see to it that the branch or subsidiary takes additional measures to control the risk."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 2f lid 1 tot en met 4",
+      "dutyType": "governance",
+      "terms": [],
+      "effectiveFrom": "2018-07-25"
+     }
+    },
+    {
+     "title": "Add the duty: Carry out customer due diligence when entering a business relationship and in the other cases the act lists",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 3 lid 1, 2 en 5, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=3",
+     "payload": {
+      "key": "obl-nl-wwft-customer-due-diligence",
+      "titles": {
+       "en": "Carry out customer due diligence when entering a business relationship and in the other cases the act lists"
+      },
+      "summaries": {
+       "en": "An institution must carry out customer due diligence that lets it identify the customer and verify the identity, identify the ultimate beneficial owner and take reasonable measures to verify that identity and to understand the ownership and control structure, establish the purpose and intended nature of the relationship, monitor the relationship and its transactions continuously, check that a representative is authorised, and check whether the customer acts for a third party. It does so when it enters a business relationship in or from the Netherlands, carries out an occasional transaction of at least 15,000 euros or a transfer of funds of at least 1,000 euros, sees indications of money laundering or terrorist financing, doubts earlier data, or where the risk of an existing customer or the customer's state gives cause."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 1, 2 en 5",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Match due diligence demonstrably to the risk and keep customer data up to date",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 3 lid 7, 8 en 10, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=3",
+     "payload": {
+      "key": "obl-nl-wwft-risk-based-due-diligence",
+      "titles": {
+       "en": "Match due diligence demonstrably to the risk and keep customer data up to date"
+      },
+      "summaries": {
+       "en": "An institution must demonstrably tailor its customer due diligence to the sensitivity to money laundering or terrorist financing of the type of customer, business relationship, product or transaction, taking into account at least the risk variables in Annex I to the fourth anti-money laundering directive. It must take reasonable measures to keep the data collected on customers, beneficial owners and representatives up to date, and must update them in any case when relevant circumstances of the customer change or when the act or the EU directive on administrative cooperation in taxation requires it to contact the customer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 7, 8 en 10",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Identify and verify the customer and the beneficial owner before the relationship starts or the transaction is carried out",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 4 lid 1 tot en met 4, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=4",
+     "payload": {
+      "key": "obl-nl-wwft-verify-before-relationship",
+      "titles": {
+       "en": "Identify and verify the customer and the beneficial owner before the relationship starts or the transaction is carried out"
+      },
+      "summaries": {
+       "en": "An institution must have identified the customer and the ultimate beneficial owner and verified their identity before it enters the business relationship or carries out the occasional transaction, and for a new relationship with a legal entity it must hold proof of the customer's registration in the trade register and establish whether its beneficial owners are registered there. It may verify while the relationship is being established where that is needed not to disrupt the service and the risk is low, and then as soon as possible after first contact. A bank or other financial undertaking may open an account before verification only if it ensures that the account cannot be used until verification has taken place."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 4 lid 1 tot en met 4",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not enter a relationship or carry out a transaction without completed due diligence, and end a relationship where it cannot be completed",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 5 lid 1 en 3, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=5",
+     "payload": {
+      "key": "obl-nl-wwft-no-business-without-due-diligence",
+      "titles": {
+       "en": "Do not enter a relationship or carry out a transaction without completed due diligence, and end a relationship where it cannot be completed"
+      },
+      "summaries": {
+       "en": "An institution may not enter a business relationship with a customer or carry out a transaction for a customer unless due diligence under art. 3 has been carried out, by itself or by one of the introducing institutions the article lists, it has led to the required result, and the institution holds all identification and verification data. If it cannot meet the due diligence requirements for a business relationship, it must end that relationship. The cases of simplified due diligence in art. 6 and 7 are excepted."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5 lid 1 en 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not hold a correspondent relationship with a shell bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 5 lid 5, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=5",
+     "payload": {
+      "key": "obl-nl-wwft-no-shell-bank-correspondent",
+      "titles": {
+       "en": "Do not hold a correspondent relationship with a shell bank"
+      },
+      "summaries": {
+       "en": "A bank or other financial undertaking may not enter or continue a correspondent relationship with a shell bank, or with a bank or other financial undertaking known to allow a shell bank to use its accounts."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5 lid 5",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced due diligence to higher-risk relationships and transactions and examine complex or unusual transactions",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 8 lid 1 tot en met 3, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=8",
+     "payload": {
+      "key": "obl-nl-wwft-enhanced-due-diligence",
+      "titles": {
+       "en": "Apply enhanced due diligence to higher-risk relationships and transactions and examine complex or unusual transactions"
+      },
+      "summaries": {
+       "en": "An institution must carry out enhanced customer due diligence at least where the business relationship or transaction by its nature carries a higher risk of money laundering or terrorist financing, judged at least by the risk factors of Annex III to the fourth anti-money laundering directive, and where the customer's state is one the European Commission has designated as higher risk. It must take reasonable measures to examine the background and purpose of complex or unusually large transactions and of transactions with an unusual pattern or without a clear economic or lawful purpose, and then put the whole relationship under enhanced monitoring."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8 lid 1 tot en met 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Assess a respondent institution outside the EU before starting a correspondent relationship",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 8 lid 4, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=8",
+     "payload": {
+      "key": "obl-nl-wwft-correspondent-relationships",
+      "titles": {
+       "en": "Assess a respondent institution outside the EU before starting a correspondent relationship"
+      },
+      "summaries": {
+       "en": "A bank or other financial undertaking that enters a correspondent relationship involving payments with a respondent institution in a non-member state must gather enough information to understand the respondent's business and assess its reputation and the quality of its supervision, assess its anti-money laundering procedures and measures, have senior management decide on or approve a new relationship, and record each party's responsibilities. It must ensure that the respondent has identified and monitors the customers with direct access to payable-through accounts, and must document a decision to end the relationship for reasons of money laundering or terrorist financing."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8 lid 4",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Detect politically exposed persons and apply senior approval, source of wealth checks and enhanced monitoring",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 8 lid 6, 8, 9 en 10, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=8",
+     "payload": {
+      "key": "obl-nl-wwft-politically-exposed-persons",
+      "titles": {
+       "en": "Detect politically exposed persons and apply senior approval, source of wealth checks and enhanced monitoring"
+      },
+      "summaries": {
+       "en": "An institution must have risk-based procedures to determine whether a customer or ultimate beneficial owner is a politically exposed person. For such a person, and for family members and known close associates, it needs the consent of a member of senior management to enter or continue the relationship or carry out the transaction, must take appropriate measures to establish the source of wealth and of the funds used, and must keep the relationship under continuous enhanced monitoring. After the person leaves the prominent public function it applies appropriate risk-based measures for as long as needed and for at least 12 months."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8 lid 6, 8, 9 en 10",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Apply the listed enhanced measures to business linked to high-risk third countries",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 9 lid 1, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=9",
+     "payload": {
+      "key": "obl-nl-wwft-high-risk-third-countries",
+      "titles": {
+       "en": "Apply the listed enhanced measures to business linked to high-risk third countries"
+      },
+      "summaries": {
+       "en": "For transactions, business relationships and correspondent banking relationships related to states the European Commission has designated as higher risk, an institution must collect additional information on the customers and beneficial owners, on the purpose and nature of the relationship, on the origin of the funds and the source of wealth, and on the background and reasons for the transactions. It must obtain senior management approval to enter or continue the relationship and monitor it more closely, with more frequent checks and data updates and the selection of transaction patterns for further examination."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 9 lid 1",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report discrepancies in beneficial ownership data to the Chamber of Commerce",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 10c lid 1, 3 en 5, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=10c",
+     "payload": {
+      "key": "obl-nl-wwft-ubo-discrepancy-report",
+      "titles": {
+       "en": "Report discrepancies in beneficial ownership data to the Chamber of Commerce"
+      },
+      "summaries": {
+       "en": "An institution must report to the Chamber of Commerce every discrepancy it finds between data on an ultimate beneficial owner that it obtained from the trade register or the trust register and the information on that person it holds from other sources, giving the data it holds. The duty does not apply where it reports an unusual transaction to the Financial Intelligence Unit under art. 16."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10c lid 1, 3 en 5",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report unusual transactions to the Financial Intelligence Unit without delay",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 16 lid 1, 2 en 4, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=16",
+     "payload": {
+      "key": "obl-nl-wwft-report-unusual-transactions",
+      "titles": {
+       "en": "Report unusual transactions to the Financial Intelligence Unit without delay"
+      },
+      "summaries": {
+       "en": "An institution must report a completed or intended unusual transaction to the Financial Intelligence Unit without delay after its unusual nature has become known, with the identity of the customer and the beneficial owners, the identity document details, the nature, time and place of the transaction, the amount, origin and destination of the funds or other values, and the circumstances that make it unusual. The duty also applies where due diligence does not lead to the required result or a relationship is ended for that reason and there are indications that the customer is involved in money laundering or terrorist financing."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 16 lid 1, 2 en 4",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the Financial Intelligence Unit the further information it asks for without delay",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 17 lid 1 en 2, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=17",
+     "payload": {
+      "key": "obl-nl-wwft-answer-fiu-requests",
+      "titles": {
+       "en": "Give the Financial Intelligence Unit the further information it asks for without delay"
+      },
+      "summaries": {
+       "en": "An institution that the Financial Intelligence Unit asks for data or information, because it made a report or because the Unit considers that it holds data relevant to analysing a transaction or a business relationship, must provide it without delay in writing, and orally in urgent cases."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 17 lid 1 en 2",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give staff an independent channel to report breaches of the act anonymously",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 20a lid 1, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=20a",
+     "payload": {
+      "key": "obl-nl-wwft-internal-reporting-channel",
+      "titles": {
+       "en": "Give staff an independent channel to report breaches of the act anonymously"
+      },
+      "summaries": {
+       "en": "An institution must have adequate arrangements, fitting its nature and size, that let its employees and persons in a comparable position report a breach of the act internally and anonymously through a specific, independent channel."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 20a lid 1",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep reports to the Financial Intelligence Unit secret from the customer and everyone else",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 23 lid 1, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=23",
+     "payload": {
+      "key": "obl-nl-wwft-no-tipping-off",
+      "titles": {
+       "en": "Keep reports to the Financial Intelligence Unit secret from the customer and everyone else"
+      },
+      "summaries": {
+       "en": "An institution and the persons working for it must keep secret from everyone that a report has been made under art. 16, that further information has been given under art. 17, that a report or disclosure has led or may lead to an investigation into money laundering or terrorist financing, and any consultation on whether a transaction must be reported, except where the act requires disclosure. The article allows the communications it lists, among them within a group and between institutions of the same category about a shared customer and transaction."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 23 lid 1",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep due diligence records retrievable for five years after the relationship ends or the transaction is carried out",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 33 lid 1 tot en met 3, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=33",
+     "payload": {
+      "key": "obl-nl-wwft-records-five-years",
+      "titles": {
+       "en": "Keep due diligence records retrievable for five years after the relationship ends or the transaction is carried out"
+      },
+      "summaries": {
+       "en": "An institution must record in a retrievable way the documents and data it used for customer due diligence, including the name, date of birth, address and identity document details of natural persons, the identity and verification data of beneficial owners, and the legal form, names, address and registration number of companies. It must keep them accessible for five years after the business relationship ends or after the transaction is carried out."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 33 lid 1 tot en met 3",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Have systems that answer the Financial Intelligence Unit and the supervisor fully and without delay through secure channels",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 33 lid 4 en 5, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=33",
+     "payload": {
+      "key": "obl-nl-wwft-fiu-response-systems",
+      "titles": {
+       "en": "Have systems that answer the Financial Intelligence Unit and the supervisor fully and without delay through secure channels"
+      },
+      "summaries": {
+       "en": "An institution must have systems that let it respond without delay and in full to questions from the Financial Intelligence Unit and the supervisory authority, including whether it has or had a business relationship with a given customer in the five years before the request and what the nature of that relationship is. The systems must provide secure channels that keep the requests confidential."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 33 lid 4 en 5",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep the data of every reported unusual transaction for five years",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 34, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=34",
+     "payload": {
+      "key": "obl-nl-wwft-report-records-five-years",
+      "titles": {
+       "en": "Keep the data of every reported unusual transaction for five years"
+      },
+      "summaries": {
+       "en": "An institution that has reported an unusual transaction must record in a retrievable way all the data needed to reconstruct the transaction, a copy of the report with the information given, and the Financial Intelligence Unit's acknowledgement of receipt. It must keep these accessible for five years after the report was made or the acknowledgement was received."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 34",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Screen and train employees and day-to-day policymakers",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0024282/2026-07-01_0/xml/BWBR0024282_2026-07-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet ter voorkoming van witwassen en financieren van terrorisme, BWBR0024282, art. 35, text in force from 2026-07-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0024282&artikel=35",
+     "payload": {
+      "key": "obl-nl-wwft-staff-screening-and-training",
+      "titles": {
+       "en": "Screen and train employees and day-to-day policymakers"
+      },
+      "summaries": {
+       "en": "An institution must ensure that its employees and, as far as relevant to their tasks and in view of its risks, nature and size, its day-to-day policymakers are screened, know the provisions of the act and receive periodic training that enables them to recognise an unusual transaction and to carry out customer due diligence properly and completely."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 35",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanctiewet 1977, the Dutch framework act for carrying out international sanctions",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003296/2025-03-01_0/xml/BWBR0003296_2025-03-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Sanctiewet 1977, BWBR0003296, first published in Stb. 1980, 93; consolidated text in force from 2025-03-01, read in its XML file; entry into force on 1980-04-21 read in the same file, in the title's source data (which name Stb. 1980, 170)",
+   "payload": {
+    "key": "nl-bwbr0003296",
+    "titles": {
+     "nl": "Wet van 15 februari 1980, tot het treffen van sancties tegen bepaalde staten of gebieden",
+     "en": "Sanctions Act 1977"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Sanctiewet 1977",
+    "officialRef": "Sanctiewet 1977 (Stb. 1980, 93)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:aml",
+    "inForceFrom": "1980-04-21"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Wtt 2018, the Dutch act on the supervision of trust offices (Wet toezicht trustkantoren 2018)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, first published in Stb. 2018, 443; consolidated text in force from 2025-03-01, read in its XML file; entry into force on 2019-01-01 read in the royal decree in Stb. 2018, 464 (Officiële bekendmakingen)",
+   "fieldSources": {
+    "inForceFrom": "https://zoek.officielebekendmakingen.nl/stb-2018-464.html"
+   },
+   "payload": {
+    "key": "nl-bwbr0041583",
+    "titles": {
+     "nl": "Wet van 7 november 2018, houdende regels met betrekking tot het verlenen van trustdiensten en het toezicht daarop (Wet toezicht trustkantoren 2018)",
+     "en": "Trust Offices Supervision Act 2018"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Wtt 2018",
+    "officialRef": "Wet toezicht trustkantoren 2018 (Stb. 2018, 443)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:aml",
+    "inForceFrom": "2019-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide trust services only with a licence from De Nederlandsche Bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 3 lid 1 tot en met 3, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=3",
+     "payload": {
+      "key": "obl-nl-wtt-licence",
+      "titles": {
+       "en": "Provide trust services only with a licence from De Nederlandsche Bank"
+      },
+      "summaries": {
+       "en": "Nobody with a seat in the Netherlands may provide trust services as a profession or business without a licence from De Nederlandsche Bank, and nobody with a seat in another member state may provide them to the Netherlands or from a Dutch branch without one, unless it holds a comparable licence under adequate supervision and has no branch in the Netherlands. A party with a seat outside the member states may not provide trust services to the Netherlands or from a Dutch branch at all."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 3 lid 1 tot en met 3",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Have at least two natural persons determine day-to-day policy from the Netherlands",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 11, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=11",
+     "payload": {
+      "key": "obl-nl-wtt-two-day-to-day-policymakers",
+      "titles": {
+       "en": "Have at least two natural persons determine day-to-day policy from the Netherlands"
+      },
+      "summaries": {
+       "en": "The day-to-day policy of a trust office with its seat in the Netherlands must be determined by at least two natural persons, who carry out that work from the Netherlands. De Nederlandsche Bank may grant an exemption where the applicant shows that the rule cannot reasonably be met and the interests it protects are safeguarded."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 11",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Run the trust office with sound and controlled operations and a periodic integrity risk analysis",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 14 lid 1 tot en met 3, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=14",
+     "payload": {
+      "key": "obl-nl-wtt-sound-and-controlled-operations",
+      "titles": {
+       "en": "Run the trust office with sound and controlled operations and a periodic integrity risk analysis"
+      },
+      "summaries": {
+       "en": "A trust office with its seat in the Netherlands must pursue an adequate policy and organise its operations so that the business is carried on soundly and in a controlled way, in line with the act's rules on client due diligence and record keeping. It must periodically analyse the risks to the integrity of its operations and have procedures, processes and measures that mitigate the risks it identifies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 14 lid 1 tot en met 3",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep an independent compliance function and an independently performed audit function",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 15 lid 1 en 2, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=15",
+     "payload": {
+      "key": "obl-nl-wtt-compliance-and-audit-function",
+      "titles": {
+       "en": "Keep an independent compliance function and an independently performed audit function"
+      },
+      "summaries": {
+       "en": "A trust office with its seat in the Netherlands must have an independent and effective compliance function that checks its compliance with the law and with its own internal rules. It must ensure that an audit function is performed independently, which checks compliance with the act, the anti-money laundering act and the Sanctions Act 1977 and the work of the compliance function."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 15 lid 1 en 2",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give no tax advice and serve no client that carries out tax advice from the trust office's own group",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 17, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=17",
+     "payload": {
+      "key": "obl-nl-wtt-no-tax-advice",
+      "titles": {
+       "en": "Give no tax advice and serve no client that carries out tax advice from the trust office's own group"
+      },
+      "summaries": {
+       "en": "A trust office with its seat in the Netherlands may not give tax advice, and may not provide trust services to a client that give effect to tax advice the client received from a person or company belonging to the same group as the trust office."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 17",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report on the trust office's operations to De Nederlandsche Bank every year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 18 lid 1, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=18",
+     "payload": {
+      "key": "obl-nl-wtt-annual-report-to-dnb",
+      "titles": {
+       "en": "Report on the trust office's operations to De Nederlandsche Bank every year"
+      },
+      "summaries": {
+       "en": "A trust office with its seat in the Netherlands must give De Nederlandsche Bank a report on its operations every year, or more often where supervision of compliance with the act requires it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 18 lid 1",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell De Nederlandsche Bank about incidents without delay, act on them and record them",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 20 lid 1 tot en met 4, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=20",
+     "payload": {
+      "key": "obl-nl-wtt-incidents",
+      "titles": {
+       "en": "Tell De Nederlandsche Bank about incidents without delay, act on them and record them"
+      },
+      "summaries": {
+       "en": "A trust office with its seat in the Netherlands must inform De Nederlandsche Bank without delay of an incident, meaning conduct or an event that seriously endangers the integrity of its business. It must take appropriate measures to control the risks that arose and prevent a repeat, and must keep an administrative record of incidents and of the measures taken."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 20 lid 1 tot en met 4",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Enter no relationship and provide no trust service before client due diligence is complete",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 23 lid 1 en 3, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=23",
+     "payload": {
+      "key": "obl-nl-wtt-due-diligence-before-service",
+      "titles": {
+       "en": "Enter no relationship and provide no trust service before client due diligence is complete"
+      },
+      "summaries": {
+       "en": "A trust office may not enter a business relationship or provide a trust service unless it, or an introducing institution, has carried out the client due diligence the act prescribes with the required result and beyond reasonable doubt as to its accuracy and completeness, and the data used have been recorded and are held by the trust office. If it cannot meet the due diligence rules for a business relationship, it must end that relationship."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 23 lid 1 en 3",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Provide no trust service where a client, object company or beneficial owner is based in Russia, Belarus or a listed high-risk or non-cooperative state",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 23a lid 1 tot en met 4, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=23a",
+     "payload": {
+      "key": "obl-nl-wtt-no-service-for-listed-countries",
+      "titles": {
+       "en": "Provide no trust service where a client, object company or beneficial owner is based in Russia, Belarus or a listed high-risk or non-cooperative state"
+      },
+      "summaries": {
+       "en": "A trust office may not provide a trust service where clients, object companies or their ultimate beneficial owners live or are established in the Russian Federation, the Republic of Belarus, a state the European Commission has designated as higher risk for money laundering or terrorist financing, or a state on the EU list of non-cooperative tax jurisdictions. The ban does not apply to a natural person who is a national or holds a residence permit of an EU or EEA state or Switzerland, nor while the person or entity is one designated under the Sanctions Act 1977. When a country is added to one of the lists, the trust office must comply within three months."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 23a lid 1 tot en met 4",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Record the client due diligence data, keep them current and store them for five years",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 37, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=37",
+     "payload": {
+      "key": "obl-nl-wtt-records-five-years",
+      "titles": {
+       "en": "Record the client due diligence data, keep them current and store them for five years"
+      },
+      "summaries": {
+       "en": "A trust office must record the data it used for client due diligence and, in a retrievable way, the identification data listed in art. 33 of the anti-money laundering act, and must take reasonable measures to keep them up to date. It must keep the data accessible for five years after the business relationship ends or after the trust service was provided."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 37",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Train everyone who works for the trust office and record a training programme every calendar year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041583/2025-03-01_0/xml/BWBR0041583_2025-03-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet toezicht trustkantoren 2018, BWBR0041583, art. 67, text in force from 2025-03-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041583&artikel=67",
+     "payload": {
+      "key": "obl-nl-wtt-training-programme",
+      "titles": {
+       "en": "Train everyone who works for the trust office and record a training programme every calendar year"
+      },
+      "summaries": {
+       "en": "A trust office must ensure that all persons who work for it, as far as relevant to their tasks and in view of its risks, nature and size, know the rules of the act and receive periodic training that enables them to carry out its obligations in full. It must draw up and record a training programme for them every calendar year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 67",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add BW Boek 7, Book 7 of the Dutch Civil Code, for its consumer credit and payment transaction rules (Burgerlijk Wetboek Boek 7)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, first published in Stb. 1991, 600; consolidated text in force from 2026-10-08, read in its XML file; entry into force on 1992-01-01 read in the same file, in the title's source data (which name the same Staatsblad)",
+   "payload": {
+    "key": "nl-bwbr0005290",
+    "titles": {
+     "nl": "Burgerlijk Wetboek Boek 7, Bijzondere overeenkomsten",
+     "en": "Civil Code, Book 7: Special contracts"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "BW Boek 7",
+    "officialRef": "Burgerlijk Wetboek Boek 7 (Stb. 1991, 600)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "1992-01-01",
+    "implementsNote": "CCD, Directive 2008/48/EC (the heading of Title 2a, section 1, says its provisions carry out that directive)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the consumer the standard pre-contract credit information in good time",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:60 lid 1 en 3, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=60",
+     "payload": {
+      "key": "obl-nl-bw7-credit-pre-contract-information",
+      "titles": {
+       "en": "Give the consumer the standard pre-contract credit information in good time"
+      },
+      "summaries": {
+       "en": "A creditor or, where one is involved, the credit intermediary must give the consumer, in good time before the consumer is bound by a credit agreement or an offer, the pre-contractual information that Articles 5 and 6 of the Consumer Credit Directive 2008/48/EC prescribe, in the manner those articles prescribe. A creditor or intermediary that does not do so commits an unfair commercial practice."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:60 lid 1 en 3",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:onboarding"
+      ],
+      "effectiveFrom": "2011-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Put the consumer credit agreement on a durable medium with the required contents and give the consumer a copy",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:61 lid 1 en 2, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=61",
+     "payload": {
+      "key": "obl-nl-bw7-credit-agreement-form-and-content",
+      "titles": {
+       "en": "Put the consumer credit agreement on a durable medium with the required contents and give the consumer a copy"
+      },
+      "summaries": {
+       "en": "A consumer credit agreement must be entered into on paper or another durable medium, and the creditor must give the consumer a copy and keep one itself. The agreement must state clearly and concisely the items the article lists, among them the type and total amount of credit, its duration, the borrowing rate and the conditions for changing it, the annual percentage rate of charge and the total amount payable, the amount and number of payments, the consequences of default, the right of withdrawal, the right of early repayment and the out-of-court complaint procedures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:61 lid 1 en 2",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2011-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Honour the consumer's fourteen-day right to withdraw from a credit agreement",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:66 lid 1, 3 en 4, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=66",
+     "payload": {
+      "key": "obl-nl-bw7-credit-withdrawal-right",
+      "titles": {
+       "en": "Honour the consumer's fourteen-day right to withdraw from a credit agreement"
+      },
+      "summaries": {
+       "en": "A consumer may withdraw from a credit agreement without giving reasons within fourteen calendar days after the agreement is concluded or, if later, after receiving the contract terms and information. The creditor may then claim only the capital with the interest accrued at the agreed borrowing rate until repayment, which is due within 30 calendar days of the notice, and non-refundable charges it paid to a public body. The right does not apply to securities credit."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:66 lid 1, 3 en 4",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2011-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Accept early repayment of consumer credit at any time and cap the compensation charged for it",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:68, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=68",
+     "payload": {
+      "key": "obl-nl-bw7-credit-early-repayment",
+      "titles": {
+       "en": "Accept early repayment of consumer credit at any time and cap the compensation charged for it"
+      },
+      "summaries": {
+       "en": "A consumer may repay a credit agreement in full or in part at any time and is then entitled to a reduction of the total cost of credit for the remaining term. The creditor may charge fair and objectively justified compensation only for a repayment within a fixed borrowing rate period, of at most 1 per cent of the amount repaid early, or 0.5 per cent where one year or less remains, and never more than the interest for the remaining term; above 75,000 euros it may charge more if it shows a greater loss. No compensation is due where an insurance policy meant to guarantee repayment pays, or on an authorised overdraft."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:68",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2011-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Keep home loan advertising fair and clear and include the standard information whenever a rate or cost is shown",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:120, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=120",
+     "payload": {
+      "key": "obl-nl-bw7-mortgage-advertising",
+      "titles": {
+       "en": "Keep home loan advertising fair and clear and include the standard information whenever a rate or cost is shown"
+      },
+      "summaries": {
+       "en": "Advertising for credit secured on residential property must be fair, clear and not misleading and may not raise false expectations about the availability or the cost of credit. Advertising that states an interest rate or any figure on the cost of credit must contain the standard information of the Mortgage Credit Directive 2014/17/EU, clearly legible or audible, explained with a representative example and with a concise and proportionate warning of the specific risks. A creditor that does not comply commits an unfair commercial practice."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:120",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2016-07-14"
+     }
+    },
+    {
+     "title": "Add the duty: Give a home loan applicant the personalised standard information sheet and a binding offer that stays open fourteen days",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:122 lid 1, 2, 3 en 5, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=122",
+     "payload": {
+      "key": "obl-nl-bw7-mortgage-pre-contract-information",
+      "titles": {
+       "en": "Give a home loan applicant the personalised standard information sheet and a binding offer that stays open fourteen days"
+      },
+      "summaries": {
+       "en": "For credit secured on residential property, the creditor or the credit intermediary must give the consumer, without delay after receiving the consumer's details and well before the consumer is bound, personalised information for comparing the credit products on the market, on paper or another durable medium in the model set by the conduct of business decree under the financial supervision act. A binding offer is made in the same way with that model, and the agreement cannot come into being until the consumer has received a copy of the draft agreement with the binding offer and been told that the offer binds the creditor for fourteen days."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:122 lid 1, 2, 3 en 5",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:onboarding"
+      ],
+      "effectiveFrom": "2016-07-14"
+     }
+    },
+    {
+     "title": "Add the duty: Tell a home borrower of a change in the borrowing rate before it takes effect",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:128, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=128",
+     "payload": {
+      "key": "obl-nl-bw7-mortgage-rate-change-notice",
+      "titles": {
+       "en": "Tell a home borrower of a change in the borrowing rate before it takes effect"
+      },
+      "summaries": {
+       "en": "The creditor must inform the consumer on paper or another durable medium of a change in the borrowing rate before it takes effect, stating at least the amount of the payments due under the new rate and any change in their number or frequency. The parties may agree on periodic information instead where the change follows a reference rate that is made public and is available at the creditor's premises, and where the rate is set by auction on the capital markets the creditor informs the consumer of the procedure and its possible effect in good time before the auction."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:128",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:ongoing"
+      ],
+      "effectiveFrom": "2016-07-14"
+     }
+    },
+    {
+     "title": "Add the duty: Invite a home borrower in arrears to talk and wait two months before announcing enforcement",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:128a, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=128a",
+     "payload": {
+      "key": "obl-nl-bw7-mortgage-arrears-contact-before-enforcement",
+      "titles": {
+       "en": "Invite a home borrower in arrears to talk and wait two months before announcing enforcement"
+      },
+      "summaries": {
+       "en": "Where a consumer is in default under a credit agreement secured on residential property, the creditor may not give notice of enforced sale until at least two months have passed since the claim fell due and it has personally invited the consumer to discuss the arrears, unless this cannot reasonably be asked of it. The compensation the consumer owes for the default, apart from statutory interest, may not exceed what is needed to make good the creditor's loss."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:128a",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2016-07-14"
+     }
+    },
+    {
+     "title": "Add the duty: Propose changes to a payment framework contract at least two months before they take effect",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:517 lid 1 en 2, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=517",
+     "payload": {
+      "key": "obl-nl-bw7-framework-contract-changes",
+      "titles": {
+       "en": "Propose changes to a payment framework contract at least two months before they take effect"
+      },
+      "summaries": {
+       "en": "A payment service provider must propose every change to the framework contract and to the prescribed information and conditions at least two months before its intended start date, on paper or another durable medium, in clear and easily understandable words, and the user may accept or reject it before that date. Where deemed acceptance has been agreed, the provider must tell the user that silence counts as acceptance and that a user who rejects the change may end the contract free of charge at any time before the change takes effect. Where the user is not a consumer, the parties may agree otherwise (art. 7:550)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:517 lid 1 en 2",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a payment instrument's security credentials from others and block the instrument once loss is reported",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:525 lid 1, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=525",
+     "payload": {
+      "key": "obl-nl-bw7-payment-instrument-safeguards",
+      "titles": {
+       "en": "Keep a payment instrument's security credentials from others and block the instrument once loss is reported"
+      },
+      "summaries": {
+       "en": "A payment service provider that issues a payment instrument must ensure that its personalised security credentials are not accessible to anyone but the entitled user, must not send an instrument unrequested except as a replacement, and must make sure that appropriate means are available at all times for the user to report loss, theft or misuse free of charge or to ask for unblocking. It must prevent any use of the instrument once the report is made and, on request, give the user the means to prove the report for eighteen months afterwards."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:525 lid 1",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Refund an unauthorised payment transaction by the end of the next working day",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:528 lid 1 tot en met 3, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=528",
+     "payload": {
+      "key": "obl-nl-bw7-unauthorised-payment-refund",
+      "titles": {
+       "en": "Refund an unauthorised payment transaction by the end of the next working day"
+      },
+      "summaries": {
+       "en": "The payer's payment service provider must refund the amount of an unauthorised payment transaction to the payer immediately, and in any case by the end of the working day after it noticed or was told of the transaction, and must restore the debited account to the state it would have been in, with a credit value date no later than the date of the debit. This does not apply where the provider has reasonable grounds to suspect fraud and reports those grounds in writing to the Authority for the Financial Markets."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:528 lid 1 tot en met 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Answer a request to refund a payee-initiated payment within ten working days",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:531, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=531",
+     "payload": {
+      "key": "obl-nl-bw7-direct-debit-refund-request",
+      "titles": {
+       "en": "Answer a request to refund a payee-initiated payment within ten working days"
+      },
+      "summaries": {
+       "en": "A payer may ask for the refund provided for in art. 7:530 of an authorised payment initiated by or through the payee for eight weeks after the funds were debited. Within ten working days of the request the payment service provider must either refund the full amount of the transaction or refuse, giving its reasons and naming the dispute resolution body the payer can turn to. Where the payer is not a consumer, the parties may agree that the article does not apply (art. 7:550)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:531",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Credit the payee's payment service provider by the end of the next working day",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:537 lid 1 en 2, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=537",
+     "payload": {
+      "key": "obl-nl-bw7-payment-execution-time",
+      "titles": {
+       "en": "Credit the payee's payment service provider by the end of the next working day"
+      },
+      "summaries": {
+       "en": "The payer's payment service provider must ensure that the account of the payee's provider is credited with the amount of the payment transaction by the end of the working day after the payment order is received; for orders initiated on paper the period may be one working day longer. The payee's provider must value date the amount and make it available on the payee's account as soon as it has received the funds. The rule covers payments in euro and the other transactions listed in art. 7:536, and for other transactions unless agreed otherwise."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:537 lid 1 en 2",
+      "dutyType": "conduct",
+      "terms": [],
+      "effectiveFrom": "2009-11-01"
+     }
+    },
+    {
+     "title": "Add the duty: Value date a credit no later than the working day of receipt and a debit no earlier than the debit itself",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005290/2026-10-08_0/xml/BWBR0005290_2026-10-08_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 7, BWBR0005290, art. 7:541, text in force from 2026-10-08; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005290&artikel=541",
+     "payload": {
+      "key": "obl-nl-bw7-value-date-and-availability",
+      "titles": {
+       "en": "Value date a credit no later than the working day of receipt and a debit no earlier than the debit itself"
+      },
+      "summaries": {
+       "en": "The credit value date for the payee's payment account may be no later than the working day on which the amount of the transaction is credited to the account of the payee's payment service provider, which must put the amount at the payee's disposal as soon as it is credited where there is no currency conversion on its side or only one between the euro and a member state currency or between two member state currencies. The debit value date for the payer's account may be no earlier than the moment the amount is debited from that account. Under art. 7:536 the article cannot be departed from."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7:541",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add BW Boek 6, Book 6 of the Dutch Civil Code, for its rules on financial contracts concluded at a distance and on unfair commercial practices (Burgerlijk Wetboek Boek 6)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, first published in Stb. 1991, 600; consolidated text in force from 2026-07-16, read in its XML file; entry into force on 1992-01-01 read in the same file, in the title's source data (which name the same Staatsblad)",
+   "payload": {
+    "key": "nl-bwbr0005289",
+    "titles": {
+     "nl": "Burgerlijk Wetboek Boek 6, Verbintenissenrecht",
+     "en": "Civil Code, Book 6: The law of obligations"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "BW Boek 6",
+    "officialRef": "Burgerlijk Wetboek Boek 6 (Stb. 1991, 600)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "1992-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use no unfair commercial practices towards consumers",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, art. 6:193b lid 1 tot en met 3, text in force from 2026-07-16; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005289&artikel=193b",
+     "payload": {
+      "key": "obl-nl-bw6-unfair-commercial-practices",
+      "titles": {
+       "en": "Use no unfair commercial practices towards consumers"
+      },
+      "summaries": {
+       "en": "A trader acts unlawfully towards a consumer if it uses an unfair commercial practice: one that is contrary to the requirements of professional diligence and that appreciably impairs, or can impair, the average consumer's ability to take an informed decision, so that the consumer takes or may take a decision on a contract that would not otherwise have been taken. Misleading practices under art. 6:193c to 6:193g and aggressive practices under art. 6:193h and 6:193i are unfair in particular."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 6:193b lid 1 tot en met 3",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2008-10-15"
+     }
+    },
+    {
+     "title": "Add the duty: Design and provide online sales services to consumers in line with the accessibility requirements",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, art. 6:230fb en 6:230fc, text in force from 2026-07-16; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005289&artikel=230fb",
+     "payload": {
+      "key": "obl-nl-bw6-accessible-online-sales-services",
+      "titles": {
+       "en": "Design and provide online sales services to consumers in line with the accessibility requirements"
+      },
+      "summaries": {
+       "en": "A service provider that provides e-commerce services to a consumer, meaning services provided at a distance through websites and mobile device-based services at the consumer's individual request with a view to concluding a contract, must design and provide them in line with the accessibility requirements of Directive (EU) 2019/882. It must draw up and keep the information on how the services meet the requirements, make information available to the public in a way that is accessible to persons with disabilities, apply procedures that keep the service compliant and take corrective measures at once where it is not. The duty does not apply to undertakings with fewer than 10 employees and an annual turnover or balance sheet total of at most 2 million euros, nor as far as compliance would fundamentally alter the service or impose a disproportionate burden."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 6:230fb en 6:230fc",
+      "dutyType": "technical",
+      "terms": [
+       "client_category:retail",
+       "channel:digital"
+      ],
+      "effectiveFrom": "2025-06-28"
+     }
+    },
+    {
+     "title": "Add the duty: Put a clearly visible withdrawal function on the online interface and confirm each withdrawal at once",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, art. 6:230oa, text in force from 2026-07-16; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005289&artikel=230oa",
+     "payload": {
+      "key": "obl-nl-bw6-online-withdrawal-function",
+      "titles": {
+       "en": "Put a clearly visible withdrawal function on the online interface and confirm each withdrawal at once"
+      },
+      "summaries": {
+       "en": "For a distance contract concluded through an online interface, including one on a financial product or service, the trader must ensure that the consumer can withdraw by submitting a withdrawal statement through a clearly visible and easily accessible function on that interface, labelled in unambiguous words and available throughout the withdrawal period. The function lets the consumer give or confirm their name, the details identifying the contract and the electronic means for the confirmation, and submit the statement through a confirmation function. The trader must confirm receipt without delay on a durable medium, with the content of the statement and the date and time it was submitted."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 6:230oa",
+      "dutyType": "technical",
+      "terms": [
+       "client_category:retail",
+       "channel:digital"
+      ],
+      "effectiveFrom": "2026-06-25"
+     }
+    },
+    {
+     "title": "Add the duty: Let a consumer withdraw from a financial contract concluded at a distance or off premises within fourteen or thirty days",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, art. 6:230x lid 1, 2, 4 en 7, text in force from 2026-07-16; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005289&artikel=230x",
+     "payload": {
+      "key": "obl-nl-bw6-distance-withdrawal-right",
+      "titles": {
+       "en": "Let a consumer withdraw from a financial contract concluded at a distance or off premises within fourteen or thirty days"
+      },
+      "summaries": {
+       "en": "A consumer may withdraw from a distance or off-premises contract on a financial product or service, without penalty and without giving reasons, within fourteen calendar days from the day the contract was concluded or, if later, the day the consumer received the information the financial undertaking must give under the financial supervision act. The period is thirty calendar days for life insurance of more than six months, funeral insurance in kind and tax-favoured pension products outside the pension acts, and it ends in any case twelve months and fourteen days after conclusion if the information was not received, unless the consumer was not told of the right. The right does not apply, among others, to products whose value depends on market movements during the period, insurance of less than a month, and contracts fully performed at the consumer's express request before withdrawal."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 6:230x lid 1, 2, 4 en 7",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Charge only for what was actually supplied before withdrawal and repay the rest within thirty days",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, art. 6:230y, text in force from 2026-07-16; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005289&artikel=230y",
+     "payload": {
+      "key": "obl-nl-bw6-distance-withdrawal-settlement",
+      "titles": {
+       "en": "Charge only for what was actually supplied before withdrawal and repay the rest within thirty days"
+      },
+      "summaries": {
+       "en": "Where a consumer withdraws under art. 6:230x, the financial undertaking may ask only for payment for the financial product or service actually supplied, in proportion to the full performance of the contract and never so high that it amounts to a penalty. It may ask for that payment only if it can show that the consumer was informed of it beforehand and that it started performance before the end of the withdrawal period at the consumer's express request. It must repay everything else it received from the consumer as soon as possible and within thirty calendar days of receiving the notice of withdrawal."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 6:230y",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not canvass for money loans by personal visit or at group sales events",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0005289/2026-07-16_0/xml/BWBR0005289_2026-07-16_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Burgerlijk Wetboek Boek 6, BWBR0005289, art. 6:230z lid 1, 2 en 4, text in force from 2026-07-16; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0005289&artikel=230z",
+     "payload": {
+      "key": "obl-nl-bw6-no-doorstep-credit-canvassing",
+      "titles": {
+       "en": "Do not canvass for money loans by personal visit or at group sales events"
+      },
+      "summaries": {
+       "en": "A creditor or credit intermediary may not try, by a personal visit or by promoting a money loan, a good or a service to a group of persons gathered for that purpose, to move another person to take part in a money loan as borrower, or have others do so. A visit that mainly results from the initiative of the person visited is not a personal visit for this purpose. A contract concluded in breach of the ban can be annulled by the consumer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 6:230z lid 1, 2 en 4",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "2014-06-13"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add WCK, the Dutch Consumer Credit Act, of which the ban on paid debt mediation remains (Wet op het consumentenkrediet)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0004815/2019-01-01_0/xml/BWBR0004815_2019-01-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het consumentenkrediet, BWBR0004815, first published in Stb. 1990, 395; consolidated text in force from 2019-01-01, read in its XML file; entry into force on 1990-11-01 read in the same file, in the title's source data (which name Stb. 1990, 530)",
+   "payload": {
+    "key": "nl-bwbr0004815",
+    "titles": {
+     "nl": "Wet van 4 juli 1990, houdende regels met betrekkking tot het consumentenkrediet",
+     "en": "Consumer Credit Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "WCK",
+    "officialRef": "Wet op het consumentenkrediet (Stb. 1990, 395)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "1990-11-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not mediate a natural person's credit debts for payment unless the act exempts it",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0004815/2019-01-01_0/xml/BWBR0004815_2019-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op het consumentenkrediet, BWBR0004815, art. 47 en 48 lid 1, text in force from 2019-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0004815&artikel=47",
+     "payload": {
+      "key": "obl-nl-wck-no-paid-debt-mediation",
+      "titles": {
+       "en": "Do not mediate a natural person's credit debts for payment unless the act exempts it"
+      },
+      "summaries": {
+       "en": "Debt mediation is forbidden: providing services in the course of a business or profession, other than by entering into a credit transaction, that aim at a settlement of a natural person's existing debts arising wholly or partly from credit transactions. The ban does not apply to mediation free of charge, by municipalities, municipal credit banks and institutions working for municipalities, by lawyers, court-appointed trustees and administrators, notaries, bailiffs and accountants, or by persons a decree designates."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 47 en 48 lid 1",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ],
+      "effectiveFrom": "1992-01-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add UAVG, the Dutch act carrying out the General Data Protection Regulation (Uitvoeringswet Algemene verordening gegevensbescherming)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, first published in Stb. 2018, 144; consolidated text in force from 2026-09-01, read in its XML file; entry into force on 2018-05-25 read in the royal decree in Stb. 2018, 145 (Officiële bekendmakingen)",
+   "fieldSources": {
+    "inForceFrom": "https://zoek.officielebekendmakingen.nl/stb-2018-145.html"
+   },
+   "payload": {
+    "key": "nl-bwbr0040940",
+    "titles": {
+     "nl": "Wet van 16 mei 2018, houdende regels ter uitvoering van Verordening (EU) 2016/679 van het Europees Parlement en de Raad van 27 april 2016 betreffende de bescherming van natuurlijke personen in verband met de verwerking van persoonsgegevens en betreffende het vrije verkeer van die gegevens en tot intrekking van Richtlijn 95/46/EG (algemene verordening gegevensbescherming) (PbEU 2016, L 119) (Uitvoeringswet Algemene verordening gegevensbescherming)",
+     "en": "General Data Protection Regulation Implementation Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "UAVG",
+    "officialRef": "Uitvoeringswet Algemene verordening gegevensbescherming (Stb. 2018, 144)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2018-05-25",
+    "implementsNote": "Carries out the GDPR, Regulation (EU) 2016/679, as the act's title states"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Obtain the legal representative's consent for a data subject under sixteen or under guardianship",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 5 lid 1 tot en met 3, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=5",
+     "payload": {
+      "key": "obl-nl-uavg-consent-of-legal-representative",
+      "titles": {
+       "en": "Obtain the legal representative's consent for a data subject under sixteen or under guardianship"
+      },
+      "summaries": {
+       "en": "Where processing rests on consent and Article 8 of the GDPR does not apply, the consent of the legal representative is required in place of that of a data subject who is under sixteen. The same holds for a data subject placed under guardianship, administration or mentorship, as far as the matter is one the person is not competent to decide. Consent can be withdrawn at any time by the legal representative and by a data subject who has reached the age of twelve."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 5 lid 1 tot en met 3",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Process special categories of personal data only under an exception",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 22, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=22",
+     "payload": {
+      "key": "obl-nl-uavg-special-category-data",
+      "titles": {
+       "en": "Process special categories of personal data only under an exception"
+      },
+      "summaries": {
+       "en": "Processing personal data that reveal race or ethnic origin, political opinions, religious or philosophical beliefs or trade union membership, and processing genetic data, biometric data for unique identification, health data or data on a person's sex life or sexual orientation, is forbidden. The ban lifts, among other cases, where the data subject has given explicit consent for specified purposes, to protect vital interests, for data the data subject has manifestly made public, for legal claims, and under the further national exceptions of art. 23 to 30."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 22",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Use biometric identification only where authentication or security makes it necessary",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 29, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=29",
+     "payload": {
+      "key": "obl-nl-uavg-biometric-data",
+      "titles": {
+       "en": "Use biometric identification only where authentication or security makes it necessary"
+      },
+      "summaries": {
+       "en": "Biometric data may be processed to identify a person uniquely only if the processing is necessary for authentication or security purposes, and only as far as a substantial public interest in lawful access to certain places, buildings, services, products, information systems or work process systems makes it necessary."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 29",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Process personal data on criminal matters only on the grounds the act lists",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 31 tot en met 33, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=31",
+     "payload": {
+      "key": "obl-nl-uavg-criminal-data",
+      "titles": {
+       "en": "Process personal data on criminal matters only on the grounds the act lists"
+      },
+      "summaries": {
+       "en": "Personal data on criminal convictions and offences may be processed only as far as art. 32 and 33 allow, among other grounds with explicit consent, for legal claims, and by a controller for its own purposes to assess a request by the data subject for a decision or a service or to protect its interests against offences committed or expected against it or its staff. Such data about the controller's own staff may be processed only under rules adopted through the procedure of the works councils act."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 31 tot en met 33",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Have the data protection officer keep complaints and requests confidential",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 39, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=39",
+     "payload": {
+      "key": "obl-nl-uavg-data-protection-officer-secrecy",
+      "titles": {
+       "en": "Have the data protection officer keep complaints and requests confidential"
+      },
+      "summaries": {
+       "en": "The data protection officer must keep secret what has come to the officer's knowledge through a complaint or a request from a data subject, unless the data subject agrees to disclosure."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 39",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give human intervention and a right to contest when taking automated decisions required by law",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 40, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=40",
+     "payload": {
+      "key": "obl-nl-uavg-automated-decision-safeguards",
+      "titles": {
+       "en": "Give human intervention and a right to contest when taking automated decisions required by law"
+      },
+      "summaries": {
+       "en": "The GDPR's ban on solely automated individual decisions does not apply where such decision-making, other than on the basis of profiling, is necessary to comply with a legal obligation on the controller or for a task in the public interest. The controller must then take suitable measures to protect the data subject's rights, freedoms and legitimate interests, which for a controller that is not a public body means at least the right to human intervention, the right to express a point of view and the right to contest the decision."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 40",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Use a statutory identification number only for the purposes a law sets",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0040940/2026-09-01_0/xml/BWBR0040940_2026-09-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Uitvoeringswet Algemene verordening gegevensbescherming, BWBR0040940, art. 46, text in force from 2026-09-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0040940&artikel=46",
+     "payload": {
+      "key": "obl-nl-uavg-national-identification-number",
+      "titles": {
+       "en": "Use a statutory identification number only for the purposes a law sets"
+      },
+      "summaries": {
+       "en": "A number that a law prescribes for identifying a person may be used in processing personal data only to carry out that law or for purposes laid down by law."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 46",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add WIBB, the Dutch act on international assistance in the levying of taxes, with the CRS and DAC reporting duties (Wet op de internationale bijstandsverlening bij de heffing van belastingen)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003954/2026-04-11_0/xml/BWBR0003954_2026-04-11_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op de internationale bijstandsverlening bij de heffing van belastingen, BWBR0003954, first published in Stb. 1986, 249; consolidated text in force from 2026-04-11, read in its XML file; entry into force on 1986-05-22 read in the same file, in the title's source data (which name the same Staatsblad)",
+   "payload": {
+    "key": "nl-bwbr0003954",
+    "titles": {
+     "nl": "Wet van 24 april 1986, op de internationale bijstandsverlening bij de heffing van belastingen",
+     "en": "Act on International Assistance in the Levying of Taxes"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "WIBB",
+    "officialRef": "Wet op de internationale bijstandsverlening bij de heffing van belastingen (Stb. 1986, 249)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:tax",
+    "inForceFrom": "1986-05-22",
+    "implementsNote": "DAC, Directive 2011/16/EU, as amended (art. 1 says the act carries out the Council's directives on mutual assistance in taxation, and its reporting sections refer to Directive 2011/16/EU)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report every reportable account, its holders and its balance to the tax administration each year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003954/2026-04-11_0/xml/BWBR0003954_2026-04-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op de internationale bijstandsverlening bij de heffing van belastingen, BWBR0003954, art. 10b lid 1 en 2, text in force from 2026-04-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003954&artikel=10b",
+     "payload": {
+      "key": "obl-nl-wibb-crs-annual-account-report",
+      "titles": {
+       "en": "Report every reportable account, its holders and its balance to the tax administration each year"
+      },
+      "summaries": {
+       "en": "A reporting financial institution must provide the Minister of Finance each year, for every reportable account it maintains, with the name, address, state of tax residence and tax identification number of each reportable account holder, the date and place of birth of a natural person, the same data for an entity and for its reportable beneficial owners with their role, whether a valid self-certification was given, the account number and type and whether the account is joint, new or pre-existing, its own name and identification number, and the balance or value at the end of the year or the fact that the account was closed. Each amount is reported with its currency."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10b lid 1 en 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the income paid or credited to each reportable account each year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003954/2026-04-11_0/xml/BWBR0003954_2026-04-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op de internationale bijstandsverlening bij de heffing van belastingen, BWBR0003954, art. 10c lid 1, text in force from 2026-04-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003954&artikel=10c",
+     "payload": {
+      "key": "obl-nl-wibb-crs-annual-income-report",
+      "titles": {
+       "en": "Report the income paid or credited to each reportable account each year"
+      },
+      "summaries": {
+       "en": "Beside the account data, a reporting financial institution must report each year for a custodial account the total gross interest, dividends and other income generated by the assets and the total gross proceeds of sales or redemptions credited to the account, for a depository account the total gross interest paid or credited, and for other accounts the total gross amount paid or credited to the holder for which the institution is the obligor or debtor."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10c lid 1",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make reasonable efforts to obtain missing tax numbers and birth dates for pre-existing accounts",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003954/2026-04-11_0/xml/BWBR0003954_2026-04-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op de internationale bijstandsverlening bij de heffing van belastingen, BWBR0003954, art. 10d, text in force from 2026-04-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003954&artikel=10d",
+     "payload": {
+      "key": "obl-nl-wibb-crs-missing-tax-numbers",
+      "titles": {
+       "en": "Make reasonable efforts to obtain missing tax numbers and birth dates for pre-existing accounts"
+      },
+      "summaries": {
+       "en": "For a pre-existing account a reporting financial institution need not report a tax identification number or date of birth that is not in its records and that it is not otherwise required to collect. It must make reasonable efforts to obtain them by the end of the second calendar year after the year in which the account was identified as reportable, and whenever the account information has to be updated under the anti-money laundering act."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10d",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report reportable cross-border tax arrangements to the tax administration",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003954/2026-04-11_0/xml/BWBR0003954_2026-04-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op de internationale bijstandsverlening bij de heffing van belastingen, BWBR0003954, art. 10h lid 1 tot en met 3, text in force from 2026-04-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003954&artikel=10h",
+     "payload": {
+      "key": "obl-nl-wibb-dac6-report-cross-border-arrangements",
+      "titles": {
+       "en": "Report reportable cross-border tax arrangements to the tax administration"
+      },
+      "summaries": {
+       "en": "An intermediary that is tax resident in the Netherlands, provides the services through a Dutch permanent establishment, is incorporated under or governed by Dutch law, or is registered with a Dutch professional association for legal, tax or advisory services must give the Minister of Finance the listed information it knows, holds or controls about a reportable cross-border arrangement, including the parties and their tax numbers, the hallmarks, a summary of the arrangement and its value. For marketable arrangements it must draw up and file a periodic report every three months with the new reportable information."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10h lid 1 tot en met 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report crypto-asset users and their transactions to the tax administration by 31 January each year",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003954/2026-04-11_0/xml/BWBR0003954_2026-04-11_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet op de internationale bijstandsverlening bij de heffing van belastingen, BWBR0003954, art. 10ob lid 1, 3 tot en met 5 en 12, text in force from 2026-04-11; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003954&artikel=10ob",
+     "payload": {
+      "key": "obl-nl-wibb-crypto-asset-annual-report",
+      "titles": {
+       "en": "Report crypto-asset users and their transactions to the tax administration by 31 January each year"
+      },
+      "summaries": {
+       "en": "A reporting crypto-asset service provider that is authorised by or notified to the Authority for the Financial Markets under MiCA, Regulation (EU) 2023/1114, or that has one of the other links with the Netherlands the article lists, must report to the Minister of Finance its own identification data, the data it must collect and verify on each reportable user and on the reportable beneficial owners of a user, and, for each type of reportable crypto-asset, the aggregated data on the reportable transactions carried out during the calendar year. It reports every year by 31 January of the calendar year after the year the data relate to."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 10ob lid 1, 3 tot en met 5 en 12",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ],
+      "effectiveFrom": "2026-04-11"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add AWR, the Dutch General Act on State Taxes, for its record keeping and third-party information duties (Algemene wet inzake rijksbelastingen)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0002320/2026-10-01_0/xml/BWBR0002320_2026-10-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Algemene wet inzake rijksbelastingen, BWBR0002320, first published in Stb. 1959, 301; consolidated text in force from 2026-10-01, read in its XML file; entry into force on 1962-10-01 read in the same file, in the title's source data (which name Stb. 1962, 319)",
+   "payload": {
+    "key": "nl-bwbr0002320",
+    "titles": {
+     "nl": "Wet van 2 juli 1959, houdende regelen, welke aan een aantal rijksbelastingen gemeen zijn",
+     "en": "General Act on State Taxes"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "AWR",
+    "officialRef": "Algemene wet inzake rijksbelastingen (Stb. 1959, 301)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:tax",
+    "inForceFrom": "1962-10-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep the administration and its data carriers for seven years in a form the tax inspector can check",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0002320/2026-10-01_0/xml/BWBR0002320_2026-10-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Algemene wet inzake rijksbelastingen, BWBR0002320, art. 52 lid 1, 4 en 6, text in force from 2026-10-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0002320&artikel=52",
+     "payload": {
+      "key": "obl-nl-awr-records-seven-years",
+      "titles": {
+       "en": "Keep the administration and its data carriers for seven years in a form the tax inspector can check"
+      },
+      "summaries": {
+       "en": "A party required to keep records, which includes every legal body, must keep an administration of its financial position and of everything concerning its business in such a way, and keep the books, documents and other data carriers belonging to it in such a way, that its rights and obligations and the data relevant to taxation are clear from it at all times. It must keep the data carriers for seven years unless a tax act provides otherwise, and organise and keep them so that the inspector can check them within a reasonable period, giving the cooperation and insight needed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 52 lid 1, 4 en 6",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Give the tax inspector the information asked for about the taxation of third parties",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0002320/2026-10-01_0/xml/BWBR0002320_2026-10-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Algemene wet inzake rijksbelastingen, BWBR0002320, art. 53 lid 1, text in force from 2026-10-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0002320&artikel=53",
+     "payload": {
+      "key": "obl-nl-awr-third-party-information-on-request",
+      "titles": {
+       "en": "Give the tax inspector the information asked for about the taxation of third parties"
+      },
+      "summaries": {
+       "en": "A party required to keep records must, when the inspector asks, provide the data and information and make available the books, documents and other data carriers that may be relevant to the taxation of third parties and to the taxes it is required to withhold, under the same rules that apply to information about its own taxation. The information must be given clearly, definitely and without reservation, in the form and within the period the inspector sets (art. 49)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 53 lid 1",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Deliver the designated tax data to the inspector on the firm's own initiative, with the citizen service number",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0002320/2026-10-01_0/xml/BWBR0002320_2026-10-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Algemene wet inzake rijksbelastingen, BWBR0002320, art. 53 lid 2 en 3, text in force from 2026-10-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0002320&artikel=53",
+     "payload": {
+      "key": "obl-nl-awr-own-initiative-tax-data-delivery",
+      "titles": {
+       "en": "Deliver the designated tax data to the inspector on the firm's own initiative, with the citizen service number"
+      },
+      "summaries": {
+       "en": "The parties required to keep records that are designated by or under a tax act must provide the inspector, on their own initiative and according to the rules set, with the designated data and information that may be relevant to the levying of tax. They must state with the data the citizen service number of the person to whom the data relate."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 53 lid 2 en 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Wge, the Dutch act on book-entry securities held through intermediaries (Wet giraal effectenverkeer)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, first published in Stb. 1977, 333; consolidated text in force from 2023-01-01, read in its XML file; entry into force on 1977-07-15 read in the same file, in the title's source data (which name Stb. 1977, 386)",
+   "payload": {
+    "key": "nl-bwbr0003109",
+    "titles": {
+     "nl": "Wet van 8 juni 1977, houdende bepalingen betreffende het giraal effectenverkeer",
+     "en": "Securities Giro Transfer Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Wge",
+    "officialRef": "Wet giraal effectenverkeer (Stb. 1977, 333)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:securities",
+    "inForceFrom": "1977-07-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Enable the co-owners of a collective deposit to exercise the voting rights on their securities",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, art. 15, text in force from 2023-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003109&artikel=15",
+     "payload": {
+      "key": "obl-nl-wge-co-owners-voting-rights",
+      "titles": {
+       "en": "Enable the co-owners of a collective deposit to exercise the voting rights on their securities"
+      },
+      "summaries": {
+       "en": "An intermediary that keeps a collective deposit must, where a co-owner so wishes, ensure that the co-owners can exercise the voting right attached to the securities, each for the quantity for which the co-owner shares in the securities held."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 15",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Answer an issuer's request to identify its shareholders without delay or pass it down the custody chain",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, art. 49b lid 2, 4 en 5, text in force from 2023-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003109&artikel=49b",
+     "payload": {
+      "key": "obl-nl-wge-shareholder-identification-response",
+      "titles": {
+       "en": "Answer an issuer's request to identify its shareholders without delay or pass it down the custody chain"
+      },
+      "summaries": {
+       "en": "A party in the custody chain with its seat in the Netherlands that receives an issuer's request for the name, address, legal entity identifier where there is one and e-mail address of shareholders, with their holding, the classes of securities and the date since which they are held, must give the requested data without delay to the issuer or the third party it has designated. If it does not hold all the data, it must pass the request on without delay to the parties in the chain for which it keeps the securities."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 49b lid 2, 4 en 5",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pass company information to shareholders and shareholders' instructions to the issuer without delay",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, art. 49da lid 2, 3 en 5, text in force from 2023-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003109&artikel=49da",
+     "payload": {
+      "key": "obl-nl-wge-pass-on-shareholder-information",
+      "titles": {
+       "en": "Pass company information to shareholders and shareholders' instructions to the issuer without delay"
+      },
+      "summaries": {
+       "en": "A party in the custody chain with its seat in the Netherlands that receives from an issuer the information shareholders need to exercise their rights, or the notice of where it is on the issuer's website, must provide it without delay to the shareholder or the third party the shareholder has designated, or to the next parties in the chain where it does not hold the securities directly for the shareholder. Information it receives from a shareholder on the exercise of rights must be passed to the issuer without delay, following the shareholder's instructions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 49da lid 2, 3 en 5",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:custody"
+      ],
+      "effectiveFrom": "2020-09-03"
+     }
+    },
+    {
+     "title": "Add the duty: Facilitate the exercise of shareholders' rights",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, art. 49db lid 1, text in force from 2023-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003109&artikel=49db",
+     "payload": {
+      "key": "obl-nl-wge-facilitate-shareholder-rights",
+      "titles": {
+       "en": "Facilitate the exercise of shareholders' rights"
+      },
+      "summaries": {
+       "en": "Parties in the custody chain with their seat in the Netherlands must facilitate the exercise of shareholders' rights at least by making the arrangements needed for the shareholder or a designated third party to exercise the rights personally, or by exercising the rights for the shareholder on the shareholder's express authorisation and instruction."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 49db lid 1",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:custody"
+      ],
+      "effectiveFrom": "2020-09-03"
+     }
+    },
+    {
+     "title": "Add the duty: Publish the charges for each shareholder identification and information service",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, art. 49dc, text in force from 2023-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003109&artikel=49dc",
+     "payload": {
+      "key": "obl-nl-wge-publish-shareholder-service-charges",
+      "titles": {
+       "en": "Publish the charges for each shareholder identification and information service"
+      },
+      "summaries": {
+       "en": "Parties in the custody chain with their seat in the Netherlands must publish, separately for each service offered under the act's chapter on shareholder identification, information and rights, the charges that may be billed to shareholders, companies or other parties in the chain. The charges must be non-discriminatory and proportionate to the costs actually incurred."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 49dc",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:custody"
+      ],
+      "effectiveFrom": "2019-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Record which corresponding positions belong to the segregated derivatives assets of clients",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0003109/2023-01-01_0/xml/BWBR0003109_2023-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet giraal effectenverkeer, BWBR0003109, art. 49g lid 1 en 2, text in force from 2023-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0003109&artikel=49g",
+     "payload": {
+      "key": "obl-nl-wge-derivatives-positions-records",
+      "titles": {
+       "en": "Record which corresponding positions belong to the segregated derivatives assets of clients"
+      },
+      "summaries": {
+       "en": "An intermediary that enters into or manages derivatives positions for clients must record in its administration which corresponding positions belong to the derivatives assets, and for each client position which corresponding position was entered into. The derivatives assets serve only to meet the claims arising from the related client positions and from the collateral provided for them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 49g lid 1 en 2",
+      "dutyType": "record_keeping",
+      "terms": [],
+      "effectiveFrom": "2016-04-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bankwet 1998, the Dutch act on De Nederlandsche Bank",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0009508/2026-09-22_0/xml/BWBR0009508_2026-09-22_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Bankwet 1998, BWBR0009508, first published in Stb. 1998, 200; consolidated text in force from 2026-09-22, read in its XML file; entry into force on 1998-06-01 read in the same file, in the title's source data (which name Stb. 1998, 244)",
+   "payload": {
+    "key": "nl-bwbr0009508",
+    "titles": {
+     "nl": "Wet van 26 maart 1998, houdende nieuwe bepalingen inzake De Nederlandsche Bank N.V. in verband met het Verdrag tot oprichting van de Europese Gemeenschap (Bankwet 1998)",
+     "en": "Bank Act 1998"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Bankwet 1998",
+    "officialRef": "Bankwet 1998 (Stb. 1998, 200)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "1998-06-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Check all euro banknotes received for fitness before recirculating them and hand unfit notes to De Nederlandsche Bank",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0009508/2026-09-22_0/xml/BWBR0009508_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Bankwet 1998, BWBR0009508, art. 9a lid 1 tot en met 3, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0009508&artikel=9a",
+     "payload": {
+      "key": "obl-nl-bankwet-banknote-fitness-check",
+      "titles": {
+       "en": "Check all euro banknotes received for fitness before recirculating them and hand unfit notes to De Nederlandsche Bank"
+      },
+      "summaries": {
+       "en": "Credit institutions, payment service providers and the other economic operators named in Article 6(1) of the EU regulation on counterfeiting must check all euro banknotes they receive for fitness for circulation before putting them back into circulation, following the procedures the European Central Bank has laid down. Banknotes unfit for circulation must be handed in to De Nederlandsche Bank, which reimburses their face value."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 9a lid 1 tot en met 3",
+      "dutyType": "technical",
+      "terms": [],
+      "effectiveFrom": "2014-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Supply the data De Nederlandsche Bank asks for its statistics and financial stability tasks within the period set",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0009508/2026-09-22_0/xml/BWBR0009508_2026-09-22_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Bankwet 1998, BWBR0009508, art. 9d lid 2 en 3, text in force from 2026-09-22; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0009508&artikel=9d",
+     "payload": {
+      "key": "obl-nl-bankwet-statistical-data-on-request",
+      "titles": {
+       "en": "Supply the data De Nederlandsche Bank asks for its statistics and financial stability tasks within the period set"
+      },
+      "summaries": {
+       "en": "Where the registers of public bodies do not give De Nederlandsche Bank the data it needs for its tasks of promoting financial stability and compiling statistics, it may ask the categories of undertakings, professionals, institutions and legal persons designated by decree for data set by decree, other than personal data. They must supply the data at the Bank's request within the period the decree sets, and cannot invoke a duty of confidentiality unless it rests on international rules."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 9d lid 2 en 3",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Wet bekostiging financieel toezicht 2019, the Dutch act on the funding of financial supervision",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041548/2026-08-15_0/xml/BWBR0041548_2026-08-15_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet bekostiging financieel toezicht 2019, BWBR0041548, first published in Stb. 2018, 409; consolidated text in force from 2026-08-15, read in its XML file; entry into force on 2019-01-01 read in the royal decree in Stb. 2018, 458 (Officiële bekendmakingen)",
+   "fieldSources": {
+    "inForceFrom": "https://zoek.officielebekendmakingen.nl/stb-2018-458.html"
+   },
+   "payload": {
+    "key": "nl-bwbr0041548",
+    "titles": {
+     "nl": "Wet van 17 oktober 2018, houdende regels met betrekking tot de begroting en verantwoording van de kosten van het toezicht van de Autoriteit Financiële Markten en de Nederlandsche Bank en de financiering van de toezichtkosten (Wet bekostiging financieel toezicht 2019)",
+     "en": "Financial Supervision Funding Act 2019"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Wet bekostiging financieel toezicht 2019",
+    "officialRef": "Wet bekostiging financieel toezicht 2019 (Stb. 2018, 409)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "2019-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Pay the supervisor's fee for a one-off act",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041548/2026-08-15_0/xml/BWBR0041548_2026-08-15_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet bekostiging financieel toezicht 2019, BWBR0041548, art. 14 lid 1, text in force from 2026-08-15; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041548&artikel=14",
+     "payload": {
+      "key": "obl-nl-bekostiging-financieel-toezicht-one-off-act-fee",
+      "titles": {
+       "en": "Pay the supervisor's fee for a one-off act"
+      },
+      "summaries": {
+       "en": "A person owes the supervisor a fee for a one-off act it carries out for that person. A ministerial regulation sets the acts for which a fee is due and the cost or the way it is calculated."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 14 lid 1",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Pay the yearly charge for ongoing supervision",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0041548/2026-08-15_0/xml/BWBR0041548_2026-08-15_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet bekostiging financieel toezicht 2019, BWBR0041548, art. 15 lid 1, text in force from 2026-08-15; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0041548&artikel=15",
+     "payload": {
+      "key": "obl-nl-bekostiging-financieel-toezicht-annual-supervision-levy",
+      "titles": {
+       "en": "Pay the yearly charge for ongoing supervision"
+      },
+      "summaries": {
+       "en": "Each year the supervisor charges a person under its supervision an amount for the costs of supervision. The total charged follows from the supervisor's budget and the previous year's result, and a decree sets who counts as supervised, the categories and how the costs are divided among them and calculated per person."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 15 lid 1",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Whc, the Dutch act on the enforcement of consumer protection law (Wet handhaving consumentenbescherming)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020586/2026-06-25_0/xml/BWBR0020586_2026-06-25_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet handhaving consumentenbescherming, BWBR0020586, first published in Stb. 2006, 591; consolidated text in force from 2026-06-25, read in its XML file; entry into force on 2006-12-29 read in the royal decree in Stb. 2006, 592 (Officiële bekendmakingen)",
+   "fieldSources": {
+    "inForceFrom": "https://zoek.officielebekendmakingen.nl/stb-2006-592.html"
+   },
+   "payload": {
+    "key": "nl-bwbr0020586",
+    "titles": {
+     "nl": "Wet van 20 november 2006, houdende regels omtrent instanties die verantwoordelijk zijn voor handhaving van de wetgeving inzake consumentenbescherming (Wet handhaving consumentenbescherming)",
+     "en": "Consumer Protection (Enforcement) Act"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Whc",
+    "officialRef": "Wet handhaving consumentenbescherming (Stb. 2006, 591)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "2006-12-29",
+    "implementsNote": "Made partly to carry out the Consumer Protection Cooperation Regulation: its preamble names Regulation (EC) No 2006/2004, and art. 1.1 now refers to Regulation (EU) 2017/2394"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Follow the Civil Code's rules for contracts between traders and consumers, before and after the contract",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020586/2026-06-25_0/xml/BWBR0020586_2026-06-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet handhaving consumentenbescherming, BWBR0020586, art. 8.2a, text in force from 2026-06-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020586&artikel=8.2a",
+     "payload": {
+      "key": "obl-nl-whc-consumer-contract-rules",
+      "titles": {
+       "en": "Follow the Civil Code's rules for contracts between traders and consumers, before and after the contract"
+      },
+      "summaries": {
+       "en": "A trader that enters into a contract covered by the Civil Code's section on contracts between traders and consumers (Book 6, Title 5, Section 2B), which includes distance and off-premises contracts on financial products and services, must comply with that section, and so must anyone who brings the contract about on the trader's behalf. The duty applies already before the consumer is bound by a contract or an offer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8.2a",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not hold a consumer to a general term that can be annulled under the Civil Code",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020586/2026-06-25_0/xml/BWBR0020586_2026-06-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet handhaving consumentenbescherming, BWBR0020586, art. 8.3, text in force from 2026-06-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020586&artikel=8.3",
+     "payload": {
+      "key": "obl-nl-whc-no-voidable-general-terms",
+      "titles": {
+       "en": "Do not hold a consumer to a general term that can be annulled under the Civil Code"
+      },
+      "summaries": {
+       "en": "A party that uses general terms and conditions in a contract with a consumer may not bind the consumer to a term that can be annulled under the Civil Code's section on general terms (Book 6, Title 5, Section 3)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8.3",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Use no unfair commercial practices",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020586/2026-06-25_0/xml/BWBR0020586_2026-06-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet handhaving consumentenbescherming, BWBR0020586, art. 8.8, text in force from 2026-06-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020586&artikel=8.8",
+     "payload": {
+      "key": "obl-nl-whc-no-unfair-commercial-practices",
+      "titles": {
+       "en": "Use no unfair commercial practices"
+      },
+      "summaries": {
+       "en": "A trader may not use unfair commercial practices as defined in the Civil Code (Book 6, Title 3, Section 3A)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8.8",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell the authority at once when an online sales service does not meet the accessibility requirements",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020586/2026-06-25_0/xml/BWBR0020586_2026-06-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet handhaving consumentenbescherming, BWBR0020586, art. 8a.0, text in force from 2026-06-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020586&artikel=8a.0",
+     "payload": {
+      "key": "obl-nl-whc-report-inaccessible-online-service",
+      "titles": {
+       "en": "Tell the authority at once when an online sales service does not meet the accessibility requirements"
+      },
+      "summaries": {
+       "en": "A service provider that provides an e-commerce service must inform the Authority for Consumers and Markets or, as the case may be, the Authority for the Financial Markets immediately if the service does not meet the applicable accessibility requirements, stating the nature of the non-conformity and describing in detail all corrective measures taken."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8a.0",
+      "dutyType": "reporting",
+      "terms": [
+       "client_category:retail",
+       "channel:digital"
+      ],
+      "effectiveFrom": "2026-06-25"
+     }
+    },
+    {
+     "title": "Add the duty: Assess, document and keep for five years any claim that accessibility is a disproportionate burden",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020586/2026-06-25_0/xml/BWBR0020586_2026-06-25_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet handhaving consumentenbescherming, BWBR0020586, art. 8a.1, text in force from 2026-06-25; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0020586&artikel=8a.1",
+     "payload": {
+      "key": "obl-nl-whc-accessibility-burden-assessment",
+      "titles": {
+       "en": "Assess, document and keep for five years any claim that accessibility is a disproportionate burden"
+      },
+      "summaries": {
+       "en": "A service provider that relies on the Civil Code's exception for a fundamental alteration or a disproportionate burden must carry out an assessment against the criteria of Directive (EU) 2019/882, and where it relies on a disproportionate burden must renew the assessment at least every five years, when the service changes and when the authority asks. It must document the assessment, keep the results for five years after the service was provided on the market, give the authority a copy on request and inform the authority that it relies on the exception."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 8a.1",
+      "dutyType": "record_keeping",
+      "terms": [
+       "client_category:retail",
+       "channel:digital"
+      ],
+      "effectiveFrom": "2025-06-28"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Wfbb, the Dutch act on financial relations with other countries, with the balance of payments reporting duty (Wet financiële betrekkingen buitenland 1994)",
+   "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0006547/2013-01-01_0/xml/BWBR0006547_2013-01-01_0.xml",
+   "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet financiële betrekkingen buitenland 1994, BWBR0006547, first published in Stb. 1994, 258; consolidated text in force from 2013-01-01, read in its XML file; entry into force on 1994-05-01 read in the same file, in the title's source data (which name Stb. 1994, 298)",
+   "payload": {
+    "key": "nl-bwbr0006547",
+    "titles": {
+     "nl": "Wet van 25 maart 1994, houdende nieuwe regels inzake de financiële betrekkingen met het buitenland",
+     "en": "External Financial Relations Act 1994"
+    },
+    "originalLanguage": "nl",
+    "isMachine": true,
+    "shortName": "Wfbb",
+    "officialRef": "Wet financiële betrekkingen buitenland 1994 (Stb. 1994, 258)",
+    "level": "act",
+    "jurisdiction": "nl",
+    "authority": "staten-generaal",
+    "regime": "regime:banking",
+    "inForceFrom": "1994-05-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report the data De Nederlandsche Bank needs for the balance of payments, on time and truthfully",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0006547/2013-01-01_0/xml/BWBR0006547_2013-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet financiële betrekkingen buitenland 1994, BWBR0006547, art. 7 lid 1 en 2, text in force from 2013-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0006547&artikel=7",
+     "payload": {
+      "key": "obl-nl-wfbb-balance-of-payments-reporting",
+      "titles": {
+       "en": "Report the data De Nederlandsche Bank needs for the balance of payments, on time and truthfully"
+      },
+      "summaries": {
+       "en": "Everyone must give De Nederlandsche Bank, in line with the rules the Bank issues, the information and data relevant to compiling the Netherlands' balance of payments and to setting and carrying out the capital movement rules the act allows. The information must be provided on time, truthfully and in a way that does not mislead."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7 lid 1 en 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Let De Nederlandsche Bank verify reported data in the books and records",
+     "source": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0006547/2013-01-01_0/xml/BWBR0006547_2013-01-01_0.xml",
+     "sourceLabel": "Wetten.nl (Overheid.nl), official repository of consolidated law, Wet financiële betrekkingen buitenland 1994, BWBR0006547, art. 7 lid 3 en 4, text in force from 2013-01-01; the article's address on wetten.overheid.nl is jci1.3:c:BWBR0006547&artikel=7",
+     "payload": {
+      "key": "obl-nl-wfbb-balance-of-payments-verification",
+      "titles": {
+       "en": "Let De Nederlandsche Bank verify reported data in the books and records"
+      },
+      "summaries": {
+       "en": "Anyone who has to provide information and data for the balance of payments must, when required, enable De Nederlandsche Bank to satisfy itself of their accuracy from the books, documents and other data carriers, and whoever holds those books, documents and data carriers must produce them when required."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "art. 7 lid 3 en 4",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    }
+   ]
+  }
+ ]
+}
