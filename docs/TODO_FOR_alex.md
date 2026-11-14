@@ -192,6 +192,15 @@ library takes their law in its own language. What needs you, most urgent first.
       "avskärmade konton", "personbolag", "turbor"). Printed oddities kept as printed: the
       Dutch remuneration annex says "een tiende" where CRD V says one third, and two
       cross-references point at the wrong item.
+- [ ] **Readers on the UK and Austrian regulations' law text.** The UK: "utpekad person"
+      for a designated person, which no EU act names; "licens" for a sanctions licence,
+      to keep it apart from "tillstånd"; "rätt enligt common law eller equity"; whether
+      the made text of the 2023 disclosable arrangements regulations (S.I. 2023/38) is in
+      force unamended, in which case its three duties could carry it. Austria: whether
+      FMA-PIV § 3, a list with amount columns, counts as a table (three CFD and binary
+      option duties wait on it); the RIS's own note that one 2026 amendment of the
+      FMA-IPV could not be worked into its consolidated text; "pålitlighet" for
+      Zuverlässigkeit and "revisorer och skatterådgivare" for Wirtschaftstreuhänder.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
