@@ -80,13 +80,16 @@ library takes their law in its own language. What needs you, most urgent first.
       (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`). Confirm the six names and
       addresses, and the news page of Lietuvos bankas, which is registered as its home
       page. The watch agent may be refused the same way.
-- [ ] **Three sources still cannot be read by a program.** You asked for a way round the
+- [ ] **Four sources still cannot be read by a program.** You asked for a way round the
       pages that refuse or serve nothing. Where the publisher has a feed or a data
       interface of its own, that address is now the one registered: Austria's legal
       database and its FMA, Switzerland's Fedlex, and the FCA's publications feed beside
       its Handbook. Left: Riigi Teataja has no list of new acts that was found, the FCA
-      Handbook has no interface for its own text, and Lithuania's open data refused the
-      build session's network. Run one check of the Lithuanian sources from production;
+      Handbook has no interface for its own text, Lithuania's open data refused the
+      build session's network, and Wetten.nl closed every command-line read on 14
+      November: its search interface lists what changed since a given day, but only
+      with that day in the address, which a registered source cannot carry today. Run
+      one check of the Dutch and the Lithuanian sources from production;
       if they are refused there too, ask the Office of the Seimas and Lietuvos bankas to
       admit the watch's address. A challenge page is never got round by a mirror or a
       cache, as the agents' rules already say
