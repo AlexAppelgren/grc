@@ -2393,6 +2393,77 @@
           }
         }
       ]
+    },
+    {
+      "title": "Add VZKG-V, the consumer protection minister's regulation on the vulnerable consumers who pay a reduced basic account fee (Festlegung von Gruppen sozial oder wirtschaftlich besonders schutzbedürftiger Verbraucher)",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40186754/NOR40186754.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Festlegung von Gruppen sozial oder wirtschaftlich besonders schutzbedürftiger Verbraucher (VZKG-V), BGBl. II Nr. 255/2016, made by the Bundesminister für Arbeit, Soziales und Konsumentenschutz under § 26 Abs. 2 VZKG (title document: long title, gazette reference, preamble, amendments), read through the RIS open-data interface; consolidated text in force on 14 November 2026, not amended since the original version; entry into force read in § 3",
+      "fieldSources": {
+        "inForceFrom": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40186753/NOR40186753.html"
+      },
+      "payload": {
+        "key": "at-bgbl-ii-2016-255",
+        "titles": {
+          "de": "Verordnung des Bundesministers für Arbeit, Soziales und Konsumentenschutz zur Festlegung von Gruppen sozial oder wirtschaftlich besonders schutzbedürftiger Verbraucher (VZKG-V)",
+          "en": "Regulation of the Federal Minister of Labour, Social Affairs and Consumer Protection laying down groups of socially or economically especially vulnerable consumers (VZKG Regulation)"
+        },
+        "originalLanguage": "de",
+        "isMachine": true,
+        "shortName": "VZKG-V",
+        "officialRef": "Festlegung von Gruppen sozial oder wirtschaftlich besonders schutzbedürftiger Verbraucher (VZKG-V), BGBl. II Nr. 255/2016",
+        "eliUri": "https://www.ris.bka.gv.at/eli/bgbl/ii/2016/255/P0/NOR40186754",
+        "level": "government_regulation",
+        "jurisdiction": "at",
+        "authority": "bmasgpk",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-09-18"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Apply the reduced basic account fee cap to consumers in the listed groups of especially vulnerable persons",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40186751/NOR40186751.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Festlegung von Gruppen sozial oder wirtschaftlich besonders schutzbedürftiger Verbraucher (VZKG-V), BGBl. II Nr. 255/2016, § 1 Z 1 bis 12, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-vzkg-v-vulnerable-consumers",
+            "titles": {
+              "en": "Apply the reduced basic account fee cap to consumers in the listed groups of especially vulnerable persons"
+            },
+            "summaries": {
+              "en": "For the reduced annual fee cap of a payment account with basic features, 40 instead of 80 euros under § 26 Abs. 2 VZKG, a credit institution must treat as especially vulnerable consumers who receive minimum income or social assistance, a pension with a compensatory supplement or a pension, unemployment benefit or emergency assistance of at most the standard rate of § 293 ASVG, and those in debt settlement proceedings until the payment period or the skimming-off procedure ends. The same holds for students with a study grant, apprentices paid at most that rate, persons exempt from the broadcasting fee or receiving the telephone fee subsidy, homeless persons, asylum seekers and foreigners whose stay is tolerated."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 Z 1 bis 12",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Treat consumers in comparable situations in another EU member state as especially vulnerable for the reduced fee cap",
+          "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40186751/NOR40186751.html",
+          "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Festlegung von Gruppen sozial oder wirtschaftlich besonders schutzbedürftiger Verbraucher (VZKG-V), BGBl. II Nr. 255/2016, § 1 Z 13, consolidated text read through the RIS open-data interface",
+          "payload": {
+            "key": "obl-at-vzkg-v-vulnerable-consumers-other-member-states",
+            "titles": {
+              "en": "Treat consumers in comparable situations in another EU member state as especially vulnerable for the reduced fee cap"
+            },
+            "summaries": {
+              "en": "The reduced cap also applies to consumers who, in another member state of the European Union, have a status equal to homelessness, asylum seeking or tolerated stay, receive a social benefit comparable to minimum income or a compensatory supplement, receive statutory unemployment benefit below that state's reference rate for such a benefit, are subject to insolvency proceedings comparable to debt settlement, or receive a state study grant tied to social need."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 Z 13",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
     }
   ]
 }
