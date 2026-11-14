@@ -134,6 +134,14 @@ library takes their law in its own language. What needs you, most urgent first.
       for a vandeaudiitor, where the EU's Swedish says "lagstadgad revisor"; "suspensive
       condition" and "uppskjutande villkor" for an edasilükkav tingimus; "privat" and
       "publikt aktiebolag" for an osaühing and an aktsiaselts.
+- [ ] **An Austrian and a Swedish reader on Austria's law text.** English and Swedish stand
+      beside the 124 Austrian sections, machine translations written for meaning. Worth a
+      reader's hour: "förvaltare" for a Treuhänder and "uppdragsgivare" for a Treugeber;
+      "juridisk person" for a WiEReG Rechtsträger, which also covers trusts; the
+      e-government identifiers (Stammzahl as "basnummer", the sector-specific personal
+      identifier); "skyldigheterna att iaktta tillbörlig aktsamhet" for the duties of
+      WiEReG entities; VAG § 109(3) point 3, whose ambiguous comma was read the way
+      Solvency II Art. 49 reads; and the long units AIFMG § 19, WiEReG § 5 and FM-GwG § 6.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
