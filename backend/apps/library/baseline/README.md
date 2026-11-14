@@ -7,7 +7,7 @@ added arrive tranche by tranche, as ADR 0070 stages them. Seven of them are here
 the United Kingdom, Switzerland, Latvia, Austria, Estonia and the Netherlands, each with
 its statutes (`<market>-acts`) and its regulations (`de-verordnungen`, `gb-si`,
 `ch-verordnungen`, `lv-noteikumi`, `at-verordnungen`, `ee-maarused`, `nl-besluiten`), and
-for Switzerland, Latvia, Austria and Estonia so far the further regulations those found
+for Germany, Switzerland, Latvia, Austria and Estonia so far the further regulations those found
 (the same names with `-2`), each with its duties and a plain summary per instrument. The statutes and the regulations carry
 the law's own words in `provisions/` under the same names, with Swedish beside an English
 original and English and Swedish beside every other; the third tranches' law text is not
