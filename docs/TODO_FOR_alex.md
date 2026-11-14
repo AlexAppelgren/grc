@@ -168,6 +168,15 @@ library takes their law in its own language. What needs you, most urgent first.
       conduct regulation for investment firms, a CRS due diligence regulation, and any
       regulation under the Financial Crisis Prevention and Resolution Act. Left out
       because the Justice Minister made them: the ESIS and SECCI forms for credit.
+- [ ] **A Swiss and a Swedish reader on the ordinances' law text.** Worth a reader's hour:
+      the reference line Swiss ordinances print under an article heading ("(Art. 1b und 3
+      BankG)"), kept as part of the text; "organet för överordnad ledning, tillsyn och
+      kontroll", where a Swedish drafter might write "styrelsen eller motsvarande organ";
+      "primärkapital" and "Tier 1 capital" for Kernkapital; the accounts-position captions
+      of the RelV, translated inside their guillemets. The Ukraine ordinance's
+      "Abschluss eines Joint Ventures" is rendered as winding up, which the French and
+      Italian versions confirm ("liquidation", "liquidazione"). Names of sanctioned
+      entities stay exactly as the German prints them.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as

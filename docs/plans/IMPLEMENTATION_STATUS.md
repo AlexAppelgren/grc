@@ -485,6 +485,10 @@ the Netherlands, Austria and Switzerland.
   versions in force on 2026-11-14 (the 2026 consumer credit act in its adopted wording from
   20 November), read from the RIS open-data store's XML and HTML and a third time from its
   PDF, with English and Swedish beside each; all 133 duties carry their text.
+  The regulations' law text began with Switzerland's ordinances
+  (`provisions/ch-verordnungen.json`): 154 articles, with English and Swedish beside each,
+  listed names of sanctioned entities kept as printed; 127 of 127 duties carry their text,
+  one of them in part because the article it also cites holds a table.
 - **In work on this branch:** the
   law's own words for Germany's statutes and for the regulations, each
   provision in its original
