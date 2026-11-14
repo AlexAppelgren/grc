@@ -100,16 +100,16 @@ library takes their law in its own language. What needs you, most urgent first.
       consolidated versions, while Likumi.lv calls its systematised text informative;
       whether that text is an official consolidated version decides whether
       republishing it needs more.
-- [ ] **The Dutch sanctions regulations need their maker seeded.** The Sanctieregelingen
-      that freeze assets and bar funds (terrorism 2002, Ukraine 2014, Belarus 2006, ISIS
-      and Al Qaida 2016, the Russian Federation 2024 and about forty more) are made by the
-      Minister of Foreign Affairs with the Minister of Finance. The library seeds no
-      authority for that minister, so none was filed; the Dutch tranche holds De
-      Nederlandsche Bank's Regeling toezicht Sanctiewet 1977 and the decree on reporting
-      terrorist financing instead. Germany's tranche left out three regulations for the
-      same reason (the economy and the interior ministries). Default: seed the Dutch
-      Ministerie van Buitenlandse Zaken, read on its own site, and file the five largest
-      sanctions regimes in a later tranche.
+- [ ] **Seven more makers are seeded (default taken, 2026-11-14).** Researchers had to leave
+      out regulations whose maker the library did not seed. Seeded now, each read on an
+      official page: the Dutch Ministerie van Buitenlandse Zaken (the Sanctieregelingen),
+      Germany's Bundesministerium für Wirtschaft und Energie, Bundesministerium des Innern
+      and Bundesministerium der Justiz und für Verbraucherschutz, Switzerland's EJPD,
+      Estonia's Justiits- ja Digiministeerium and Austria's BMASGPK; 103 authorities in
+      all. Two gaps: the maker of the RechKredV is named on no page that could be read,
+      and the Austrian ministry's consumer protection remit rests on its name and topics.
+      The Dutch sanctions regimes and the regulations these makers issued follow in the
+      next tranches. Say if you would rather not seed them.
 - [ ] **A Dutch lawyer on the decrees and regulations.** The researcher's own doubts: the
       PEP and beneficial-owner categories of the Uitvoeringsbesluit Wwft 2018 are
       definitions written as duties; UrWwft art. 4 names documents that suffice, not the
