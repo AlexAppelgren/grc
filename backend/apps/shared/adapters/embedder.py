@@ -30,38 +30,85 @@ WORDS = re.compile(r"\w+", re.UNICODE)
 # needs none of it. A term matches a word containing it from four characters up, so terms
 # are the shortest safe stem; one of three characters or fewer must be the whole word.
 # A multi-word term matches adjacent words; a concept counts once per text.
+# The stems of German, Dutch, Estonian, Latvian and Lithuanian come last in an entry (D-145):
+# those the questions in these languages need and no others. Each is the term of the EU act
+# in its language, kept long enough to stay out of the other nine: "komplex" is in Swedish
+# "komplexitet", "kosten" in Finnish "katkosten", and "Angemessenheit" alone is also the
+# adequacy of a bank's capital.
 CONCEPT_TERMS: dict[str, tuple[str, ...]] = {
-    "appropriateness": ("appropriat", "passande", "hensigtsmæssig", "hensiktsmessig", "asianmukaisuus"),
-    "complex_instrument": ("complex", "komplicer", "kompleks", "monimutkais"),
-    "suitability": ("suitab", "suits", "lämplig", "egnet", "egnethet", "soveltuvuus"),
-    "investment_advice": ("advice", "advising", "rådgiv", "recommend", "rekommend", "sijoitusneuvo", "neuvonta"),
-    "sustainability": ("sustainab", "hållbarhet", "kestävyys"),
-    "warning": ("warn", "varn", "advar", "varoit"),
+    "appropriateness": (
+        "appropriat", "passande", "hensigtsmæssig", "hensiktsmessig", "asianmukaisuus",
+        "angemessenheitsprüf", "passendheid", "asjakohasus", "atbilstības novērtē", "priimtinum",
+    ),
+    "complex_instrument": (
+        "complex", "komplicer", "kompleks", "monimutkais",
+        "komplexe", "keeruka", "sarežģīt",
+    ),
+    "suitability": (
+        "suitab", "suits", "lämplig", "egnet", "egnethet", "soveltuvuus",
+        "geeignetheit", "sobivus", "piemērotīb",
+    ),
+    "investment_advice": (
+        "advice", "advising", "rådgiv", "recommend", "rekommend", "sijoitusneuvo", "neuvonta",
+        "anlageberat", "investeerimisnõust", "ieguldījumu konsultāc",
+    ),
+    "sustainability": ("sustainab", "hållbarhet", "kestävyys", "jätkusuutlik", "ilgtspēj"),
+    "warning": ("warn", "varn", "advar", "varoit", "waarschuw", "įspė"),
     "nudging": (
         "nudg", "downplay", "encourage", "prominent", "misleading", "despite",
         "uppmuntra", "tona ned", "framträdande", "vilseledande", "klicka", "trots",
     ),
-    "costs_charges": ("cost", "charge", "fees", "kostnad", "avgift", "omkostning", "gebyr", "kulu", "veloitu"),
-    "periodic": ("annual", "årlig", "vuosittai", "etukäteen", "in good time", "i god tid"),
-    "research_payments": ("research", "inducement", "analys", "tutkimus"),
-    "product_governance": ("target market", "målgrupp", "distributionsstrateg", "distribusjonsstrateg"),
+    "costs_charges": (
+        "cost", "charge", "fees", "kostnad", "avgift", "omkostning", "gebyr", "kulu", "veloitu",
+        "kosten und", "gebühr", "kosten en lasten", "izmaks un", "išlaid",
+    ),
+    "periodic": (
+        "annual", "årlig", "vuosittai", "etukäteen", "in good time", "i god tid",
+        "jährlich", "kord aastas", "kasmet",
+    ),
+    "research_payments": (
+        "research", "inducement", "analys", "tutkimus",
+        "onderzoek op beleggingsgebied", "ieguldījumu izpēt",
+    ),
+    "product_governance": (
+        "target market", "målgrupp", "distributionsstrateg", "distribusjonsstrateg",
+        "zielmarkt", "vertriebsstrategie", "tikslin rink", "platinimo strategij",
+    ),
     "client_assets": (
         "separate", "reconcil", "segreger", "holdings", "åtskild", "stäms", "stämmas",
         "innehav", "adskil", "erottami", "täsmäyt",
+        "getrennte verwahrung", "abgleich", "lahus hoid", "atskyrim",
     ),
     "investment_savings_account": ("investment savings account", "investeringssparkonto", "isk"),
     "approved_assets": ("approved", "godkänd"),
     "standard_income": ("standard income", "schablonintäkt", "kontrolluppgift", "skatteverket", "control statement"),
-    "insurance_based_product": ("insurance based", "insurance-based", "försäkringsbaserad", "vakuutusmuoto"),
-    "demands_and_needs": ("demands and needs", "krav och behov", "vaatimukset ja tarpeet"),
-    "switch_underlying": ("switch", "underlying", "underliggande", "underliggende", "byte", "bytet", "bytte"),
+    "insurance_based_product": (
+        "insurance based", "insurance-based", "försäkringsbaserad", "vakuutusmuoto",
+        "kindlustuspõhi", "beleggingscomponent",
+    ),
+    "demands_and_needs": (
+        "demands and needs", "krav och behov", "vaatimukset ja tarpeet",
+        "nõudmis ja vajadus", "verlangens en behoeften",
+    ),
+    "switch_underlying": (
+        "switch", "underlying", "underliggande", "underliggende", "byte", "bytet", "bytte",
+        "pagrindinių investicij",
+    ),
     "documentation": ("document", "dokument"),
-    "key_information_document": ("key information", "faktablad", "investorinformation", "avaintieto"),
+    "key_information_document": (
+        "key information", "faktablad", "investorinformation", "avaintieto",
+        "basisinformationsbl", "informatiedocument", "põhiteabe", "pamatinformācijas dokument",
+        "pagrindinės informacijos dokument",
+    ),
     "before_bound": ("bound", "bunden", "bundna", "binder"),
-    "pension_transfer": ("transfer", "flytt", "pension", "pensjon", "policyholder"),
+    "pension_transfer": (
+        "transfer", "flytt", "pension", "pensjon", "policyholder",
+        "waardeoverdracht", "pensioen", "pensij",
+    ),
     "ict_third_party": (
         "ict", "ikt", "cloud", "moln", "outsourc", "vendor", "dora",
         "leverantör", "leverandør", "palveluntarjoaj",
+        "irt",
     ),
     "register": ("register", "rekisteri", "förteckning"),
     "automated_decision": ("automat", "profiling", "human", "mänsklig", "människa", "beslut", "afgørelse"),

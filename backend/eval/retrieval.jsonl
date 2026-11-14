@@ -4,8 +4,9 @@
 #   (keyword: an identifier wins by keyword; concept: phrasing wins by vector; both: one query with both), as_of (optional,
 #   the version effective on that date is the one expected), note, via (optional: "ask" scores the row on the passages Ask would give
 #   a model instead of the search page). A row may carry predictions (list of keys) for the mock retriever.
-# 54 questions: en 17, sv 16, da 7, nb 7, fi 7. Danish, Norwegian and Finnish questions target the same
-#   obligations as the English and Swedish ones so the embedding model is tested across all five languages (D-09).
+# 89 questions: en 17, sv 16, da 7, nb 7, fi 7, et 7, lv 7, lt 7, de 7, nl 7. The questions in the other eight languages
+#   target the same obligations as the English and Swedish ones so the embedding model is tested across every content
+#   language (D-09; D-145 added Estonian, Latvian, Lithuanian, German and Dutch).
 {"id": "r-en-01", "language": "en", "query": "FFFS 2017:2", "expected": ["obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"], "match_kind": "keyword", "note": "AC-SRC1: an identifier is won by keyword. Every obligation under the instrument is relevant."}
 {"id": "r-en-02", "language": "en", "query": "nudging in onboarding", "expected": ["obl-esma-warnings"], "match_kind": "concept", "note": "AC-SRC1: phrasing is won by concept; no obligation contains the word nudging in its summary."}
 {"id": "r-en-03", "language": "en", "query": "FFFS 2017:2 nudging in onboarding", "expected": ["obl-esma-warnings", "obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"], "match_kind": "both", "note": "AC-SRC1: one query, keyword and concept fused by rank."}
@@ -60,3 +61,38 @@
 {"id": "r-fi-06", "language": "fi", "query": "kolmannen osapuolen ICT-palveluntarjoajien rekisteri", "expected": ["obl-dora-ict-register"], "match_kind": "concept"}
 {"id": "r-fi-07", "language": "fi", "query": "vakuutusmuotoinen sijoitustuote, vaatimukset ja tarpeet", "expected": ["obl-idd-demands-needs"], "match_kind": "concept"}
 {"id": "r-en-17", "language": "en", "query": "What does control 9.9 of the Example Security Standard require us to do?", "expected": [], "match_kind": "concept", "via": "ask", "note": "SRC-S12, D-81: a question about a standard's control. The library holds a standard's conformance duty and never its clauses, so Ask gives a model nothing and answers no answer. The standard is invented."}
+{"id": "r-et-01", "language": "et", "query": "asjakohasuse hindamine keerukate finantsinstrumentide puhul", "expected": ["obl-appropriateness"], "match_kind": "concept"}
+{"id": "r-et-02", "language": "et", "query": "sobivuse hindamine investeerimisnõustamisel ja kliendi jätkusuutlikkuseelistused", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-et-03", "language": "et", "query": "kulude ja tasude avaldamine aegsasti enne teenust ja vähemalt kord aastas", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-et-04", "language": "et", "query": "klientide vara lahus hoidmine ja korrapärane võrdlemine", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-et-05", "language": "et", "query": "põhiteabedokument enne lepingu sõlmimist", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-et-06", "language": "et", "query": "kolmandast isikust IKT-teenuste osutajate teaberegister DORA alusel", "expected": ["obl-dora-ict-register"], "match_kind": "both"}
+{"id": "r-et-07", "language": "et", "query": "kindlustuspõhine investeerimistoode, kliendi nõudmised ja vajadused", "expected": ["obl-idd-demands-needs"], "match_kind": "concept"}
+{"id": "r-lv-01", "language": "lv", "query": "atbilstības novērtēšana darījumos ar sarežģītiem finanšu instrumentiem", "expected": ["obl-appropriateness"], "match_kind": "concept"}
+{"id": "r-lv-02", "language": "lv", "query": "piemērotības novērtējums, sniedzot ieguldījumu konsultācijas, un ilgtspējas vēlmes", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-lv-03", "language": "lv", "query": "informācija par visām izmaksām un maksām pirms darījuma un pēc tā", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-lv-04", "language": "lv", "query": "maksa par trešo personu sagatavotu ieguldījumu izpēti", "expected": ["obl-research-payments"], "match_kind": "concept"}
+{"id": "r-lv-05", "language": "lv", "query": "pamatinformācijas dokuments, pirms klients uzņemas saistības", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-lv-06", "language": "lv", "query": "automatizēti lēmumi ar būtisku ietekmi, 22. pants", "expected": ["obl-gdpr-article-22", "celex-32016r0679/art-22"], "match_kind": "both"}
+{"id": "r-lv-07", "language": "lv", "query": "pensiju apdrošināšanas uzkrājuma pārcelšana pie cita apdrošinātāja", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
+{"id": "r-lt-01", "language": "lt", "query": "ar privalome įspėti klientą, kai pagal priimtinumo vertinimą produktas jam netinka", "expected": ["obl-appropriateness", "obl-esma-warnings"], "match_kind": "concept"}
+{"id": "r-lt-02", "language": "lt", "query": "informacija apie išlaidas ir mokesčius turi būti teikiama kasmet", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-lt-03", "language": "lt", "query": "kiekvieno produkto tikslinė rinka ir platinimo strategija", "expected": ["obl-product-governance"], "match_kind": "concept"}
+{"id": "r-lt-04", "language": "lt", "query": "klientų finansinių priemonių ir lėšų atskyrimas", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-lt-05", "language": "lt", "query": "IRT paslaugas teikiančių trečiųjų šalių informacijos registras pagal DORA", "expected": ["obl-dora-ict-register"], "match_kind": "both"}
+{"id": "r-lt-06", "language": "lt", "query": "dokumentuoti pagrindinių investicijų keitimą", "expected": ["obl-switch-documentation"], "match_kind": "concept"}
+{"id": "r-lt-07", "language": "lt", "query": "pagrindinės informacijos dokumentas prieš sudarant sutartį", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-de-01", "language": "de", "query": "Geeignetheitsprüfung bei der Anlageberatung", "expected": ["obl-suitability", "obl-no-suitability"], "match_kind": "concept"}
+{"id": "r-de-02", "language": "de", "query": "Angemessenheitsprüfung vor dem Handel mit komplexen Finanzinstrumenten", "expected": ["obl-appropriateness"], "match_kind": "concept"}
+{"id": "r-de-03", "language": "de", "query": "Offenlegung von Kosten und Gebühren vorab und jährlich", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-de-04", "language": "de", "query": "Zielmarkt und Vertriebsstrategie für jedes Produkt", "expected": ["obl-product-governance"], "match_kind": "concept"}
+{"id": "r-de-05", "language": "de", "query": "getrennte Verwahrung von Kundengeldern und Finanzinstrumenten und regelmäßiger Abgleich", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-de-06", "language": "de", "query": "Informationsregister der IKT-Drittdienstleister nach DORA", "expected": ["obl-dora-ict-register"], "match_kind": "both"}
+{"id": "r-de-07", "language": "de", "query": "Basisinformationsblatt, bevor der Kunde gebunden ist", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-nl-01", "language": "nl", "query": "moeten we de klant waarschuwen als het product volgens de passendheidstoets niet passend is", "expected": ["obl-appropriateness", "obl-esma-warnings"], "match_kind": "concept"}
+{"id": "r-nl-02", "language": "nl", "query": "informatie over alle kosten en lasten voor en na de transactie", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-nl-03", "language": "nl", "query": "betalen voor onderzoek op beleggingsgebied van derden", "expected": ["obl-research-payments"], "match_kind": "concept"}
+{"id": "r-nl-04", "language": "nl", "query": "waardeoverdracht van een pensioenverzekering naar een andere verzekeraar", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
+{"id": "r-nl-05", "language": "nl", "query": "geautomatiseerde besluiten met aanmerkelijke gevolgen, artikel 22", "expected": ["obl-gdpr-article-22", "celex-32016r0679/art-22"], "match_kind": "both"}
+{"id": "r-nl-06", "language": "nl", "query": "verzekering met een beleggingscomponent, verlangens en behoeften van de klant", "expected": ["obl-idd-demands-needs"], "match_kind": "concept"}
+{"id": "r-nl-07", "language": "nl", "query": "essentiële-informatiedocument voordat de klant de overeenkomst sluit", "expected": ["obl-priips-kid"], "match_kind": "concept"}

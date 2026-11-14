@@ -422,7 +422,10 @@ class ContentScreenPathologicalInputTests(SimpleTestCase):
         """D-145: a stem of the German, Dutch, Estonian, Latvian and Lithuanian rules that
         more of the phrase follows takes an ending of six letters at most, so a page that is
         one run of such stems is read once and not once again from every stem in it."""
-        text = "ignorieremissachtekonfidenzdirbtintehisintellektersetztsistemin" * 3300
+        text = (
+            "ignorieremissachtekonfidenzdirbtintehisintellektersetztsistemin"
+            "hinweisassistentmärkusagentpiezīmechatbot"
+        ) * 2000
         self.assertEqual(self.screen_within_budget(text), [])
 
     def test_a_long_page_of_near_misses_in_the_other_home_market_languages(self) -> None:

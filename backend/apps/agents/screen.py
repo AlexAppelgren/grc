@@ -260,11 +260,6 @@ _ADDRESS = (
     r"(?:" + _GAP + r"(?:to|til|till|for|för))?"
     r"|to|til|till|för|for)"
 )
-_AI_NOUN = (
-    r"(?:assistent\w*|assistant\w*|tekoäly\w*|kielimalli\w*|språkmodell\w*"
-    r"|sprogmodel\w*|kunstig" + _GAP + r"intelligens|artificiell" + _GAP
-    + r"intelligens|language" + _GAP + r"model|llm|chatbot|agent\w*)"
-)
 
 # The same asides in German, Dutch, Estonian, Latvian and Lithuanian (D-145), kept apart so
 # that no word of theirs widens a phrase above. "Hinweis an die KI:", "Opmerking voor de AI:",
@@ -285,15 +280,16 @@ _TURN_NOTE = (
     r"|achtung|tähelepanu|uzmanību|dėmesio)"
 )
 # The AI such a note names: by its noun, after "AI" or what the language writes for it (KI,
-# TI, MI, DI), or as "AI" or "KI" alone; then the colon or comma.
+# TI, MI, DI), or as "AI" or "KI" alone; then the colon or comma. The nouns end in a
+# bounded ending, the colon being still to come.
 _NOTED_AI = (
     r"(?:"
     + _phrase(
         r"(?:a\.?i\.?|[kmdt]i)?",
-        r"(?:" + _AI_NOUN + r"|(?:assistend|asistent|sprachmodell|taalmodel|keelemudel"
+        r"(?:assistent|assistend|asistent|agent|chatbot|llm|sprachmodell|taalmodel|keelemudel"
         r"|tehisintellekt|tehisaru|künstliche" + _GAP + r"intelligenz"
         r"|kunstmatige" + _GAP + r"intelligentie|(?:mākslīg|dirbtin)" + _ENDING + _GAP
-        + r"intelekt|(?:valodas|kalbos)" + _GAP + r"model)" + _ENDING + r")",
+        + r"intelekt|(?:valodas|kalbos)" + _GAP + r"model)" + _ENDING,
         r"[:,]",
     )
     + r"|"
@@ -312,7 +308,15 @@ _CASE_NOTE = r"(?:(?:a\.?i\.?|[mdt]i)" + _GAP + r")?" + _phrase(
 
 _AI_ASIDE = "|".join(
     (
-        _phrase(_ADDRESS, r"(?:the|den|det|de)?", r"(?:a\.?i\.?|ki)?", _AI_NOUN, r"[:,]")
+        _phrase(
+            _ADDRESS,
+            r"(?:the|den|det|de)?",
+            r"(?:a\.?i\.?|ki)?",
+            r"(?:assistent\w*|assistant\w*|tekoäly\w*|kielimalli\w*|språkmodell\w*"
+            r"|sprogmodel\w*|kunstig" + _GAP + r"intelligens|artificiell" + _GAP
+            + r"intelligens|language" + _GAP + r"model|llm|chatbot|agent\w*)",
+            r"[:,]",
+        )
         + _END_OF_WORD,
         _phrase(_ADDRESS, r"(?:the|den|det)?", r"a\.?i\.?", r"[:,]") + _END_OF_WORD,
         _phrase(_NOTE, _NOTED_AI) + _END_OF_WORD,
