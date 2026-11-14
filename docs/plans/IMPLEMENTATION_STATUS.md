@@ -426,8 +426,15 @@ the Netherlands, Austria and Switzerland.
   duties, from the consolidated XML of the Basiswettenbestand, because wetten.overheid.nl
   closed every read). That is 135 statutes and 895 duties; the baseline now holds 679
   instruments and 2,789 obligations.
+- **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
+  sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
+  2026-11-14 read at its dated address, each cut by script and read twice from two of the
+  publisher's forms (XML and HTML, then Akoma Ntoso as a third reader), with a Swedish
+  translation beside each, written for meaning and marked as a machine translation. 78 of
+  the 84 duties carry their text; six do not, because the site prints two wordings of the
+  unit and only its editors' notes say which applies, or the unit holds tables.
 - **In work on this branch:** the seven markets' regulations; and the law's own words
-  for the seven statute tranches, each provision in its original
+  for the other six statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only
