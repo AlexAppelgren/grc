@@ -1,0 +1,214 @@
+{
+  "tranche": "ch-verordnungen-2",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "ch-sr-952-033-41",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/142/20250101/de/html/fedlex-data-admin-ch-eli-cc-2024-142-20250101-de-html-5.html",
+      "sourceLabel": "Fedlex, Verordnung der FINMA über die Marktrisiken der Banken und Wertpapierhäuser (MarV-FINMA), SR 952.033.41, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "FINMA's ordinance on the minimum capital banks and securities firms hold for market risks, under the Capital Adequacy Ordinance. Beside the calculation methods it sets the duties around them. In practice a bank keeps internal directives on structural foreign currency positions, runs documented data integrity procedures with daily trade reconciliation, and under the model approach reports model changes and backtesting results to FINMA and has its risk monitoring reviewed every year."
+      }
+    },
+    {
+      "key": "ch-sr-952-033-21",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/141/20261005/de/html/fedlex-data-admin-ch-eli-cc-2024-141-20261005-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung der FINMA über die Kreditrisiken der Banken und Wertpapierhäuser (KreV-FINMA), SR 952.033.21, consolidated German text, Stand am 5. Oktober 2026",
+      "text": {
+        "en": "FINMA's ordinance on the minimum capital banks and securities firms hold for credit risks, under the Capital Adequacy Ordinance: derivative exposures, fund holdings, securitisations, risk mitigation, the internal ratings based approach and central counterparties. In practice a bank involves its audit firm and FINMA in unusual securitisations, manages collateral and margin risks, checks external ratings, reports changes to its internal ratings approach and monitors its exposures to central counterparties."
+      }
+    },
+    {
+      "key": "ch-sr-952-031-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/139/20250101/de/html/fedlex-data-admin-ch-eli-cc-2024-139-20250101-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung der FINMA über das Handels- und das Bankenbuch sowie die anrechenbaren Eigenmittel der Banken und Wertpapierhäuser (HBEV-FINMA), SR 952.031.11, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "FINMA's ordinance under the Capital Adequacy Ordinance on how banks and securities firms draw the line between trading book and banking book, value their positions prudently and count their capital components. In practice a bank keeps directives on book allocation, moves no position between the books without extraordinary cause and management approval, documents and reports deviations, runs an independent prudent valuation process and tells FINMA of changes in how it applies US GAAP."
+      }
+    },
+    {
+      "key": "ch-sr-961-011-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/377/20240901/de/html/fedlex-data-admin-ch-eli-cc-2024-377-20240901-de-html-4.html",
+      "sourceLabel": "Fedlex, Verordnung der FINMA über die Beaufsichtigung von privaten Versicherungsunternehmen (Versicherungsaufsichtsverordnung FINMA, AVO-FINMA), SR 961.011.1, consolidated German text, Stand am 1. September 2024",
+      "text": {
+        "en": "FINMA's ordinance under the Insurance Supervision Act and the Supervision Ordinance on the Swiss Solvency Test, technical provisions, tied assets and the conduct of insurers and insurance intermediaries. A banking group meets it where it distributes insurance as a registered intermediary or owns a life insurer. In practice the intermediary reports registration changes at once and files a yearly report with FINMA, and the insurer builds its example calculations on three return scenarios."
+      }
+    },
+    {
+      "key": "ch-sr-956-161",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2014/708/20150101/de/html/fedlex-data-admin-ch-eli-cc-2014-708-20150101-de-html-6.html",
+      "sourceLabel": "Fedlex, Finanzmarktprüfverordnung (FINMA-PV), SR 956.161, consolidated German text, Stand am 1. Januar 2015",
+      "text": {
+        "en": "The Federal Council's ordinance under the Financial Market Supervision Act on the regulatory audit of the firms FINMA supervises: its content, how audit firms carry it out and report, and the duties of the supervised firms. In practice a bank tells FINMA at once when it chooses or changes its audit firm, uses one audit firm or network across its group, pays the audit by effort rather than a flat fee and hands its internal audit reports to the audit firm in good time."
+      }
+    },
+    {
+      "key": "ch-sr-955-31",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2026/364/20261001/de/html/fedlex-data-admin-ch-eli-cc-2026-364-20261001-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über die Transparenz juristischer Personen und die Identifikation der wirtschaftlich berechtigten Personen (TJPV), SR 955.31, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "The Federal Council's ordinance under the Act on the Transparency of Legal Entities, in force since 1 October 2026. It details who counts as a beneficial owner, what a legal entity obtains and reports to the transparency register, and how financial intermediaries use the register. In practice a bank reports its own beneficial owners with the listed details, queries the register only for its anti-money laundering due diligence and reports discrepancies with the content the ordinance sets."
+      }
+    },
+    {
+      "key": "ch-sr-128-51",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2025/169/20250401/de/html/fedlex-data-admin-ch-eli-cc-2025-169-20250401-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über die Cybersicherheit (Cybersicherheitsverordnung, CSV), SR 128.51, consolidated German text, Stand am 1. April 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Information Security Act on the national cyber strategy, the tasks of the Federal Office for Cybersecurity and the duty to report cyberattacks, which reaches banks, insurers and financial market infrastructures. In practice a bank applies its tests for a reportable attack, puts the listed details into each report and completes an incomplete report within the 14 days the Office grants."
+      }
+    },
+    {
+      "key": "ch-sr-196-127-27",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2025/157/20250731/de/html/fedlex-data-admin-ch-eli-cc-2025-157-20250731-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über die Sperrung von Vermögenswerten im Zusammenhang mit Syrien (Syrien-Verordnung), SR 196.127.27, consolidated German text, Stand am 31. Juli 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Foreign Illicit Assets Act (SRVG) that freezes, with a view to mutual legal assistance, the assets of the foreign politically exposed persons and persons close to them listed in connection with Syria; it applies until 6 March 2029. In practice a bank screens its clients against the annex, freezes their assets, reports them to the reporting office and keeps managing them as the act requires."
+      }
+    },
+    {
+      "key": "ch-sr-196-127-85",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2026/1/20261016/de/html/fedlex-data-admin-ch-eli-cc-2026-1-20261016-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über die Sperrung von Vermögenswerten im Zusammenhang mit Venezuela (Venezuela-Verordnung), SR 196.127.85, consolidated German text, Stand am 16. Oktober 2026",
+      "text": {
+        "en": "The Federal Council's ordinance under the Foreign Illicit Assets Act (SRVG) that freezes, with a view to mutual legal assistance, the assets of the foreign politically exposed persons and persons close to them listed in connection with Venezuela; it applies until 4 January 2030. In practice a bank screens its clients against the annex, freezes their assets, reports them to the reporting office and keeps managing them as the act requires."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-157-5",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2018/560/20260602/de/html/fedlex-data-admin-ch-eli-cc-2018-560-20260602-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Myanmar, SR 946.231.157.5, consolidated German text, Stand am 2. Juni 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Myanmar. Beside bans on arms, surveillance and dual use goods it freezes the assets of the persons, companies and organisations in Annex 1. In practice a bank freezes listed assets, makes no funds available to listed persons, gives no financial services linked to military activities or banned goods, satisfies no blocked claims and reports frozen assets to SECO."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-09",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/147/20260616/de/html/fedlex-data-admin-ch-eli-cc-2024-147-20260616-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Personen und Organisationen, welche die Hamas oder den Palästinensischen Islamischen Dschihad unterstützen, SR 946.231.09, consolidated German text, Stand am 16. Juni 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against persons and organisations that support Hamas or the Palästinensischen Islamischen Dschihad, as named in its title. It freezes the assets of those listed in its annex and bans their entry. In practice a bank screens clients and payments against the annex, freezes listed assets, makes no funds available, satisfies no blocked claims and reports frozen assets to SECO, every year by 15 February too."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-149-82",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2011/203/20250820/de/html/fedlex-data-admin-ch-eli-cc-2011-203-20250820-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Libyen, SR 946.231.149.82, consolidated German text, Stand am 20. August 2025",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Libya. It bans arms and repression goods and services linked to them and freezes the assets of the persons and entities in Annexes 2 and 3. In practice a bank freezes listed assets, makes no funds available to listed persons, finances nothing linked to arms or military activities in Libya, satisfies no blocked claims of the Libyan state or residents and reports frozen assets to SECO."
+      }
+    },
+    {
+      "key": "ch-sr-946-206",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/1990/1316_1316_1316/20230601/de/html/fedlex-data-admin-ch-eli-cc-1990-1316_1316_1316-20230601-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über Wirtschaftsmassnahmen gegenüber der Republik Irak, SR 946.206, consolidated German text, Stand am 1. Juni 2023",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Iraq, dating from 1990. It bans arms and Iraqi cultural goods and freezes the assets of the former Iraqi government, its senior officials and their families and the entities they control, as listed in its annex. In practice a bank freezes those assets, reports them to SECO and makes no guarantee payments on contracts that the United Nations measures impaired."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-178-5",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2018/191/20260113/de/html/fedlex-data-admin-ch-eli-cc-2018-191-20260113-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Venezuela, SR 946.231.178.5, consolidated German text, Stand am 13. Januar 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Venezuela. It bans arms, repression and surveillance goods and freezes the assets of the persons, companies and organisations in Annex 1. In practice a bank freezes listed assets, makes no funds available, gives no financial services, financing or insurance linked to arms or repression goods, satisfies no blocked claims and reports frozen assets to SECO, every year by 15 February too."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-18",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2005/371/20261103/de/html/fedlex-data-admin-ch-eli-cc-2005-371-20261103-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber dem Sudan, SR 946.231.18, consolidated German text, Stand am 3. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act carrying out the United Nations measures on Sudan. It bans arms, Sudanese gold exported after 9 September 2026 and gold mining goods, and freezes the assets in Annexes 1 and 2. In practice a bank freezes listed assets, makes no funds available, buys and finances no such gold, finances no gold mining goods for Sudan and reports frozen assets to SECO."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-169-4",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2009/295/20240315/de/html/fedlex-data-admin-ch-eli-cc-2009-295-20240315-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Somalia, SR 946.231.169.4, consolidated German text, Stand am 15. März 2024",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act carrying out the United Nations measures on Somalia. It bans arms and Somali charcoal and freezes the assets of the persons and entities in Annex 1. In practice a bank freezes listed assets, makes no funds available, finances nothing linked to arms or military activities in Somalia or to the charcoal trade, and reports frozen assets to SECO."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-179-8",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2014/761/20230601/de/html/fedlex-data-admin-ch-eli-cc-2014-761-20230601-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Jemen, SR 946.231.179.8, consolidated German text, Stand am 1. Juni 2023",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act carrying out the United Nations measures on Yemen. It bans arms deliveries to the persons and groups in its annex and freezes their assets. In practice a bank freezes listed assets, makes no funds available to listed persons, gives them no financial services or financing linked to arms or military activities, and reports frozen assets to SECO without delay."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-12",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2005/442/20261020/de/html/fedlex-data-admin-ch-eli-cc-2005-442-20261020-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber der Demokratischen Republik Kongo, SR 946.231.12, consolidated German text, Stand am 20. Oktober 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act on the Democratic Republic of the Congo. It bans arms and related services and freezes the assets of the persons and entities in Annexes 1 and 2. In practice a bank freezes listed assets, makes no funds available to listed persons, finances nothing linked to arms or military activities in the country unless an exception applies, and reports frozen assets to SECO."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-123-6",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2014/150/20240315/de/html/fedlex-data-admin-ch-eli-cc-2014-150-20240315-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber der Zentralafrikanischen Republik, SR 946.231.123.6, consolidated German text, Stand am 15. März 2024",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act carrying out the United Nations measures on the Central African Republic. It bans arms and related services and freezes the assets of the persons and entities in its annex. In practice a bank freezes listed assets, makes no funds available to listed persons, finances nothing linked to arms or military activities in the country and reports frozen assets to SECO."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-169-9",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/532/20260811/de/html/fedlex-data-admin-ch-eli-cc-2015-532-20260811-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber der Republik Südsudan, SR 946.231.169.9, consolidated German text, Stand am 11. August 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act on South Sudan. It bans arms and related services and freezes the assets of the persons and entities in Annexes 1 and 2. In practice a bank freezes listed assets, makes no funds available to listed persons, finances nothing linked to arms or military activities in South Sudan unless an exception applies, and reports frozen assets to SECO without delay."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-158-5",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2020/470/20261103/de/html/fedlex-data-admin-ch-eli-cc-2020-470-20261103-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Nicaragua, SR 946.231.158.5, consolidated German text, Stand am 3. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Nicaragua. It freezes the assets of the persons, companies and organisations in its annex and bans their entry. In practice a bank screens clients and payments against the annex, freezes listed assets, makes no funds available to listed persons, satisfies no blocked claims and reports frozen assets to SECO without delay and every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-139-4",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2022/823/20260128/de/html/fedlex-data-admin-ch-eli-cc-2022-823-20260128-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen betreffend Haiti, SR 946.231.139.4, consolidated German text, Stand am 28. Januar 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act carrying out the United Nations measures on Haiti. It bans arms and related services and freezes the assets of the persons and entities in Annexes 1 and 2. In practice a bank freezes listed assets, makes no funds available, finances nothing linked to arms or military activities in Haiti and reports frozen assets to SECO without delay and every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-156-5",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2023/335/20260811/de/html/fedlex-data-admin-ch-eli-cc-2023-335-20260811-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen betreffend Moldau, SR 946.231.156.5, consolidated German text, Stand am 11. August 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act concerning Moldova. It freezes the assets of the persons, companies and organisations in its annex and bans their entry. In practice a bank screens clients and payments against the annex, freezes listed assets, makes no funds available unless a humanitarian exception applies, satisfies no blocked claims and reports frozen assets to SECO, every year by 15 February too."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-137-6",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/148/20260127/de/html/fedlex-data-admin-ch-eli-cc-2024-148-20260127-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen betreffend Guatemala, SR 946.231.137.6, consolidated German text, Stand am 27. Januar 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act concerning Guatemala. It freezes the assets of the persons, companies and organisations in its annex and bans their entry. In practice a bank screens clients and payments against the annex, freezes listed assets, makes no funds available to listed persons, satisfies no blocked claims and reports frozen assets to SECO without delay and every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-209-2",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2002/154/20250915/de/html/fedlex-data-admin-ch-eli-cc-2002-154-20250915-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Simbabwe, SR 946.209.2, consolidated German text, Stand am 15. September 2025",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Zimbabwe. It bans arms and repression goods and freezes the funds of the persons in Annex 2. In practice a bank screens clients and payments against Annex 2, freezes the listed persons' funds, makes no funds available to them unless a humanitarian exception applies, and reports frozen funds to SECO without delay and every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-121-8",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/849/20251008/de/html/fedlex-data-admin-ch-eli-cc-2015-849-20251008-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Burundi, SR 946.231.121.8, consolidated German text, Stand am 8. Oktober 2025",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Burundi. It freezes the assets of the persons, companies and organisations in its annex and bans their entry. In practice a bank screens clients and payments against the annex, freezes listed assets, makes no funds available to listed persons, satisfies no blocked claims and reports frozen assets to SECO without delay and every year by 15 February."
+      }
+    }
+  ]
+}
