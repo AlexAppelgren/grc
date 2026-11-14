@@ -77,6 +77,16 @@ library takes their law in its own language. What needs you, most urgent first.
       is too early, because the day they began was not on any page read; the sanctions
       prohibitions are offences written as duties; the Belarus regime was left out
       because legislation.gov.uk lists 72 changes not yet applied to its text.
+- [ ] **A German lawyer on the regulations.** The researcher's own doubts: AWV § 82 Abs. 1
+      is an offence written as a duty; four regulations print no opening formula, so the
+      issuer was read in the title's footnote (InhKontrollV, FinaRisikoV, PAngV,
+      PfandMeldeV); ZAGAnzV and ZAGMonAwV still name the payment services act of 2009 as
+      their basis; ImmoKWPLV, made jointly with the justice ministry, is recorded under
+      the finance ministry; eight regulations carry no entry-into-force date, because
+      each says only "the day after promulgation". Left out because their maker is not a
+      seeded authority: the Versicherungsvermittlungsverordnung (economy ministry), the
+      Zahlungskonto-Identitätsprüfungsverordnung (interior ministry) and the
+      RechKredV, whose page names no issuer.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
