@@ -90,7 +90,7 @@ class Translator(TestCase):
         self.assertEqual(proposal.payload["titles"]["sv"], "[sv] Assess suitability")
         self.assertEqual((sorted(proposal.payload["summaries"]), proposal.payload["version"], proposal.payload["summariesFrom"]), (MISSING, 1, "en"))
         generation = AiGeneration.objects.get(purpose="translation")
-        self.assertEqual((generation.agent_run_id, generation.subject_id, generation.prompt_template), (proposal.agent_run_id, self.duty.id, "library-translator/v1"))
+        self.assertEqual((generation.agent_run_id, generation.subject_id, generation.prompt_template), (proposal.agent_run_id, self.duty.id, "library-translator/v2"))
         assert generation.agent_run_id is not None
         run = AgentRun.objects.get(pk=generation.agent_run_id)
         self.assertEqual((run.agent.key, run.status, run.stats["proposalsSubmitted"], run.stats["modelCalls"]), ("library-translator", "succeeded", 1, 1))

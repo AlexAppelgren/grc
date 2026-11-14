@@ -84,6 +84,20 @@ are checked with the whole baseline, never with a single tranche file.
   `dk-bek-<year>-<number>`, `no-lov-<yyyy-mm-dd>-<number>`, `no-for-<yyyy-mm-dd>-<number>`,
   `fi-sd-<year>-<number>`, `fi-fiva-<topic>` for a FIN-FSA regulation, and
   `<authority>-gl-<year>-<number>` for a guideline. Obligations: `obl-<jurisdiction>-<instrument short>-<topic>`.
+  The other home markets (D-145) take the identifier their own database keeps for an act
+  across every version, as read on 2026-11-14 (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`):
+  `ee-rt-<the act's first publication reference>` (`ee-rt-i-1999-23-349` for RT I 1999, 23,
+  349, and `ee-rt-i-2025-02-19-9` for RT I, 19.02.2025, 9, the date year first);
+  `lv-ta-<the act's number on likumi.lv>` (`lv-ta-326575`); `de-<the act's name on
+  gesetze-im-internet.de>` with a hyphen for an underscore (`de-kredwg`);
+  `ukpga-<year>-<chapter>` and `uksi-<year>-<number>`, legislation.gov.uk's own type, year
+  and number (`ukpga-2000-8`, `uksi-2017-692`), `fca-<sourcebook>` and `pra-<part>` for the
+  regulators' rules; `nl-<BWB id>` (`nl-bwbr0020368`); `at-bgbl-<year>-<number>` for an act
+  of the single gazette up to 1996 and `at-bgbl-<part>-<year>-<number>` after it
+  (`at-bgbl-1993-532` for BGBl. Nr. 532/1993, `at-bgbl-i-2001-97` for BGBl. I Nr. 97/2001); `ch-sr-<SR number>`
+  with hyphens for its dots (`ch-sr-952-0`) and `finma-rs-<year>-<number>` for a FINMA
+  circular. Lithuania's is decided with its first tranche: its citation format could not
+  be read, because its register refused the read.
 - **Our own words.** A summary says in one to three plain sentences what the firm must do,
   for whom and when, and never copies the law beyond a defined term. `refLabel` cites the
   article or section the duty comes from, as the source numbers it.
@@ -199,11 +213,12 @@ How each text was read, and every check it went through, is recorded in
 - **A source's own unofficial translation does not stand in for one.** The English texts
   that Finlex, Lovdata, both Finanstilsynet and Finansinspektionen publish are not official
   and may trail the law, and Lovdata's are outside the texts it frees for reuse. The same
-  holds for the English that Riigi Teataja, Likumi.lv, BaFin, Fedlex, FINMA, the FMA and
-  the Dutch authorities publish beside their law.
+  holds for the English that Riigi Teataja, Likumi.lv, Gesetze im Internet and Fedlex
+  publish beside their law: each says its English has no legal force, and the translations
+  on Gesetze im Internet are under copyright where the German texts are not.
 
 What each source asks of someone who republishes its text, read on 2026-11-13 at the pages
-named:
+named, and on 2026-11-14 for the eight markets D-145 added:
 
 | Source | What it allows | What the entry does |
 |---|---|---|
@@ -213,6 +228,14 @@ named:
 | Norway, `lovdata.no` | Laws and regulations carry no copyright (åndsverkloven § 14). Lovdata frees its current acts and central regulations under NLOD 2.0 when Lovdata is named as the source: credit, a link, and changes marked. No mass download from the site: its open nightly packages instead (`lovdata.no/info/brukeravtale`, `api.lovdata.no`) | `sourceLabel` names Lovdata and `source` links the section; the text is unchanged. Lovdata calls its consolidated text its own work, and whether that holds against § 14 is a lawyer's question still open |
 | Finland, `finlex.fi` | No copyright in laws, decrees or official translations (tekijänoikeuslaki 9 §). Finlex open data is CC BY 4.0 (`finlex.fi/en/faq`); every request carries a User-Agent | `sourceLabel` names Finlex. FIN-FSA's regulations bind in Finnish and Swedish and are published as PDF |
 | EU, `eur-lex.europa.eu` | Legal documents may be reused, commercially or not; a consolidated text is CC BY 4.0, the source acknowledged and changes indicated. Only the Official Journal is authentic (`eur-lex.europa.eu/content/legal-notice/legal-notice.html`) | `sourceLabel` names EUR-Lex and the Official Journal reference, and says so when the text is a consolidated one |
+| Estonia, `riigiteataja.ee` | No copyright in legislation and administrative documents or their official translations (autoriõiguse seadus § 5(3)); Riigi Teataja is free of charge by its own act. The site states no terms of its own. Its pages hold no text without a browser: the text comes from `riigiteataja.ee/public-api/api/v1/akt/<id>/txt` | `sourceLabel` names Riigi Teataja and the publication reference. Finantsinspektsioon's own site forbids reproduction without its permission, and whether that reaches its guidelines is a lawyer's question still open |
+| Latvia, `likumi.lv` and `vestnesis.lv` | Free access at no charge by law (Oficiālo publikāciju un tiesiskās informācijas likums) and by the portal's terms, which say nothing of republication or credit. No licence text was found | `sourceLabel` names Likumi.lv and the publication in Latvijas Vēstnesis, which is the text that binds. Whether republication needs more is a lawyer's question still open |
+| Lithuania, `e-tar.lt` | Not read: the register refused the read. The Office of the Seimas gives its own open data under CC BY 4.0 with the source (`www.lrs.lt`) and the provider named; whether that covers the register's texts was not read | Nothing is taken until the terms are read |
+| Germany, `gesetze-im-internet.de` | Statutes, regulations and official decrees carry no copyright (§ 5 Abs. 1 UrhG); the site offers its XML for automated processing. Its English translations are under copyright. BaFin allows reproduction with the source named ("© Bundesanstalt für Finanzdienstleistungsaufsicht / www.bafin.de") | `sourceLabel` names Gesetze im Internet and the Bundesgesetzblatt reference; a BaFin text carries BaFin's credit |
+| United Kingdom, `legislation.gov.uk` | Open Government Licence v3.0: copy, publish and adapt, commercially too, with the source acknowledged. The FCA Handbook is under the same licence and its own Handbook terms. The PRA Rulebook forbids commercial use without a licence from the PRA | `sourceLabel` names legislation.gov.uk and the licence. No PRA Rulebook text is taken until a licence is held: the duty cites the rule and `withoutProvision` says why |
+| Netherlands, `wetten.overheid.nl` | No copyright in laws, decrees and regulations issued by public authority (Auteurswet art. 11); Overheid.nl invites reuse through its web service and names no licence. The AFM allows copying only with explicit credit | `sourceLabel` names Wetten.nl and the BWB id; an AFM text credits the AFM |
+| Austria, `ris.bka.gv.at` | Statutes, regulations and official decrees are free works (Urheberrechtsgesetz § 7 Abs. 1). The site answers an automated read with a security check; its open-data interface (`data.bka.gv.at/ris/api`) serves the same law, and that service's own terms were not found | `sourceLabel` names the RIS and the BGBl. reference |
+| Switzerland, `fedlex.admin.ch` | No copyright in acts, ordinances and other official enactments, or in their official collections and translations (URG Art. 5). German, French and Italian bind alike; the text is found through Fedlex's SPARQL endpoint. FINMA's site asks written consent for reproduction, and whether its circulars are official enactments is a lawyer's question still open | `sourceLabel` names Fedlex and the SR number. No FINMA circular text is taken until that is settled |
 | EBA, ESMA, EIOPA | Reproduction with the source acknowledged (EBA); "Source: EIOPA - European Insurance and Occupational Pensions Authority."; a republished translation of an ESMA document says "This document constitutes a translation of a document downloaded from ESMA's website" | `sourceLabel` carries the authority's own wording |
 
 ## Corrections

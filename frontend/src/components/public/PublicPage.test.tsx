@@ -174,13 +174,28 @@ describe('PublicPage', () => {
     for (const link of screen.getAllByRole('link', { name: 'Sign in' })) expect(link).toHaveAttribute('href', '/sign-in');
   });
 
-  it('lists the six steps of a sign-off and the five jurisdictions with their languages', async () => {
+  it('lists the six steps of a sign-off and every market with its sources and languages', async () => {
     const { container } = await renderPage();
     const signOff = container.querySelector('section#signoff') as HTMLElement;
     expect([...signOff.querySelectorAll('ol b')].map((name) => name.textContent)).toEqual(['Sighted', 'Proposed', 'Confirmed', 'Applied', 'Assessed', 'Signed off']);
-    const source = within(container.querySelector('section#source') as HTMLElement).getByRole('table', { name: 'Nordic and EU sources, in the languages they are published in' });
-    expect(within(source).getAllByRole('rowheader').map((cell) => cell.textContent)).toEqual(['Sweden', 'Denmark', 'Norway', 'Finland', 'European Union']);
+    const source = within(container.querySelector('section#source') as HTMLElement).getByRole('table', { name: 'National and EU sources from twelve markets, in the languages they are published in' });
+    expect(within(source).getAllByRole('rowheader').map((cell) => cell.textContent)).toEqual([
+      'Sweden',
+      'Denmark',
+      'Norway',
+      'Finland',
+      'Estonia',
+      'Latvia',
+      'Lithuania',
+      'Germany',
+      'United Kingdom',
+      'Netherlands',
+      'Austria',
+      'Switzerland',
+      'European Union',
+    ]);
     expect(within(source).getByText('Finnish, Swedish, English')).toBeInTheDocument();
+    expect(within(source).getByText('German, French, Italian, English')).toBeInTheDocument();
   });
 
   it('shows a picture of the demo in the demo entry, and on a phone opens it full screen only when asked', async () => {

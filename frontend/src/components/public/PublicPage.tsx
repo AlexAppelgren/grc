@@ -70,6 +70,14 @@ const COVERAGE: readonly (readonly [MessageKey, MessageKey, MessageKey])[] = [
   ['public.coverage.dk.name', 'public.coverage.dk.sources', 'public.coverage.dk.languages'],
   ['public.coverage.no.name', 'public.coverage.no.sources', 'public.coverage.no.languages'],
   ['public.coverage.fi.name', 'public.coverage.fi.sources', 'public.coverage.fi.languages'],
+  ['public.coverage.ee.name', 'public.coverage.ee.sources', 'public.coverage.ee.languages'],
+  ['public.coverage.lv.name', 'public.coverage.lv.sources', 'public.coverage.lv.languages'],
+  ['public.coverage.lt.name', 'public.coverage.lt.sources', 'public.coverage.lt.languages'],
+  ['public.coverage.de.name', 'public.coverage.de.sources', 'public.coverage.de.languages'],
+  ['public.coverage.gb.name', 'public.coverage.gb.sources', 'public.coverage.gb.languages'],
+  ['public.coverage.nl.name', 'public.coverage.nl.sources', 'public.coverage.nl.languages'],
+  ['public.coverage.at.name', 'public.coverage.at.sources', 'public.coverage.at.languages'],
+  ['public.coverage.ch.name', 'public.coverage.ch.sources', 'public.coverage.ch.languages'],
   ['public.coverage.eu.name', 'public.coverage.eu.sources', 'public.coverage.eu.languages'],
 ];
 

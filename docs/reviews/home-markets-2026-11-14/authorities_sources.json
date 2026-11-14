@@ -1,0 +1,2563 @@
+{
+ "readOn": "2026-11-14",
+ "method": "Every entry was read on the stated URL on 2026-11-14 with a plain HTTPS fetch (or, where noted, the web fetch tool). 'verified': false means the body's own page could not be read or a field has no fetched source; such fields are candidates only. Search-engine results are named as such and never count as verification.",
+ "unreadableSites": {
+  "403 Cloudflare challenge": [
+   "lb.lt",
+   "lrv.lt (incl. finmin, vdai, fntt)",
+   "vmi.lt",
+   "e-tar.lt",
+   "e-seimas.lrs.lt",
+   "fma.gv.at",
+   "parliament.uk and subdomains",
+   "fca.org.uk/news/search-results",
+   "efta.int"
+  ],
+  "503 security check": [
+   "ris.bka.gv.at (HTML site; the open-data API works)",
+   "bundesfinanzministerium.de"
+  ],
+  "403 for the command-line fetch, readable with the web fetch tool": [
+   "dnb.nl",
+   "admin.ch (www), eda.admin.ch"
+  ],
+  "blocked by this session's network policy": [
+   "data.gov.lt"
+  ],
+  "JavaScript applications whose HTML carries no content": [
+   "riigiteataja.ee (since 1 June 2026)",
+   "fedlex.admin.ch",
+   "handbook.fca.org.uk"
+  ]
+ },
+ "markets": {
+  "ee": {
+   "authorities": [
+    {
+     "key": "riigikogu",
+     "code": "Riigikogu",
+     "name": "Riigikogu",
+     "nameEn": "Riigikogu (Parliament of Estonia)",
+     "jurisdiction": "EE",
+     "url": "https://www.riigikogu.ee/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.riigikogu.ee/en/introduction-and-history/introduction/what-is-riigikogu/",
+     "evidenceNote": "Page says: 'The Riigikogu is the representative body of the nation ... making, amending and complementing legal acts and passing the state budget'; Estonian home page meta: 'Riigikogu on Eesti rahva esinduskogu'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "vabariigi-valitsus",
+     "code": "Vabariigi Valitsus",
+     "name": "Vabariigi Valitsus",
+     "nameEn": "Government of the Republic of Estonia",
+     "jurisdiction": "EE",
+     "url": "https://www.valitsus.ee/",
+     "role": "government",
+     "evidenceUrl": "https://www.riigiteataja.ee/public-api/api/v1/akt/128042022023/txt",
+     "evidenceNote": "Riigi Teataja shows 'Väljaandja: Vabariigi Valitsus, Akti liik: määrus' for regulation nr 34 of 19.04.2018 (RT I, 20.04.2018, 22), i.e. the Government issues regulations under this name; the site valitsus.ee titles itself 'Eesti Vabariigi Valitsus'. English form 'Government of the Republic of Estonia' read on emta.ee/en.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "nameNote": "Website title is 'Eesti Vabariigi Valitsus'; the issuer name on legal acts in Riigi Teataja is 'Vabariigi Valitsus'."
+    },
+    {
+     "key": "rahandusministeerium",
+     "code": "Rahandusministeerium",
+     "name": "Rahandusministeerium",
+     "nameEn": "Ministry of Finance",
+     "jurisdiction": "EE",
+     "url": "https://www.fin.ee/",
+     "role": "ministry",
+     "evidenceUrl": "https://www.fin.ee/en/ministry-and-contacts/organization/introduction-ministry",
+     "evidenceNote": "Page: 'The Ministry of Finance is the government's expert in the implementation of tax, financial, fiscal and public policies'; Riigi Teataja lists 'Rahandusminister' as issuer of regulations under the Credit Institutions Act (e.g. nr 12 of 14.02.2025).",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "No own abbreviation seen on fin.ee; regulations are issued in the name of the minister ('Rahandusminister')."
+    },
+    {
+     "key": "finantsinspektsioon",
+     "code": "FI (EE)",
+     "name": "Finantsinspektsioon",
+     "nameEn": "Estonian Financial Supervision and Resolution Authority",
+     "jurisdiction": "EE",
+     "url": "https://www.fi.ee/",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.fi.ee/et/finantsinspektsioon/finantsinspektsioonist",
+     "evidenceNote": "Page: 'Finantsinspektsioon on autonoomse pädevuse ja eelarvega finantsjärelevalve ning kriisilahenduse asutus, mis tegutseb Eesti riigi nimel'; legal basis Finantsinspektsiooni seadus (RT I 2001, 48, 267) § 2 lists supervision under the credit institutions, insurance, investment funds, securities market, payment institutions, crypto-asset market acts etc.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "The body abbreviates itself 'FI' in Estonian (e.g. 'FI juht') and uses 'FSA' in English page titles and the full name 'Estonian Financial Supervision and Resolution Authority' in the Code of Ethics link; 'FI' collides with the existing Swedish code, so '(EE)' is added in the Finanstilsynet (DK) style.",
+     "bindingNote": "FIS § 57(1): the Inspectorate issues guidelines 'soovitusliku iseloomuga' (advisory); it is also the resolution authority."
+    },
+    {
+     "key": "eesti-pank",
+     "code": "Eesti Pank",
+     "name": "Eesti Pank",
+     "nameEn": "Eesti Pank",
+     "jurisdiction": "EE",
+     "url": "https://www.eestipank.ee/",
+     "role": "central_bank",
+     "evidenceUrl": "https://www.eestipank.ee/en/about-us",
+     "evidenceNote": "Page: 'Eesti Pank is the central bank of the Republic of Estonia and a member of the European System of Central Banks'; Riigi Teataja lists 20 regulations of 'Eesti Panga President' issued under the Credit Institutions Act (reporting, capital buffers, housing-loan limits).",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "bindingNote": "Binding rules to banks are 'Eesti Panga presidendi määrus', published in Riigi Teataja."
+    },
+    {
+     "key": "aki",
+     "code": "AKI",
+     "name": "Andmekaitse Inspektsioon",
+     "nameEn": "Estonian Data Protection Inspectorate",
+     "jurisdiction": "EE",
+     "url": "https://www.aki.ee/",
+     "role": "data_protection",
+     "evidenceUrl": "https://www.aki.ee/en/inspectorate-news-information-dpo-s/statutes",
+     "evidenceNote": "Page: 'In this section you will find additional information about Estonian Data Protection Inspectorate'; Estonian site title 'Andmekaitse Inspektsioon', news use 'AKI'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "emta",
+     "code": "MTA",
+     "name": "Maksu- ja Tolliamet",
+     "nameEn": "Estonian Tax and Customs Board",
+     "jurisdiction": "EE",
+     "url": "https://www.emta.ee/",
+     "role": "tax",
+     "evidenceUrl": "https://www.emta.ee/en/business-client/taxes-and-payment/tax-returns-exchange-information/tax-information-exchange",
+     "evidenceNote": "Page (title '... | Estonian Tax and Customs Board'): 'declarations of financial accounts (DAC2 / CRS / FATCA), country-by-country reporting (DAC4 / CbCR), cross-border tax arrangements (DAC6) ... (DAC8/CARF)' are submitted to it.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "Estonian pages abbreviate 'MTA'; English pages 'ETCB'; the domain is emta.ee."
+    },
+    {
+     "key": "rahapesu-andmeburoo",
+     "code": "RAB",
+     "name": "Rahapesu Andmebüroo",
+     "nameEn": "Estonian Financial Intelligence Unit",
+     "jurisdiction": "EE",
+     "url": "https://fiu.ee/",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://fiu.ee/rahvusvaheline-finantssanktsioon/rahvusvaheline-finantssanktsioon",
+     "evidenceNote": "Page: 'Rahapesu Andmebüroo ülesandeks on tagada rahvusvahelise finantssanktsiooni õiguspärane kohaldamine'; the English site publishes 'Guidelines for the Application of Financial Sanctions' and reporting guidelines.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "'RAB' seen only as the body's hashtag on fiu.ee; English pages say 'Financial Intelligence Unit' / 'FIU' and once 'Estonian Financial Intelligence Unit'."
+    }
+   ],
+   "sources": [
+    {
+     "name": "Riigi Teataja",
+     "url": "https://www.riigiteataja.ee/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "EE",
+     "httpStatus": 200,
+     "evidenceNote": "Official gazette and consolidated texts. Since 1 June 2026 the site is a JavaScript application: every path returns the same 200 shell, so a watch agent must read the JSON API (https://www.riigiteataja.ee/public-api/api/v1/akt/{id}, /akt/kronoloogia, /otsing/tervik-tekst) and not the HTML.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "apiUrl": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026016"
+    },
+    {
+     "name": "Finantsinspektsioon, uudised",
+     "url": "https://www.fi.ee/et/uudised",
+     "kind": "authority_site",
+     "authority": "finantsinspektsioon",
+     "jurisdiction": "EE",
+     "httpStatus": 200,
+     "evidenceNote": "News listing in Estonian; newest item dated 13.11.26; an RSS link '/et/uudised/rss' is on the page (not fetched).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Finantsinspektsioon, juhendid ja märgukirjad",
+     "url": "https://www.fi.ee/et/juhendid",
+     "kind": "authority_site",
+     "authority": "finantsinspektsioon",
+     "jurisdiction": "EE",
+     "httpStatus": 200,
+     "evidenceNote": "Page title 'Juhendid ja märgukirjad | Finantsinspektsioon': the register of the Inspectorate's (advisory) guidelines and notes by sector.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Eesti Pank, pressiteated",
+     "url": "https://www.eestipank.ee/press",
+     "kind": "authority_site",
+     "authority": "eesti-pank",
+     "jurisdiction": "EE",
+     "httpStatus": 200,
+     "evidenceNote": "Page title 'Pressiteated | Eesti Pank'; newest item 13.11.2026. Eesti Pank's binding regulations themselves appear in Riigi Teataja.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Rahapesu Andmebüroo, juhendid",
+     "url": "https://fiu.ee/oigusaktid-ja-juhendid/juhendid",
+     "kind": "authority_site",
+     "authority": "rahapesu-andmeburoo",
+     "jurisdiction": "EE",
+     "httpStatus": 200,
+     "evidenceNote": "Page title 'Juhendid | Rahapesu Andmebüroo': FIU guidelines on reporting and financial sanctions.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "extra": true
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "Estonian only. English translations in Riigi Teataja are unofficial and have no legal force. No second enactment language.",
+     "items": [
+      {
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/111042025003/txt",
+       "humanUrl": "https://www.riigiteataja.ee/akt/111042025003",
+       "readOn": "2026-11-14",
+       "quote": "§ 6. Eesti riigikeel on eesti keel.",
+       "gloss": "Constitution § 6: the official language of Estonia is Estonian.",
+       "verified": true
+      },
+      {
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/avalik/tekstid/tulemus",
+       "humanUrl": "https://www.riigiteataja.ee/en/introduction",
+       "readOn": "2026-11-14",
+       "quote": "The translations published in Riigi Teataja are unofficial texts ... In Estonia, legislation has legal force only in Estonian.",
+       "gloss": "Riigi Teataja's own site text (served by its API; the human URL is a JavaScript page and was not rendered).",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "Title + publication reference in Riigi Teataja. Until 2010 (paper): 'RT I <year>, <issue>, <article>'. Since the electronic gazette: 'RT I, <dd.mm.yyyy>, <sequence number>'. Regulations add issuer, date and number: 'Rahandusministri 14.02.2025 määrus nr 12'.",
+     "permanentIdentifier": "The original publication reference (avaldamismärge) of the act, e.g. 'RT I 1999, 23, 349', never changes. Each published text version has its own 12-digit globaalID (111072026016 = the consolidated Credit Institutions Act published RT I, 11.07.2026, 16); the API also carries a 'grupiId' (162617) that groups all versions of one act.",
+     "statutes": [
+      {
+       "title": "Krediidiasutuste seadus",
+       "citation": "RT I 1999, 23, 349",
+       "adopted": "09.02.1999",
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026016/txt",
+       "verified": true
+      },
+      {
+       "title": "Finantsinspektsiooni seadus",
+       "citation": "RT I 2001, 48, 267",
+       "adopted": "09.05.2001",
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026012/txt",
+       "verified": true
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "Krediidiostja kohta Finantsinspektsioonile esitatava teabe kord ja vormid",
+       "citation": "Rahandusministri 14.02.2025 määrus nr 12, RT I, 19.02.2025, 9",
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/119022025009/txt",
+       "verified": true
+      },
+      {
+       "title": "Rahapesu ja terrorismi rahastamise tõkestamise komisjoni liikmete arv ja töökord",
+       "citation": "Vabariigi Valitsuse 19.04.2018 määrus nr 34, RT I, 20.04.2018, 22",
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/128042022023/txt",
+       "verified": true,
+       "note": "AML, not banking proper: no Government regulation is listed among the 22 implementing acts of the Credit Institutions Act (all are Eesti Panga President or Rahandusminister)."
+      }
+     ],
+     "supervisorRegulations": [
+      {
+       "title": "Eluasemelaenu andmise piirmäärad ja maksimaalne laenutähtaeg",
+       "citation": "Eesti Panga presidendi 12.12.2014 määrus nr 17, RT I, 16.12.2014, 17",
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/113062025028/txt",
+       "verified": true
+      },
+      {
+       "title": "Vastutsüklilise kapitalipuhvri määra kehtestamine",
+       "citation": "Eesti Panga presidendi 28.11.2022 määrus nr 11, RT I, 01.12.2022, 1",
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/101122022001/txt",
+       "verified": true
+      }
+     ],
+     "supervisorNote": "Finantsinspektsioon itself issues no binding regulations: FIS § 57(1) 'Inspektsioonil on õigus välja anda soovitusliku iseloomuga juhendeid' (advisory guidelines). Binding prudential rules below statute level come from Eesti Pank and the Minister of Finance.",
+     "eli": {
+      "exists": "partly verified",
+      "pattern": "https://www.riigiteataja.ee/en/eli/ee/{globaalID}/consolide",
+      "example": "https://www.riigiteataja.ee/en/eli/ee/111072026016/consolide",
+      "result": "HTTP 301 to https://www.riigiteataja.ee/en/akt/111072026016 (the JavaScript page). No ELI pattern for Estonian texts could be confirmed on the rebuilt site.",
+      "verified": false
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026118/txt",
+       "readOn": "2026-11-14",
+       "quote": "Riigi Teataja on Internetis tasuta kättesaadav.",
+       "gloss": "Riigi Teataja Act: Riigi Teataja is available on the Internet free of charge.",
+       "verified": true
+      },
+      {
+       "url": "https://www.riigiteataja.ee/public-api/api/v1/akt/112072025009/txt",
+       "readOn": "2026-11-14",
+       "quote": "Käesolevat seadust ei kohaldata: ... 3) õigusaktidele ja haldusdokumentidele (seadused, seadlused, määrused, põhimäärused, juhendid, käskkirjad) ning nende ametlikele tõlgetele",
+       "gloss": "Copyright Act § 5(3): copyright does not apply to legislation and administrative documents (acts, decrees, regulations, statutes, instructions, directives) or their official translations.",
+       "verified": true
+      },
+      {
+       "statement": "A licence or terms-of-use text of the Riigi Teataja site itself: not found (the site's text store has no copyright or reuse statement; no credit is asked).",
+       "verified": false
+      }
+     ],
+     "supervisor": [
+      {
+       "authority": "finantsinspektsioon",
+       "url": "https://www.fi.ee/et/veebilehe-info-ja-kasutustingimused",
+       "readOn": "2026-11-14",
+       "quote": "Veebilehel sisalduva informatsiooni reprodutseerimine ja levitamine ilma Finantsinspektsiooni eelneva loata on keelatud.",
+       "gloss": "Reproduction and distribution of website information without the Inspectorate's prior permission is prohibited; use in journalism and for non-profit purposes is allowed with the source named, changes must be marked. Commercial republication therefore needs permission (note the Copyright Act § 5(3) exemption for 'juhendid' as administrative documents; which rule wins for the guidelines was not determined).",
+       "verified": true
+      },
+      {
+       "authority": "eesti-pank",
+       "statement": "not found (no reuse statement on the home page read)",
+       "verified": false
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "XML, plain text and PDF of each text version through the site's own JSON/REST API (found in the site's JavaScript; no published API documentation was found).",
+     "pattern": "https://www.riigiteataja.ee/public-api/api/v1/akt/{globaalID}/xml  (also /txt, /pdf; metadata at /akt/{globaalID}; versions at /akt/{grupiId}/redaktsioonid; abbreviations at /akt/lyhendid)",
+     "example": "https://www.riigiteataja.ee/public-api/api/v1/akt/111072026016/xml",
+     "exampleResult": "HTTP 200, 2.0 MB, root <oigusakt>, schema tyviseadus_1_10.02.2010.xsd, metadata RT I 1999, 23, 349.",
+     "warning": "The pre-2026 pattern https://www.riigiteataja.ee/akt/{id}.xml now returns the HTML application shell, not XML.",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": true,
+     "since": 2004,
+     "url": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+     "quote": "Estonia: EU Member State since 2004",
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "lv": {
+   "authorities": [
+    {
+     "key": "saeima",
+     "code": "Saeima",
+     "name": "Latvijas Republikas Saeima",
+     "nameEn": "Saeima (Parliament of the Republic of Latvia)",
+     "jurisdiction": "LV",
+     "url": "https://www.saeima.lv/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.saeima.lv/lv/saeimas-darbs/par-saeimu/",
+     "evidenceNote": "Page: 'Saeima ir Latvijas Republikas parlaments ... Saeimai, kā arī tautai Latvijas Republikas Satversmē paredzētajā kārtībā un apmēros pieder likumdošanas tiesības'; site name 'Latvijas Republikas Saeima'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "ministru-kabinets",
+     "code": "MK",
+     "name": "Ministru kabinets",
+     "nameEn": "Cabinet of Ministers",
+     "jurisdiction": "LV",
+     "url": "https://www.mk.gov.lv/",
+     "role": "government",
+     "evidenceUrl": "https://www.mk.gov.lv/lv",
+     "evidenceNote": "Site title 'Ministru kabinets', English site 'Cabinet of Ministers'; likumi.lv lists 'Ministru kabineta noteikumi' as a type of act (https://likumi.lv/ta/veids/ministru-kabinets/noteikumi, 200).",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "'MK' is the abbreviation used on likumi.lv ('MK noteikumi'); not seen as a self-designation on mk.gov.lv."
+    },
+    {
+     "key": "finansu-ministrija",
+     "code": "FM",
+     "name": "Finanšu ministrija",
+     "nameEn": "Ministry of Finance",
+     "jurisdiction": "LV",
+     "url": "https://www.fm.gov.lv/",
+     "role": "ministry",
+     "evidenceUrl": "https://www.fm.gov.lv/lv",
+     "evidenceNote": "Page: 'Finanšu ministrija ir vadošā valsts pārvaldes iestāde finanšu nozarē. Ministrija veido valsts nodokļu politiku ...'; English site 'Ministry of Finance'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "'FM' taken from the domain fm.gov.lv; binding rules in this sector are Cabinet regulations, not ministerial ones."
+    },
+    {
+     "key": "latvijas-banka",
+     "code": "Latvijas Banka",
+     "name": "Latvijas Banka",
+     "nameEn": "Latvijas Banka",
+     "jurisdiction": "LV",
+     "url": "https://www.bank.lv/",
+     "role": "supervisor",
+     "evidenceUrl": "https://likumi.lv/ta/id/326575-latvijas-bankas-likums",
+     "evidenceNote": "Latvijas Bankas likums (adopted 23.09.2021, in force 01.01.2023), transitional provisions point 2: in other acts the name 'Finanšu un kapitāla tirgus komisija' corresponds to 'Latvijas Banka' and the FKTK's competence to issue normative regulations is Latvijas Banka's; bank.lv: 'Latvijas Banka regulē un uzrauga finanšu tirgus un tā dalībnieku darbību'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "alsoRole": "central_bank",
+     "fktkTakeover": {
+      "since": "2023-01-01",
+      "url": "https://likumi.lv/ta/id/326575-latvijas-bankas-likums",
+      "quote": "Likums stājas spēkā 2023. gada 1. janvārī ... nosaukums \"Finanšu un kapitāla tirgus komisija\" atbilst šajā likumā lietotajam nosaukumam \"Latvijas Banka\"",
+      "gloss": "The Law on Latvijas Banka entered into force on 1 January 2023; from then references to the Financial and Capital Market Commission mean Latvijas Banka.",
+      "verified": true
+     },
+     "bindingNote": "Art. 8(1): 'Latvijas Banka ... izdod ārējos normatīvos aktus — noteikumus', in force the day after publication in Latvijas Vēstnesis."
+    },
+    {
+     "key": "dvi",
+     "code": "DVI",
+     "name": "Datu valsts inspekcija",
+     "nameEn": "Data State Inspectorate",
+     "jurisdiction": "LV",
+     "url": "https://www.dvi.gov.lv/",
+     "role": "data_protection",
+     "evidenceUrl": "https://www.dvi.gov.lv/en",
+     "evidenceNote": "English home page (title 'Home page | Datu valsts inspekcija'): 'Data State Inspectorate is a direct adminis[trative institution] ...'; Latvian site title 'Datu valsts inspekcija'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "vid",
+     "code": "VID",
+     "name": "Valsts ieņēmumu dienests",
+     "nameEn": "State Revenue Service",
+     "jurisdiction": "LV",
+     "url": "https://www.vid.gov.lv/",
+     "role": "tax",
+     "evidenceUrl": "https://www.vid.gov.lv/lv/search?q=CRS",
+     "evidenceNote": "vid.gov.lv search result lists the VID page 'Informācijas apmaiņa par nerezidentu finanšu kontiem (CRS)' (updated 24.04.2026); home page uses 'Valsts ieņēmumu dienests (VID)'; English site 'State Revenue Service'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "evidenceLimit": "The CRS page itself (https://www.vid.gov.lv/lv/biezak-uzdotie-jautajumi-katalogs/informacijas-apmaina-par-nerezidentu-finansu-kontiem-crs) was listed but not opened; FATCA not separately confirmed."
+    },
+    {
+     "key": "fid",
+     "code": "FID",
+     "name": "Finanšu izlūkošanas dienests",
+     "nameEn": "Financial Intelligence Unit of Latvia",
+     "jurisdiction": "LV",
+     "url": "https://www.fid.gov.lv/",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.fid.gov.lv/lv/darbibas-jomas/sankcijas",
+     "evidenceNote": "Page: 'Ar 2024. gada 1. aprīli Finanšu izlūkošanas dienests (FID) kļūst par kompetento institūciju starptautisko un nacionālo sankciju ... izpildes jautājumos'; English: 'FIU Latvia is an independent authority responsible for preventing money laundering and terrorist financing, implementing sanctions'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "sources": [
+    {
+     "name": "Likumi.lv, Latvijas Republikas tiesību akti",
+     "url": "https://likumi.lv/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "LV",
+     "httpStatus": 200,
+     "evidenceNote": "Consolidated ('sistematizēti') legal acts maintained by the official publisher Latvijas Vēstnesis; 'Sistematizēti tiesību akti ir informatīvi. Pretrunu gadījumā vadās pēc oficiālās publikācijas.'",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Latvijas Vēstnesis, oficiālais izdevums",
+     "url": "https://www.vestnesis.lv/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "LV",
+     "httpStatus": 200,
+     "evidenceNote": "Official gazette; title 'Latvijas Vēstnesis - Latvijas Republikas oficiālais izdevums'; the official publication is binding.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Latvijas Vēstnesis, Latvijas Bankas noteikumi",
+     "url": "https://www.vestnesis.lv/ta/iestades/latvijas-banka/noteikumi",
+     "kind": "legal_database",
+     "authority": "latvijas-banka",
+     "jurisdiction": "LV",
+     "httpStatus": 200,
+     "evidenceNote": "Gazette listing of regulations issued by Latvijas Banka; an RSS feed of new Latvijas Banka regulations is at https://likumi.lv/rss/lb_not.xml (200, newest item 11 Nov 2026).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Latvijas Banka, jaunumi",
+     "url": "https://www.bank.lv/aktualitates-banklv/zinas-un-raksti/jaunumi",
+     "kind": "authority_site",
+     "authority": "latvijas-banka",
+     "jurisdiction": "LV",
+     "httpStatus": 200,
+     "evidenceNote": "News listing in Latvian ('Jaunumi | Latvijas Banka'); supervisory news only: add ?tag=jaunumi-uzraudzibas-zinas (200).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Latvijas Banka, tiesību akti",
+     "url": "https://www.bank.lv/ta/ta-saturs",
+     "kind": "authority_site",
+     "authority": "latvijas-banka",
+     "jurisdiction": "LV",
+     "httpStatus": 200,
+     "evidenceNote": "'Visi tiesību akti | Latvijas Banka': Latvijas Banka regulations, recommendations and guidelines by sector; full catalogue at https://www.bank.lv/ta/visi-tiesibu-akti (200).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "Latvian only. The official publication in Latvijas Vēstnesis is binding; consolidated texts and English translations on likumi.lv are informative. No second enactment language.",
+     "items": [
+      {
+       "url": "https://likumi.lv/ta/id/14740-valsts-valodas-likums",
+       "readOn": "2026-11-14",
+       "quote": "3.pants. (1) Latvijas Republikā valsts valoda ir latviešu valoda.",
+       "gloss": "State Language Law s. 3(1): the state language of the Republic of Latvia is Latvian.",
+       "verified": true
+      },
+      {
+       "url": "https://likumi.lv/ta/id/249322-oficialo-publikaciju-un-tiesiskas-informacijas-likums",
+       "readOn": "2026-11-14",
+       "quote": "Oficiālā publikācija ir publiski ticama un saistoša.",
+       "gloss": "Law on Official Publications s. 2(2): the official publication is publicly reliable and binding.",
+       "verified": true
+      },
+      {
+       "url": "https://likumi.lv/about.php",
+       "readOn": "2026-11-14",
+       "quote": "The entire content of Likumi.lv is informative, and in case of differences in interpretation the official publication shall prevail.",
+       "gloss": "English translations are linked from acts as related documents and share this informative status.",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "Title, then the gazette reference 'Latvijas Vēstnesis, <issue no.>, <dd.mm.yyyy>.' Regulations: 'Ministru kabineta <yyyy>. gada <d>. <month> noteikumi Nr. <n> \"<title>\"' and 'Latvijas Bankas <yyyy>. gada <d>. <month> noteikumi Nr. <n> \"<title>\"'.",
+     "permanentIdentifier": "The official publication number 'OP numurs' (year/issue.item), e.g. 2021/193.1, resolvable as https://www.vestnesis.lv/op/2021/193.1 (200). likumi.lv also gives each act a stable numeric id (https://likumi.lv/ta/id/326575-latvijas-bankas-likums) that covers all consolidated versions.",
+     "statutes": [
+      {
+       "title": "Kredītiestāžu likums",
+       "citation": "Latvijas Vēstnesis, 163, 24.10.1995. (pieņemts 05.10.1995.)",
+       "url": "https://likumi.lv/ta/id/37426-kreditiestazu-likums",
+       "verified": true
+      },
+      {
+       "title": "Latvijas Bankas likums",
+       "citation": "Latvijas Vēstnesis, 193, 06.10.2021.; OP numurs 2021/193.1 (pieņemts 23.09.2021.)",
+       "url": "https://likumi.lv/ta/id/326575-latvijas-bankas-likums",
+       "verified": true
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "Regulations Regarding Recording of International Treaties and Systematisation of Legal Acts",
+       "citation": "Ministru kabineta 2014. gada 18. februāra noteikumi Nr. 101 (as 'Cabinet Regulation No. 101 of 18 February 2014')",
+       "url": "https://likumi.lv/about.php",
+       "verified": true,
+       "note": "Confirms the citation form only; it is not a banking regulation."
+      },
+      {
+       "verified": false,
+       "note": "A second, banking-sector Cabinet regulation with its number was not fetched; the listing https://likumi.lv/ta/veids/ministru-kabinets/noteikumi (200) and the feed https://likumi.lv/rss/mk_not.xml (200) were read but not searched by subject."
+      }
+     ],
+     "supervisorRegulations": [
+      {
+       "title": "Skaidrās naudas izmaksas pakalpojuma pārvaldības noteikumi",
+       "citation": "Latvijas Bankas 2024. gada 28. oktobra noteikumi Nr. 330",
+       "url": "https://likumi.lv/rss/lb_not.xml",
+       "verified": true
+      },
+      {
+       "title": "Noteikumi par elektronisko informācijas apmaiņu ar Latvijas Banku",
+       "citation": "Latvijas Bankas 2022. gada 24. oktobra noteikumi Nr. 226",
+       "url": "https://likumi.lv/rss/lb_not.xml",
+       "verified": true
+      }
+     ],
+     "eli": {
+      "exists": "not found",
+      "verified": false,
+      "note": "No ELI metadata or /eli/ path for national acts was found in the vestnesis.lv and likumi.lv pages read (the only ELI links there point to EUR-Lex)."
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://likumi.lv/ta/id/249322-oficialo-publikaciju-un-tiesiskas-informacijas-likums",
+       "readOn": "2026-11-14",
+       "quote": "sistematizētie tiesību akti ir brīvi un bez maksas pieejami tīmekļa vietnē www.likumi.lv",
+       "gloss": "Law on Official Publications s. 17: the gazette and the systematised acts are freely available at no charge.",
+       "verified": true
+      },
+      {
+       "url": "https://likumi.lv/par-mums/portala-lietosanas-noteikumi",
+       "readOn": "2026-11-14",
+       "quote": "brīvi un bez maksas piekļūt portālam un tajā publicētajai informācijai saskaņā ar ārējos normatīvajos aktos noteikto",
+       "gloss": "Portal terms of use: users may access the portal and its information freely and at no charge; the terms forbid actions against the portal's security, stability and speed. They contain no clause on republication, commercial use or credit: not found.",
+       "verified": true
+      }
+     ],
+     "supervisor": [
+      {
+       "authority": "latvijas-banka",
+       "url": "https://www.bank.lv/",
+       "readOn": "2026-11-14",
+       "quote": "© Latvijas Banka, 2026",
+       "gloss": "Only a copyright line; reuse terms for its regulations and guidance: not found.",
+       "verified": true
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": "feeds only",
+     "summary": "RSS feeds of new acts per type; no XML/Akoma Ntoso download or documented API for consolidated text was found on the likumi.lv pages read.",
+     "pattern": "https://likumi.lv/rss/{likumi|mk_not|lb_not|fktk_not}.xml",
+     "example": "https://likumi.lv/rss/lb_not.xml",
+     "exampleResult": "HTTP 200, RSS, items link to http://www.likumi.lv/doc.php?id={id}",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": true,
+     "since": 2004,
+     "url": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+     "quote": "Latvia: EU Member State since 2004",
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "lt": {
+   "authorities": [
+    {
+     "key": "seimas",
+     "code": "Seimas",
+     "name": "Lietuvos Respublikos Seimas",
+     "nameEn": "Parliament of the Republic of Lithuania (Seimas)",
+     "jurisdiction": "LT",
+     "url": "https://www.lrs.lt/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.lrs.lt/",
+     "evidenceNote": "Home page title 'Lietuvos Respublikos Seimas', English page title 'Parliament of the Republic of Lithuania'; the page links 'Naujausi įsigalioję įstatymai' (latest laws in force) and the registers TAR and TAIS.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "vyriausybe",
+     "code": "LRV",
+     "name": "Lietuvos Respublikos Vyriausybė",
+     "nameEn": "Government of the Republic of Lithuania",
+     "jurisdiction": "LT",
+     "url": "https://lrv.lt/",
+     "role": "government",
+     "evidenceUrl": "https://n-lex.europa.eu/n-lex/info/info-lt/index",
+     "evidenceNote": "Own site not readable. The EU N-Lex page on the Lithuanian register says it publishes 'the resolutions and decisions of the Government, the orders of ministers'. The Lithuanian name is taken from a search-engine title of lrv.lt ('LIETUVOS RESPUBLIKOS VYRIAUSYBĖ'), the English name and the code from no fetched page.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name",
+      "nameEn",
+      "code",
+      "url"
+     ],
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    },
+    {
+     "key": "finansu-ministerija-lt",
+     "code": "FM",
+     "name": "Lietuvos Respublikos finansų ministerija",
+     "nameEn": "Ministry of Finance",
+     "jurisdiction": "LT",
+     "url": "https://finmin.lrv.lt/",
+     "role": "ministry",
+     "evidenceUrl": "https://taxation-customs.ec.europa.eu/taxation/national-tax-administrations_en",
+     "evidenceNote": "Own site not readable. The European Commission's list of national tax administrations names 'Ministry of Finance' for Lithuania; the Lithuanian name is from a search-engine title of finmin.lrv.lt ('... - Lietuvos Respublikos finansų ministerija').",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name",
+      "code",
+      "url"
+     ],
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read.",
+     "keyNote": "Suffixed '-lt' because the Latvian key is 'finansu-ministrija' (one letter apart)."
+    },
+    {
+     "key": "lietuvos-bankas",
+     "code": "Lietuvos bankas",
+     "name": "Lietuvos bankas",
+     "nameEn": "Lietuvos bankas",
+     "jurisdiction": "LT",
+     "url": "https://www.lb.lt/",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.bankingsupervision.europa.eu/about/organisation/national-supervisors/html/index.en.html",
+     "evidenceNote": "ECB Banking Supervision's list of national supervisors reads 'Lithuania / Lietuvos bankas'. The body's own statement of what it supervises and its legal basis (Lietuvos banko įstatymas) could not be read.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "url",
+      "legal basis",
+      "nameEn 'Bank of Lithuania'"
+     ],
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read.",
+     "alsoRole": "central_bank"
+    },
+    {
+     "key": "vdai",
+     "code": "VDAI",
+     "name": "Valstybinė duomenų apsaugos inspekcija",
+     "nameEn": "State Data Protection Inspectorate",
+     "jurisdiction": "LT",
+     "url": "https://vdai.lrv.lt/",
+     "role": "data_protection",
+     "evidenceUrl": "https://www.edpb.europa.eu/about-edpb/our-members_en",
+     "evidenceNote": "EDPB member list reads 'Lithuania / State Data Protection Inspectorate / https://vdai.lrv.lt/'. The Lithuanian name is from a search-engine title of vdai.lrv.lt ('Pradžia - Valstybinė duomenų apsaugos inspekcija').",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name",
+      "code"
+     ],
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    },
+    {
+     "key": "vmi",
+     "code": "VMI",
+     "name": "Valstybinė mokesčių inspekcija",
+     "nameEn": "State Tax Inspectorate",
+     "jurisdiction": "LT",
+     "url": "https://www.vmi.lt/",
+     "role": "tax",
+     "evidenceUrl": "https://taxation-customs.ec.europa.eu/taxation/national-tax-administrations_en",
+     "evidenceNote": "European Commission list of national tax administrations reads 'Lithuania / State Tax Inspectorate' and links https://www.vmi.lt/evmi/kontaktai. The Lithuanian name and its role in CRS/FATCA/DAC reporting were not read on any fetched page.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name",
+      "code",
+      "CRS/FATCA role"
+     ],
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    },
+    {
+     "key": "fntt",
+     "code": "FNTT",
+     "name": "Finansinių nusikaltimų tyrimo tarnyba prie Lietuvos Respublikos vidaus reikalų ministerijos",
+     "nameEn": "Financial Crime Investigation Service",
+     "jurisdiction": "LT",
+     "url": "https://fntt.lrv.lt/",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://fntt.lrv.lt/lt/",
+     "evidenceNote": "Not fetched. Name is the search-engine title of fntt.lrv.lt ('Pradžia - Finansinių nusikaltimų tyrimo tarnyba prie Lietuvos Respublikos vidaus reikalų ministerijos'); its FIU role, any financial-sanctions role and the English name were not read.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name",
+      "nameEn",
+      "code",
+      "role",
+      "url"
+     ],
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    }
+   ],
+   "sources": [
+    {
+     "name": "Teisės aktų registras (TAR)",
+     "url": "https://www.e-tar.lt/portal/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "LT",
+     "httpStatus": 403,
+     "evidenceNote": "URL taken from the link 'Teisės aktų registras / TAR' on lrs.lt (fetched). N-Lex: 'Registration and publication of legal acts in the RLA is deemed to be the official publication of such legal acts. The RLA ... produces consolidated versions'. The site itself answers 403 to automated fetches.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    },
+    {
+     "name": "Lietuvos Respublikos Seimas, Teisės aktų informacinė sistema (TAIS)",
+     "url": "https://e-seimas.lrs.lt/portal/documentSearch/lt",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "LT",
+     "httpStatus": 403,
+     "evidenceNote": "URL taken from the link 'Teisės aktų informacinė sistema / TAIS' on lrs.lt (fetched); the site itself answers 403 to automated fetches.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    },
+    {
+     "name": "Lietuvos bankas, naujienos",
+     "url": "https://www.lb.lt/lt/naujienos",
+     "kind": "authority_site",
+     "authority": "lietuvos-bankas",
+     "jurisdiction": "LT",
+     "httpStatus": 403,
+     "evidenceNote": "URL from a search-engine result titled 'Naujienos' on lb.lt; not fetched.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    },
+    {
+     "name": "Lietuvos bankas, finansų rinkos dalyvių priežiūra",
+     "url": "https://www.lb.lt/lt/finansu-rinkos-dalyviu-prieziura",
+     "kind": "authority_site",
+     "authority": "lietuvos-bankas",
+     "jurisdiction": "LT",
+     "httpStatus": 403,
+     "evidenceNote": "URL from a search-engine result titled 'Finansų rinkos priežiūra Lietuvoje'; not fetched. The URL of Lietuvos bankas's own register of legal acts (teisės aktai) was not found; its resolutions are published in TAR.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "tried": "HTTP 403 (Cloudflare 'Just a moment...' challenge) for both the command-line fetch and the web fetch tool on 2026-11-14; nothing on this site was read."
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "Lithuanian. No second enactment language was found; English translations exist in the Seimas system but their status was not read.",
+     "items": [
+      {
+       "url": "https://www.lrs.lt/home/Konstitucija/Konstitucija.htm",
+       "readOn": "2026-11-14",
+       "quote": "14 straipsnis. Valstybinė kalba – lietuvių kalba.",
+       "gloss": "Constitution Art. 14: the state language is Lithuanian. (Page is in a legacy Baltic encoding; diacritics restored from it.)",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "Not read on an official page. Search-engine titles of e-tar.lt show the pattern '<number> Lietuvos Respublikos ... įstatymas' with a number such as 'VIII-1524' or 'XV-564' (Seimas term in Roman numerals, hyphen, sequence), which matches the caller's 'IX-2085'.",
+     "permanentIdentifier": "Probably the Seimas act number (e.g. VIII-1524) plus the TAR identifier seen in e-tar URLs (https://www.e-tar.lt/portal/lt/legalAct/TAR.FA13E28615F6/asr, where 'asr' looked like the current consolidated version). Not verified.",
+     "statutes": [],
+     "governmentRegulations": [],
+     "supervisorRegulations": [],
+     "eli": {
+      "exists": "not verified",
+      "verified": false
+     },
+     "verified": false,
+     "tried": "e-tar.lt and e-seimas.lrs.lt answer 403; the old database www3.lrs.lt answered 523; data.gov.lt is blocked by this session's network policy."
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://www.lrs.lt/sip/portal.show?p_r=35391&p_k=1",
+       "readOn": "2026-11-14",
+       "quote": "Naudojimas nemokamas. Naudojantis būtina pateikti duomenų šaltinį (www.lrs.lt) ir teikėją (Seimo kanceliarija). Duomenys teikiami pagal CC BY 4.0 licenciją.",
+       "gloss": "Seimas open-data page: use is free, the source (www.lrs.lt) and provider (Office of the Seimas) must be named, CC BY 4.0. This is stated for the Seimas XML data sets on apps.lrs.lt; whether the same licence covers TAR texts was not read.",
+       "verified": true
+      },
+      {
+       "statement": "Terms of use of e-tar.lt itself: not found (site not readable).",
+       "verified": false
+      }
+     ],
+     "supervisor": [
+      {
+       "authority": "lietuvos-bankas",
+       "statement": "not found (site not readable)",
+       "verified": false
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "Since July 2025 the Office of the Seimas publishes TAR data and texts as open data (JSON, JSONL, CSV) on the national open data portal.",
+     "pattern": "https://data.gov.lt/datasets/2613/",
+     "example": "https://data.gov.lt/datasets/2613/",
+     "exampleResult": "Not fetched: data.gov.lt is blocked by this session's network policy. The URL and formats are quoted from the Seimas press release.",
+     "evidence": {
+      "url": "https://www.lrs.lt/sip/portal.show?p_r=35403&p_k=1&p_t=292258",
+      "readOn": "2026-11-14",
+      "quote": "viešai skelbiami teisės aktų duomenys ir jų tekstai prieinami atvirų duomenų formatu Lietuvos atvirų duomenų portale",
+      "gloss": "Seimas press release of 2 July 2025: published legal-act data and texts are available in open-data format on the Lithuanian open data portal ('JSON, JSONL, CSV'; 'TAR duomenų rinkiniai: https://data.gov.lt/datasets/2613/').",
+      "verified": true
+     },
+     "readOn": "2026-11-14",
+     "verified": false
+    },
+    "euReach": {
+     "euMember": true,
+     "since": 2004,
+     "url": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+     "quote": "Lithuania: EU Member State since 2004",
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "de": {
+   "authorities": [
+    {
+     "key": "bundestag",
+     "code": "Bundestag",
+     "name": "Deutscher Bundestag",
+     "nameEn": "German Bundestag",
+     "jurisdiction": "DE",
+     "url": "https://www.bundestag.de/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.bundestag.de/parlament/aufgaben/gesetzgebung_neu",
+     "evidenceNote": "Page: 'Die Gesetzgebung ist die Aufgabe des Parlaments; der Deutsche Bundestag ... beschließt – unter Beteiligung des Bundesrates – alle Gesetze, die in den Kompetenzbereich des Bundes fallen.' English home page title 'Homepage - German Bundestag'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "bundesrat-de",
+     "code": "Bundesrat",
+     "name": "Bundesrat",
+     "nameEn": "Bundesrat",
+     "jurisdiction": "DE",
+     "url": "https://www.bundesrat.de/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.bundestag.de/parlament/aufgaben/gesetzgebung_neu",
+     "evidenceNote": "The Bundestag page says federal statutes are passed 'unter Beteiligung des Bundesrates'; bundesrat.de home page (200) is titled 'Bundesrat - Startseite'. Added because statutes need its participation; English name not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "extra": true,
+     "keyNote": "Suffixed '-de': 'bundesrat' is used for the Swiss government."
+    },
+    {
+     "key": "bundesregierung-de",
+     "code": "Bundesregierung",
+     "name": "Bundesregierung",
+     "nameEn": "Federal Government",
+     "jurisdiction": "DE",
+     "url": "https://www.bundesregierung.de/",
+     "role": "government",
+     "evidenceUrl": "https://www.gesetze-im-internet.de/hinweise.html",
+     "evidenceNote": "Gesetze im Internet, Hinweise: 'Rechtsverordnungen des Bundes werden ... von der Stelle, die sie erlässt (in der Regel die Bundesregierung oder ein Bundesministerium), ausgefertigt und ebenfalls im Bundesgesetzblatt verkündet.' Site title 'Die Bundesregierung informiert'; English site 'Website of the Federal Government'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "keyNote": "Suffixed '-de': Austria's government is also 'Bundesregierung'."
+    },
+    {
+     "key": "bmf-de",
+     "code": "BMF",
+     "name": "Bundesministerium der Finanzen",
+     "nameEn": "Federal Ministry of Finance",
+     "jurisdiction": "DE",
+     "url": "https://www.bundesfinanzministerium.de/",
+     "role": "ministry",
+     "evidenceUrl": "https://www.bundesregierung.de/breg-de/bundesregierung/bundesministerien/bundesministerium-der-finanzen",
+     "evidenceNote": "Federal Government page: 'Das Bundesministerium der Finanzen (BMF) ist für die Finanzpolitik des Bundes zuständig'; the Solvabilitätsverordnung's preamble reads 'verordnet das Bundesministerium der Finanzen im Benehmen mit der Deutschen Bundesbank'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "urlStatus": "bundesfinanzministerium.de answered HTTP 503 with a 'Security Check' page to both fetch tools, so the ministry's own site was not read.",
+     "keyNote": "Suffixed '-de': Austria's ministry also abbreviates 'BMF'."
+    },
+    {
+     "key": "bafin",
+     "code": "BaFin",
+     "name": "Bundesanstalt für Finanzdienstleistungsaufsicht",
+     "nameEn": "Federal Financial Supervisory Authority",
+     "jurisdiction": "DE",
+     "url": "https://www.bafin.de/",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.gesetze-im-internet.de/kredwg/__6.html",
+     "evidenceNote": "KWG § 6(1): 'Die Bundesanstalt übt die Aufsicht über die Institute nach den Vorschriften dieses Gesetzes ... aus'; FinDAG § 4(1) gives it the tasks of the former banking, insurance and securities supervisory offices; bafin.de: 'Als integrierte Finanzaufsicht beaufsichtigt die Bafin ...' credit institutions, securities institutions, payment and e-money institutions, insurers.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "The relaunched bafin.de spells the abbreviation 'Bafin' throughout (91 times on the home page, 'BaFin' twice); bundesbank.de and the caller's example write 'BaFin'. Old URLs under /DE/PublikationenDaten/ and /DE/RechtRegelungen/ now return 404.",
+     "bindingNote": "Issues Verordnungen under delegated powers (e.g. AnzV: 'Die Bundesanstalt für Finanzdienstleistungsaufsicht verordnet'), published in the Bundesgesetzblatt, and Rundschreiben (administrative practice)."
+    },
+    {
+     "key": "bundesbank",
+     "code": "Bundesbank",
+     "name": "Deutsche Bundesbank",
+     "nameEn": "Deutsche Bundesbank",
+     "jurisdiction": "DE",
+     "url": "https://www.bundesbank.de/",
+     "role": "central_bank",
+     "evidenceUrl": "https://www.bundesbank.de/de/aufgaben/finanzaufsicht",
+     "evidenceNote": "Page: 'In Deutschland ist die Finanzaufsicht eine gemeinsame Aufgabe von Bundesbank und BaFin. Der Bundesbank obliegt insbesondere die laufende Aufsicht über Kreditinstitute, aber auch über Finanzdienstleistungs-, E-Geld- und Zahlungsinstitute'; KWG § 7(1) on ongoing monitoring by the Deutsche Bundesbank.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "alsoRole": "fiu_sanctions",
+     "sanctionsNote": "The page 'Finanzsanktionen | Deutsche Bundesbank' (https://www.bundesbank.de/de/service/finanzsanktionen, 200) describes its competence for restrictions on capital and payment transactions; the exact division with the customs-based sanctions enforcement office was not read."
+    },
+    {
+     "key": "bfdi",
+     "code": "BfDI",
+     "name": "Der Bundesbeauftragte für den Datenschutz und die Informationsfreiheit",
+     "nameEn": "Federal Commissioner for Data Protection and Freedom of Information",
+     "jurisdiction": "DE",
+     "url": "https://www.bfdi.bund.de/",
+     "role": "data_protection",
+     "evidenceUrl": "https://www.bfdi.bund.de/DE/BfDI/Inhalte/BfDI/AufgabenBFDI.html",
+     "evidenceNote": "Page: 'Der Bundesbeauftragte für den Datenschutz und die Informationsfreiheit (BfDI) ist eine eigenständige oberste Bundesbehörde ... die datenschutzrechtliche Aufsichtsbehörde über alle öffentlichen Stellen des Bundes'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "scopeNote": "The page lists federal public bodies, tax authorities and telecoms as its remit, not private banks; data-protection supervision of banks therefore lies elsewhere (the Länder authorities were not researched)."
+    },
+    {
+     "key": "bzst",
+     "code": "BZSt",
+     "name": "Bundeszentralamt für Steuern",
+     "nameEn": "Federal Central Tax Office",
+     "jurisdiction": "DE",
+     "url": "https://www.bzst.de/",
+     "role": "tax",
+     "evidenceUrl": "https://www.bzst.de/DE/Unternehmen/Intern_Informationsaustausch/CommonReportingStandard/commonreportingstandard_node.html",
+     "evidenceNote": "Page: 'In der Bundesrepublik Deutschland ist das Bundeszentralamt für Steuern (BZSt) für die Annahme und Weiterleitung der Finanzkontendaten zuständig'; a FATCA page exists at .../FATCA/fatca_node.html (200).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "fiu-de",
+     "code": "FIU",
+     "name": "Zentralstelle für Finanztransaktionsuntersuchungen",
+     "nameEn": "Financial Intelligence Unit (FIU)",
+     "jurisdiction": "DE",
+     "url": "https://www.zoll.de/DE/FIU/fiu_node.html",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.zoll.de/DE/FIU/fiu_node.html",
+     "evidenceNote": "Page: 'Die Financial Intelligence Unit (FIU) analysiert als Zentralstelle für Finanztransaktionsuntersuchungen Verdachtsmeldungen nach dem Geldwäschegesetz.' The English page guessed at /EN/FIU/ returned 404, so the English name is the term the German page itself uses.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "sources": [
+    {
+     "name": "Gesetze im Internet",
+     "url": "https://www.gesetze-im-internet.de/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "Consolidated federal statutes and regulations (Bundesministerium der Justiz / Bundesamt für Justiz); the consolidated texts are 'nicht amtliche Texte'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Bundesgesetzblatt, recht.bund.de",
+     "url": "https://www.recht.bund.de/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "Official gazette: 'Auf der Verkündungsplattform des Bundes wird seit dem 1. Januar 2023 die amtliche Fassung des Bundesgesetzblatts in elektronischer Form ausgegeben' (quoted from Gesetze im Internet, Hinweise).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "BaFin, Pressemitteilungen",
+     "url": "https://www.bafin.de/DE/die-bafin/aktuelles-presse/presse-social-media/pressemitteilungen/pressemitteilungen_node.html",
+     "kind": "authority_site",
+     "authority": "bafin",
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "Press release listing; an item dated 24.09.2026 was on the page.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "BaFin, News",
+     "url": "https://www.bafin.de/DE/die-bafin/aktuelles-presse/news/news_node.html",
+     "kind": "authority_site",
+     "authority": "bafin",
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "News listing ('News - Bafin'); supervisory notices ('Meldung') are linked from the home page.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "BaFin, Rundschreiben",
+     "url": "https://www.bafin.de/DE/unternehmen-maerkte/recht-regelungen/verwaltungspraxis/rundschreiben/rundschreiben_node.html",
+     "kind": "authority_site",
+     "authority": "bafin",
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "Page: 'Hier finden Sie die gültigen Rundschreiben der Bafin.'",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "BaFin, Verordnungen",
+     "url": "https://www.bafin.de/DE/unternehmen-maerkte/recht-regelungen/rechtsgrundlagen/verordnungen/verordnungen_node.html",
+     "kind": "authority_site",
+     "authority": "bafin",
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "Alphabetical list of regulations in BaFin's remit (Anlageverordnung, Anzeigenverordnung, ...), some with English translations.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Deutsche Bundesbank, Pressemitteilungen",
+     "url": "https://www.bundesbank.de/de/presse/pressemitteilungen",
+     "kind": "authority_site",
+     "authority": "bundesbank",
+     "jurisdiction": "DE",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'Pressemitteilungen | Deutsche Bundesbank' (the guessed /presse/pressenotizen redirected here).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "German only. No statute stating the language of legislation was found; the administrative-language rule and the translation disclaimer are the nearest official statements. No second enactment language.",
+     "items": [
+      {
+       "url": "https://www.gesetze-im-internet.de/vwvfg/__23.html",
+       "readOn": "2026-11-14",
+       "quote": "§ 23 Amtssprache (1) Die Amtssprache ist deutsch.",
+       "gloss": "Administrative Procedure Act § 23(1): the official language is German.",
+       "verified": true
+      },
+      {
+       "url": "https://www.gesetze-im-internet.de/Teilliste_translations.html",
+       "readOn": "2026-11-14",
+       "quote": "Any discrepancies or differences that may arise in translations of the official German versions of these materials are not binding and have no legal effect",
+       "gloss": "Translations on Gesetze im Internet are a convenience only; the German version is the official one.",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "'Vollzitat' as printed by Gesetze im Internet: short title + date of enactment or of the republished version + first Bundesgesetzblatt reference. Until 2022: '(BGBl. I S. <page>)'; since the electronic gazette of 2023: '(BGBl. <year> I Nr. <number>)'.",
+     "permanentIdentifier": "The first gazette reference of the act (e.g. 'BGBl. I S. 2776' for the KWG as republished on 9 September 1998). Gesetze im Internet adds a stable slug per act (kredwg) and a document number (BJNR008810961) that do not change between consolidated versions.",
+     "statutes": [
+      {
+       "title": "Gesetz über das Kreditwesen (Kreditwesengesetz - KWG)",
+       "citation": "Kreditwesengesetz in der Fassung der Bekanntmachung vom 9. September 1998 (BGBl. I S. 2776), das zuletzt durch Artikel 9 des Gesetzes vom 12. Mai 2026 (BGBl. 2026 I Nr. 139) geändert worden ist",
+       "url": "https://www.gesetze-im-internet.de/kredwg/BJNR008810961.html",
+       "verified": true
+      },
+      {
+       "title": "Geldwäschegesetz (GwG)",
+       "citation": "Geldwäschegesetz vom 23. Juni 2017 (BGBl. I S. 1822), das zuletzt durch Artikel 12 Absatz 4 des Gesetzes vom 29. Juni 2026 (BGBl. 2026 I Nr. 197) geändert worden ist",
+       "url": "https://www.gesetze-im-internet.de/gwg_2017/",
+       "verified": true
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "Solvabilitätsverordnung (SolvV)",
+       "issuer": "Bundesministerium der Finanzen",
+       "citation": "Solvabilitätsverordnung vom 6. Dezember 2013 (BGBl. I S. 4168)",
+       "url": "https://www.gesetze-im-internet.de/solvv_2014/",
+       "verified": true
+      },
+      {
+       "title": "Großkredit- und Millionenkreditverordnung (GroMiKV)",
+       "issuer": "Bundesministerium der Finanzen",
+       "citation": "Großkredit- und Millionenkreditverordnung vom 6. Dezember 2013 (BGBl. I S. 4183)",
+       "url": "https://www.gesetze-im-internet.de/gromikv_2014/",
+       "verified": true
+      }
+     ],
+     "supervisorRegulations": [
+      {
+       "title": "Anzeigenverordnung (AnzV)",
+       "issuer": "Bundesanstalt für Finanzdienstleistungsaufsicht",
+       "citation": "Anzeigenverordnung vom 19. Dezember 2006 (BGBl. I S. 3245)",
+       "url": "https://www.gesetze-im-internet.de/anzv_2006/eingangsformel.html",
+       "verified": true
+      },
+      {
+       "verified": false,
+       "note": "A second regulation whose preamble names BaFin as issuer was not opened; candidates are in BaFin's Verordnungen listing (e.g. ZAG-Anzeigenverordnung, slug zaganzv)."
+      }
+     ],
+     "eli": {
+      "exists": true,
+      "scope": "Promulgations in the electronic Bundesgesetzblatt since 2023; no ELI for the consolidated texts on Gesetze im Internet.",
+      "pattern": "https://www.recht.bund.de/eli/bund/bgbl-1/{year}/{number}",
+      "example": "https://www.recht.bund.de/eli/bund/bgbl-1/2023/411",
+      "result": "HTTP 200 after redirect to https://www.recht.bund.de/bgbl/1/2023/411/VO ('Gesetz zur Förderung geordneter Kreditzweitmärkte ...').",
+      "verified": true
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://www.gesetze-im-internet.de/urhg/__5.html",
+       "readOn": "2026-11-14",
+       "quote": "Gesetze, Verordnungen, amtliche Erlasse und Bekanntmachungen sowie Entscheidungen und amtlich verfaßte Leitsätze zu Entscheidungen genießen keinen urheberrechtlichen Schutz.",
+       "gloss": "§ 5(1) UrhG: statutes, regulations and official decrees have no copyright protection, so republication, including commercial, is free and no credit is required for them.",
+       "verified": true
+      },
+      {
+       "url": "https://www.gesetze-im-internet.de/hinweise.html",
+       "readOn": "2026-11-14",
+       "quote": "Dieses Format ist insbes. für die Nutzer geeignet, die die hier zur Verfügung gestellten Gesetze und Rechtsverordnungen über automatisierte Verfahren weiterverarbeiten möchten.",
+       "gloss": "The site offers its XML expressly for automated further processing; a separate licence text for the consolidated texts was not found.",
+       "verified": true
+      },
+      {
+       "url": "https://www.gesetze-im-internet.de/Teilliste_translations.html",
+       "readOn": "2026-11-14",
+       "quote": "Die im Bereich \"Translations\" veröffentlichten Übersetzungen können innerhalb der Schranken des jeweils geltenden Urheberrechts genutzt werden.",
+       "gloss": "The English translations are different: they are protected and may be used only within copyright limits (single copies for private, non-commercial use are named).",
+       "verified": true
+      }
+     ],
+     "supervisor": [
+      {
+       "url": "https://www.bafin.de/DE/service/nutzungsbedingungen/nutzungsbedingungen_node.html",
+       "readOn": "2026-11-14",
+       "quote": "Die Weitergabe oder Vervielfältigung ist nur unter deutlicher Angabe der Quelle zulässig.",
+       "gloss": "BaFin terms: content may be stored, passed on and reproduced unless a document says otherwise, with the source '© Bundesanstalt für Finanzdienstleistungsaufsicht / www.bafin.de'; official works under § 5(2) UrhG may not be altered. Commercial use is not excluded.",
+       "verified": true,
+       "authority": "bafin"
+      },
+      {
+       "authority": "bundesbank",
+       "statement": "not found (the Impressum page read has no copyright or reuse clause)",
+       "url": "https://www.bundesbank.de/de/startseite/impressum",
+       "verified": false
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "One XML zip per act, an XML index of all acts and a public DTD.",
+     "pattern": "https://www.gesetze-im-internet.de/{slug}/xml.zip ; index https://www.gesetze-im-internet.de/gii-toc.xml ; DTD https://www.gesetze-im-internet.de/dtd/1.01/gii-norm.dtd",
+     "example": "https://www.gesetze-im-internet.de/kredwg/xml.zip",
+     "exampleResult": "HTTP 200, 247 kB zip; the index lists 6,144 acts with their zip URLs.",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": true,
+     "since": 1958,
+     "url": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+     "quote": "Germany: EU Member State since 1958",
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "gb": {
+   "authorities": [
+    {
+     "key": "uk-parliament",
+     "code": "UK Parliament",
+     "name": "UK Parliament",
+     "nameEn": "UK Parliament",
+     "jurisdiction": "GB",
+     "url": "https://www.parliament.uk/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.gov.uk/government/how-government-works",
+     "evidenceNote": "GOV.UK: 'Laws go through several stages before they are passed by Parliament. The House of Commons and the House of Lords work together to make them.' parliament.uk and five of its subdomains answered HTTP 403 (Cloudflare challenge), so the name 'UK Parliament' was not read on its own site.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name as the body writes it",
+      "url"
+     ]
+    },
+    {
+     "key": "hm-government",
+     "code": "HMG",
+     "name": "His Majesty's Government",
+     "nameEn": "His Majesty's Government",
+     "jurisdiction": "GB",
+     "url": "https://www.gov.uk/",
+     "role": "government",
+     "evidenceUrl": "https://www.gov.uk/government/how-government-works",
+     "evidenceNote": "Page: 'In the UK, the Prime Minister leads the government with the support of the Cabinet and ministers ... The Prime Minister is the leader of His Majesty's Government'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "'HMG' is not printed on the page read; statutory instruments in this sector are made by HM Treasury ministers rather than by the Cabinet as a body."
+    },
+    {
+     "key": "hm-treasury",
+     "code": "HMT",
+     "name": "HM Treasury",
+     "nameEn": "HM Treasury",
+     "jurisdiction": "GB",
+     "url": "https://www.gov.uk/government/organisations/hm-treasury",
+     "role": "ministry",
+     "evidenceUrl": "https://www.gov.uk/government/organisations/hm-treasury",
+     "evidenceNote": "Page: 'HM Treasury is the government's economic and finance ministry ... HMT is a ministerial department'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "fca",
+     "code": "FCA",
+     "name": "Financial Conduct Authority",
+     "nameEn": "Financial Conduct Authority",
+     "jurisdiction": "GB",
+     "url": "https://www.fca.org.uk/",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.fca.org.uk/about/what-we-do/the-fca",
+     "evidenceNote": "Page: 'We regulate financial services firms in the UK, setting standards for firms to meet and holding them to account if they don't'; Handbook page: 'All regulated firms must comply with our rules as set out in the FCA Handbook.'",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "pra",
+     "code": "PRA",
+     "name": "Prudential Regulation Authority",
+     "nameEn": "Prudential Regulation Authority",
+     "jurisdiction": "GB",
+     "url": "https://www.bankofengland.co.uk/prudential-regulation",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.bankofengland.co.uk/prudential-regulation",
+     "evidenceNote": "Page: 'We are the Prudential Regulation Authority. As part of the Bank of England, we are responsible for the prudential regulation and supervision of around 1,292 banks, building societies, credit unions, insurers and major investment firms'; Rulebook site: 'rules made and enforced by the PRA under powers conferred by the Financial Services and Markets Act 2000 (FSMA)'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "bank-of-england",
+     "code": "BoE",
+     "name": "Bank of England",
+     "nameEn": "Bank of England",
+     "jurisdiction": "GB",
+     "url": "https://www.bankofengland.co.uk/",
+     "role": "central_bank",
+     "evidenceUrl": "https://www.bankofengland.co.uk/about",
+     "evidenceNote": "Page: 'We are the central bank of the United Kingdom, promoting the good of the people by maintaining monetary policy and financial stability'; it 'prudentially regulates and supervises financial services firms through the Prudential Regulation Authority (PRA)'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "codeNote": "'BoE' is not printed on the pages read; the site says 'the Bank'."
+    },
+    {
+     "key": "psr",
+     "code": "PSR",
+     "name": "Payment Systems Regulator",
+     "nameEn": "Payment Systems Regulator",
+     "jurisdiction": "GB",
+     "url": "https://www.psr.org.uk/",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.legislation.gov.uk/ukpga/2013/33/part/5",
+     "evidenceNote": "Financial Services (Banking Reform) Act 2013, Part 5 s. 39(1): 'provision for the establishment of a new body (the \"Payment Systems Regulator\") to exercise functions in relation to payment systems'; psr.org.uk: 'an independent subsidiary of the Financial Conduct Authority'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "statusNote": "psr.org.uk home page (read 2026-11-14): 'As part of the Government's plans to consolidate the PSR into the Financial Conduct Authority (FCA), the two regulators have been working closely together to deliver a smooth transition of responsibilities.' The body still exists but is being folded into the FCA."
+    },
+    {
+     "key": "ico",
+     "code": "ICO",
+     "name": "Information Commissioner's Office",
+     "nameEn": "Information Commissioner's Office",
+     "jurisdiction": "GB",
+     "url": "https://ico.org.uk/",
+     "role": "data_protection",
+     "evidenceUrl": "https://ico.org.uk/about-the-ico/",
+     "evidenceNote": "Page 'About the ICO' ('Who we are, what we do ...'); the home page title read on 2026-11-14 is 'Information Commission's Office'.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "name"
+     ],
+     "nameNote": "The only long form found on the pages fetched is the home page title 'Information Commission's Office'; the usual form 'Information Commissioner's Office' was not found on them, and neither was a statement of the body's legal name. Confirm the current official name before seeding."
+    },
+    {
+     "key": "hmrc",
+     "code": "HMRC",
+     "name": "HM Revenue & Customs",
+     "nameEn": "HM Revenue & Customs",
+     "jurisdiction": "GB",
+     "url": "https://www.gov.uk/government/organisations/hm-revenue-customs",
+     "role": "tax",
+     "evidenceUrl": "https://www.gov.uk/government/collections/automatic-exchange-of-information-agreements",
+     "evidenceNote": "Collection 'Automatic Exchange of Information' is published 'From: HM Revenue & Customs': agreements that 'allow the exchange of information between tax authorities of different countries about financial accounts and investments'; organisation page: 'HMRC is the UK's tax, payments and customs authority'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "ofsi",
+     "code": "OFSI",
+     "name": "Office of Financial Sanctions Implementation",
+     "nameEn": "Office of Financial Sanctions Implementation",
+     "jurisdiction": "GB",
+     "url": "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation",
+     "evidenceNote": "Organisation page: 'Office of Financial Sanctions Implementation ... Part of HM Treasury', with 'OFSI general licences', 'Report a financial sanctions breach' and guidance.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "nca",
+     "code": "NCA",
+     "name": "National Crime Agency",
+     "nameEn": "National Crime Agency",
+     "jurisdiction": "GB",
+     "url": "https://www.nationalcrimeagency.gov.uk/",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.nationalcrimeagency.gov.uk/what-we-do/crime-threats/money-laundering-and-illicit-finance/ukfiu",
+     "evidenceNote": "Page: 'The UK Financial Intelligence Unit (UKFIU) has national responsibility for receiving, analysing and disseminating intelligence submitted through the Suspicious Activity Reports (SARs) regime'; the UKFIU sits in the National Crime Agency.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "sources": [
+    {
+     "name": "legislation.gov.uk",
+     "url": "https://www.legislation.gov.uk/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "Official database of UK legislation (The National Archives); newly published items listed at https://www.legislation.gov.uk/new (200).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "FCA, News",
+     "url": "https://www.fca.org.uk/news",
+     "kind": "authority_site",
+     "authority": "fca",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'News | FCA'. The deeper listing https://www.fca.org.uk/news/search-results answered 403 (Cloudflare challenge) and the guessed /news/press-releases is 404.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "FCA Handbook",
+     "url": "https://handbook.fca.org.uk/",
+     "kind": "authority_site",
+     "authority": "fca",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'FCA Handbook'. The page is a 1.7 kB JavaScript application shell (www.handbook.fca.org.uk redirects to it), so rule text is not in the HTML a plain fetch receives.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "rendering": "javascript"
+    },
+    {
+     "name": "Bank of England, Prudential regulation news and publications",
+     "url": "https://www.bankofengland.co.uk/news/prudential-regulation",
+     "kind": "authority_site",
+     "authority": "pra",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "Page: 'Prudential regulation news and publications can be viewed on this page', with RSS feeds linked; results load by script.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "PRA Rulebook",
+     "url": "https://www.prarulebook.co.uk/",
+     "kind": "authority_site",
+     "authority": "pra",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "'The Prudential Regulation Authority (PRA) Rulebook contains published PRA policy: rules made and enforced by the PRA'; made instruments are listed at https://www.prarulebook.co.uk/legal-instruments (200, list loads by script).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Bank of England, News",
+     "url": "https://www.bankofengland.co.uk/news",
+     "kind": "authority_site",
+     "authority": "bank-of-england",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'News, publications and events | Bank of England'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Payment Systems Regulator, Latest news",
+     "url": "https://www.psr.org.uk/news-and-updates/latest-news/",
+     "kind": "authority_site",
+     "authority": "psr",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'Latest news | Payment Systems Regulator'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "OFSI, GOV.UK",
+     "url": "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation",
+     "kind": "authority_site",
+     "authority": "ofsi",
+     "jurisdiction": "GB",
+     "httpStatus": 200,
+     "evidenceNote": "OFSI's publication stream on GOV.UK (guidance, general licences, sanctions notices).",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "extra": true
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "English. No page stating the language of UK Acts was found (there is none to cite on legislation.gov.uk); Acts and statutory instruments of the UK Parliament and Government are published there in English. Welsh-language texts concern Senedd Cymru legislation, not UK financial-services law.",
+     "items": [
+      {
+       "url": "https://www.legislation.gov.uk/ukpga/2000/8/contents",
+       "readOn": "2026-11-14",
+       "statement": "The Financial Services and Markets Act 2000 is published in English only on legislation.gov.uk.",
+       "verified": true
+      },
+      {
+       "statement": "An official sentence saying UK legislation is enacted in English: not found.",
+       "verified": false
+      }
+     ]
+    },
+    "citation": {
+     "format": "Acts: short title and year with the chapter number, '<Short title> <year> (c. <n>)'; legislation.gov.uk prints 'UK Public General Acts 2000 c. 8'. Statutory instruments: title and year with 'S.I. <year>/<number>'; the site prints 'UK Statutory Instruments 2017 No. 692' and itself cites 'S.I. 2026/621'.",
+     "permanentIdentifier": "Type, year and number, carried in the identifier URI http://www.legislation.gov.uk/id/{type}/{year}/{number} (e.g. id/ukpga/2000/8), which is independent of any version; https://www.legislation.gov.uk/id/ukpga/2000/8 resolved (200) to the current contents page.",
+     "statutes": [
+      {
+       "title": "Financial Services and Markets Act 2000",
+       "citation": "2000 c. 8",
+       "url": "https://www.legislation.gov.uk/ukpga/2000/8/contents",
+       "verified": true
+      },
+      {
+       "title": "Financial Services (Banking Reform) Act 2013",
+       "citation": "2013 c. 33",
+       "url": "https://www.legislation.gov.uk/ukpga/2013/33/part/5",
+       "verified": true
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017",
+       "citation": "S.I. 2017/692",
+       "url": "https://www.legislation.gov.uk/uksi/2017/692/contents",
+       "verified": true
+      },
+      {
+       "title": "(title not read)",
+       "citation": "S.I. 2026/621",
+       "url": "https://www.legislation.gov.uk/uksi/2017/692/contents",
+       "verified": false,
+       "note": "Seen only as the instrument amending S.I. 2017/692 ('reg. 34A inserted by S.I. 2026/621 reg. 20'); its own page was not opened."
+      }
+     ],
+     "supervisorRegulations": [
+      {
+       "title": "FCA Handbook",
+       "citation": "Cited by sourcebook and rule, not by a gazette reference; 'The Handbook contains the complete record of FCA Legal Instruments'",
+       "url": "https://www.fca.org.uk/about/how-we-regulate/handbook",
+       "verified": true
+      },
+      {
+       "title": "PRA Rulebook",
+       "citation": "Cited by Rulebook Part and rule; made through PRA legal instruments listed on the Rulebook site",
+       "url": "https://www.prarulebook.co.uk/legal-instruments",
+       "verified": true
+      }
+     ],
+     "supervisorNote": "The numbering format of individual FCA and PRA legal instruments was not read: both instrument lists load by script.",
+     "eli": {
+      "exists": "not found",
+      "verified": false,
+      "note": "The legislation.gov.uk URI documentation (https://www.legislation.gov.uk/developer/uris) describes its own identifier, document and representation URIs and does not mention ELI."
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://www.legislation.gov.uk/ukpga/2000/8/contents",
+       "readOn": "2026-11-14",
+       "quote": "All content is available under the Open Government Licence v3.0 except where otherwise stated.",
+       "gloss": "Footer of legislation.gov.uk; content derived from EUR-Lex is reused under Commission Decision 2011/833/EU.",
+       "verified": true
+      },
+      {
+       "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+       "readOn": "2026-11-14",
+       "quote": "exploit the Information commercially and non-commercially for example, by combining it with other Information, or by including it in your own product or application",
+       "gloss": "OGL v3.0: free to copy, publish, distribute, transmit and adapt, commercially too; the user must acknowledge the source of the Information.",
+       "verified": true
+      }
+     ],
+     "supervisor": [
+      {
+       "url": "https://www.fca.org.uk/legal",
+       "readOn": "2026-11-14",
+       "quote": "Content from the FCA Handbook can be reproduced and adapted in accordance with the Open Government Licence v3.0 and our Handbook Terms and Conditions.",
+       "gloss": "FCA Handbook: reuse allowed under OGL v3.0 plus the Handbook terms; the rest of fca.org.uk stays under the site's own conditions 3.2 to 3.5.",
+       "verified": true,
+       "authority": "fca"
+      },
+      {
+       "url": "https://www.prarulebook.co.uk/legal",
+       "readOn": "2026-11-14",
+       "quote": "You must not use any part of the content on our site for commercial purposes (either in print or online) without obtaining a licence to do so from us.",
+       "gloss": "PRA Rulebook terms of use: copies for personal use or use within a firm are allowed with acknowledgement; commercial use needs a licence from the PRA.",
+       "verified": true,
+       "authority": "pra"
+      },
+      {
+       "url": "https://www.bankofengland.co.uk/legal",
+       "readOn": "2026-11-14",
+       "quote": "Unless otherwise stated, the copyright and any other rights in the contents of the Resources ... are owned by the Governor and Company of the Bank of England.",
+       "gloss": "Bank of England site: download, display or print for personal or internal non-commercial use; permission is requested through a form.",
+       "verified": true,
+       "authority": "bank-of-england"
+      },
+      {
+       "authority": "psr",
+       "statement": "not found (the guessed https://www.psr.org.uk/legal/ is 404)",
+       "verified": false
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "Every document and version has XML (Crown Legislation Markup Language), Akoma Ntoso, HTML and RDF representations, plus Atom feeds, described as the 'Legislation API'.",
+     "pattern": "https://www.legislation.gov.uk/{type}/{year}/{number}/data.xml (also data.akn, data.rdf, data.feed; add /{yyyy-mm-dd} for a point in time)",
+     "example": "https://www.legislation.gov.uk/ukpga/2000/8/data.xml",
+     "exampleResult": "HTTP 200, 2.0 MB XML of the Financial Services and Markets Act 2000 contents.",
+     "docs": "https://www.legislation.gov.uk/developer/formats",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": false,
+     "items": [
+      {
+       "url": "https://www.legislation.gov.uk/eu-legislation-and-uk-law",
+       "readOn": "2026-11-14",
+       "quote": "The UK is no longer a member of the European Union. EU legislation as it applied to the UK on 31 December 2020 became part of UK domestic legislation",
+       "gloss": "The implementation period 'expired at 11.00 p.m. on 31 December 2020 (\"IP completion day\")'; EU law applying before then was kept as retained EU legislation, later amended only by UK bodies.",
+       "verified": true
+      }
+     ],
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "nl": {
+   "authorities": [
+    {
+     "key": "staten-generaal",
+     "code": "Staten-Generaal",
+     "name": "Staten-Generaal",
+     "nameEn": "States General",
+     "jurisdiction": "NL",
+     "url": "https://www.staten-generaal.nl/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.staten-generaal.nl/",
+     "evidenceNote": "Site title 'Homepage Staten-Generaal'; news items refer to 'De Voorzitters van de Tweede en Eerste Kamer'; the chamber sites are titled 'Tweede Kamer der Staten-Generaal' (tweedekamer.nl) and 'Eerste Kamer der Staten-Generaal' (eerstekamer.nl). A sentence on its law-making role and the English name were not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ]
+    },
+    {
+     "key": "regering-nl",
+     "code": "Regering",
+     "name": "Regering",
+     "nameEn": "Government of the Netherlands",
+     "jurisdiction": "NL",
+     "url": "https://www.rijksoverheid.nl/regering",
+     "role": "government",
+     "evidenceUrl": "https://www.rijksoverheid.nl/regering",
+     "evidenceNote": "Page 'Regering | Rijksoverheid.nl' (cabinet and 'ministerraad'); the English site is titled 'Information from the Government of the Netherlands | Government.nl'. Orders in council (AMvB) such as the Besluit prudentiële regels Wft are registered with type 'AMvB' and authority 'Financiën' in the official BWB search service.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "ministerie-van-financien",
+     "code": "Financiën",
+     "name": "Ministerie van Financiën",
+     "nameEn": "Ministry of Finance",
+     "jurisdiction": "NL",
+     "url": "https://www.rijksoverheid.nl/ministeries/ministerie-van-financien",
+     "role": "ministry",
+     "evidenceUrl": "https://zoekservice.overheid.nl/sru/Search?x-connection=BWB&operation=searchRetrieve&version=1.2&query=overheidbwb.titel%20any%20%22Uitvoeringsregeling%20Wft%22",
+     "evidenceNote": "Page title 'Ministerie van Financiën | Rijksoverheid.nl'; the BWB search service lists 'Uitvoeringsregeling Wft' (BWBR0020537) as 'ministeriele-regeling' of authority 'Financiën'. English name not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ]
+    },
+    {
+     "key": "afm",
+     "code": "AFM",
+     "name": "Autoriteit Financiële Markten",
+     "nameEn": "Dutch Authority for the Financial Markets",
+     "jurisdiction": "NL",
+     "url": "https://www.afm.nl/",
+     "role": "supervisor",
+     "evidenceUrl": "https://www.afm.nl/nl-nl/over-de-afm",
+     "evidenceNote": "Page: 'De Autoriteit Financiële Markten (AFM) houdt toezicht op de financiële markten: op sparen, beleggen, verzekeren, lenen, pensioenen, kapitaalmarkten, assetmanagement en accountantsorganisaties en verslaggeving.' Conduct supervision under the Wet op het financieel toezicht.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ]
+    },
+    {
+     "key": "dnb",
+     "code": "DNB",
+     "name": "De Nederlandsche Bank",
+     "nameEn": "De Nederlandsche Bank",
+     "jurisdiction": "NL",
+     "url": "https://www.dnb.nl/",
+     "role": "supervisor",
+     "evidenceUrl": "https://wetten.overheid.nl/BWBR0020368/2026-09-29",
+     "evidenceNote": "Wet op het financieel toezicht art. 1:24 lid 2: 'De Nederlandsche Bank heeft, op de grondslag van deze wet en met inachtneming van de verordening bankentoezicht, tot taak het prudentieel toezicht op financiële ondernemingen uit te oefenen'; dnb.nl: 'De Nederlandsche Bank (DNB) zet zich in voor financiële stabiliteit en duurzame welvaart.'",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "alsoRole": "central_bank",
+     "urlStatus": "dnb.nl answers HTTP 403 ('Access Denied') to the command-line fetch; the web fetch tool read it (200).",
+     "bindingNote": "DNB regulations are in the national database with type 'zbo' and authority 'De Nederlandsche Bank' (e.g. Regeling specifieke bepalingen CRD en CRR 2019, BWBR0042578)."
+    },
+    {
+     "key": "autoriteit-persoonsgegevens",
+     "code": "AP",
+     "name": "Autoriteit Persoonsgegevens",
+     "nameEn": "Autoriteit Persoonsgegevens (Dutch Data Protection Authority)",
+     "jurisdiction": "NL",
+     "url": "https://www.autoriteitpersoonsgegevens.nl/",
+     "role": "data_protection",
+     "evidenceUrl": "https://www.autoriteitpersoonsgegevens.nl/over-de-autoriteit-persoonsgegevens",
+     "evidenceNote": "Page: 'De Autoriteit Persoonsgegevens (AP) beschermt mensen in deze digitale wereld ... De taken en bevoegdheden van de AP zijn vastgelegd in de wet. Taken van de AP zijn onder meer toezicht houden en voorlichting geven.' English name not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ]
+    },
+    {
+     "key": "belastingdienst",
+     "code": "Belastingdienst",
+     "name": "Belastingdienst",
+     "nameEn": "Tax and Customs Administration",
+     "jurisdiction": "NL",
+     "url": "https://www.belastingdienst.nl/",
+     "role": "tax",
+     "evidenceUrl": "https://www.belastingdienst.nl/",
+     "evidenceNote": "Home page title 'Belastingdienst Nederland | Belastingdienst' (200). Its role in CRS/FATCA reporting was not confirmed: the guessed CRS page is 404 and the site search page returned no static results. English name not read.",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "CRS/FATCA role",
+      "nameEn"
+     ]
+    },
+    {
+     "key": "fiu-nederland",
+     "code": "FIU-Nederland",
+     "name": "Financial Intelligence Unit-Nederland",
+     "nameEn": "FIU-the Netherlands",
+     "jurisdiction": "NL",
+     "url": "https://www.fiu-nederland.nl/",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.fiu-nederland.nl/home/over-fiu/",
+     "evidenceNote": "Page: 'Financial Intelligence Unit-Nederland (FIU-Nederland) is op grond van de Wet ter voorkoming van witwassen en financieren van terrorisme (Wwft) het centrale meldpunt waar verschillende instellingen ... ongebruikelijke transacties moeten rapporteren.' English name not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ],
+     "sanctionsNote": "No separate Dutch financial-sanctions office was found; afm.nl has a theme page 'Voorkomen witwassen en terrorismefinanciering - naleving Sanctiewet', i.e. the supervisors watch compliance."
+    }
+   ],
+   "sources": [
+    {
+     "name": "Wetten.nl, geconsolideerde wet- en regelgeving (Overheid.nl)",
+     "url": "https://wetten.overheid.nl/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "NL",
+     "httpStatus": 200,
+     "evidenceNote": "Consolidated national legislation ('wetten.nl - Regeling - Wet op het financieel toezicht - BWBR0020368' at https://wetten.overheid.nl/BWBR0020368/2026-09-29).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Officiële bekendmakingen (Staatsblad, Staatscourant)",
+     "url": "https://www.officielebekendmakingen.nl/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "NL",
+     "httpStatus": 200,
+     "evidenceNote": "Official gazettes; e.g. https://zoek.officielebekendmakingen.nl/stb-2006-475.html is 'Staatsblad 2006, 475' with an 'Authentieke versie (PDF)'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "AFM, actueel",
+     "url": "https://www.afm.nl/nl-nl/sector/actueel",
+     "kind": "authority_site",
+     "authority": "afm",
+     "jurisdiction": "NL",
+     "httpStatus": 200,
+     "evidenceNote": "News listing for the sector (title 'Actueel'); an RSS link /nl-nl/rss-feed/nieuws-professionals is on the home page (not fetched). The AFM has no rule register of its own on the pages read: the guessed /sector/wet-en-regelgeving is a 404 page.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "De Nederlandsche Bank, algemeen nieuws",
+     "url": "https://www.dnb.nl/algemeen-nieuws/",
+     "kind": "authority_site",
+     "authority": "dnb",
+     "jurisdiction": "NL",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'Algemeen nieuws | De Nederlandsche Bank' through the web fetch tool, but no news items were in the delivered HTML (they load by script). dnb.nl answers HTTP 403 ('Access Denied') to the command-line fetch; the web fetch tool read it (200).",
+     "verified": false,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "De Nederlandsche Bank, Open Boek Toezicht",
+     "url": "https://www.dnb.nl/voor-de-sector/open-boek-toezicht/",
+     "kind": "authority_site",
+     "authority": "dnb",
+     "jurisdiction": "NL",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'Open Boek Toezicht | De Nederlandsche Bank': 'Hieronder vindt u, naast actualiteiten rondom toezicht, alle informatie voor instellingen die onder toezicht staan van DNB.' dnb.nl answers HTTP 403 ('Access Denied') to the command-line fetch; the web fetch tool read it (200).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "Dutch. No statute stating the language of legislation was found; the nearest rule covers administrative bodies. Frisian has official status in Friesland but no page read makes it an enactment language for national financial law.",
+     "items": [
+      {
+       "url": "https://wetten.overheid.nl/BWBR0005537/2026-08-15/#Hoofdstuk2_Afdeling2.2_Artikel2:6",
+       "readOn": "2026-11-14",
+       "quote": "Bestuursorganen en onder hun verantwoordelijkheid werkzame personen gebruiken de Nederlandse taal, tenzij bij wettelijk voorschrift anders is bepaald.",
+       "gloss": "General Administrative Law Act art. 2:6(1): administrative bodies use Dutch unless a statutory rule says otherwise.",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "Statutes and orders in council: date and title with the Staatsblad reference 'Stb. <year>, <number>'; ministerial and supervisor regulations are published in the Staatscourant ('Stcrt.'). The database identifier is the BWB id ('BWBR' + 7 digits).",
+     "permanentIdentifier": "The BWB id, e.g. BWBR0020368 for the Wet op het financieel toezicht; it covers every version (https://wetten.overheid.nl/BWBR0020368/ redirects to the version in force, here /2026-09-29). Deep links use Juriconnect: 'jci1.3:c:BWBR0020368&artikel=1:24'.",
+     "statutes": [
+      {
+       "title": "Wet op het financieel toezicht",
+       "citation": "Wet van 28 september 2006, houdende regels met betrekking tot de financiële markten en het toezicht daarop, Stb. 2006, 475; BWBR0020368",
+       "url": "https://zoek.officielebekendmakingen.nl/stb-2006-475.html",
+       "verified": true
+      },
+      {
+       "verified": false,
+       "note": "A second banking-sector statute with its Staatsblad number was not fetched."
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "Besluit prudentiële regels Wft",
+       "issuer": "AMvB, Financiën",
+       "citation": "BWBR0020420 (Staatsblad number not read)",
+       "url": "https://wetten.overheid.nl/BWBR0020420/2026-10-16",
+       "verified": true
+      },
+      {
+       "title": "Uitvoeringsregeling Wft",
+       "issuer": "ministeriële regeling, Financiën",
+       "citation": "BWBR0020537 (Staatscourant number not read)",
+       "url": "https://zoekservice.overheid.nl/sru/Search?x-connection=BWB&operation=searchRetrieve&version=1.2&query=overheidbwb.titel%20any%20%22Uitvoeringsregeling%20Wft%22",
+       "verified": true
+      }
+     ],
+     "supervisorRegulations": [
+      {
+       "title": "Regeling specifieke bepalingen CRD en CRR 2019",
+       "issuer": "De Nederlandsche Bank",
+       "citation": "BWBR0042578",
+       "url": "https://zoekservice.overheid.nl/sru/Search?x-connection=BWB&operation=searchRetrieve&version=1.2&query=overheidbwb.titel%20any%20%22specifieke%20bepalingen%20CRD%22",
+       "verified": true
+      },
+      {
+       "title": "Regeling specifieke bepalingen IFR en IFD",
+       "issuer": "De Nederlandsche Bank",
+       "citation": "BWBR0045790",
+       "url": "https://zoekservice.overheid.nl/sru/Search?x-connection=BWB&operation=searchRetrieve&version=1.2&query=overheidbwb.titel%20any%20%22specifieke%20bepalingen%20CRD%22",
+       "verified": true
+      }
+     ],
+     "eli": {
+      "exists": "not found",
+      "verified": false,
+      "note": "No ELI path or metadata on the wetten.overheid.nl pages read; the site uses BWB ids and Juriconnect links. The EUR-Lex ELI register page answered 403."
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://wetten.overheid.nl/BWBR0001886/2026-01-01",
+       "readOn": "2026-11-14",
+       "quote": "Er bestaat geen auteursrecht op wetten, besluiten en verordeningen, door de openbare macht uitgevaardigd, noch op rechterlijke uitspraken en administratieve beslissingen.",
+       "gloss": "Auteurswet (art. 11): no copyright in laws, decrees and regulations issued by public authority, so republication, commercial included, is free and no credit is required.",
+       "verified": true
+      },
+      {
+       "url": "https://www.overheid.nl/over-deze-site/informatie-hergebruiken",
+       "readOn": "2026-11-14",
+       "quote": "Om het hergebruik van deze data mogelijk te maken, is er een technische koppeling (ook wel webservice of API genoemd) beschikbaar",
+       "gloss": "Overheid.nl invites reuse through its SRU web service. A licence name (such as CC0) is not on this page: not found; https://www.overheid.nl/copyright is 404.",
+       "verified": true
+      }
+     ],
+     "supervisor": [
+      {
+       "url": "https://www.afm.nl/nl-nl/over-de-afm/over-deze-website",
+       "readOn": "2026-11-14",
+       "quote": "Uitsluitend met uitdrukkelijke bronvermelding van de AFM is het toegestaan de informatie op deze website geheel of gedeeltelijk op enigerlei wijze over te nemen en/of te verspreiden.",
+       "gloss": "AFM keeps copyright; copying and distributing is allowed only with explicit credit to the AFM. Commercial use is not addressed.",
+       "verified": true,
+       "authority": "afm"
+      },
+      {
+       "authority": "dnb",
+       "statement": "not found: the Open Boek Toezicht page and its footer state no copyright or reuse terms (footer links are privacy, 'Verantwoording' and cookies).",
+       "url": "https://www.dnb.nl/voor-de-sector/open-boek-toezicht/",
+       "verified": true
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "XML of every version in the official repository, found through a manifest per act; an SRU search API; gazette items also as XML.",
+     "pattern": "https://repository.officiele-overheidspublicaties.nl/bwb/{BWB-id}/manifest.xml -> https://repository.officiele-overheidspublicaties.nl/bwb/{BWB-id}/{yyyy-mm-dd}_{n}/xml/{BWB-id}_{yyyy-mm-dd}_{n}.xml ; search https://zoekservice.overheid.nl/sru/Search?x-connection=BWB&operation=searchRetrieve&version=1.2&query={cql} ; gazette https://zoek.officielebekendmakingen.nl/stb-{year}-{number}.xml",
+     "example": "https://repository.officiele-overheidspublicaties.nl/bwb/BWBR0020368/2026-09-29_0/xml/BWBR0020368_2026-09-29_0.xml",
+     "exampleResult": "HTTP 200, 9.9 MB XML of the Wft as of 2026-09-29; manifest 200; https://zoek.officielebekendmakingen.nl/stb-2006-475.xml 200. The older https://wetten.overheid.nl/xml.php?regelingID=... is 404.",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": true,
+     "since": 1958,
+     "url": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+     "quote": "Netherlands: EU Member State since 1958",
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "at": {
+   "authorities": [
+    {
+     "key": "parlament-at",
+     "code": "Parlament",
+     "name": "Parlament Österreich",
+     "nameEn": "Austrian Parliament",
+     "jurisdiction": "AT",
+     "url": "https://www.parlament.gv.at/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.parlament.gv.at/verstehen/nationalrat",
+     "evidenceNote": "Page: 'Im österreichischen Parlament gibt es zwei Kammern, der Nationalrat ist eine davon ... Er diskutiert und prüft Vorschläge für neue Gesetze oder Gesetzesänderungen.' Site title 'Parlament Österreich'; English site uses 'Austrian Parliament'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "nameNote": "The legislature consists of Nationalrat and Bundesrat; the row names the institution as its site does."
+    },
+    {
+     "key": "bundesregierung-at",
+     "code": "Bundesregierung",
+     "name": "Bundesregierung",
+     "nameEn": "Federal Government",
+     "jurisdiction": "AT",
+     "url": "https://www.bundeskanzleramt.gv.at/bundeskanzleramt/die-bundesregierung.html",
+     "role": "government",
+     "evidenceUrl": "https://www.bundeskanzleramt.gv.at/bundeskanzleramt/die-bundesregierung.html",
+     "evidenceNote": "Page title 'Bundesregierung - Bundeskanzleramt Österreich' on the Federal Chancellery site (200). No sentence on its regulation-making role was read; the English name was not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn",
+      "role sentence"
+     ]
+    },
+    {
+     "key": "bmf-at",
+     "code": "BMF",
+     "name": "Bundesministerium für Finanzen",
+     "nameEn": "Federal Ministry of Finance",
+     "jurisdiction": "AT",
+     "url": "https://www.bmf.gv.at/",
+     "role": "ministry",
+     "evidenceUrl": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268337/NOR40268337.html",
+     "evidenceNote": "Sanktionengesetz 2024 § 2(1): 'ist der Bundesminister für Finanzen ermächtigt ... durch Verordnung oder Bescheid die nachstehend angeführten Maßnahmen anzuordnen'; site title 'Das Bundesministerium für Finanzen'; the ministry's page on the FMA says the FMA has been the integrated supervisor since 2002.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "alsoRole": "tax",
+     "unverifiedFields": [
+      "nameEn"
+     ],
+     "taxNote": "CRS/DAC: bmf.gv.at page 'Automatischer und Internationaler Informationsaustausch' (200) explains AEOI, DAC 1 to 9, CRS and CARF, and the Gemeinsamer Meldestandard-Gesetz (BGBl. I Nr. 116/2015) is in RIS. Which tax office receives the reports, and FATCA, were not read; no separate tax-authority row is given."
+    },
+    {
+     "key": "fma-at",
+     "code": "FMA",
+     "name": "Finanzmarktaufsichtsbehörde",
+     "nameEn": "Financial Market Authority",
+     "jurisdiction": "AT",
+     "url": "https://www.fma.gv.at/",
+     "role": "supervisor",
+     "evidenceUrl": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40028735/NOR40028735.html",
+     "evidenceNote": "FMABG § 1(1): 'Zur Durchführung der Bankenaufsicht, der Versicherungsaufsicht, der Wertpapieraufsicht und der Pensionskassenaufsicht wird unter der Bezeichnung „Finanzmarktaufsichtsbehörde“ (FMA) eine Anstalt des öffentlichen Rechts mit eigener Rechtspersönlichkeit eingerichtet'; BWG § 69(1): 'Die FMA hat unbeschadet der ihr in anderen Bundesgesetzen zugewiesenen Aufgaben die Einhaltung der Vorschriften dieses Bundesgesetzes, des Sparkassengesetzes ... zu überwachen'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "url",
+      "nameEn"
+     ],
+     "urlStatus": "fma.gv.at answers HTTP 403 (Cloudflare 'Just a moment...' challenge) to both fetch tools; nothing on the FMA's own site was read.",
+     "alsoRole": "fiu_sanctions",
+     "sanctionsNote": "Sanktionengesetz 2024 § 6(1) Z 1 (version in force 01.01.2026): permits under sanctions measures are for 'Die Finanzmarktaufsichtsbehörde betreffend Finanzmarktteilnehmer'. Whether the OeNB keeps any sanctions function was not confirmed (the guessed OeNB sanctions page is 404)."
+    },
+    {
+     "key": "oenb",
+     "code": "OeNB",
+     "name": "Oesterreichische Nationalbank",
+     "nameEn": "Oesterreichische Nationalbank",
+     "jurisdiction": "AT",
+     "url": "https://www.oenb.at/",
+     "role": "central_bank",
+     "evidenceUrl": "https://www.oenb.at/themen/stabiler-finanzmarkt/bankenaufsicht.html",
+     "evidenceNote": "Page: 'Die OeNB beaufsichtigt gemeinsam mit der Finanzmarktaufsicht (FMA) und der Europäischen Zentralbank (EZB) die österreichischen Banken'; the national competent authorities for smaller banks 'in Österreich sind das die OeNB und die FMA'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "dsb",
+     "code": "DSB",
+     "name": "Österreichische Datenschutzbehörde",
+     "nameEn": "Austrian Data Protection Authority",
+     "jurisdiction": "AT",
+     "url": "https://dsb.gv.at/",
+     "role": "data_protection",
+     "evidenceUrl": "https://dsb.gv.at/",
+     "evidenceNote": "Home page (www.dsb.gv.at redirects here): 'Willkommen auf der Website der Österreichischen Datenschutzbehörde'. The English page did not load (connection reset), so the English name was not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn",
+      "code"
+     ]
+    },
+    {
+     "key": "geldwaeschemeldestelle",
+     "code": "A-FIU",
+     "name": "Geldwäschemeldestelle",
+     "nameEn": "Austrian Financial Intelligence Unit (A-FIU)",
+     "jurisdiction": "AT",
+     "url": "https://www.bundeskriminalamt.at/308/start.aspx",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.bundeskriminalamt.at/308/start.html",
+     "evidenceNote": "Page 'Geldwäscherei': 'Die Geldwäschemeldestelle (A-FIU) ist beim Bundeskriminalamt eingerichtet (§ 4 Abs. 2 Z 1 BKA-G). Sie nimmt Hinweise meldepflichtiger Berufsgruppen über Transaktionen oder Geschäftsfälle entgegen'. English long form not read.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "name": "Rechtsinformationssystem des Bundes (RIS), Bundesrecht konsolidiert",
+     "url": "https://www.ris.bka.gv.at/",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "AT",
+     "httpStatus": 503,
+     "evidenceNote": "Bundesgesetzblattgesetz § 7(1): 'Die im Bundesgesetzblatt zu verlautbarenden Rechtsvorschriften sind im Internet unter der Adresse www.ris.bka.gv.at zur Abfrage bereit zu halten.' www.ris.bka.gv.at answers HTTP 503 with a 'Security Check' page to both fetch tools; the same content was read through the official open-data API (data.bka.gv.at) and document store (ogd.ris.bka.gv.at).",
+     "verified": false,
+     "readOn": "2026-11-14",
+     "apiUrl": "https://data.bka.gv.at/ris/api/v2.6/Bundesrecht?Applikation=BrKons&Fassung.FassungVom=2026-11-14&Titel=Bankwesengesetz",
+     "apiStatus": 200
+    },
+    {
+     "name": "FMA, Rundschreiben",
+     "url": "https://www.fma.gv.at/fma/fma-rundschreiben/",
+     "kind": "authority_site",
+     "authority": "fma-at",
+     "jurisdiction": "AT",
+     "httpStatus": 403,
+     "evidenceNote": "URL from a search-engine result titled 'FMA-Rundschreiben - FMA Österreich'; not fetched. fma.gv.at answers HTTP 403 (Cloudflare 'Just a moment...' challenge) to both fetch tools; nothing on the FMA's own site was read.",
+     "verified": false,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "FMA, Pressemitteilungen",
+     "url": null,
+     "kind": "authority_site",
+     "authority": "fma-at",
+     "jurisdiction": "AT",
+     "httpStatus": null,
+     "evidenceNote": "The URL of the FMA's news or press-release listing was not found: the site could not be read and the search results gave only single press releases under https://www.fma.gv.at/<slug>/. FMA regulations (Verordnungen) are promulgated in BGBl. II and can be watched through the RIS API (document type 'V').",
+     "verified": false,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Oesterreichische Nationalbank, Presseaussendungen",
+     "url": "https://www.oenb.at/news-und-events/presse/presseaussendungen.html",
+     "kind": "authority_site",
+     "authority": "oenb",
+     "jurisdiction": "AT",
+     "httpStatus": 200,
+     "evidenceNote": "Link 'Presseaussendungen' on oenb.at; it redirects to https://www.oenb.at/news-und-events/presse.html?tab=... ('Presse - Oesterreichische Nationalbank').",
+     "verified": true,
+     "readOn": "2026-11-14"
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "German. Minority languages have protected status but no page read makes them enactment languages of federal law.",
+     "items": [
+      {
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40066723/NOR40066723.html",
+       "readOn": "2026-11-14",
+       "quote": "Die deutsche Sprache ist, unbeschadet der den sprachlichen Minderheiten bundesgesetzlich eingeräumten Rechte, die Staatssprache der Republik.",
+       "gloss": "Federal Constitutional Law Art. 8(1): German is the state language of the Republic, without prejudice to minority rights.",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "Short title and abbreviation followed by the Bundesgesetzblatt reference of the original version: 'BGBl. Nr. <n>/<year>' until 1996, then 'BGBl. I Nr. <n>/<year>' (statutes), 'BGBl. II Nr.' (regulations), 'BGBl. III Nr.' (treaties). RIS prints 'BGBl. I Nr. 97/2001 zuletzt geändert durch BGBl. I Nr. 45/2002'.",
+     "permanentIdentifier": "The BGBl. reference of the original version (Stammfassung), e.g. BGBl. Nr. 532/1993 for the BWG, plus the RIS 'Gesetzesnummer' (10004827) that covers all versions; each paragraph version has its own NOR document number.",
+     "statutes": [
+      {
+       "title": "Bankwesengesetz (BWG)",
+       "citation": "BGBl. Nr. 532/1993; Gesetzesnummer 10004827",
+       "url": "https://data.bka.gv.at/ris/api/v2.6/Bundesrecht?Applikation=BrKons&Fassung.FassungVom=2026-11-14&Titel=Bankwesengesetz&Abschnitt.Von=69&Abschnitt.Bis=69&Abschnitt.Typ=Paragraph",
+       "verified": true
+      },
+      {
+       "title": "Finanzmarktaufsichtsbehördengesetz (FMABG)",
+       "citation": "BGBl. I Nr. 97/2001; Gesetzesnummer 20001456",
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40028735/NOR40028735.html",
+       "verified": true
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "Durchführung des Gemeinsamen Meldestandard-Gesetzes (GMSG-DV)",
+       "citation": "BGBl. II Nr. 439/2015",
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40219268/NOR40219268.html",
+       "verified": true
+      },
+      {
+       "title": "2. Kontenregister-Durchführungsverordnung (2. KontReg-DV)",
+       "citation": "BGBl. II Nr. 176/2021",
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40233096/NOR40233096.html",
+       "verified": true
+      }
+     ],
+     "governmentRegulationsNote": "Both are type 'V' in RIS; that the issuer is the Bundesminister für Finanzen was not read in the preamble.",
+     "supervisorRegulations": [
+      {
+       "title": "Kreditinstitute-Risikomanagementverordnung (KI-RMV)",
+       "citation": "BGBl. II Nr. 487/2013",
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40238227/NOR40238227.html",
+       "verified": true
+      },
+      {
+       "title": "Kapitalpuffer-Verordnung 2025 (KP-V 2025)",
+       "citation": "BGBl. II Nr. 112/2025",
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40269664/NOR40269664.html",
+       "verified": true
+      }
+     ],
+     "supervisorRegulationsNote": "Both are type 'V' in RIS index 37/02 Kreditwesen; that the FMA is the issuer was not read in the preamble.",
+     "eli": {
+      "exists": true,
+      "pattern": "https://www.ris.bka.gv.at/eli/bgbl/{part}/{year}/{number}/P{paragraph}/{NOR-number}",
+      "example": "https://www.ris.bka.gv.at/eli/bgbl/1993/532/P1/NOR12052363",
+      "result": "The ELI is returned by the RIS API in the field 'Eli'; the URL itself answered HTTP 503 (Security Check) to the fetch, so resolution was not confirmed.",
+      "verified": false
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR12024408/NOR12024408.html",
+       "readOn": "2026-11-14",
+       "quote": "Gesetze, Verordnungen, amtliche Erlässe, Bekanntmachungen und Entscheidungen ... genießen keinen urheberrechtlichen Schutz.",
+       "gloss": "Urheberrechtsgesetz § 7(1) 'Freie Werke': statutes, regulations, official decrees and decisions have no copyright protection.",
+       "verified": true
+      },
+      {
+       "statement": "Licence of the RIS open-data service (terms, credit line): not found in what was read; the data.gv.at catalogue page guessed was 404 and the API documentation PDF could not be text-searched here.",
+       "verified": false
+      }
+     ],
+     "supervisor": [
+      {
+       "authority": "fma-at",
+       "statement": "not found (site not readable)",
+       "verified": false
+      },
+      {
+       "authority": "oenb",
+       "statement": "not found (an 'Impressum & Haftung' page is linked at https://www.oenb.at/serviceportal/impressum-und-haftung.html but was not read)",
+       "verified": false
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "RIS open-data API v2.6 (JSON search over consolidated federal law) and a document store with XML, HTML, PDF and RTF per paragraph version.",
+     "pattern": "https://data.bka.gv.at/ris/api/v2.6/Bundesrecht?Applikation=BrKons&Titel={title}&Fassung.FassungVom={yyyy-mm-dd} -> https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/{NOR}/{NOR}.xml",
+     "example": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40028735/NOR40028735.xml",
+     "exampleResult": "HTTP 200 (FMABG § 1); the API query for 'Bankwesengesetz' returned 200 with Gesetzesnummer, BGBl. reference, ELI and document URLs.",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": true,
+     "since": 1995,
+     "url": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+     "quote": "Austria: EU Member State since 1995",
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  },
+  "ch": {
+   "authorities": [
+    {
+     "key": "bundesversammlung",
+     "code": "Bundesversammlung",
+     "name": "Bundesversammlung",
+     "nameEn": "Federal Assembly",
+     "jurisdiction": "CH",
+     "url": "https://www.parlament.ch/",
+     "role": "legislature",
+     "evidenceUrl": "https://www.parlament.ch/de/über-das-parlament/parlamentsportraet/aufgaben-der-bundesversammlung",
+     "evidenceNote": "Page: 'Als oberstem Organ des Bundes fallen der Bundesversammlung folgende Aufgaben zu: ... Rechtsetzung. Eine der Hauptaufgaben der Bundesversammlung ist der Erlass von rechtsetzenden Bestimmungen.'; site title 'Schweizer Parlament'; 'Federal Assembly' is the English form on the federal English pages read.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "bundesrat",
+     "code": "Bundesrat",
+     "name": "Bundesrat",
+     "nameEn": "Federal Council",
+     "jurisdiction": "CH",
+     "url": "https://www.admin.ch/gov/de/start/bundesrat.html",
+     "role": "government",
+     "evidenceUrl": "https://www.admin.ch/gov/de/start/bundesrat.html",
+     "evidenceNote": "Page 'Der Bundesrat' ('Das Portal der Schweizer Regierung'): 'Der Bundesrat regiert die Schweiz.' SECO: 'Das Embargogesetz ermächtigt den Bundesrat, Massnahmen wie Finanzsanktionen ... zu erlassen'; the Bankenverordnung (SR 952.02) is a Federal Council ordinance.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "urlStatus": "admin.ch answers HTTP 403 ('Access Denied') to the command-line fetch; the web fetch tool read it (200)."
+    },
+    {
+     "key": "efd",
+     "code": "EFD",
+     "name": "Eidgenössisches Finanzdepartement",
+     "nameEn": "Federal Department of Finance",
+     "jurisdiction": "CH",
+     "url": "https://www.efd.admin.ch/",
+     "role": "ministry",
+     "evidenceUrl": "https://www.efd.admin.ch/de/das-efd",
+     "evidenceNote": "Page 'Das EFD': '... Vorsteherin des Eidgenössischen Finanzdepartments EFD'; site title 'Eidgenössisches Finanzdepartement EFD', English site 'Federal Department of Finance FDF'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "finma",
+     "code": "FINMA",
+     "name": "Eidgenössische Finanzmarktaufsicht",
+     "nameEn": "Swiss Financial Market Supervisory Authority",
+     "jurisdiction": "CH",
+     "url": "https://www.finma.ch/",
+     "role": "supervisor",
+     "evidenceUrl": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2008/736/20270101/de/html/fedlex-data-admin-ch-eli-cc-2008-736-20270101-de-html.html",
+     "evidenceNote": "FINMAG (SR 956.1) Art. 1(1): 'Der Bund schafft eine Behörde für die Aufsicht über den Finanzmarkt nach folgenden Gesetzen' (Bankengesetz, Finanzinstitutsgesetz, Geldwäschereigesetz, Versicherungsaufsichtsgesetz, Kollektivanlagengesetz, FinfraG, FIDLEG ...); finma.ch: 'hat die FINMA hoheitliche Befugnisse über Banken, Versicherungen, Börsen, Finanzinstitute, kollektive Kapitalanlagen'.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "bindingNote": "FINMAG Art. 7(1): 'Die FINMA reguliert durch: a. Verordnungen, wo dies in der Finanzmarktgesetzgebung vorgesehen ist; und b. Rundschreiben über die Anwendung der Finanzmarktgesetzgebung.'"
+    },
+    {
+     "key": "snb",
+     "code": "SNB",
+     "name": "Schweizerische Nationalbank",
+     "nameEn": "Swiss National Bank",
+     "jurisdiction": "CH",
+     "url": "https://www.snb.ch/",
+     "role": "central_bank",
+     "evidenceUrl": "https://www.snb.ch/de/the-snb/organisation/legal-framework",
+     "evidenceNote": "Page 'Rechtliche Grundlagen | Schweizerische Nationalbank': 'Auf Gesetzesstufe bildet das Nationalbankgesetz (NBG) vom 3. Oktober 2003 (in Kraft seit 1. Mai 2004) den Rahmen für die Nationalbank und ihre Tätigkeit.' Its binding rules for banks (minimum reserves, reporting) were not read.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "edoeb",
+     "code": "EDÖB",
+     "name": "Eidgenössischer Datenschutz- und Öffentlichkeitsbeauftragter",
+     "nameEn": "Federal Data Protection and Information Commissioner",
+     "jurisdiction": "CH",
+     "url": "https://www.edoeb.admin.ch/",
+     "role": "data_protection",
+     "evidenceUrl": "https://www.edoeb.admin.ch/de",
+     "evidenceNote": "Page: 'Als unabhängige Behörde obliegen dem Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) Aufgaben in den Bereichen Datenschutz und Öffentlichkeitsprinzip. Als Aufsichtsbehörde für Datenschutz ...'; English page title 'Welcome to the FDPIC'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "estv",
+     "code": "ESTV",
+     "name": "Eidgenössische Steuerverwaltung",
+     "nameEn": "Federal Tax Administration",
+     "jurisdiction": "CH",
+     "url": "https://www.estv.admin.ch/",
+     "role": "tax",
+     "evidenceUrl": "https://www.estv.admin.ch/de/automatischer-informationsaustausch-aia",
+     "evidenceNote": "Page 'Automatischer Informationsaustausch AIA': 'Die Informationen werden der ESTV via ePortal übermittelt. Die ESTV leitet sie den Steuerbehörden im Ausland weiter.' A FATCA page was not found (guessed URL 404).",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "FATCA role"
+     ]
+    },
+    {
+     "key": "seco",
+     "code": "SECO",
+     "name": "Staatssekretariat für Wirtschaft",
+     "nameEn": "State Secretariat for Economic Affairs",
+     "jurisdiction": "CH",
+     "url": "https://www.seco.admin.ch/",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.seco.admin.ch/de/sanktionen",
+     "evidenceNote": "Page 'Sanktionen' (contact 'Staatssekretariat für Wirtschaft SECO, Sanktionen'): sanctions ordinances list, exemption and delisting requests 'gemäss den Sanktionen des SECO', reporting-duty forms; 'Das Embargogesetz ermächtigt den Bundesrat, Massnahmen wie Finanzsanktionen ... zu erlassen.'",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "key": "mros",
+     "code": "MROS",
+     "name": "Meldestelle für Geldwäscherei",
+     "nameEn": "Money Laundering Reporting Office Switzerland",
+     "jurisdiction": "CH",
+     "url": "https://www.fedpol.admin.ch/de/geldwaescherei",
+     "role": "fiu_sanctions",
+     "evidenceUrl": "https://www.fedpol.admin.ch/de/geldwaescherei",
+     "evidenceNote": "fedpol page 'Geldwäscherei': 'Meldestelle für Geldwäscherei (MROS)'; obliged persons must 'bei Geldwäschereiverdacht eine Meldung an die MROS ... erstatten'. The office sits in the Federal Office of Police (fedpol); its English name was not read; older fedpol URLs are 404.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "unverifiedFields": [
+      "nameEn"
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "name": "Fedlex, Publikationsplattform des Bundesrechts (SR, AS)",
+     "url": "https://www.fedlex.admin.ch/de/home",
+     "kind": "legal_database",
+     "authority": null,
+     "jurisdiction": "CH",
+     "httpStatus": 200,
+     "evidenceNote": "Official platform (Systematische Rechtssammlung and Amtliche Sammlung). The site is a JavaScript application: every path, including ELI URLs, returns the same 77 kB shell, so an agent must use the SPARQL endpoint https://fedlex.data.admin.ch/sparqlendpoint and the file store it points to.",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "rendering": "javascript",
+     "apiUrl": "https://fedlex.data.admin.ch/sparqlendpoint"
+    },
+    {
+     "name": "FINMA, News",
+     "url": "https://www.finma.ch/de/news/",
+     "kind": "authority_site",
+     "authority": "finma",
+     "jurisdiction": "CH",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'News | FINMA'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "FINMA, Rundschreiben",
+     "url": "https://www.finma.ch/de/dokumentation/rundschreiben/",
+     "kind": "authority_site",
+     "authority": "finma",
+     "jurisdiction": "CH",
+     "httpStatus": 200,
+     "evidenceNote": "'Mit Rundschreiben führt die FINMA aus, wie sie die Finanzmarktgesetzgebung in der Aufsichtspraxis anwendet' (Art. 7 Abs. 1 Bst. b FINMAG).",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "FINMA, Gesetze und Verordnungen",
+     "url": "https://www.finma.ch/de/dokumentation/rechtsgrundlagen/gesetze-und-verordnungen/",
+     "kind": "authority_site",
+     "authority": "finma",
+     "jurisdiction": "CH",
+     "httpStatus": 200,
+     "evidenceNote": "'Oft werden die gesetzlichen Rechtsgrundlagen in Bundesratsverordnungen oder in FINMA-Verordnungen konkretisiert'; FINMA ordinances themselves carry SR numbers and are in Fedlex.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "Schweizerische Nationalbank, Medienmitteilungen",
+     "url": "https://www.snb.ch/de/news-publications/media-releases",
+     "kind": "authority_site",
+     "authority": "snb",
+     "jurisdiction": "CH",
+     "httpStatus": 200,
+     "evidenceNote": "Title 'Medienmitteilungen'.",
+     "verified": true,
+     "readOn": "2026-11-14"
+    },
+    {
+     "name": "SECO, Sanktionen",
+     "url": "https://www.seco.admin.ch/de/sanktionen",
+     "kind": "authority_site",
+     "authority": "seco",
+     "jurisdiction": "CH",
+     "httpStatus": 200,
+     "evidenceNote": "Sanctions overview with the list of sanctions ordinances (older deep links redirect here).",
+     "verified": true,
+     "readOn": "2026-11-14",
+     "extra": true
+    }
+   ],
+   "facts": {
+    "languages": {
+     "summary": "German, French and Italian texts of federal enactments are equally binding; the version published in the Official Compilation (AS) on the platform is the authoritative one. English texts on Fedlex are translations without legal force.",
+     "items": [
+      {
+       "url": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2004/745/20230901/de/html/fedlex-data-admin-ch-eli-cc-2004-745-20230901-de-html-9.html",
+       "readOn": "2026-11-14",
+       "quote": "Die Veröffentlichung erfolgt gleichzeitig in den Amtssprachen Deutsch, Französisch und Italienisch. Bei Erlassen sind die drei Fassungen in gleicher Weise verbindlich.",
+       "gloss": "Publikationsgesetz (SR 170.512) Art. 14(1): publication is simultaneous in German, French and Italian; for enactments the three versions are equally binding.",
+       "verified": true
+      },
+      {
+       "url": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2004/745/20230901/de/html/fedlex-data-admin-ch-eli-cc-2004-745-20230901-de-html-9.html",
+       "readOn": "2026-11-14",
+       "quote": "Auf der Publikationsplattform veröffentlichte Texte von besonderer Tragweite oder internationalem Interesse können in weiteren Sprachen, insbesondere in Englisch, veröffentlicht werden.",
+       "gloss": "Art. 14(6): texts of particular importance or international interest may also be published in other languages, in particular English.",
+       "verified": true
+      },
+      {
+       "url": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2008/736/20250401/en/html/fedlex-data-admin-ch-eli-cc-2008-736-20250401-en-html-2.html",
+       "readOn": "2026-11-14",
+       "quote": "English is not an official language of the Swiss Confederation. This translation is provided for information purposes only and has no legal force.",
+       "gloss": "Notice carried by the English version of the Financial Market Supervision Act on Fedlex.",
+       "verified": true
+      },
+      {
+       "url": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2004/745/20230901/de/html/fedlex-data-admin-ch-eli-cc-2004-745-20230901-de-html-9.html",
+       "readOn": "2026-11-14",
+       "quote": "Für Erlasse des Bundes ... ist die in der AS veröffentlichte Fassung massgebend.",
+       "gloss": "Art. 15(1): the version published in the AS is authoritative; Art. 15(2): the version on the publication platform is authoritative.",
+       "verified": true
+      }
+     ]
+    },
+    "citation": {
+     "format": "Full title with date and short title/abbreviation, then the number in the Systematische Rechtssammlung: 'Bundesgesetz vom 8. November 1934 über die Banken und Sparkassen (Bankengesetz, BankG), SR 952.0'. Amendments are cited by the Amtliche Sammlung: 'AS 2015 3977'.",
+     "permanentIdentifier": "The SR number (952.0) for the act as a whole, and the ELI of the work, https://fedlex.data.admin.ch/eli/cc/51/117_121_129, which is independent of any consolidated version; a version adds the date (/20261001).",
+     "statutes": [
+      {
+       "title": "Bundesgesetz vom 8. November 1934 über die Banken und Sparkassen (Bankengesetz, BankG)",
+       "citation": "SR 952.0",
+       "eli": "https://fedlex.data.admin.ch/eli/cc/51/117_121_129",
+       "verified": true
+      },
+      {
+       "title": "Bundesgesetz vom 22. Juni 2007 über die Eidgenössische Finanzmarktaufsicht (Finanzmarktaufsichtsgesetz, FINMAG)",
+       "citation": "SR 956.1",
+       "eli": "https://fedlex.data.admin.ch/eli/cc/2008/736",
+       "verified": true
+      }
+     ],
+     "governmentRegulations": [
+      {
+       "title": "Verordnung vom 30. April 2014 über die Banken und Sparkassen (Bankenverordnung, BankV)",
+       "citation": "SR 952.02",
+       "eli": "https://fedlex.data.admin.ch/eli/cc/2014/273",
+       "verified": true
+      },
+      {
+       "verified": false,
+       "note": "A second Federal Council ordinance in banking was not looked up."
+      }
+     ],
+     "supervisorRegulations": [
+      {
+       "title": "Verordnung vom 3. Juni 2015 der Eidgenössischen Finanzmarktaufsicht über die Bekämpfung von Geldwäscherei und Terrorismusfinanzierung ... (GwV-FINMA)",
+       "citation": "SR 955.033.0",
+       "eli": "https://fedlex.data.admin.ch/eli/cc/2015/390",
+       "verified": true
+      },
+      {
+       "title": "Verordnung vom 31. Oktober 2019 der Eidgenössischen Finanzmarktaufsicht über die Rechnungslegung (Rechnungslegungsverordnung-FINMA, RelV-FINMA)",
+       "citation": "SR 952.024.1",
+       "eli": "https://fedlex.data.admin.ch/eli/cc/2019/760",
+       "verified": true
+      }
+     ],
+     "source": "Titles, abbreviations and SR numbers read from the Fedlex SPARQL endpoint (https://fedlex.data.admin.ch/sparqlendpoint) on 2026-11-14.",
+     "eli": {
+      "exists": true,
+      "pattern": "https://www.fedlex.admin.ch/eli/cc/{year or volume}/{number}/{de|fr|it} (data: https://fedlex.data.admin.ch/eli/cc/...)",
+      "example": "https://www.fedlex.admin.ch/eli/cc/51/117_121_129/de",
+      "result": "HTTP 200 (JavaScript shell); the same work resolves in the SPARQL endpoint and its file store.",
+      "verified": true
+     }
+    },
+    "reuse": {
+     "legalDatabase": [
+      {
+       "url": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/1993/1798_1798_1798/20250701/de/html/fedlex-data-admin-ch-eli-cc-1993-1798_1798_1798-20250701-de-html-7.html",
+       "readOn": "2026-11-14",
+       "quote": "Durch das Urheberrecht nicht geschützt sind: a. Gesetze, Verordnungen, völkerrechtliche Verträge und andere amtliche Erlasse",
+       "gloss": "Urheberrechtsgesetz (SR 231.1) Art. 5(1)(a); Art. 5(2) adds official or legally required collections and translations of such works. Republication, commercial included, is therefore free; no credit is prescribed.",
+       "verified": true
+      },
+      {
+       "url": "https://www.admin.ch/gov/de/start/rechtliches.html",
+       "readOn": "2026-11-14",
+       "quote": "Für die Reproduktion jeglicher Elemente ist die schriftliche Zustimmung der Urheberrechtsträger im Voraus einzuholen.",
+       "gloss": "General legal notice of the federal authorities' websites (read through the web fetch tool); it says nothing specific about legal texts. Terms specific to Fedlex: not found.",
+       "verified": true
+      }
+     ],
+     "supervisor": [
+      {
+       "url": "https://www.finma.ch/de/rechtliches/",
+       "readOn": "2026-11-14",
+       "quote": "Für die Reproduktion jeglicher Elemente ist die schriftliche Zustimmung der Urheberrechtsträger im Voraus einzuholen.",
+       "gloss": "FINMA legal notice: rights belong to FINMA; reproduction needs prior written consent. FINMA ordinances are official enactments (Art. 5 URG); whether circulars count as such was not determined.",
+       "verified": true,
+       "authority": "finma"
+      },
+      {
+       "authority": "snb",
+       "statement": "not found (the guessed terms page is 404)",
+       "verified": false
+      }
+     ]
+    },
+    "machineReadable": {
+     "available": true,
+     "summary": "Akoma Ntoso 3.0 XML, HTML, PDF and DOCX per consolidated version and language in the Fedlex file store, discoverable through a public SPARQL endpoint (JOLux ontology).",
+     "pattern": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/{eli path}/{yyyymmdd}/{lang}/xml/fedlex-data-admin-ch-eli-cc-{...}-{yyyymmdd}-{lang}-xml[-n].xml ; query https://fedlex.data.admin.ch/sparqlendpoint",
+     "example": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/51/117_121_129/20261001/de/xml/fedlex-data-admin-ch-eli-cc-51-117_121_129-20261001-de-xml.xml",
+     "exampleResult": "HTTP 200, 239 kB, root <akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\"> (Bankengesetz as of 1 October 2026). File names carry a varying numeric suffix, so they must be looked up by SPARQL, not constructed.",
+     "readOn": "2026-11-14",
+     "verified": true
+    },
+    "euReach": {
+     "euMember": false,
+     "eeaMember": false,
+     "items": [
+      {
+       "url": "https://www.europa.eda.admin.ch/de/ueberblick-bilateraler-weg",
+       "readOn": "2026-11-14",
+       "quote": "Da die Schweiz kein EU-Mitgliedstaat ist, verfolgt sie ihre Europapolitik auf der Grundlage von bilateralen sektoriellen Abkommen.",
+       "gloss": "Federal Department of Foreign Affairs: Switzerland is not an EU member state and bases its European policy on bilateral sectoral agreements. (Sentence returned by the web fetch tool in two parts; the join is the tool's.)",
+       "verified": true
+      },
+      {
+       "url": "https://www.europa.eda.admin.ch/de/zwischenstaatliche-beziehungen-efta-und-ewr",
+       "readOn": "2026-11-14",
+       "quote": "Die Schweiz lehnte den Beitritt zum EWR-Abkommen 1992 in einer Volksabstimmung ab.",
+       "gloss": "Switzerland rejected joining the EEA Agreement in a 1992 popular vote; 'Abgesehen von der Schweiz haben alle EFTA-Staaten das EWR-Abkommen unterzeichnet.'",
+       "verified": true
+      }
+     ],
+     "readOn": "2026-11-14",
+     "verified": true
+    }
+   }
+  }
+ }
+}

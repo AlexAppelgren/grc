@@ -391,7 +391,7 @@ class NewTranslations(KindsTestCase):
     def test_what_the_door_refuses(self) -> None:
         self._refused(self._file(translations_body(key="no-such-act")), 422, "unknown_key")
         self._refused(self._file(translations_body(target="provision")), 422, "unknown_key")
-        self._refused(self._file(translations_body(titles={"de": "Regeln"})), 422, "unknown_key")
+        self._refused(self._file(translations_body(titles={"fr": "Règles"})), 422, "unknown_key")
         self._refused(self._file(translations_body(titles={"en": "FFFS 2017:2"})), 409, "duplicate_key")
         self._refused(self._file(translations_body(titlesFrom="sv")), 422, "validation_error")
         self._refused(self._file(translations_body(titles={"sv": " "})), 422, "validation_error")

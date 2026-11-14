@@ -380,3 +380,43 @@ they are.
   `docs/reviews/law-text-2026-11-13/duty-reading.json` and nothing in the baseline's
   obligations was changed. `docs/TODO_FOR_alex.md` has what needs
   the owner.
+
+## Every home market (cloud branch `claude/amazing-bohr-fbwf77`, 2026-11-14, PRD 0.12, D-145, ADR 0070)
+
+Alex's ask of 2026-11-14: cover all of SEB's home markets, not only the Nordics and the EU,
+throughout; keep the original legal text with English and Swedish beside it, translated
+for meaning; and give the new markets everything the first ones have. SEB names twelve:
+Sweden, Denmark, Norway, Finland, Estonia, Latvia, Lithuania, Germany, the United Kingdom,
+the Netherlands, Austria and Switzerland.
+
+- **Built (reference data):** eight more jurisdictions (`ee`, `lv`, `lt`, `de`, `gb`, `nl`,
+  `at`, `ch`) and five more content languages (`et`, `lv`, `lt`, `de`, `nl`) in the
+  reference seed; the six member states with the EU as parent, the United Kingdom and
+  Switzerland with none, so a Union rule reaches ten countries and no longer "all"
+  (FP-S12, I18N-S1). 64 authorities and 39 watched sources for the eight markets, each read
+  on the body's own site or in an official directory
+  (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
+- **Built (search):** German, Dutch and Lithuanian with PostgreSQL's own configurations,
+  Estonian and Latvian word for word; search 0005 rebuilds the generated keyword column and
+  its index. The mock embedder and both evaluation sets ask in all ten languages.
+- **Built (library):** the baseline checker holds English and Swedish beside every
+  national original, by jurisdiction, so a United Kingdom text carries Swedish; the door's
+  cap on official languages is nine; the README has each new market's key format and what
+  its legal database allows.
+- **Built (agents):** the injection screen reads the five new languages (AGT-07). New
+  versions of all six definitions name the markets: watch-sweeper 3, library-confirmer 5,
+  tenant-source-watch 2, scope-researcher 2, library-baseline 3 and library-translator 2,
+  which says to carry the meaning and never translate word for word. The eight national
+  standards bodies are on `STANDARDS_PUBLISHER_HOSTS` (D-45).
+- **Built (screens and copy):** nothing lists a market or a language from code, so the
+  markets screen, the country filter, the agents' scope and the language pickers follow
+  the rows. The organisation screen suggests a time zone per market; the public page lists
+  the twelve markets with their sources; the published API's descriptions and the design
+  cards name the thirteen jurisdictions and ten languages.
+- **Left, deliberately:** the eight markets' starting inventory, which ADR 0070 stages
+  market by market through the proposal door; the interface in the five new languages
+  (I18N-02, R3); French and Italian for Switzerland; Swedish beside EU texts; licence
+  registers beyond Sweden's; a sentence splitter that knows German capitalisation.
+- **Owner-blocked:** publishing the new agent versions in the console, the order of the
+  markets' inventory, a person to open the Lithuanian sites, and the questions in
+  `docs/TODO_FOR_alex.md` ("Every home market").

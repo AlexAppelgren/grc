@@ -289,7 +289,7 @@ class ObligationProposalCreation(TestCase):
         cases = {
             "summaryEn": (payload(summaryEn="Text."), "validation_error"),
             "no summary": (payload(summaries={}), "validation_error"),
-            "unknown language": (payload(summaries={"de": "Text."}, originalLanguage="de"), "unknown_key"),
+            "unknown language": (payload(summaries={"fr": "Texte."}, originalLanguage="fr"), "unknown_key"),
             "original not written": (payload(originalLanguage="en", summaries={"sv": "Text."}), "validation_error"),
             "precision": (payload(effectiveFromPrecision="decade"), "unknown_key"),
             "term without a dimension": (payload(terms=["bank"]), "validation_error"),

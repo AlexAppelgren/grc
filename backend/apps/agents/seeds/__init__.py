@@ -28,7 +28,7 @@ SHIPPED: tuple[tuple[str, int], ...] = (
     ("tenant-source-watch", 1),
     ("scope-researcher", 1),
     ("library-baseline", 1),
-    ("library-translator", 1),
+    ("library-translator", 2),  # v2 names all ten content languages (D-145)
 )
 
 

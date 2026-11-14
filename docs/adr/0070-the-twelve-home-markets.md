@@ -10,10 +10,11 @@ NO and FI" as deliberately not done, and D-33 kept the question open: which othe
 and when. A market is platform scope, never a tenant setting: it needs a jurisdiction row,
 its authorities, its sources and a language before a sweep can find anything (D-33, D-94).
 
-SEB names twelve home markets (`sebgroup.com/about-us/our-locations` and its Fact Book for
-the fourth quarter of 2025, both read 2026-11-14, `docs/plans/Verification_Log.md`): "the
-Nordic and Baltic countries, Germany, the United Kingdom, Switzerland, Austria and the
-Netherlands". A bank with that footprint could operate in or watch four of its twelve
+SEB names twelve home markets (`sebgroup.com/about-us/our-locations` and its newest Fact
+Book, for the third quarter of 2026 and dated 22 October 2026, both read 2026-11-14,
+`docs/plans/Verification_Log.md`): "the Nordic and Baltic countries, Germany, the United
+Kingdom, Switzerland, Austria and the Netherlands (the last three countries with a
+selective approach)". A bank with that footprint could operate in or watch four of its twelve
 markets.
 
 ## Decision
@@ -48,11 +49,12 @@ markets.
    English alone. Every translation is a machine translation, labelled so, and says what the
    law says as a lawyer of the target language would write it, never word for word.
 5. **Authorities and watched sources** for the eight markets are filed with the same change:
-   each market's legislature, government and finance ministry, its financial supervisors and
-   central bank, its data protection, tax and financial intelligence authorities, and as
-   sources its official legal database and each supervisor's news page and register of
-   binding rules. Every name and address was read on the body's own site
-   (`docs/plans/Verification_Log.md`).
+   64 authorities (each market's legislature, government and finance ministry, its financial
+   supervisors and central bank, its data protection, tax and financial intelligence
+   authorities) and 39 sources (its official legal database and each supervisor's news page
+   and register of binding rules). Each was read on the body's own site, or in an official
+   directory where the site refused the read, which is the case for six of Lithuania's seven
+   bodies (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
 6. **Everything that lists a market or a language follows the rows**: the markets screen,
    the country filter, the agents' scope, the content language pickers, the proposal door,
    the baseline checker, the agents' injection screen and the evaluation sets. The national
@@ -81,6 +83,10 @@ markets.
 - The supervisor's licence register is read for Sweden alone, as before (ADR 0066). GLEIF
   covers every market; the EBA register gives branches inside the EEA only, so a branch in
   the United Kingdom or Switzerland comes from GLEIF or is entered by hand.
+- Six of the registered sources cannot be read as a plain page: Riigi Teataja, Fedlex and
+  the FCA Handbook serve no text without a browser, and the Austrian RIS and FMA and the
+  Lithuanian register refuse an automated read. Riigi Teataja, Fedlex and the RIS have an
+  interface that serves the same law, which the runner does not use yet.
 - Not done: French and Italian for Switzerland; Swedish beside EU texts, which EUR-Lex
   publishes officially; a sentence splitter that knows German capitalisation, so the "what
   changed" view may cut a German sentence at "1. Januar".

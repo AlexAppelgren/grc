@@ -1382,6 +1382,454 @@
    "name": "Verohallinto",
    "jurisdiction": "FI",
    "url": "https://www.vero.fi/"
+  },
+  {
+   "key": "riigikogu",
+   "code": "Riigikogu",
+   "name": "Riigikogu",
+   "jurisdiction": "EE",
+   "url": "https://www.riigikogu.ee/"
+  },
+  {
+   "key": "vabariigi-valitsus",
+   "code": "Vabariigi Valitsus",
+   "name": "Vabariigi Valitsus",
+   "jurisdiction": "EE",
+   "url": "https://www.valitsus.ee/"
+  },
+  {
+   "key": "rahandusministeerium",
+   "code": "Rahandusministeerium",
+   "name": "Rahandusministeerium",
+   "jurisdiction": "EE",
+   "url": "https://www.fin.ee/"
+  },
+  {
+   "key": "finantsinspektsioon",
+   "code": "Finantsinspektsioon",
+   "name": "Finantsinspektsioon",
+   "jurisdiction": "EE",
+   "url": "https://www.fi.ee/"
+  },
+  {
+   "key": "eesti-pank",
+   "code": "Eesti Pank",
+   "name": "Eesti Pank",
+   "jurisdiction": "EE",
+   "url": "https://www.eestipank.ee/"
+  },
+  {
+   "key": "aki",
+   "code": "AKI",
+   "name": "Andmekaitse Inspektsioon",
+   "jurisdiction": "EE",
+   "url": "https://www.aki.ee/"
+  },
+  {
+   "key": "emta",
+   "code": "MTA",
+   "name": "Maksu- ja Tolliamet",
+   "jurisdiction": "EE",
+   "url": "https://www.emta.ee/"
+  },
+  {
+   "key": "rahapesu-andmeburoo",
+   "code": "RAB",
+   "name": "Rahapesu Andmebüroo",
+   "jurisdiction": "EE",
+   "url": "https://fiu.ee/"
+  },
+  {
+   "key": "saeima",
+   "code": "Saeima",
+   "name": "Latvijas Republikas Saeima",
+   "jurisdiction": "LV",
+   "url": "https://www.saeima.lv/"
+  },
+  {
+   "key": "ministru-kabinets",
+   "code": "Ministru kabinets",
+   "name": "Ministru kabinets",
+   "jurisdiction": "LV",
+   "url": "https://www.mk.gov.lv/"
+  },
+  {
+   "key": "finansu-ministrija",
+   "code": "FM (LV)",
+   "name": "Finanšu ministrija",
+   "jurisdiction": "LV",
+   "url": "https://www.fm.gov.lv/"
+  },
+  {
+   "key": "latvijas-banka",
+   "code": "Latvijas Banka",
+   "name": "Latvijas Banka",
+   "jurisdiction": "LV",
+   "url": "https://www.bank.lv/"
+  },
+  {
+   "key": "dvi",
+   "code": "DVI",
+   "name": "Datu valsts inspekcija",
+   "jurisdiction": "LV",
+   "url": "https://www.dvi.gov.lv/"
+  },
+  {
+   "key": "vid",
+   "code": "VID",
+   "name": "Valsts ieņēmumu dienests",
+   "jurisdiction": "LV",
+   "url": "https://www.vid.gov.lv/"
+  },
+  {
+   "key": "fid",
+   "code": "FID",
+   "name": "Finanšu izlūkošanas dienests",
+   "jurisdiction": "LV",
+   "url": "https://www.fid.gov.lv/"
+  },
+  {
+   "key": "seimas",
+   "code": "Seimas",
+   "name": "Lietuvos Respublikos Seimas",
+   "jurisdiction": "LT",
+   "url": "https://www.lrs.lt/"
+  },
+  {
+   "key": "vyriausybe",
+   "code": "Vyriausybė",
+   "name": "Lietuvos Respublikos Vyriausybė",
+   "jurisdiction": "LT",
+   "url": "https://lrv.lt/"
+  },
+  {
+   "key": "finansu-ministerija-lt",
+   "code": "FM (LT)",
+   "name": "Lietuvos Respublikos finansų ministerija",
+   "jurisdiction": "LT",
+   "url": "https://finmin.lrv.lt/"
+  },
+  {
+   "key": "lietuvos-bankas",
+   "code": "Lietuvos bankas",
+   "name": "Lietuvos bankas",
+   "jurisdiction": "LT",
+   "url": "https://www.lb.lt/"
+  },
+  {
+   "key": "vdai",
+   "code": "VDAI",
+   "name": "Valstybinė duomenų apsaugos inspekcija",
+   "jurisdiction": "LT",
+   "url": "https://vdai.lrv.lt/"
+  },
+  {
+   "key": "vmi",
+   "code": "VMI",
+   "name": "Valstybinė mokesčių inspekcija",
+   "jurisdiction": "LT",
+   "url": "https://www.vmi.lt/"
+  },
+  {
+   "key": "fntt",
+   "code": "FNTT",
+   "name": "Finansinių nusikaltimų tyrimo tarnyba prie Lietuvos Respublikos vidaus reikalų ministerijos",
+   "jurisdiction": "LT",
+   "url": "https://fntt.lrv.lt/"
+  },
+  {
+   "key": "bundestag",
+   "code": "Bundestag",
+   "name": "Deutscher Bundestag",
+   "jurisdiction": "DE",
+   "url": "https://www.bundestag.de/"
+  },
+  {
+   "key": "bundesregierung-de",
+   "code": "Bundesregierung (DE)",
+   "name": "Bundesregierung",
+   "jurisdiction": "DE",
+   "url": "https://www.bundesregierung.de/"
+  },
+  {
+   "key": "bmf-de",
+   "code": "BMF (DE)",
+   "name": "Bundesministerium der Finanzen",
+   "jurisdiction": "DE",
+   "url": "https://www.bundesfinanzministerium.de/"
+  },
+  {
+   "key": "bafin",
+   "code": "BaFin",
+   "name": "Bundesanstalt für Finanzdienstleistungsaufsicht",
+   "jurisdiction": "DE",
+   "url": "https://www.bafin.de/"
+  },
+  {
+   "key": "bundesbank",
+   "code": "Bundesbank",
+   "name": "Deutsche Bundesbank",
+   "jurisdiction": "DE",
+   "url": "https://www.bundesbank.de/"
+  },
+  {
+   "key": "bzst",
+   "code": "BZSt",
+   "name": "Bundeszentralamt für Steuern",
+   "jurisdiction": "DE",
+   "url": "https://www.bzst.de/"
+  },
+  {
+   "key": "fiu-de",
+   "code": "FIU (DE)",
+   "name": "Zentralstelle für Finanztransaktionsuntersuchungen",
+   "jurisdiction": "DE",
+   "url": "https://www.zoll.de/DE/FIU/fiu_node.html"
+  },
+  {
+   "key": "uk-parliament",
+   "code": "UK Parliament",
+   "name": "UK Parliament",
+   "jurisdiction": "GB",
+   "url": "https://www.parliament.uk/"
+  },
+  {
+   "key": "hm-government",
+   "code": "HM Government",
+   "name": "His Majesty's Government",
+   "jurisdiction": "GB",
+   "url": "https://www.gov.uk/"
+  },
+  {
+   "key": "hm-treasury",
+   "code": "HM Treasury",
+   "name": "HM Treasury",
+   "jurisdiction": "GB",
+   "url": "https://www.gov.uk/government/organisations/hm-treasury"
+  },
+  {
+   "key": "fca",
+   "code": "FCA",
+   "name": "Financial Conduct Authority",
+   "jurisdiction": "GB",
+   "url": "https://www.fca.org.uk/"
+  },
+  {
+   "key": "pra",
+   "code": "PRA",
+   "name": "Prudential Regulation Authority",
+   "jurisdiction": "GB",
+   "url": "https://www.bankofengland.co.uk/prudential-regulation"
+  },
+  {
+   "key": "bank-of-england",
+   "code": "Bank of England",
+   "name": "Bank of England",
+   "jurisdiction": "GB",
+   "url": "https://www.bankofengland.co.uk/"
+  },
+  {
+   "key": "psr",
+   "code": "PSR",
+   "name": "Payment Systems Regulator",
+   "jurisdiction": "GB",
+   "url": "https://www.psr.org.uk/"
+  },
+  {
+   "key": "ico",
+   "code": "ICO",
+   "name": "Information Commission",
+   "jurisdiction": "GB",
+   "url": "https://ico.org.uk/"
+  },
+  {
+   "key": "hmrc",
+   "code": "HMRC",
+   "name": "HM Revenue & Customs",
+   "jurisdiction": "GB",
+   "url": "https://www.gov.uk/government/organisations/hm-revenue-customs"
+  },
+  {
+   "key": "ofsi",
+   "code": "OFSI",
+   "name": "Office of Financial Sanctions Implementation",
+   "jurisdiction": "GB",
+   "url": "https://www.gov.uk/government/organisations/office-of-financial-sanctions-implementation"
+  },
+  {
+   "key": "nca",
+   "code": "NCA",
+   "name": "National Crime Agency",
+   "jurisdiction": "GB",
+   "url": "https://www.nationalcrimeagency.gov.uk/"
+  },
+  {
+   "key": "staten-generaal",
+   "code": "Staten-Generaal",
+   "name": "Staten-Generaal",
+   "jurisdiction": "NL",
+   "url": "https://www.staten-generaal.nl/"
+  },
+  {
+   "key": "regering-nl",
+   "code": "Regering (NL)",
+   "name": "Regering",
+   "jurisdiction": "NL",
+   "url": "https://www.rijksoverheid.nl/regering"
+  },
+  {
+   "key": "ministerie-van-financien",
+   "code": "Ministerie van Financiën",
+   "name": "Ministerie van Financiën",
+   "jurisdiction": "NL",
+   "url": "https://www.rijksoverheid.nl/ministeries/ministerie-van-financien"
+  },
+  {
+   "key": "afm",
+   "code": "AFM",
+   "name": "Autoriteit Financiële Markten",
+   "jurisdiction": "NL",
+   "url": "https://www.afm.nl/"
+  },
+  {
+   "key": "dnb",
+   "code": "DNB",
+   "name": "De Nederlandsche Bank",
+   "jurisdiction": "NL",
+   "url": "https://www.dnb.nl/"
+  },
+  {
+   "key": "autoriteit-persoonsgegevens",
+   "code": "AP",
+   "name": "Autoriteit Persoonsgegevens",
+   "jurisdiction": "NL",
+   "url": "https://www.autoriteitpersoonsgegevens.nl/"
+  },
+  {
+   "key": "belastingdienst",
+   "code": "Belastingdienst",
+   "name": "Belastingdienst",
+   "jurisdiction": "NL",
+   "url": "https://www.belastingdienst.nl/"
+  },
+  {
+   "key": "fiu-nederland",
+   "code": "FIU-Nederland",
+   "name": "Financial Intelligence Unit-Nederland",
+   "jurisdiction": "NL",
+   "url": "https://www.fiu-nederland.nl/"
+  },
+  {
+   "key": "parlament-at",
+   "code": "Parlament (AT)",
+   "name": "Parlament Österreich",
+   "jurisdiction": "AT",
+   "url": "https://www.parlament.gv.at/"
+  },
+  {
+   "key": "bundesregierung-at",
+   "code": "Bundesregierung (AT)",
+   "name": "Bundesregierung",
+   "jurisdiction": "AT",
+   "url": "https://www.bundeskanzleramt.gv.at/bundeskanzleramt/die-bundesregierung.html"
+  },
+  {
+   "key": "bmf-at",
+   "code": "BMF (AT)",
+   "name": "Bundesministerium für Finanzen",
+   "jurisdiction": "AT",
+   "url": "https://www.bmf.gv.at/"
+  },
+  {
+   "key": "fma-at",
+   "code": "FMA",
+   "name": "Finanzmarktaufsichtsbehörde",
+   "jurisdiction": "AT",
+   "url": "https://www.fma.gv.at/"
+  },
+  {
+   "key": "oenb",
+   "code": "OeNB",
+   "name": "Oesterreichische Nationalbank",
+   "jurisdiction": "AT",
+   "url": "https://www.oenb.at/"
+  },
+  {
+   "key": "dsb",
+   "code": "DSB",
+   "name": "Österreichische Datenschutzbehörde",
+   "jurisdiction": "AT",
+   "url": "https://dsb.gv.at/"
+  },
+  {
+   "key": "geldwaeschemeldestelle",
+   "code": "A-FIU",
+   "name": "Geldwäschemeldestelle",
+   "jurisdiction": "AT",
+   "url": "https://www.bundeskriminalamt.at/308/start.aspx"
+  },
+  {
+   "key": "bundesversammlung",
+   "code": "Bundesversammlung",
+   "name": "Bundesversammlung",
+   "jurisdiction": "CH",
+   "url": "https://www.parlament.ch/"
+  },
+  {
+   "key": "bundesrat",
+   "code": "Bundesrat",
+   "name": "Bundesrat",
+   "jurisdiction": "CH",
+   "url": "https://www.admin.ch/gov/de/start/bundesrat.html"
+  },
+  {
+   "key": "efd",
+   "code": "EFD",
+   "name": "Eidgenössisches Finanzdepartement",
+   "jurisdiction": "CH",
+   "url": "https://www.efd.admin.ch/"
+  },
+  {
+   "key": "finma",
+   "code": "FINMA",
+   "name": "Eidgenössische Finanzmarktaufsicht",
+   "jurisdiction": "CH",
+   "url": "https://www.finma.ch/"
+  },
+  {
+   "key": "snb",
+   "code": "SNB",
+   "name": "Schweizerische Nationalbank",
+   "jurisdiction": "CH",
+   "url": "https://www.snb.ch/"
+  },
+  {
+   "key": "edoeb",
+   "code": "EDÖB",
+   "name": "Eidgenössischer Datenschutz- und Öffentlichkeitsbeauftragter",
+   "jurisdiction": "CH",
+   "url": "https://www.edoeb.admin.ch/"
+  },
+  {
+   "key": "estv",
+   "code": "ESTV",
+   "name": "Eidgenössische Steuerverwaltung",
+   "jurisdiction": "CH",
+   "url": "https://www.estv.admin.ch/"
+  },
+  {
+   "key": "seco",
+   "code": "SECO",
+   "name": "Staatssekretariat für Wirtschaft",
+   "jurisdiction": "CH",
+   "url": "https://www.seco.admin.ch/"
+  },
+  {
+   "key": "mros",
+   "code": "MROS",
+   "name": "Meldestelle für Geldwäscherei",
+   "jurisdiction": "CH",
+   "url": "https://www.fedpol.admin.ch/de/geldwaescherei"
   }
  ],
  "instruments": [
