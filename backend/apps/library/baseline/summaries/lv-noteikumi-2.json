@@ -1,0 +1,238 @@
+{
+  "tranche": "lv-noteikumi-2",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "lv-ta-365388",
+      "source": "https://likumi.lv/ta/id/365388-noteikumi-par-automatisko-informacijas-apmainu-par-darijumiem-ar-kriptoaktiviem",
+      "sourceLabel": "Likumi.lv, Ministru kabineta 2025. gada 9. decembra noteikumi Nr. 751 (Latvijas Vēstnesis, 247, 23.12.2025.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "A Cabinet regulation under Latvia's Law on Taxes and Fees that carries DAC8, the EU's tax reporting rules for crypto-assets, from 2026. It binds reporting crypto-asset service providers, banks offering such services among them. In practice a provider obtains a tax residence self-certification from each user and an entity's controlling persons at onboarding, renews it when circumstances change, blocks reportable transactions after two unanswered reminders, keeps records five years and reports to the State Revenue Service by 30 June."
+      }
+    },
+    {
+      "key": "lv-ta-298994",
+      "source": "https://likumi.lv/ta/id/298994-kartiba-kada-valsts-ienemumu-dienestam-sniedzama-informacija-par-fiziskas-personas-kontu-apgrozijumu-un-atlikumu",
+      "sourceLabel": "Likumi.lv, Ministru kabineta 2018. gada 15. maija noteikumi Nr. 276 (Latvijas Vēstnesis, 96, 17.05.2018.), consolidated text, the version in force from 01.01.2025",
+      "text": {
+        "en": "A Cabinet regulation under Latvia's Law on Taxes and Fees on how a credit institution or payment service provider files its yearly report on resident natural persons whose account turnover reached 15,000 euros or whose cash deposits reached 7,000 euros. In practice a bank requests user rights for the state data distribution network, sends the report in the State Revenue Service's published XML structure, files within two working days after a network outage that blocked the deadline, resubmits the whole report when it finds an error and deletes the exchanged data within five working days."
+      }
+    },
+    {
+      "key": "lv-ta-309344",
+      "source": "https://likumi.lv/ta/id/309344-noteikumi-par-informacijas-apjomu-ko-sniedz-valsts-ienemumu-dienests-par-politiski-nozimigam-personam-un-tas-pieprasisanas-izsn...",
+      "sourceLabel": "Likumi.lv, Ministru kabineta 2019. gada 27. augusta noteikumi Nr. 406 (Latvijas Vēstnesis, 187, 13.09.2019.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "A Cabinet regulation under Latvia's anti-money-laundering law on the State Revenue Service's data on politically exposed persons and their family members, which obliged entities consult through its public database or, by machine, through a web service or the state data distribution network. In practice a bank that connects by machine lets only authorised staff identifiable to the Service make queries, reports unauthorised access and security incidents at once, keeps its access details current and stores the data as the law requires."
+      }
+    },
+    {
+      "key": "lv-ta-324225",
+      "source": "https://likumi.lv/ta/id/324225-kartiba-kada-pieprasa-un-sniedz-kreditiestades-riciba-esosas-neizpauzamas-zinas-ari-zinas-darijuma-parraudzibas-gadijuma",
+      "sourceLabel": "Likumi.lv, Ministru kabineta 2021. gada 22. jūnija noteikumi Nr. 393 (Latvijas Vēstnesis, 122, 29.06.2021.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "A Cabinet regulation under Latvia's Credit Institutions Law on how investigators, operational bodies and courts obtain a credit institution's confidential client information, transaction monitoring data included. In practice a bank connects to the state data distribution network, picks up each request by the end of the next working day, answers within one, three or 10 working days by the kind of request, flags faulty requests within a day, falls back on encrypted e-mail during outages and keeps audit logs for two years."
+      }
+    },
+    {
+      "key": "lv-ta-289839",
+      "source": "https://likumi.lv/ta/id/289839-kartiba-kada-veic-datu-apmainu-attieciba-uz-elektroniski-nosutamiem-rikojumiem-un-pazinojumiem-par-to-izpildi-",
+      "sourceLabel": "Likumi.lv, Ministru kabineta 2017. gada 21. marta noteikumi Nr. 167 (Latvijas Vēstnesis, 69, 04.04.2017.), consolidated text, the version in force from 01.07.2020",
+      "text": {
+        "en": "A Cabinet regulation on the electronic exchange of the State Revenue Service's and sworn bailiffs' orders that suspend a client's settlement operations, attach funds or transfer them, and of the notices of their execution. It binds credit institutions and payment service providers. In practice a bank connects to the state data distribution network, carries out orders in the order of their network number, suspension orders at once, flags a faulty order within one working day, tells no third party of an order and the client only after acting, and keeps audit logs for three years."
+      }
+    },
+    {
+      "key": "lv-ta-300849",
+      "source": "https://likumi.lv/ta/id/300849-kartiba-kada-sniedz-informaciju-par-maksu-ko-piemero-ar-maksajumu-kontiem-saistitajiem-pakalpojumiem",
+      "sourceLabel": "Likumi.lv, Ministru kabineta 2018. gada 7. augusta noteikumi Nr. 480 (Latvijas Vēstnesis, 157, 09.08.2018.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "A Cabinet regulation under Latvia's payment services law on the fee data that providers of payment accounts send the Consumer Rights Protection Centre for its price comparison tool, in force until the end of 2027. It binds credit institutions, payment and e-money institutions and EU payment institutions operating in Latvia. In practice a bank sends the fees for the account services the annex lists, from account keeping and cash withdrawals to transfers and cards, by 1 March each year, reports a new service on the day it is launched and announces changes two months ahead."
+      }
+    },
+    {
+      "key": "lv-ta-355360",
+      "source": "https://likumi.lv/ta/id/355360-kreditiestazu-kapitala-pietiekamibas-novertesanas-procesa-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 30. septembra noteikumi Nr. 321 (Latvijas Vēstnesis, 193, 03.10.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the internal capital adequacy assessment process of Latvian credit institutions other than the significant ones the European Central Bank supervises. In practice a bank assesses at least once a year, as at year end, the capital it needs for every material risk, documents the process and reviews it yearly, stress tests three-year scenarios to set an additional capital buffer, plans capital three years ahead, reruns the numbers within a month of a material change, tells Latvijas Banka at once of a shortfall and files its report by 31 May or 30 June."
+      }
+    },
+    {
+      "key": "lv-ta-347694",
+      "source": "https://likumi.lv/ta/id/347694-kreditriska-kapitala-prasibas-aprekinasanas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2023. gada 27. novembra noteikumi Nr. 257 (Latvijas Vēstnesis, 231, 29.11.2023.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on how Latvian credit institutions, other than the significant ones, and the larger investment firms apply the credit risk rules of the Capital Requirements Regulation, chiefly the definition of default. In practice a bank counts a debtor in default when overdue amounts exceed both 100 euros for retail and SME exposures or 500 euros otherwise and 1 per cent for 90 days in a row, applies that group-wide, writes internal rules and a default procedure, and documents how it applies the definition."
+      }
+    },
+    {
+      "key": "lv-ta-348614",
+      "source": "https://likumi.lv/ta/id/348614-noteikumi-par-tiesi-piemerojamajos-eiropas-savienibas-tiesibu-aktos-par-prudencialajam-prasibam-paredzeto-izveles-iespeju-pieme...",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2023. gada 18. decembra noteikumi Nr. 266 (Latvijas Vēstnesis, 248, 22.12.2023.), consolidated text, the version in force from 01.10.2026",
+      "text": {
+        "en": "Latvijas Banka's regulation that settles, for Latvian credit institutions, the choices the Capital Requirements Regulation and the liquidity coverage delegated regulation leave to the supervisor. In practice a bank consolidates group companies under common management by the full method of international accounting standards, applies the option in Article 89(3)(a) of the Capital Requirements Regulation to qualifying holdings above its limits, and follows set rules for off-balance-sheet items and segregated assets in its net stable funding ratio."
+      }
+    },
+    {
+      "key": "lv-ta-357054",
+      "source": "https://likumi.lv/ta/id/357054-kreditiestadei-specifiskas-pretcikliskas-kapitala-rezerves-normas-aprekinasanas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 9. decembra noteikumi Nr. 368 (Latvijas Vēstnesis, 241, 11.12.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on how a Latvian credit institution works out its own countercyclical capital buffer rate, carrying over that part of the Capital Requirements Directive. It applies alone and at the level of the prudential consolidation group. In practice a bank locates each relevant credit exposure under Delegated Regulation (EU) No 1152/2014, applies the buffer rate of the country concerned within the 2.5 per cent limit and Latvijas Banka's recognitions, takes rate rises from their announced date and cuts at once, and weights the rates by its own funds requirements."
+      }
+    },
+    {
+      "key": "lv-ta-356661",
+      "source": "https://likumi.lv/ta/id/356661-atlaujas-izmantot-kapitala-prasibu-aprekina-ieksejos-modelus-pieejas-un-metodes-sanemsanas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 25. novembra noteikumi Nr. 350 (Latvijas Vēstnesis, 232, 28.11.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on how a Latvian credit institution, other than the significant ones, seeks permission under the Capital Requirements Regulation to use the internal ratings based approach, the internal model method for counterparty risk, the alternative internal model approach for market risk or another internal model. In practice a bank announces its plans at least six months before applying, reports material changes and model extensions and assesses its own compliance with the model requirements at least every three years."
+      }
+    },
+    {
+      "key": "lv-ta-347691",
+      "source": "https://likumi.lv/ta/id/347691-procentu-likmju-riska-netirdzniecibas-portfeli-un-kreditriska-starpibas-riska-netirdzniecibas-portfeli-parvaldisanas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2023. gada 27. novembra noteikumi Nr. 254 (Latvijas Vēstnesis, 231, 29.11.2023.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on interest rate risk and credit spread risk in the banking book of Latvian credit institutions and the larger investment firms. In practice a bank sets a strategy for both risks within its overall risk strategy and capital and liquidity assessments, sets and keeps limits with escalation and board-approved exceptions, measures every source of the risks, stress tests each currency and runs Latvijas Banka's stress test on request, validates its models at least once a year with a written report, and assesses credit spread risk separately from other risks."
+      }
+    },
+    {
+      "key": "lv-ta-345987",
+      "source": "https://likumi.lv/ta/id/345987-maksimali-sadalamas-summas-aprekinasanas-kartiba",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2023. gada 2. oktobra noteikumi Nr. 249 (Latvijas Vēstnesis, 191, 03.10.2023.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the calculation a Latvian credit institution or investment firm makes when it does not meet its combined capital buffer requirement, and a global systemically important bank makes when it misses its leverage ratio buffer. In practice the institution takes its interim and year-end profits not counted in its capital, net of distributions already made and of the tax that would be due, and multiplies them by a factor of 0, 0.2, 0.4 or 0.6 according to the quartile of the buffer its unused capital reaches, to find what it may still distribute."
+      }
+    },
+    {
+      "key": "lv-ta-352277",
+      "source": "https://likumi.lv/ta/id/352277-ar-paralelas-banku-sistemas-vienibam-veikto-riska-darijumu-koncentracijas-riska-parvaldibas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 27. maija noteikumi Nr. 300 (Latvijas Vēstnesis, 103, 29.05.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on exposures to shadow banking entities, carrying over the EBA guidelines on limits for them. It binds Latvian credit institutions that apply the large exposure rules, other than the significant ones the European Central Bank supervises. In practice a bank identifies each such exposure and the interconnections behind it, analyses the risks with stress tests, sets an aggregate limit against its Tier 1 capital and tighter individual limits reviewed yearly by its board, or falls back on the large exposure limit."
+      }
+    },
+    {
+      "key": "lv-ta-348612",
+      "source": "https://likumi.lv/ta/id/348612-papildu-prasibas-kreditiestazu-butiskas-aizsargajamas-vai-konfidencialas-informacijas-atklasanai",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2023. gada 18. decembra noteikumi Nr. 264 (Latvijas Vēstnesis, 248, 22.12.2023.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation that adds to the disclosure rules of Part Eight of the Capital Requirements Regulation, following the EBA guidelines on materiality, proprietary and confidential information. It binds credit institutions that must disclose. In practice a bank documents policies for assessing what it discloses and when it relies on a waiver, says so when it leaves information out, keeps its disclosures available for five years if small and non-complex and ten years otherwise, and follows new rules from the period its status changes."
+      }
+    },
+    {
+      "key": "lv-ta-356659",
+      "source": "https://likumi.lv/ta/id/356659-uzticibas-operaciju-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 25. novembra noteikumi Nr. 348 (Latvijas Vēstnesis, 232, 28.11.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on fiduciary operations, in which a credit institution manages a client's money and other assets that are not financial instruments on the client's authority. In practice a bank that offers the service adopts policies and a risk appetite for it, keeps it apart from managing its own property, records client assets on a separate fiduciary balance sheet and off-balance-sheet account, signs a written contract that warns of the risks, tells the client of dealings with itself or its shareholders and never encumbers the assets for anyone else."
+      }
+    },
+    {
+      "key": "lv-ta-355763",
+      "source": "https://likumi.lv/ta/id/355763-kreditiestazu-ieguldijumu-brokeru-sabiedribu-ieguldijumu-parvaldes-sabiedribu-un-privato-pensiju-fondu-gada-parskatu-un-konsoli...",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 21. oktobra noteikumi Nr. 326 (Latvijas Vēstnesis, 207, 23.10.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the annual report and the consolidated annual report of Latvian credit institutions, investment firms, investment management companies and private pension funds. In practice a bank prepares its financial statements under international accounting standards in euro to give a true and fair view, follows the layouts for the balance sheet, income statement, cash flows and notes, writes a management report with the facts the regulation lists and adds a statement of management responsibility that records any board member's objection."
+      }
+    },
+    {
+      "key": "lv-ta-355935",
+      "source": "https://likumi.lv/ta/id/355935-skaidras-naudas-izmaksas-pakalpojuma-parvaldibas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 28. oktobra noteikumi Nr. 330 (Latvijas Vēstnesis, 212, 30.10.2024.), consolidated text, the version in force from 12.11.2026",
+      "text": {
+        "en": "Latvijas Banka's regulation that puts figures on the cash access duty of the Credit Institutions Law for the larger credit institutions serving consumers in Latvia, which Latvijas Banka lists every year. In practice such a bank keeps an ATM within 20 kilometres of any place in Latvia and at least 45 ATMs per 100,000 active clients, keeps each ATM open at least 12 hours a day and working 97 per cent of the time, lets card holders withdraw at least 750 euros a month free of charge, and reports its ATM list and planned changes to Latvijas Banka."
+      }
+    },
+    {
+      "key": "lv-ta-356664",
+      "source": "https://likumi.lv/ta/id/356664-finansu-pakalpojumu-sniegsanas-klatiene-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 25. novembra noteikumi Nr. 353 (Latvijas Vēstnesis, 232, 28.11.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation that puts figures on the in-person service duty of the Credit Institutions Law for the larger credit institutions serving consumers in Latvia. In practice such a bank keeps a permanent customer service point in Riga and in each city or county centre that is 40 kilometres or more from its nearest other point where its active clients reach 20 per cent of the residents, opens it at least 16 hours a week on two working days, serves booked consumers within five working days, and publishes and reports its service points."
+      }
+    },
+    {
+      "key": "lv-ta-355060",
+      "source": "https://likumi.lv/ta/id/355060-noteikumi-par-iesniedzamajiem-dokumentiem-atlaujas-istenot-segto-obligaciju-programmu-sanemsanai-un-pazinojuma-par-nodomu-emite...",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 17. septembra noteikumi Nr. 317 (Latvijas Vēstnesis, 183, 19.09.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the file a credit institution submits to run a covered bond programme under the Covered Bonds Law and on the notice of each new issue. In practice an issuing bank files its board's decision, the programme with the details the regulation lists, its internal rules on the cover pool, the cover pool monitor, stress testing and continuity, the draft contracts with the covered bond company and an index of documents, notifies each intended issue with the cover asset data, and reports changes to the documents within 14 days."
+      }
+    },
+    {
+      "key": "lv-ta-369393",
+      "source": "https://likumi.lv/ta/id/369393-parskata-par-segtajiem-noguldijumiem-sagatavosanas-un-maksajumu-noguldijumu-garantiju-fonda-aprekinasanas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2026. gada 29. jūnija noteikumi Nr. 421 (Latvijas Vēstnesis, 123, 01.07.2026.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the covered deposits report that deposit takers in Latvia file each quarter and on how Latvijas Banka turns it into their contribution to the deposit guarantee fund, weighted by a risk factor built from capital, liquidity, large exposure and loan quality figures. In practice a bank reports its covered deposits up to 100,000 euros per depositor by the 20th of the month after each quarter, corrects the report at once when the auditor's figures differ, and pays each quarterly invoice within 10 working days."
+      }
+    },
+    {
+      "key": "lv-ta-357058",
+      "source": "https://likumi.lv/ta/id/357058-noziedzigi-iegutu-lidzeklu-legalizacijas-un-terorisma-un-proliferacijas-finansesanas-noversanas-ieksejas-kontroles-sistemas-nea...",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 9. decembra noteikumi Nr. 365 (Latvijas Vēstnesis, 241, 11.12.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the independent external audit of a financial market participant's anti-money-laundering internal control system. It binds the participants the anti-money-laundering law obliges to have such an audit, banks, payment and e-money institutions and investment firms among them. In practice a firm has its system, IT included, audited every two to five years by its risk level, by an independent and experienced auditor agreed with Latvijas Banka, files the report within five working days and remedies the findings."
+      }
+    },
+    {
+      "key": "lv-ta-352279",
+      "source": "https://likumi.lv/ta/id/352279-noteikumi-par-kartibu-kada-kreditiestade-sniedz-latvijas-bankai-informaciju-par-klientiem-un-klientu-veiktajiem-darijumiem-snie...",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 27. maija noteikumi Nr. 301 (Latvijas Vēstnesis, 103, 29.05.2024.), consolidated text, the version in force from 01.07.2025",
+      "text": {
+        "en": "Latvijas Banka's regulation on the data a credit institution in Latvia hands over when Latvijas Banka asks for information on its clients and their transactions. It binds Latvian credit institutions and the branches of foreign ones. In practice a bank compiles, within 15 calendar days of a request, accurate data from its systems on its private and corporate clients, their beneficial owners and representatives, their non-cash, card and cash transactions and monthly account turnover, files it through Latvijas Banka's secure system and resubmits the whole file when an error is found."
+      }
+    },
+    {
+      "key": "lv-ta-357547",
+      "source": "https://likumi.lv/ta/id/357547-kreditiestazu-korespondentattiecibu-ietvaros-veikto-un-sanemto-maksajumu-un-kreditiestazu-klientu-veikto-un-sanemto-maksajumu-p...",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 16. decembra noteikumi Nr. 383 (Latvijas Vēstnesis, 249, 20.12.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the payment flow report that credit institutions in Latvia file under the anti-money-laundering law. It binds Latvian credit institutions and the branches of foreign ones. In practice a bank reports, on three set forms, its clients' incoming and outgoing payments by originating and receiving institution, currency and country, its respondents' clients' payments and its nostro correspondent account balances and turnover, as at the period's last day, within 20 days through Latvijas Banka's secure system."
+      }
+    },
+    {
+      "key": "lv-ta-355058",
+      "source": "https://likumi.lv/ta/id/355058-minimalas-prasibas-ar-maksajumu-kontu-saistito-pakalpojumu-cenradim-un-pakalpojumu-maksas-parskatam",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 17. septembra noteikumi Nr. 315 (Latvijas Vēstnesis, 183, 19.09.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the fee information document and the statement of fees that a payment service provider gives consumers for services linked to a payment account, carrying over the Payment Accounts Directive. In practice a bank or payment institution names each listed service by the standard Latvian term in the annex, follows the EU forms of Implementing Regulation (EU) 2018/34 and Regulation (EU) 2018/33, keeps the documents short and legible in black and white, uses the account currency and Latvian unless agreed otherwise, and shows the total annual cost indicator."
+      }
+    },
+    {
+      "key": "lv-ta-354724",
+      "source": "https://likumi.lv/ta/id/354724-kontu-mainas-pakalpojuma-sniegsanas-kartiba",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 2. septembra noteikumi Nr. 312 (Latvijas Vēstnesis, 172, 04.09.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on switching a consumer's payment account between providers in Latvia, carrying over the Payment Accounts Directive. It binds every payment service provider offering account services in Latvia, banks included, as receiving or transferring provider. In practice the new provider explains the service, identifies the consumer, takes the request and asks the old provider within two working days; the old provider checks for obstacles, sends the standing orders and payment history within five working days, moves the balance and closes the account on the date asked."
+      }
+    },
+    {
+      "key": "lv-ta-350156",
+      "source": "https://likumi.lv/ta/id/350156-maksajumu-iestazu-un-elektroniskas-naudas-iestazu-ieksejas-kontroles-sistemas-noteikumi",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 26. februāra noteikumi Nr. 275 (Latvijas Vēstnesis, 44, 01.03.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation on the internal control system of payment institutions and e-money institutions licensed or registered in Latvia, applied in proportion to each one's size and risks. In practice such an institution sets a strategy for at least three years and a plan each year, keeps a documented structure reviewed yearly with duties divided, manages conflicts of interest and lets staff report weaknesses, reviews its risk policies every year with money laundering and sanctions risk built in, vets new payment services under a policy and keeps an internal audit function."
+      }
+    },
+    {
+      "key": "lv-ta-357055",
+      "source": "https://likumi.lv/ta/id/357055-noteikumi-par-binaro-iespeju-ligumiem-un-finansu-ligumiem-par-starpibu",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2024. gada 9. decembra noteikumi Nr. 362 (Latvijas Vēstnesis, 241, 11.12.2024.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation that restricts binary options and contracts for difference sold to retail clients in or from Latvia. It binds every financial market participant that offers them, banks and investment firms among them. In practice a firm sells a binary option to a retail client only if it pays out at least what the client paid, runs 90 days or more under a prospectus and carries no market risk for the firm, and sells a contract for difference only with initial margin of 3.33 to 50 per cent, margin close-out and negative balance protection, no incentives and a set risk warning."
+      }
+    },
+    {
+      "key": "lv-ta-360090",
+      "source": "https://likumi.lv/ta/id/360090-noteikumi-kas-papildina-kriptoaktivu-tirgus-darbibu-regulejosajos-normativajos-aktos-noteiktas-prasibas",
+      "sourceLabel": "Likumi.lv, Latvijas Bankas 2025. gada 14. aprīļa noteikumi Nr. 388 (Latvijas Vēstnesis, 78, 23.04.2025.), consolidated text, the text as published, which the page shows without later versions",
+      "text": {
+        "en": "Latvijas Banka's regulation that makes the EBA and ESMA guidelines under the Markets in Crypto-Assets Regulation binding in Latvia. It binds issuers of asset-referenced tokens and e-money tokens, credit and e-money institutions among them, and crypto-asset service providers. In practice an issuer builds its governance, liquidity stress tests, recovery plan and redemption plan to the EBA guidelines and files the plans with Latvijas Banka, and a provider vets its management body and tells transfer clients their rights."
+      }
+    }
+  ]
+}
