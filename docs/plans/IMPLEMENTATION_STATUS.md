@@ -469,7 +469,11 @@ the Netherlands, Austria and Switzerland.
   4 of FINMA (MarV-FINMA, KreV-FINMA, HBEV-FINMA, AVO-FINMA) and 22 of the Bundesrat
   (FINMA-PV, TJPV, the cyber security ordinance, two asset-freeze ordinances under the
   SRVG and seventeen more embargo ordinances, each with its freeze, funds and reporting
-  duties). The baseline holds 922 instruments and 3,791 obligations.
+  duties). Then Austria's (`at-verordnungen-2`): 19 regulations with 90 duties, 15 of the
+  FMA (the consumer credit reporting, MiCA, covered bond, fund, Bausparkassen and derivative
+  risk regulations among them), 3 of the Oesterreichische Nationalbank (AnaCredit, ZABIL,
+  payment system security) and 1 of the Finance Minister. The baseline holds 941
+  instruments and 3,881 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
