@@ -100,7 +100,7 @@
   "admin.vocabularies.label": "Etikett",
   "admin.vocabularies.labelRequired": "Ge värdet en etikett.",
   "admin.vocabularies.labelSv": "Etikett på svenska",
-  "admin.vocabularies.labelSvHint": "Danska, norska och finska kan läggas till senare.",
+  "admin.vocabularies.labelSvHint": "De övriga språken kan läggas till senare.",
   "admin.vocabularies.labelSvPlaceholder": "t.ex. Förvaring",
   "admin.vocabularies.mergeAudit": "En loggpost med båda nycklarna och antalet som flyttats.",
   "admin.vocabularies.mergeButton": "{count, plural, one {Slå ihop # post} other {Slå ihop # poster}}",

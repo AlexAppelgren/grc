@@ -65,12 +65,13 @@ _AS_OF = (
 )
 _LANG = (
     "Which language's text to search and return, as a language key. The keys are rows in "
-    "the library's `Language` list, not an enum, and a sixth language is added by seeding "
-    "a row rather than by changing code; seeded on day one are `en` (English), `sv` "
-    "(Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the "
+    "the library's `Language` list, not an enum, which only the platform adds to; seeded "
+    "are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal), `fi` (Suomi), "
+    "`et` (Eesti), `lv` (Latviešu), `lt` (Lietuvių), `de` (Deutsch) and `nl` (Nederlands). "
+    "Estonian and Latvian text is matched word for word, without stemming. Absent means the "
     "bank's default content language. Source: the caller, choosing from the shared "
     "library's language rows. Do not read a language as a jurisdiction: a Swedish "
-    "obligation has an English summary, and EU material is read in five languages."
+    "obligation has an English summary, and EU material is read in every one of them."
 )
 
 
@@ -193,8 +194,10 @@ class SearchFilters(WriteBody):
             "in the shared library's `jurisdiction` vocabulary; the platform seeds them and "
             "its library editors relabel, retire and restore them through approved proposals, "
             "never changing a key, and on day one they "
-            "are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and "
-            "`fi` (Finland). Source: the shared library. Do not read `se` as excluding EU "
+            "are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway), "
+            "`fi` (Finland), `ee` (Estonia), `lv` (Latvia), `lt` (Lithuania), `de` (Germany), "
+            "`gb` (United Kingdom), `nl` (Netherlands), `at` (Austria) and `ch` (Switzerland). "
+            "Source: the shared library. Do not read `se` as excluding EU "
             "law that binds a Swedish bank: an EU regulation is filed under `eu` and still "
             "applies, so filtering to one jurisdiction hides law the bank must follow."
         ),
@@ -1267,8 +1270,8 @@ class EvalRunMetrics(CamelSchema):
     )
     per_language: dict[str, EvalScores] = Field(
         description=(
-            "The scores per content language of the questions, keyed by language key (`en`, "
-            "`sv`, `da`, `nb`, `fi`, the library's language rows). Source: the server. Do "
+            "The scores per content language of the questions, keyed by language key "
+            "(`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`, the library's language rows). Source: the server. Do "
             "not read a language that is absent as scoring zero: no question in it was asked."
         )
     )
@@ -1353,7 +1356,7 @@ class EvalQuestionInput(WriteBody):
     lang: str = Field(
         description=(
             "The content language the question is asked in, as a language key: one of the "
-            "library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one), read from "
+            "library's language rows (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`), read from "
             "`GET /reference/languages`. A key that names no row answers 422 `unknown_key`. "
             "Source: platform staff. Do not send a label such as `Svenska`: only the key is "
             "accepted."
@@ -1424,7 +1427,7 @@ class EvalQuestionOut(CamelSchema):
     lang: str = Field(
         description=(
             "The content language the question is asked in, as a key of the library's "
-            "language rows (`en`, `sv`, `da`, `nb`, `fi` on day one). Source: platform staff. "
+            "language rows (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`). Source: platform staff. "
             "Do not read it as the language of the records it expects: a Swedish question "
             "may expect an EU obligation."
         )

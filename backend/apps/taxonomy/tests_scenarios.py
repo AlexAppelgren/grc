@@ -71,6 +71,11 @@ from apps.shared.testing import in_footprint_sql
 
 APPS_DIR = Path(__file__).resolve().parent.parent
 V1 = "/api/v1"
+# The jurisdictions a bank can name as a market, in the seed's order (FP-04, D-145): the Union
+# and the twelve home markets. A Union rule reaches the Union, its member states and Norway,
+# and neither the United Kingdom nor Switzerland (D-28).
+MARKETS = ["eu", "se", "dk", "no", "fi", "ee", "lv", "lt", "de", "gb", "nl", "at", "ch"]
+UNION_REACH = [key for key in MARKETS if key not in ("gb", "ch")]
 INPUT_DELTAS = APPS_DIR.parent.parent / "docs" / "inputs" / "INPUT_DELTAS.md"
 
 # FP-S4's two chunk 6 surfaces are dated, so they need a clock that does not move with the
@@ -1055,11 +1060,14 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(languages.status_code, 200, languages.content)
         # Reference reads are short fixed lists answered as arrays, never paginated (chunk 1's
         # `GET /reference/languages`, INPUT_DELTAS section 7); data lists answer `{items, total}`.
-        self.assertEqual([lang["key"] for lang in languages.json()], ["da", "en", "fi", "nb", "sv"])
+        self.assertEqual([lang["key"] for lang in languages.json()], ["da", "de", "en", "et", "fi", "lt", "lv", "nb", "nl", "sv"])
         jurisdictions = self._get("/reference/jurisdictions", headers)
         self.assertEqual(jurisdictions.status_code, 200, jurisdictions.content)
         by_key = {j["key"]: j for j in jurisdictions.json()}
-        self.assertEqual(set(by_key), {"eu", "se", "dk", "no", "fi", "intl"})
+        self.assertEqual(set(by_key), {*MARKETS, "intl"})
+        # EU law reaches the six new member countries and neither the United Kingdom nor Switzerland (D-145).
+        self.assertEqual({key for key, row in by_key.items() if row["parentKey"] == "eu"}, set(UNION_REACH) - {"eu"})
+        self.assertEqual((by_key["gb"]["defaultLanguage"]["key"], by_key["ch"]["defaultLanguage"]["key"], by_key["at"]["defaultLanguage"]["key"]), ("en", "de", "de"))
         self.assertEqual(by_key["se"]["kind"], "country")
         self.assertEqual(by_key["eu"]["kind"], "supranational")
         # The row standards bodies issue under (D-38): reached by nothing, named by its kind.
@@ -1076,8 +1084,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 name = field.name.lower()
                 if name == "version_no":
                     continue
-                self.assertNotRegex(name, r"_(sv|en|da|nb|fi|no)$", f"{model._meta.label}.{field.name} names a language")
-                self.assertNotRegex(name, r"(swedish|danish|norwegian|finnish|english)", f"{model._meta.label}.{field.name} names a language")
+                self.assertNotRegex(name, r"_(sv|en|da|nb|fi|no|et|lv|lt|de|nl)$", f"{model._meta.label}.{field.name} names a language")
+                self.assertNotRegex(
+                    name,
+                    r"(swedish|danish|norwegian|finnish|english|estonian|latvian|lithuanian|german|dutch)",
+                    f"{model._meta.label}.{field.name} names a language",
+                )
         self.assertIsInstance(User._meta.get_field("locale"), ForeignKey)
         self.assertIs(User._meta.get_field("locale").related_model, Language)
         self.assertIsInstance(Jurisdiction._meta.get_field("default_language"), ForeignKey)
@@ -1090,7 +1102,11 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             if path.name.startswith("tests_"):
                 continue
             source = path.read_text(encoding="utf-8")
-            self.assertNotRegex(source, r"==\s*['\"](se|sv|dk|da|no|nb|fi|en|eu)['\"]", f"{path.name} branches on a language or country")
+            self.assertNotRegex(
+                source,
+                r"==\s*['\"](se|sv|dk|da|no|nb|fi|en|eu|ee|et|lv|lt|de|gb|nl|at|ch)['\"]",
+                f"{path.name} branches on a language or country",
+            )
 
     def test_i18n_s2(self) -> None:
         """I18N-S2
@@ -1258,7 +1274,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(verdicts, {"eu": True, "no": True, "se": False})
         self.assertEqual(
             {key: [term.key for term in scopes[obligation.id]["jurisdiction"]] for key, obligation in built.items()},
-            {"eu": ["eu", "se", "dk", "no", "fi"], "no": ["no"], "se": ["se"]},
+            {"eu": UNION_REACH, "no": ["no"], "se": ["se"]},
         )
 
         # And no jurisdiction term is stored for any of them.
@@ -1455,7 +1471,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             term.key: term
             for term in TaxonomyTerm.objects.exclude(jurisdiction=None).select_related("dimension", "parent").prefetch_related("labels")
         }
-        self.assertEqual(set(rows), {"eu", "se", "dk", "no", "fi"})
+        self.assertEqual(set(rows), set(MARKETS))
         self.assertEqual(set(mirrored), set(rows), "every mirrored jurisdiction has a term, and no term invents one")
         dimension = mirrored["eu"].dimension
         self.assertEqual({term.dimension_id for term in mirrored.values()}, {dimension.id}, "one dimension holds the mirror")
@@ -1464,20 +1480,24 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             self.assertEqual((term.jurisdiction_id, labels(term)), (rows[key].id, labels(rows[key])), key)
         self.assertEqual(
             {key: term.parent.key if term.parent else None for key, term in mirrored.items()},
-            {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu"},
-            "each country's term has the Union's as parent, Norway's included",
+            {key: "eu" if key in UNION_REACH and key != "eu" else None for key in MARKETS},
+            "each country the Union's rules reach has the Union's term as parent, Norway's included; the United Kingdom's and Switzerland's have none",
         )
         self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction__key="intl").exists())
         self.assertFalse(TaxonomyTerm.objects.filter(dimension=dimension, key="intl").exists())
 
-        # The regulatory scope lists the five terms, all of them when all are chosen.
+        # The regulatory scope lists every market's term, all of them when all are chosen.
         self._set_footprint(["regime:securities", *(f"{dimension.key}:{key}" for key in rows)])
         listed = next(
             entry for entry in self._footprint(sign_in(self.reader, tenant=self.tenant))["dimensions"] if entry["dimension"]["key"] == dimension.key
         )
         self.assertEqual(
             [(term["key"], term["label"]) for term in listed["terms"]],
-            [("eu", "European Union"), ("se", "Sweden"), ("dk", "Denmark"), ("no", "Norway"), ("fi", "Finland")],
+            [
+                ("eu", "European Union"), ("se", "Sweden"), ("dk", "Denmark"), ("no", "Norway"), ("fi", "Finland"),
+                ("ee", "Estonia"), ("lv", "Latvia"), ("lt", "Lithuania"), ("de", "Germany"), ("gb", "United Kingdom"),
+                ("nl", "Netherlands"), ("at", "Austria"), ("ch", "Switzerland"),
+            ],  # fmt: skip
         )
         self.assertTrue(listed["allSelected"])
 
@@ -1806,7 +1826,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         for channel, text in (("access log", "\n".join(access)), ("application log", "\n".join(app_log.lines)), ("Sentry", json.dumps(transport.events, default=str))):
             with self.subTest(channel):
                 for key in keys:
-                    self.assertIsNone(re.search(rf"(?<![A-Za-z0-9]){key}(?![A-Za-z0-9])", text), f"{channel} holds the key {key!r}")
+                    # A key on its own, as a value or a path segment carries it. An underscore
+                    # counts as part of a word, or Austria's `at` reads every `created_at`
+                    # column a traced statement names as a leak (D-145).
+                    self.assertIsNone(re.search(rf"(?<![A-Za-z0-9_]){key}(?![A-Za-z0-9_])", text), f"{channel} holds the key {key!r}")
                 for word in (str(denmark.id), *(label.text for label in denmark.labels.all())):
                     self.assertNotIn(word, text, channel)
 
@@ -1909,7 +1932,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                     set(TaxonomyTerm.objects.filter(id__in=handed[key]).values_list("key", flat=True)),
                     {key for keys in facts.scope.values() for key in keys},
                 )
-        self.assertEqual(case_reading.change_facts(built["fp-s15-eu"].id).scope["jurisdiction"], {"eu", "se", "dk", "no", "fi"})  # type: ignore[union-attr]
+        self.assertEqual(case_reading.change_facts(built["fp-s15-eu"].id).scope["jurisdiction"], set(UNION_REACH))  # type: ignore[union-attr]
         self.assertNotIn("jurisdiction", case_reading.change_facts(built["fp-s15-none"].id).scope)  # type: ignore[union-attr]
         # And nothing is stored: a change's jurisdiction is never one of its own terms.
         self.assertFalse(ChangeTerm.objects.filter(change__in=list(built.values()), term__jurisdiction__isnull=False).exists())

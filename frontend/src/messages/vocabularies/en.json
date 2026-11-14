@@ -100,7 +100,7 @@
   "admin.vocabularies.label": "Label",
   "admin.vocabularies.labelRequired": "Give the value a label.",
   "admin.vocabularies.labelSv": "Label in Swedish",
-  "admin.vocabularies.labelSvHint": "Danish, Norwegian and Finnish can be added later.",
+  "admin.vocabularies.labelSvHint": "The other languages can be added later.",
   "admin.vocabularies.labelSvPlaceholder": "e.g. Förvaring",
   "admin.vocabularies.mergeAudit": "One audit entry with both keys and the count moved.",
   "admin.vocabularies.mergeButton": "{count, plural, one {Merge # record} other {Merge # records}}",

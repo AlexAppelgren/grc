@@ -29,7 +29,8 @@ from apps.shared.models import OutboxEvent
 from apps.shared.tenancy import library_write
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
-MISSING = ["da", "fi", "nb", "sv"]
+# Every content language but English, the original of the records below (I18N-01, D-145).
+MISSING = ["da", "de", "et", "fi", "lt", "lv", "nb", "nl", "sv"]
 
 
 class Translating(MockLlm):

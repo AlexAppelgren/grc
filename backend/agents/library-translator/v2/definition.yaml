@@ -1,0 +1,61 @@
+# library-translator v2. Names the ten content languages (D-145, Alex 2026-11-14: Estonian,
+# Latvian, Lithuanian, German and Dutch joined the five) and says how to translate: the
+# meaning in the target language's own phrasing, never word for word. Everything else is
+# v1's. Translates the shared library's titles and summaries into every
+# content language a record lacks, and files each record's translations as one
+# `new_translations` proposal through the proposal door (INV-05, I18N-01, D-129; Alex,
+# 2026-11-09). Its runner is apps/proposals/translations.py, on the beat
+# (LIBRARY_TRANSLATION_MINUTES, 0 switches it off) and after an approval that adds an
+# obligation or an instrument's summary: it opens a run of this agent with no key, calls the
+# model once per record through the one logged door (purpose `translation`), reads the answer
+# strictly as untrusted text, files it, and closes the run. A person approves each proposal in
+# the console queue; every row it adds is labelled machine-made and the original stays the
+# authoritative text. Draft, so the platform's agent beat never starts it; its cadence is
+# manual. Keys here are kinds (tier 1). This folder never changes after it ships: a new version
+# is a new folder.
+id: library-translator
+version: 2
+kind: backfill         # agent_kind: fills in what the library lacks, record by record, rather than watching for change
+status: draft          # draft | active | retired
+description: >
+  Translates each shared regulation's and duty's title and summary into the content
+  languages it lacks, from the original, and files the translations of one record as one
+  proposal. Every translation stays labelled as a machine's and the original stays the
+  authoritative text; a person approves each proposal.
+prompt: prompt.md      # the system prompt, this folder
+model: claude-opus-5   # the configured model (LLM_MODEL) this version was written for
+change_note: >
+  Names all ten content languages, the five of the other home markets included, and
+  translates the meaning in the target language's own phrasing, never word for word.
+scope: platform        # agent_scope: one of bleqq's agents; no bank steers it (D-61, ruling 1)
+tenant_configurable: false
+writes_to: library     # agent_writes_to: through proposals only, never a direct library write
+default_cadence: manual
+
+# The operations its filing uses, called in process by its runner rather than over HTTP,
+# with the scopes a key for this definition would carry. It holds proposals:write and never
+# proposals:review, so it cannot decide what it filed; the proposal_four_eyes constraint
+# refuses that whatever this file says, and an agent never approves a translation (D-79).
+# It reads no vocabulary at run start: the content languages are the seeded language rows.
+tools:
+  - name: startAgentRun
+    operation: POST /agent-runs
+    scopes: [agent-runs:write]
+    purpose: Open the run every filing names, one per record.
+    input: AgentRunInput
+    output: AgentRun
+  - name: createProposal
+    operation: POST /proposals
+    scopes: [proposals:write]
+    purpose: The only door into the library. One new_translations proposal per record, each text sourced by the record's own link.
+    input: ProposalInput
+    output: Proposal
+  - name: finishAgentRun
+    operation: PATCH /agent-runs/{runId}
+    scopes: [agent-runs:write]
+    purpose: Close the run with the model call it made and the proposal it filed, or why it filed none.
+    input: AgentRunFinish
+    output: AgentRun
+
+evals:
+  filed_and_approved_by: backend/apps/proposals/tests_translations.py

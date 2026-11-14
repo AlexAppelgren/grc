@@ -26,7 +26,8 @@ from django.conf import settings
 from django.test import SimpleTestCase
 
 from apps.library.baseline import check_baseline
-from apps.library.seeds import JURISDICTIONS
+from apps.library.models import JurisdictionKind
+from apps.library.seeds import JURISDICTIONS, LANGUAGES
 from apps.taxonomy.seeds import LIBRARY_SYSTEM_ROWS
 
 TRANCHE = "test"
@@ -36,6 +37,7 @@ TEXTS = {
     "da": "En egenerklæring skal være underskrevet og dateret.",
     "nb": "En egenerklæring skal være undertegnet og datert.",
     "fi": "Vakuutuksen on oltava allekirjoitettu ja päivätty.",
+    "de": "Eine Selbstauskunft muss unterschrieben und datiert sein.",
     "en": "A self-certification must be signed and dated.",
 }
 # The tranche the provisions belong to: one instrument per jurisdiction, each with its duties.
@@ -45,6 +47,8 @@ INSTRUMENTS = {
     "no-act": ("no", ["obl-no"]),
     "fi-act": ("fi", ["obl-fi"]),
     "eu-act": ("eu", ["obl-eu"]),
+    "de-act": ("de", ["obl-de"]),
+    "gb-act": ("gb", ["obl-gb"]),
 }
 
 
@@ -69,8 +73,9 @@ def provision(instrument: str, original: str, languages: str, *duties: str, **fi
 
 def good() -> dict[str, Any]:
     """A provisions file every rule passes: each original in its jurisdiction's language,
-    English beside all but English, Swedish beside Danish, Norwegian and Finnish, Finland's
-    Swedish the authority's own, and the one duty with no text excused by name."""
+    English and Swedish beside it, whichever of the two it is not, so a United Kingdom text
+    carries Swedish (D-145); a Union text English alone; Finland's Swedish the authority's
+    own, and the one duty with no text excused by name."""
     return {
         "tranche": TRANCHE,
         "researchedOn": "2026-11-13",
@@ -80,6 +85,8 @@ def good() -> dict[str, Any]:
             provision("no-act", "nb", "nb en sv", "obl-no", isMachine=True),
             provision("fi-act", "fi", "fi sv en", "obl-fi", isMachine=True, officialLanguages=["sv"]),
             provision("eu-act", "en", "en", "obl-eu", provisionKind="article", refLabel="Art. 5"),
+            provision("de-act", "de", "de en sv", "obl-de", isMachine=True),
+            provision("gb-act", "en", "en sv", "obl-gb", isMachine=True),
         ],
         "withoutProvision": [{"obligation": "obl-se-two", "reason": "The duty rests on the ordinance as a whole; no one section states it."}],
     }
@@ -124,7 +131,7 @@ class TheLawsOwnWords(SimpleTestCase):
         def whole(**fields: Any) -> Callable[[dict[str, Any]], None]:
             return lambda data: data.update(fields)
 
-        swedish, danish, finnish, union = 0, 1, 3, 4
+        swedish, danish, finnish, union, german, british = 0, 1, 3, 4, 5, 6
         long = "x" * (check_baseline.MAX_TEXT + 1)
         cases: list[tuple[str, Callable[[dict[str, Any]], None], str]] = [
             ("a field the file does not know", whole(note="later"), "provisions/test.json: unknown field 'note'"),
@@ -137,13 +144,16 @@ class TheLawsOwnWords(SimpleTestCase):
             ("an obligation named twice", entry(swedish, obligations=["obl-se-one", "obl-se-one"]), ".obligations: names an obligation twice"),
             ("English as the original of Swedish law", entry(swedish, originalLanguage="en"), ".originalLanguage: must be 'sv', the language se-act is written in"),
             ("no text in the original", entry(swedish, texts={"en": TEXTS["en"]}), ".texts: has no text in its original language 'sv'"),
-            ("no English beside Swedish", entry(swedish, texts={"sv": TEXTS["sv"]}, isMachine=...), ".texts: lacks en: beside an original in 'sv' a provision carries en"),
-            ("no Swedish beside Danish", entry(danish, texts={"da": TEXTS["da"], "en": TEXTS["en"]}), ".texts: lacks sv: beside an original in 'da' a provision carries en, sv"),
+            ("no English beside Swedish", entry(swedish, texts={"sv": TEXTS["sv"]}, isMachine=...), ".texts: lacks en: beside its original a provision of 'se' carries en"),
+            ("no Swedish beside Danish", entry(danish, texts={"da": TEXTS["da"], "en": TEXTS["en"]}), ".texts: lacks sv: beside its original a provision of 'dk' carries en, sv"),
+            ("no Swedish beside German", entry(german, texts={"de": TEXTS["de"], "en": TEXTS["en"]}), ".texts: lacks sv: beside its original a provision of 'de' carries en, sv"),
+            ("no Swedish beside United Kingdom law", entry(british, texts={"en": TEXTS["en"]}, isMachine=...), ".texts: lacks sv: beside its original a provision of 'gb' carries sv"),
+            ("English as the original of German law", entry(german, originalLanguage="en"), ".originalLanguage: must be 'de', the language de-act is written in"),
             ("an empty text", entry(swedish, texts={"sv": TEXTS["sv"], "en": " "}), ".texts.en: must be a non-empty string"),
             ("a text over the door's maximum", entry(swedish, texts={"sv": long, "en": TEXTS["en"]}), ".texts.sv: is 50001 characters, at most 50000"),
-            ("a language the library does not hold", entry(union, texts={"en": TEXTS["en"], "de": "Ein Text."}, isMachine=True), ".texts.de: is not a content language"),
-            ("a Swedish text beside a Union act", entry(union, texts={"en": TEXTS["en"], "sv": TEXTS["sv"]}, isMachine=True), ".texts: holds sv: beside an original in 'en' a provision carries nothing"),
-            ("a Danish text beside Swedish law", entry(swedish, texts={"sv": TEXTS["sv"], "en": TEXTS["en"], "da": TEXTS["da"]}), ".texts: holds da: beside an original in 'sv' a provision carries en"),
+            ("a language the library does not hold", entry(union, texts={"en": TEXTS["en"], "fr": "Un texte."}, isMachine=True), ".texts.fr: is not a content language"),
+            ("a Swedish text beside a Union act", entry(union, texts={"en": TEXTS["en"], "sv": TEXTS["sv"]}, isMachine=True), ".texts: holds sv: beside its original a provision of 'eu' carries nothing"),
+            ("a Danish text beside Swedish law", entry(swedish, texts={"sv": TEXTS["sv"], "en": TEXTS["en"], "da": TEXTS["da"]}), ".texts: holds da: beside its original a provision of 'se' carries en"),
             ("a translation not marked machine", entry(swedish, isMachine=...), ".isMachine: must be true when the entry holds a translation"),
             ("machine marked where nothing is translated", entry(union, isMachine=True), ".isMachine: must be true when the entry holds a translation"),
             ("Finland's Swedish passed off as a machine's", entry(finnish, officialLanguages=...), ".officialLanguages: must be ['sv']"),
@@ -159,7 +169,7 @@ class TheLawsOwnWords(SimpleTestCase):
             ("no source label", entry(swedish, sourceLabel=...), ".sourceLabel: must be a non-empty string"),
             ("no day read", entry(swedish, readOn=...), ".readOn: must be the day the text was read"),
             ("a day read that is not a date", entry(swedish, readOn="13 November 2026"), ".readOn: must be an ISO date YYYY-MM-DD"),
-            ("a provision that is not an object", lambda data: data["provisions"].append("se-act/006"), "provisions/test.json[5]: must be an object"),
+            ("a provision that is not an object", lambda data: data["provisions"].append("se-act/006"), "provisions/test.json[7]: must be an object"),
             ("an obligation with no text and no reason", whole(withoutProvision=[]), "provisions/test.json: obl-se-two is cited by no provision"),
             ("an excuse without a reason", whole(withoutProvision=[{"obligation": "obl-se-two", "reason": ""}]), ".withoutProvision[0].reason: must be a non-empty string"),
             ("an excuse for an obligation nobody holds", whole(withoutProvision=[{"obligation": "obl-se-two", "reason": "No one section."}, {"obligation": "obl-nobody", "reason": "None."}]), ".withoutProvision[1]: 'obl-nobody' is not an obligation of this tranche"),
@@ -192,7 +202,7 @@ class TheLawsOwnWords(SimpleTestCase):
             self.problems(data),
             [
                 f"provisions/test.json: {key} is cited by no provision: give the text it comes from, or name it in withoutProvision with the reason"
-                for key in ("obl-dk", "obl-eu", "obl-fi", "obl-no", "obl-se-two")
+                for key in ("obl-de", "obl-dk", "obl-eu", "obl-fi", "obl-gb", "obl-no", "obl-se-two")
             ],
         )
         everything_excused = {**good(), "provisions": [], "withoutProvision": [{"obligation": duty, "reason": "Its source is a PDF not read yet."} for _, duties in INSTRUMENTS.values() for duty in duties]}
@@ -309,11 +319,15 @@ class TheRealBaseline(SimpleTestCase):
         self.assertIn("baseline: ok", out.getvalue())
 
     def test_the_checkers_own_tables_are_the_seeds_and_the_settings(self) -> None:
-        legal = {key: language for key, (_kind, _parent, language, _labels) in JURISDICTIONS.items() if key in check_baseline.JURISDICTIONS}
+        # Every jurisdiction a bank can operate in or be reached from; a standards body's is no market (D-38).
+        legal = {key: language for key, (kind, _parent, language, _labels) in JURISDICTIONS.items() if kind is not JurisdictionKind.INTERNATIONAL}
         self.assertEqual(check_baseline.LEGAL_LANGUAGE, legal)
+        self.assertEqual(check_baseline.LANGUAGES, set(LANGUAGES))
         self.assertEqual(check_baseline.PROVISION_KINDS, {row.key for row in LIBRARY_SYSTEM_ROWS["provision_kind"][1]})
-        self.assertEqual(set(check_baseline.TRANSLATIONS), set(legal.values()), "every legal language says which translations stand beside it")
-        self.assertLessEqual(set(check_baseline.OFFICIAL), set(check_baseline.TRANSLATIONS))
+        self.assertEqual(set(check_baseline.TRANSLATIONS), set(legal), "every jurisdiction says which translations stand beside its original")
+        for key, beside in check_baseline.TRANSLATIONS.items():
+            self.assertEqual(beside, set() if key == "eu" else {"en", "sv"} - {legal[key]}, key)
+        self.assertLessEqual(set(check_baseline.OFFICIAL), set(legal.values()))
         from apps.library.logic import OFFICIAL_BESIDE
 
         self.assertEqual(check_baseline.OFFICIAL, {original: set(beside) for original, beside in OFFICIAL_BESIDE.items()}, "the checker and the library name the same official languages")

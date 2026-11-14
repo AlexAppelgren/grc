@@ -26,7 +26,22 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // Below them, one mount point per section of the organisation (TEN-02): each
 // section reads and writes on its own, under vocab.manage.
 
-const NORDIC_ZONES = ['Europe/Stockholm', 'Europe/Helsinki', 'Europe/Oslo', 'Europe/Copenhagen', 'Europe/Brussels'];
+// One zone per home market's capital (D-145), and Brussels. A suggestion only: the field takes any IANA name.
+const SUGGESTED_ZONES = [
+  'Europe/Stockholm',
+  'Europe/Copenhagen',
+  'Europe/Oslo',
+  'Europe/Helsinki',
+  'Europe/Tallinn',
+  'Europe/Riga',
+  'Europe/Vilnius',
+  'Europe/Berlin',
+  'Europe/London',
+  'Europe/Amsterdam',
+  'Europe/Vienna',
+  'Europe/Zurich',
+  'Europe/Brussels',
+];
 
 
 /** The languages to offer: the reference rows, or what the tenant already holds when the reference read failed. */
@@ -84,7 +99,7 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
           <Field id="org-timezone" label={t('admin.organisation.timezone')} hint={t('admin.organisation.timezoneHint')}>
             <TextInput id="org-timezone" list="org-timezones" value={timezone} onChange={(e) => setTimezone(e.target.value)} />
             <datalist id="org-timezones">
-              {NORDIC_ZONES.map((zone) => (
+              {SUGGESTED_ZONES.map((zone) => (
                 <option key={zone} value={zone} />
               ))}
             </datalist>

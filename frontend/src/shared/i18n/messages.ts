@@ -231,8 +231,8 @@ export type Catalog = Record<MessageKey, string>;
 
 export const catalogs: Record<Locale, Catalog> = { en, sv };
 
-// BCP 47 tags for Intl. English users in the Nordics read day-month order,
-// so `en` formats as en-GB, never en-US.
+// BCP 47 tags for Intl. English readers in every market we cover write the day before
+// the month, so `en` formats as en-GB, never en-US.
 export const localeTags: Record<Locale, string> = { en: 'en-GB', sv: 'sv-SE' };
 
 export function isLocale(value: string | undefined | null): value is Locale {

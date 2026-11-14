@@ -1104,6 +1104,54 @@
    "kind": "country"
   },
   {
+   "code": "EE",
+   "name": "Estonia",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "LV",
+   "name": "Latvia",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "LT",
+   "name": "Lithuania",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "DE",
+   "name": "Germany",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "GB",
+   "name": "United Kingdom",
+   "parent_code": null,
+   "kind": "country"
+  },
+  {
+   "code": "NL",
+   "name": "Netherlands",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "AT",
+   "name": "Austria",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "CH",
+   "name": "Switzerland",
+   "parent_code": null,
+   "kind": "country"
+  },
+  {
    "code": "INTL",
    "name": "International",
    "parent_code": null,

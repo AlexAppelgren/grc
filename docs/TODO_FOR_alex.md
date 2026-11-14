@@ -575,11 +575,14 @@ ADR (0026 to 0041), each reversible. These are the ones that need you.
       invariant: a per-user row-level policy, audit and outbox rows without the
       text, exclusion from exports, and compliance work hidden from the tenant's
       own auditors.
-- [ ] **Aspiring markets outside EU, SE, DK, NO and FI (D-33).** Which ones do
+- [x] **Aspiring markets outside EU, SE, DK, NO and FI (D-33).** Which ones do
       you have in mind, and in which release? Each is a change to the platform's
       scope, not a tenant setting: it needs a jurisdiction row, its authorities,
       its sources and a content language before a sweep can find anything.
       Until then a Swedish bank can watch only Denmark, Norway or Finland.
+      **Answered (Alex, 2026-11-14): all of SEB's home markets.** D-145 and ADR
+      0070 add Estonia, Latvia, Lithuania, Germany, the United Kingdom, the
+      Netherlands, Austria and Switzerland ("Every home market" at the top).
 - [ ] **The sector vocabulary, answered once (D-40).** The default names tax and
       AI in the PRD's scope sentence, maps the PRD's six sectors onto terms of
       the existing `licensed_activity` dimension by proposal, and adds a regime

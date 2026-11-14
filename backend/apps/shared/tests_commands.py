@@ -34,7 +34,7 @@ class SeedReference(TestCase):
         factories.tenant(slug="seeded")
         out = StringIO()
         call_command("seed_reference", stdout=out)
-        self.assertIn("languages: 5 rows", out.getvalue())
+        self.assertIn("languages: 10 rows", out.getvalue())
         self.assertIn("platform_roles: 2 rows", out.getvalue())
         self.assertIn("tenant_system_roles: 7 rows", out.getvalue())
 

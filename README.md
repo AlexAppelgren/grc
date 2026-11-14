@@ -1,7 +1,8 @@
 # Compliance Watch (bleqq)
 
 A compliance inventory and regulatory watch platform for enterprise banks in
-the Nordics. Research agents find and propose, people decide, every decision
+northern Europe: the EU and twelve home markets, from Sweden to Switzerland
+(PRD section 1). Research agents find and propose, people decide, every decision
 is logged.
 
 ## Quick start

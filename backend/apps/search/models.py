@@ -27,15 +27,21 @@ from pgvector.django import HnswIndex, VectorField
 from apps.search.indexing import SearchChunkQuerySet, assert_index_write
 from apps.search.schemas import EvalVia, SearchMatchKind
 
-# Each content language's own text search configuration (INPUT_DELTAS §3: five languages,
-# not schema.sql's two). Keys are the seeded `Language` rows'; `SearchChunkLanguageTests`
-# fails if they disagree.
+# Each content language's own text search configuration (INPUT_DELTAS §3: a row per language,
+# not schema.sql's two columns). Keys are the seeded `Language` rows'; `SearchChunkLanguageTests`
+# fails if they disagree. PostgreSQL 16 ships no Estonian or Latvian configuration, so those
+# two are matched word for word with `simple` (D-145).
 TEXT_SEARCH_CONFIGS: dict[str, str] = {
     "en": "english",
     "sv": "swedish",
     "da": "danish",
     "nb": "norwegian",
     "fi": "finnish",
+    "et": "simple",
+    "lv": "simple",
+    "lt": "lithuanian",
+    "de": "german",
+    "nl": "dutch",
 }
 
 # The title weighs more than the body (schema.sql §6).

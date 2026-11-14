@@ -144,9 +144,14 @@ _LANGUAGES_EXAMPLE = {
                 "application/json": {
                     "example": [
                         {"key": "da", "kind": None, "label": "Dansk"},
+                        {"key": "de", "kind": None, "label": "Deutsch"},
                         {"key": "en", "kind": None, "label": "English"},
+                        {"key": "et", "kind": None, "label": "Eesti"},
                         {"key": "fi", "kind": None, "label": "Suomi"},
+                        {"key": "lt", "kind": None, "label": "Lietuvių"},
+                        {"key": "lv", "kind": None, "label": "Latviešu"},
                         {"key": "nb", "kind": None, "label": "Norsk bokmål"},
+                        {"key": "nl", "kind": None, "label": "Nederlands"},
                         {"key": "sv", "kind": None, "label": "Svenska"},
                     ]
                 }
@@ -211,14 +216,15 @@ _AUTHORITIES_EXAMPLE = {
 def list_languages(request: HttpRequest) -> list[VocabRef]:
     """Every content language the platform is serving, as key, kind and label: what fills a
     language picker on a person's profile, on a bank's default-language setting and behind
-    "Show original" on a record. Swedish, Danish, Norwegian, Finnish and English are active
-    on day one.
+    "Show original" on a record. English, Swedish, Danish, Norwegian, Finnish, Estonian,
+    Latvian, Lithuanian, German and Dutch are active: the languages the twelve home markets
+    and the European Union publish their rules in.
 
     A read: it changes nothing and writes no audit row, and any signed-in session may make
     it. There is no permission to hold, because a person has to be able to choose the
     language they read in before they can read anything else. The languages are library
     reference rows, identical for every bank; a platform admin activates or retires one
-    without a deploy, so read this list rather than hard-coding the five. Every row's kind
+    without a deploy, so read this list rather than hard-coding it. Every row's kind
     is null: a language belongs to no sub-kind.
 
     Answers a plain array in key order rather than a page, like the other short reference
@@ -594,9 +600,9 @@ def get_provision_diff(
 )
 @answers_problems
 def list_authorities(request: HttpRequest) -> Any:
-    """Every issuing authority the shared library knows, with its jurisdiction: the Swedish,
-    Danish, Norwegian and Finnish supervisors, the EU bodies and the international standards
-    publishers. Call it to fill an authority filter on the watch feed or the console's change
+    """Every issuing authority the shared library knows, with its jurisdiction: the
+    legislatures, ministries and supervisors of the twelve home markets, the EU bodies and
+    the international standards publishers. Call it to fill an authority filter on the watch feed or the console's change
     queue, to label a change's issuer, and from an agent run that has to recognise the
     authority behind a page it fetched.
 

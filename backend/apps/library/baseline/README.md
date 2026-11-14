@@ -1,8 +1,11 @@
 # The library baseline
 
 The shared library's starting inventory: the instruments in force within the sector scope
-on the day they were researched, for the EU, Sweden, Denmark, Norway and Finland, and the
-core duties of each in our own words. It is not loaded by a seed. Each entry is a proposal
+on the day they were researched, and the core duties of each in our own words. Today it
+holds the EU, Sweden, Denmark, Norway and Finland. The other eight home markets (Estonia,
+Latvia, Lithuania, Germany, the United Kingdom, the Netherlands, Austria and Switzerland,
+D-145) are covered by the platform and their tranches arrive market by market, as ADR 0070
+stages them; the rules below already hold for them. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then
@@ -170,21 +173,34 @@ How each text was read, and every check it went through, is recorded in
   correction is a new fetch. A text is at most 50,000 characters per language, the door's own
   limit.
 - **The original is the authority's language.** Swedish for Sweden, Danish for Denmark,
-  Norwegian (`nb`) for Norway, Finnish for Finland, English for the EU. The door refuses
-  anything else, here and from every other proposer: recording English as the original of
-  Swedish law is the mistake this format exists to end.
-- **The texts beside the original.** English always. Swedish as well when the original is
-  Danish, Norwegian or Finnish. An EU text is English alone.
+  Norwegian (`nb`) for Norway, Finnish for Finland, Estonian for Estonia, Latvian for Latvia,
+  Lithuanian for Lithuania, Dutch for the Netherlands, German for Germany, Austria and
+  Switzerland, English for the United Kingdom and for the EU. The door refuses anything
+  else, here and from every other proposer: recording English as the original of Swedish
+  law is the mistake this format exists to end. Switzerland enacts federal law in German,
+  French and Italian alike; the library holds the German text.
+- **The texts beside the original.** English and Swedish beside every national original,
+  whichever of the two the original is not (D-142, D-145): a Swedish text carries English,
+  a United Kingdom text Swedish, every other national text both. An EU text is English
+  alone.
+- **A translation says what the law says, never word for word.** It is written as a lawyer
+  of the target language would draft the same rule: that language's own legal terms and
+  sentence order, "must" where English law would say "shall", paragraph for paragraph and
+  item for item, with nothing added, left out or explained, and every reference, number and
+  defined term kept as the original has it.
 - **A translation is a machine translation and is marked so.** `isMachine` is true whenever
   an entry holds a translation, and the library labels each one a machine translation,
   whoever approves it. Finland is the one exception: its acts are enacted and published in
   Finnish and in Swedish, so a Finnish provision carries the authority's own Swedish text
   and names it in `officialLanguages: ["sv"]`, which is stored neither as the original nor
   as a machine translation. Its English is a machine translation like any other. No other
-  jurisdiction has an official second language here, and `officialLanguages` is left out.
+  jurisdiction has an official second language among the content languages (Switzerland's
+  French and Italian are not held), and `officialLanguages` is left out.
 - **A source's own unofficial translation does not stand in for one.** The English texts
   that Finlex, Lovdata, both Finanstilsynet and Finansinspektionen publish are not official
-  and may trail the law, and Lovdata's are outside the texts it frees for reuse.
+  and may trail the law, and Lovdata's are outside the texts it frees for reuse. The same
+  holds for the English that Riigi Teataja, Likumi.lv, BaFin, Fedlex, FINMA, the FMA and
+  the Dutch authorities publish beside their law.
 
 What each source asks of someone who republishes its text, read on 2026-11-13 at the pages
 named:

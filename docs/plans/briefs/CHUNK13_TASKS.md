@@ -143,6 +143,10 @@ WHAT IT DELIVERS
   with an expiry that returns the gap to open when it lapses.
 - **I18N-02.** da, nb and fi across the UI catalogs, the server mail catalogs and
   the seeded list labels, with `check:messages` gating all five languages.
+  PRD 0.12 (D-145, 2026-11-14) added et, lv, lt, de and nl to the content
+  languages after this plan was written: I18N-02 now promises those five as
+  well, each needing the same packages as da, nb and fi below, and none of
+  them is planned here yet (`docs/TODO_FOR_alex.md`, "Every home market").
 - The chunk's own two security reviews, its fix package and its close.
 
 RULINGS WHERE THE SOURCES DISAGREE

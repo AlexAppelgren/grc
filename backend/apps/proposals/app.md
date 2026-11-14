@@ -95,7 +95,9 @@ over a correction and at apply:
 
 - **The original is the authority's language.** `originalLanguage` is the language the
   instrument's jurisdiction writes law in (`Jurisdiction.default_language`: Swedish for
-  Sweden, Danish, Norwegian, Finnish, and English for the Union), or 422 `validation_error`.
+  Sweden, Danish, Norwegian, Finnish, Estonian, Latvian, Lithuanian, Dutch, German for
+  Germany, Austria and Switzerland, and English for the Union and the United Kingdom), or
+  422 `validation_error`.
   A translation is never recorded as the original of the law. A new text of a provision is
   checked against that provision's own instrument.
 - **A language is marked for what it is.** `officialLanguages` names the other languages of
@@ -543,7 +545,7 @@ And the queue reads the run as finished, with two approved and none refused
 ```gherkin
 Given a shared regulation whose title and summary the library holds in English only
 When the platform's translator runs
-Then one proposal of the agent library-translator waits in the queue with the title and the summary in Danish, Finnish, Norwegian and Swedish, each sourced by the regulation's own link, from one logged model call in a run of its own
+Then one proposal of the agent library-translator waits in the queue with the title and the summary in every other content language (Danish, Dutch, Estonian, Finnish, German, Latvian, Lithuanian, Norwegian and Swedish), each sourced by the regulation's own link, from one logged model call in a run of its own
 And running it again asks nothing while that proposal is open
 When an agent approves it
 Then it answers 409 "person_review_required"

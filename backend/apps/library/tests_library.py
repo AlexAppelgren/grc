@@ -402,10 +402,17 @@ class JurisdictionReach(TestCase):
         seed_languages()
         seed_jurisdictions()
 
-    def test_every_seeded_country_is_reached_by_the_union(self) -> None:
+    def test_the_union_reaches_its_members_and_norway_and_no_other_country(self) -> None:
         reach = {row.key: row.parent.key if row.parent else None for row in Jurisdiction.objects.select_related("parent")}
         # International (D-38) is reached by nothing: a standards body is no market's rule-maker.
-        self.assertEqual(reach, {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu", "intl": None})
+        # Nor are the United Kingdom and Switzerland: EU law reaches neither (D-145).
+        self.assertEqual(
+            reach,
+            {
+                "eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu", "intl": None,
+                "ee": "eu", "lv": "eu", "lt": "eu", "de": "eu", "gb": None, "nl": "eu", "at": "eu", "ch": None,
+            },  # fmt: skip
+        )
 
     def test_the_fixture_and_the_seed_name_the_same_reach(self) -> None:
         """The two places T15 had to change. They are read by different code paths — the seed

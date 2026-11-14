@@ -34,8 +34,7 @@ FIXTURE = HERE.parent / "fixtures" / "prototype_data.json"
 SOURCES_FILE = "sources.json"
 KEY = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-LANGUAGES = {"en", "sv", "da", "nb", "fi"}
-JURISDICTIONS = {"eu", "se", "dk", "no", "fi"}
+LANGUAGES = {"en", "sv", "da", "nb", "fi", "et", "lv", "lt", "de", "nl"}
 EU_LEVELS = {"eu_regulation", "eu_directive", "eu_guidance"}
 NATIONAL_LEVELS = {"act", "government_regulation", "authority_regulation"}
 PRECISIONS = {"day", "month", "quarter", "year"}
@@ -75,11 +74,15 @@ WITHOUT_PROVISION_FIELDS = {"obligation", "reason"}
 # (apps/taxonomy/seeds `_PROVISION_KINDS`).
 PROVISION_KINDS = {"part", "chapter", "section", "article", "paragraph", "guideline", "annex"}
 # The language each jurisdiction writes its law in (apps/library/seeds `JURISDICTIONS`): the
-# original of every provision under it, as the proposal door holds it.
-LEGAL_LANGUAGE = {"eu": "en", "se": "sv", "dk": "da", "no": "nb", "fi": "fi"}
-# The texts a provision carries beside its original, by that original: English always, and
-# Swedish beside Danish, Norwegian and Finnish.
-TRANSLATIONS: dict[str, set[str]] = {"en": set(), "sv": {"en"}, "da": {"en", "sv"}, "nb": {"en", "sv"}, "fi": {"en", "sv"}}
+# original of every provision under it, as the proposal door holds it. A test ties the two.
+LEGAL_LANGUAGE = {
+    "eu": "en", "se": "sv", "dk": "da", "no": "nb", "fi": "fi",
+    "ee": "et", "lv": "lv", "lt": "lt", "de": "de", "gb": "en", "nl": "nl", "at": "de", "ch": "de",
+}  # fmt: skip
+JURISDICTIONS = set(LEGAL_LANGUAGE)
+# The texts a provision carries beside its original, by its jurisdiction (D-142, D-145):
+# English and Swedish, whichever of the two the original is not. An EU text is English alone.
+TRANSLATIONS: dict[str, set[str]] = {key: set() if key == "eu" else {"en", "sv"} - {language} for key, language in LEGAL_LANGUAGE.items()}
 # Of those, the ones the authority itself publishes: Finland enacts its law in Swedish too.
 # The library's `apps.library.logic.OFFICIAL_BESIDE` holds the same; a test ties the two.
 OFFICIAL: dict[str, set[str]] = {"fi": {"sv"}}
@@ -385,11 +388,12 @@ class Checker:
         texts = item.get("texts")
         self.languages(f"{where}.texts", texts, original, MAX_TEXT)
         held = set(texts) if isinstance(texts, dict) else set()
-        beside = TRANSLATIONS.get(original, set())
+        market = jurisdiction.get(instrument, "")
+        beside = TRANSLATIONS.get(market, set())
         if beside - held:
-            self.fail(f"{where}.texts", f"lacks {', '.join(sorted(beside - held))}: beside an original in {original!r} a provision carries {', '.join(sorted(beside))}")
+            self.fail(f"{where}.texts", f"lacks {', '.join(sorted(beside - held))}: beside its original a provision of {market!r} carries {', '.join(sorted(beside))}")
         if held - beside - {original}:
-            self.fail(f"{where}.texts", f"holds {', '.join(sorted(held - beside - {original}))}: beside an original in {original!r} a provision carries {', '.join(sorted(beside)) or 'nothing'}")
+            self.fail(f"{where}.texts", f"holds {', '.join(sorted(held - beside - {original}))}: beside its original a provision of {market!r} carries {', '.join(sorted(beside)) or 'nothing'}")
         official = OFFICIAL.get(original, set())
         if item.get("officialLanguages", []) != sorted(official):
             self.fail(f"{where}.officialLanguages", f"must be {sorted(official)}, the languages its authority itself publishes beside {original!r}, and left out when there are none")

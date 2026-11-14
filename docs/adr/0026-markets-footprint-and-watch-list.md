@@ -31,6 +31,8 @@ market key travels in a request body, never in a path or query string.
 Deliberately not done: a separate Markets screen, one table holding both
 levels, a `rules_reach_from` column, a hook in scope approval, an extra
 argument on the SQL matching function, and markets beyond EU, SE, DK, NO and FI.
+ADR 0070 (2026-11-14, D-145) adds those markets: the other eight home markets, of
+which the United Kingdom and Switzerland have no parent.
 
 ## Consequences
 

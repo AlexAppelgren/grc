@@ -3641,7 +3641,7 @@
                 "type": "null"
               }
             ],
-            "description": "Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, and a sixth language is added by seeding a row rather than by changing code; seeded on day one are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in five languages.",
+            "description": "Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, which only the platform adds to; seeded are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal), `fi` (Suomi), `et` (Eesti), `lv` (Latvie\u0161u), `lt` (Lietuvi\u0173), `de` (Deutsch) and `nl` (Nederlands). Estonian and Latvian text is matched word for word, without stemming. Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in every one of them.",
             "title": "Lang"
           },
           "question": {
@@ -7141,7 +7141,7 @@
                 "type": "null"
               }
             ],
-            "description": "The language the bank reads and writes in first, as a reference to a language row by key \u2014 `sv`, `en`, `da`, `nb` or `fi` \u2014 with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null until the bank's own administrator chooses one on its Organisation profile: an organisation created through this console starts without one."
+            "description": "The language the bank reads and writes in first, as a reference to a language row by key \u2014 `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl` \u2014 with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null until the bank's own administrator chooses one on its Organisation profile: an organisation created through this console starts without one."
           },
           "firstAdministrator": {
             "anyOf": [
@@ -7486,7 +7486,7 @@
             "type": "string"
           },
           "lang": {
-            "description": "The content language the question is asked in, as a language key: one of the library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one), read from `GET /reference/languages`. A key that names no row answers 422 `unknown_key`. Source: platform staff. Do not send a label such as `Svenska`: only the key is accepted.",
+            "description": "The content language the question is asked in, as a language key: one of the library's language rows (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`), read from `GET /reference/languages`. A key that names no row answers 422 `unknown_key`. Source: platform staff. Do not send a label such as `Svenska`: only the key is accepted.",
             "title": "Lang",
             "type": "string"
           },
@@ -7593,7 +7593,7 @@
             "type": "string"
           },
           "lang": {
-            "description": "The content language the question is asked in, as a key of the library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one). Source: platform staff. Do not read it as the language of the records it expects: a Swedish question may expect an EU obligation.",
+            "description": "The content language the question is asked in, as a key of the library's language rows (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`). Source: platform staff. Do not read it as the language of the records it expects: a Swedish question may expect an EU obligation.",
             "title": "Lang",
             "type": "string"
           },
@@ -7808,7 +7808,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/EvalScores"
             },
-            "description": "The scores per content language of the questions, keyed by language key (`en`, `sv`, `da`, `nb`, `fi`, the library's language rows). Source: the server. Do not read a language that is absent as scoring zero: no question in it was asked.",
+            "description": "The scores per content language of the questions, keyed by language key (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`, the library's language rows). Source: the server. Do not read a language that is absent as scoring zero: no question in it was asked.",
             "title": "Perlanguage",
             "type": "object"
           },
@@ -11880,7 +11880,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
-            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
+            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed files). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
           },
           "lastVerifiedAt": {
             "anyOf": [
@@ -12131,7 +12131,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
-            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
+            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed files). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
           },
           "key": {
             "description": "The other instrument's stable key, issued once and never changed.",
@@ -12397,7 +12397,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
-            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
+            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed files). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
           },
           "lastVerifiedAt": {
             "anyOf": [
@@ -12725,10 +12725,10 @@
                 "type": "null"
               }
             ],
-            "description": "The language this jurisdiction's legal texts are written in, such as Swedish (`sv`) for Sweden and English (`en`) for the European Union: the original a translation is made from. Its key is a row of the platform's language vocabulary (`en`, `sv`, `da`, `nb`, `fi` on day one), which only the platform adds to and no bank admin can extend; its kind is always null. Every jurisdiction names one, so the default of null never reaches a reader."
+            "description": "The language this jurisdiction's legal texts are written in, such as Swedish (`sv`) for Sweden and English (`en`) for the European Union: the original a translation is made from. Its key is a row of the platform's language vocabulary (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`), which only the platform adds to and no bank admin can extend; its kind is always null. Every jurisdiction names one, so the default of null never reaches a reader."
           },
           "key": {
-            "description": "The jurisdiction's immutable key, the lowercased code a record, a market and a filter carry: seeded on day one are `eu` (the European Union), `se`, `dk`, `no`, `fi` and `intl` (international standards bodies). Jurisdictions are rows of the shared library's `jurisdiction` vocabulary, which the platform's library editors may extend without a deploy; a bank's admin cannot add one. This endpoint lists the live set, and a key never changes.",
+            "description": "The jurisdiction's immutable key, the lowercased code a record, a market and a filter carry: seeded are `eu` (the European Union), the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` (international standards bodies). Jurisdictions are rows of the shared library's `jurisdiction` vocabulary, which the platform's library editors may extend without a deploy; a bank's admin cannot add one. This endpoint lists the live set, and a key never changes.",
             "examples": [
               "se"
             ],
@@ -12767,7 +12767,7 @@
                 "type": "null"
               }
             ],
-            "description": "The key of the jurisdiction whose rules also reach this one, such as `eu` for Sweden and for Norway, which is outside the Union but bound by its financial rules through the EEA Agreement. It says whose law reaches here, not membership. Null by default, for a jurisdiction nothing reaches (`eu`, `intl`). A row of the same `jurisdiction` vocabulary, which the platform's library editors may extend and a bank's admin may not.",
+            "description": "The key of the jurisdiction whose rules also reach this one, such as `eu` for Sweden and for Norway, which is outside the Union but bound by its financial rules through the EEA Agreement. It says whose law reaches here, not membership. Null by default, for a jurisdiction nothing reaches: `eu`, `intl`, and the United Kingdom (`gb`) and Switzerland (`ch`), which European Union law does not reach. A row of the same `jurisdiction` vocabulary, which the platform's library editors may extend and a bank's admin may not.",
             "examples": [
               "eu"
             ],
@@ -12809,7 +12809,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
-            "description": "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, where a standards body such as ISO/IEC sits; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01)."
+            "description": "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed files). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, where a standards body such as ISO/IEC sits; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01)."
           },
           "key": {
             "description": "The authority's immutable key, the value a filter, a report or an export stores. It never changes; the name may be relabelled around it (playbook 4.3).",
@@ -13346,7 +13346,7 @@
             "type": "boolean"
           },
           "language": {
-            "description": "Which content language the wording is in, as a language key: the BCP 47 primary tag of at most 8 characters that `GET /reference/languages` lists, with `sv`, `en`, `da`, `nb` and `fi` active on day one. The languages are library reference rows a platform admin may extend or retire without a deploy, so read that endpoint for the live set and compare on the key rather than on the language's name.",
+            "description": "Which content language the wording is in, as a language key: the BCP 47 primary tag of at most 8 characters that `GET /reference/languages` lists, with `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` and `nl` active. The languages are library reference rows a platform admin may extend or retire without a deploy, so read that endpoint for the live set and compare on the key rather than on the language's name.",
             "examples": [
               "en"
             ],
@@ -15573,7 +15573,7 @@
             "type": "string"
           },
           "scope": {
-            "description": "Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank. Its instrument's regime is part of it, and so are the jurisdictions the instrument's rules reach. Those are derived when the record is read and never stored: the term of the instrument's own jurisdiction and the term of every jurisdiction its rules reach, so a European Union instrument reaches Sweden, Denmark, Norway and Finland, a national one its own country only, and an international standard no jurisdiction at all.",
+            "description": "Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank. Its instrument's regime is part of it, and so are the jurisdictions the instrument's rules reach. Those are derived when the record is read and never stored: the term of the instrument's own jurisdiction and the term of every jurisdiction its rules reach, so a European Union instrument reaches its member states among the markets and Norway, and neither the United Kingdom nor Switzerland, a national one its own country only, and an international standard no jurisdiction at all.",
             "items": {
               "$ref": "#/components/schemas/ScopeDimension"
             },
@@ -16332,7 +16332,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
-            "description": "The jurisdiction of the instrument this duty was broken out of, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`. It is what `footprint=watched` names as the market a row comes from; the jurisdictions the duty reaches are in `scope`, derived from this one."
+            "description": "The jurisdiction of the instrument this duty was broken out of, as `{key, kind, label}` from the jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed files). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`. It is what `footprint=watched` names as the market a row comes from; the jurisdictions the duty reaches are in `scope`, derived from this one."
           },
           "lastVerifiedAt": {
             "anyOf": [
@@ -16394,7 +16394,7 @@
             "type": "string"
           },
           "scope": {
-            "description": "Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank. Its instrument's regime is part of it, and so are the jurisdictions the instrument's rules reach. Those are derived when the record is read and never stored: the term of the instrument's own jurisdiction and the term of every jurisdiction its rules reach, so a European Union instrument reaches Sweden, Denmark, Norway and Finland, a national one its own country only, and an international standard no jurisdiction at all.",
+            "description": "Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank. Its instrument's regime is part of it, and so are the jurisdictions the instrument's rules reach. Those are derived when the record is read and never stored: the term of the instrument's own jurisdiction and the term of every jurisdiction its rules reach, so a European Union instrument reaches its member states among the markets and Norway, and neither the United Kingdom nor Switzerland, a national one its own country only, and an international standard no jurisdiction at all.",
             "items": {
               "$ref": "#/components/schemas/ScopeDimension"
             },
@@ -17778,6 +17778,14 @@
               "dk",
               "no",
               "fi",
+              "ee",
+              "lv",
+              "lt",
+              "de",
+              "gb",
+              "nl",
+              "at",
+              "ch",
               "eu"
             ],
             "key": "watch-sweeper",
@@ -17785,7 +17793,7 @@
               "finishedAt": "2026-09-24T02:18:41Z",
               "status": "succeeded"
             },
-            "name": "Nordic and EU regulatory watch",
+            "name": "National and EU regulatory watch",
             "nextRunAt": "2026-09-25T02:00:00Z",
             "purpose": "Checks the registered sources for new or changed regulation every night."
           }
@@ -17909,6 +17917,14 @@
                   "dk",
                   "no",
                   "fi",
+                  "ee",
+                  "lv",
+                  "lt",
+                  "de",
+                  "gb",
+                  "nl",
+                  "at",
+                  "ch",
                   "eu"
                 ],
                 "key": "watch-sweeper",
@@ -17916,7 +17932,7 @@
                   "finishedAt": "2026-09-24T02:18:41Z",
                   "status": "succeeded"
                 },
-                "name": "Nordic and EU regulatory watch",
+                "name": "National and EU regulatory watch",
                 "nextRunAt": "2026-09-25T02:00:00Z",
                 "purpose": "Checks the registered sources for new or changed regulation every night."
               }
@@ -19801,7 +19817,7 @@
           },
           "payload": {
             "additionalProperties": true,
-            "description": "What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`), `terms` (scope as `dimension:key`, at most 20), `titles` (the obligation's title per content language, `originalLanguage` among them), `refLabel` (its citation, 1 to 200 characters) and `provisions` (the stable keys of the provisions it cites, at most 50 as sent, a key sent twice kept once, each a provision in force under the obligation's own instrument, else 422 `unknown_key` naming it). Each of `terms`, `titles`, `refLabel` and `provisions` replaces that part of the obligation whole when given and leaves it alone when left out; an empty `terms` or `provisions` clears it. `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, the part before the slash then being the instrument's own key, else 422 `validation_error`, at most 200 characters), `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), `originalLanguage` (the language the authority published the text in, which must be the language its instrument's jurisdiction writes law in, Swedish for Swedish law and English for a Union act, else 422 `validation_error`: a translation is never the original of the law, though a title or a summary, being bleqq's own wording, keeps the language it was written in), `officialLanguages` (the other languages of `texts` the authority itself published, such as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; at most 4 language keys of at most 8 characters; naming the original, a language with no text, or a language the authority does not publish in beside the original (today only Swedish beside a Finnish original may be named) answers 422 `validation_error`), `isMachine` (true when the provision holds a translation; every text that is neither the original nor one of `officialLanguages` is stored and labelled as a machine translation whatever this says and whoever approves), `obligations` (the stable keys of the obligations that cite the provision, each at most 120 characters, at most 50 counted as the list is sent, a key sent twice being kept once, every one a shared obligation in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to the provision), `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and `obligations`, each read as on a new provision against the provision's own instrument (an obligation the provision is already tied to stays as it is), `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.",
+            "description": "What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`), `terms` (scope as `dimension:key`, at most 20), `titles` (the obligation's title per content language, `originalLanguage` among them), `refLabel` (its citation, 1 to 200 characters) and `provisions` (the stable keys of the provisions it cites, at most 50 as sent, a key sent twice kept once, each a provision in force under the obligation's own instrument, else 422 `unknown_key` naming it). Each of `terms`, `titles`, `refLabel` and `provisions` replaces that part of the obligation whole when given and leaves it alone when left out; an empty `terms` or `provisions` clears it. `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key` (a stable key, which may end in one slash and the provision's place in its instrument, as in `fffs-2017-2/9-6`, the part before the slash then being the instrument's own key, else 422 `validation_error`, at most 200 characters), `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), `originalLanguage` (the language the authority published the text in, which must be the language its instrument's jurisdiction writes law in, Swedish for Swedish law, German for German, Austrian and Swiss law and English for a Union or a United Kingdom act, else 422 `validation_error`: a translation is never the original of the law, though a title or a summary, being bleqq's own wording, keeps the language it was written in), `officialLanguages` (the other languages of `texts` the authority itself published, such as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; at most 9 language keys of at most 8 characters; naming the original, a language with no text, or a language the authority does not publish in beside the original (today only Swedish beside a Finnish original may be named) answers 422 `validation_error`), `isMachine` (true when the provision holds a translation; every text that is neither the original nor one of `officialLanguages` is stored and labelled as a machine translation whatever this says and whoever approves), `obligations` (the stable keys of the obligations that cite the provision, each at most 120 characters, at most 50 counted as the list is sent, a key sent twice being kept once, every one a shared obligation in force under the same instrument, else 422 `unknown_key` naming it; approval ties each to the provision), `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `officialLanguages`, `isMachine` and `obligations`, each read as on a new provision against the provision's own instrument (an obligation the provision is already tied to stays as it is), `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.",
             "title": "Payload",
             "type": "object"
           },
@@ -22123,7 +22139,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/VocabRef",
-            "description": "Where the regulation applies, as a row of the shared library's jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` on day one), which a platform admin may extend, relabel or retire; read `GET /reference/jurisdictions` for the live set and match on the key. A library fact, the same for every bank."
+            "description": "Where the regulation applies, as a row of the shared library's jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed files), which a platform admin may extend, relabel or retire; read `GET /reference/jurisdictions` for the live set and match on the key. A library fact, the same for every bank."
           },
           "key": {
             "description": "The regulation's stable key, issued once and never changed, such as `fffs-2017-2`. Send it as `instrument` to list its obligations.",
@@ -28415,7 +28431,7 @@
             "description": "Which facet of the taxonomy this entry is about, as key, kind and label. The dimensions are vocabulary rows and never a closed set: a platform admin may extend, relabel, reorder or retire the list without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key. Seeded on day one: `regime`, `legal_entity`, `service_type`, `account_type`, `client_category`, `channel` and `lifecycle_stage`. Every active dimension is listed on every record, including the ones a record carries no term in."
           },
           "terms": {
-            "description": "The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it \u2014 never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind. In the `jurisdiction` dimension the terms are not stored on the record: they are derived each time it is read, from its instrument's jurisdiction, as the term of that jurisdiction plus the term of every jurisdiction its rules reach. So a European Union instrument's duty lists `eu`, `se`, `dk`, `no` and `fi`, a Swedish one lists `se` alone, and an international standard's lists none.",
+            "description": "The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it \u2014 never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind. In the `jurisdiction` dimension the terms are not stored on the record: they are derived each time it is read, from its instrument's jurisdiction, as the term of that jurisdiction plus the term of every jurisdiction its rules reach. So a European Union instrument's duty lists `eu`, its member states among the markets (`se`, `dk`, `fi`, `ee`, `lv`, `lt`, `de`, `nl`, `at`) and `no`, a Swedish one lists `se` alone, a United Kingdom or Swiss one its own country alone, since European Union law reaches neither, and an international standard's lists none.",
             "items": {
               "$ref": "#/components/schemas/VocabRef"
             },
@@ -28727,7 +28743,7 @@
                 "type": "null"
               }
             ],
-            "description": "Narrow the search to the law of one jurisdiction, by key, or of any of several: a list of 1 to 20 keys (`LIBRARY_TERM_FILTER_MAX`) is combined with OR, so `[\"se\", \"no\"]` finds Swedish and Norwegian law, each key at most 80 characters; an empty list, a longer list or a longer key is refused with 422 `validation_error`. A key no jurisdiction has matches nothing. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.",
+            "description": "Narrow the search to the law of one jurisdiction, by key, or of any of several: a list of 1 to 20 keys (`LIBRARY_TERM_FILTER_MAX`) is combined with OR, so `[\"se\", \"no\"]` finds Swedish and Norwegian law, each key at most 80 characters; an empty list, a longer list or a longer key is refused with 422 `validation_error`. A key no jurisdiction has matches nothing. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway), `fi` (Finland), `ee` (Estonia), `lv` (Latvia), `lt` (Lithuania), `de` (Germany), `gb` (United Kingdom), `nl` (Netherlands), `at` (Austria) and `ch` (Switzerland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.",
             "title": "Jurisdiction"
           },
           "term": {
@@ -28963,7 +28979,7 @@
                 "type": "null"
               }
             ],
-            "description": "Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, and a sixth language is added by seeding a row rather than by changing code; seeded on day one are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in five languages.",
+            "description": "Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, which only the platform adds to; seeded are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal), `fi` (Suomi), `et` (Eesti), `lv` (Latvie\u0161u), `lt` (Lietuvi\u0173), `de` (Deutsch) and `nl` (Nederlands). Estonian and Latvian text is matched word for word, without stemming. Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in every one of them.",
             "title": "Lang"
           },
           "limit": {
@@ -30016,7 +30032,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "The term's name by language key, at least one: `en`, `sv`, `da`, `nb` or `fi`, the platform's content languages. Blank labels are dropped; none left answers 422 `validation_error`, and a language the platform does not hold answers 422 `unknown_key` with the valid ones.",
+            "description": "The term's name by language key, at least one: `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`, the platform's content languages. Blank labels are dropped; none left answers 422 `validation_error`, and a language the platform does not hold answers 422 `unknown_key` with the valid ones.",
             "examples": [
               {
                 "en": "Investment research",
@@ -30213,7 +30229,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Every label the term has, by language key (`en`, `sv`, `da`, `nb`, `fi`), for an editor showing all translations at once. A language with no label is absent rather than empty; defaults to an empty map only for a term nobody labelled.",
+            "description": "Every label the term has, by language key (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`), for an editor showing all translations at once. A language with no label is absent rather than empty; defaults to an empty map only for a term nobody labelled.",
             "examples": [
               {
                 "en": "Advice",
@@ -32606,7 +32622,7 @@
                 "type": "null"
               }
             ],
-            "description": "The language the bank reads and writes in first: it decides which version of a library record a reader is shown when they have expressed no preference, and which language a briefing is written in. A reference to a language row by its key \u2014 `sv`, `en`, `da`, `nb` or `fi` \u2014 with a label to show. Languages are library reference rows, not a vocabulary a bank's admin may extend; read `GET /reference/languages` for the set on offer. Null only while a brand-new organisation has not chosen one."
+            "description": "The language the bank reads and writes in first: it decides which version of a library record a reader is shown when they have expressed no preference, and which language a briefing is written in. A reference to a language row by its key \u2014 `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl` \u2014 with a label to show. Languages are library reference rows, not a vocabulary a bank's admin may extend; read `GET /reference/languages` for the set on offer. Null only while a brand-new organisation has not chosen one."
           },
           "id": {
             "description": "The bank's permanent identifier, a UUID issued once when the organisation was created and never reissued. Key your own records on it: the short name in `slug` is for people to read, while this is the value every call that names a bank takes.",
@@ -32701,7 +32717,7 @@
                 "type": "null"
               }
             ],
-            "description": "The key of the language the bank should read and write in first \u2014 `sv`, `en`, `da`, `nb` or `fi` \u2014 at most 8 characters. A key, never a label. Omit the field to leave it alone; a key that is not an active language row is refused with `unknown_key`. The languages on offer are library reference rows and not a vocabulary a bank's admin may extend.",
+            "description": "The key of the language the bank should read and write in first \u2014 `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl` \u2014 at most 8 characters. A key, never a label. Omit the field to leave it alone; a key that is not an active language row is refused with `unknown_key`. The languages on offer are library reference rows and not a vocabulary a bank's admin may extend.",
             "title": "Defaultlanguage"
           },
           "name": {
@@ -34381,7 +34397,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "The value's name per content language, as a map from language key to text, such as `{\"en\": \"Custody\", \"sv\": \"F\u00f6rvaring\"}`. The keys are the platform's content languages, `en`, `sv`, `da`, `nb` and `fi`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty text is ignored, and at least one label must be left or the write answers 422 `validation_error`. The first labels a value gets name its original language: English when English is among them, otherwise the one given.",
+            "description": "The value's name per content language, as a map from language key to text, such as `{\"en\": \"Custody\", \"sv\": \"F\u00f6rvaring\"}`. The keys are the platform's content languages, `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` and `nl`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty text is ignored, and at least one label must be left or the write answers 422 `validation_error`. The first labels a value gets name its original language: English when English is among them, otherwise the one given.",
             "examples": [
               {
                 "en": "Custody services",
@@ -34711,7 +34727,7 @@
                 "type": "null"
               }
             ],
-            "description": "The labels to set, per content language (`en`, `sv`, `da`, `nb` or `fi`), merged into those the value has: a language named here gets this text and counts as a person's from now on, and a language left out keeps its label. Null or absent changes no label. An unknown language answers 422 `unknown_key`, and a map whose every text is empty 422 `validation_error`. The key stays what it was, whatever the labels now say.",
+            "description": "The labels to set, per content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`), merged into those the value has: a language named here gets this text and counts as a person's from now on, and a language left out keeps its label. Null or absent changes no label. An unknown language answers 422 `unknown_key`, and a map whose every text is empty 422 `validation_error`. The key stays what it was, whatever the labels now say.",
             "examples": [
               {
                 "en": "Custody services"
@@ -35006,7 +35022,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb` or `fi`) to text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the original and which a machine translated. For display and editing, never for matching.",
+            "description": "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`) to text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the original and which a machine translated. For display and editing, never for matching.",
             "examples": [
               {
                 "en": "Act now",
@@ -35191,7 +35207,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb` or `fi`) to text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the original and which a machine translated. For display and editing, never for matching.",
+            "description": "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`) to text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the original and which a machine translated. For display and editing, never for matching.",
             "examples": [
               {
                 "en": "Act now",
@@ -35223,7 +35239,7 @@
                 "type": "null"
               }
             ],
-            "description": "The content language the value was first named in (`en`, `sv`, `da`, `nb` or `fi`), which every other label translates: English when English was among its first labels, otherwise the language they were written in. Null for a value whose labels name no original.",
+            "description": "The content language the value was first named in (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`), which every other label translates: English when English was among its first labels, otherwise the language they were written in. Null for a value whose labels name no original.",
             "examples": [
               "en"
             ],
@@ -35372,7 +35388,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "The value's name per content language, as a map from language key to text, such as `{\"en\": \"Custody\", \"sv\": \"F\u00f6rvaring\"}`. The keys are the platform's content languages, `en`, `sv`, `da`, `nb` and `fi`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty text is ignored, and at least one label must be left or the write answers 422 `validation_error`.",
+            "description": "The value's name per content language, as a map from language key to text, such as `{\"en\": \"Custody\", \"sv\": \"F\u00f6rvaring\"}`. The keys are the platform's content languages, `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` and `nl`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty text is ignored, and at least one label must be left or the write answers 422 `validation_error`.",
             "examples": [
               {
                 "en": "Pension transfers"
@@ -35493,7 +35509,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "The labels the member suggested, per content language (`en`, `sv`, `da`, `nb` or `fi`), as they typed them apart from surrounding spaces.",
+            "description": "The labels the member suggested, per content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`), as they typed them apart from surrounding spaces.",
             "examples": [
               {
                 "en": "Pension transfers"
@@ -44231,7 +44247,7 @@
     },
     "/api/v1/authorities": {
       "get": {
-        "description": "Every issuing authority the shared library knows, with its jurisdiction: the Swedish,\nDanish, Norwegian and Finnish supervisors, the EU bodies and the international standards\npublishers. Call it to fill an authority filter on the watch feed or the console's change\nqueue, to label a change's issuer, and from an agent run that has to recognise the\nauthority behind a page it fetched.\n\nA read: it changes nothing and writes no audit row. A person's session holding\n`library.read`, or an agent's key carrying the `library:read` scope. A short fixed\nreference list, answered as a plain array rather than a page, like the other reference\nreads. Library facts, the same for every bank, changed only through an approved proposal;\nan authority's `key` never changes, so store the key and never the name.\n\nOrdered by the authority's key, so the list a picker renders is the same on every call.\nAn empty library would be a 200 with an empty array.\n\nErrors: `permission_denied` without `library.read` or `library:read`.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.",
+        "description": "Every issuing authority the shared library knows, with its jurisdiction: the\nlegislatures, ministries and supervisors of the twelve home markets, the EU bodies and\nthe international standards publishers. Call it to fill an authority filter on the watch feed or the console's change\nqueue, to label a change's issuer, and from an agent run that has to recognise the\nauthority behind a page it fetched.\n\nA read: it changes nothing and writes no audit row. A person's session holding\n`library.read`, or an agent's key carrying the `library:read` scope. A short fixed\nreference list, answered as a plain array rather than a page, like the other reference\nreads. Library facts, the same for every bank, changed only through an approved proposal;\nan authority's `key` never changes, so store the key and never the name.\n\nOrdered by the authority's key, so the list a picker renders is the same on every call.\nAn empty library would be a 200 with an empty array.\n\nErrors: `permission_denied` without `library.read` or `library:read`.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.",
         "operationId": "listAuthorities",
         "parameters": [],
         "responses": {
@@ -50153,7 +50169,7 @@
             }
           },
           {
-            "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
+            "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway), `fi` (Finland), `ee` (Estonia), `lv` (Latvia), `lt` (Lithuania), `de` (Germany), `gb` (United Kingdom), `nl` (Netherlands), `at` (Austria) and `ch` (Switzerland), which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
             "examples": [
               [
                 "se",
@@ -50164,7 +50180,7 @@
             "name": "jurisdiction",
             "required": false,
             "schema": {
-              "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
+              "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway), `fi` (Finland), `ee` (Estonia), `lv` (Latvia), `lt` (Lithuania), `de` (Germany), `gb` (United Kingdom), `nl` (Netherlands), `at` (Austria) and `ch` (Switzerland), which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
               "examples": [
                 [
                   "se",
@@ -53206,7 +53222,7 @@
     },
     "/api/v1/reference/jurisdictions": {
       "get": {
-        "description": "Every active jurisdiction, in the library's order: the European Union, the Nordic\ncountries and the international standards bodies, each with its kind, the jurisdiction\nwhose rules also reach it and the language its legal texts are written in. Call it to\nfill a jurisdiction picker or to label a record's jurisdiction key.\n\nA reference read: a plain array, not a page, because the list is short and fixed; it\nnever paginates. Labels read in the caller's language.\n\nA read: it changes nothing and writes no audit event. Open to any person's session with\nno permission beyond it; an API key is refused.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session.",
+        "description": "Every active jurisdiction, in the library's order: the European Union, the twelve\nhome markets (Sweden, Denmark, Norway, Finland, Estonia, Latvia, Lithuania, Germany, the\nUnited Kingdom, the Netherlands, Austria and Switzerland) and the international\nstandards bodies, each with its kind, the jurisdiction\nwhose rules also reach it and the language its legal texts are written in. Call it to\nfill a jurisdiction picker or to label a record's jurisdiction key.\n\nA reference read: a plain array, not a page, because the list is short and fixed; it\nnever paginates. Labels read in the caller's language.\n\nA read: it changes nothing and writes no audit event. Open to any person's session with\nno permission beyond it; an API key is refused.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session.",
         "operationId": "listJurisdictions",
         "parameters": [],
         "responses": {
@@ -53246,6 +53262,17 @@
                     "kind": "country",
                     "label": "Norway",
                     "parentKey": "eu"
+                  },
+                  {
+                    "defaultLanguage": {
+                      "key": "en",
+                      "kind": null,
+                      "label": "English"
+                    },
+                    "key": "gb",
+                    "kind": "country",
+                    "label": "United Kingdom",
+                    "parentKey": null
                   }
                 ],
                 "schema": {
@@ -53273,7 +53300,7 @@
     },
     "/api/v1/reference/languages": {
       "get": {
-        "description": "Every content language the platform is serving, as key, kind and label: what fills a\nlanguage picker on a person's profile, on a bank's default-language setting and behind\n\"Show original\" on a record. Swedish, Danish, Norwegian, Finnish and English are active\non day one.\n\nA read: it changes nothing and writes no audit row, and any signed-in session may make\nit. There is no permission to hold, because a person has to be able to choose the\nlanguage they read in before they can read anything else. The languages are library\nreference rows, identical for every bank; a platform admin activates or retires one\nwithout a deploy, so read this list rather than hard-coding the five. Every row's kind\nis null: a language belongs to no sub-kind.\n\nAnswers a plain array in key order rather than a page, like the other short reference\nreads, and an empty array would be a 200. Errors to branch on: `unauthenticated` (401)\nwithout a session.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session.",
+        "description": "Every content language the platform is serving, as key, kind and label: what fills a\nlanguage picker on a person's profile, on a bank's default-language setting and behind\n\"Show original\" on a record. English, Swedish, Danish, Norwegian, Finnish, Estonian,\nLatvian, Lithuanian, German and Dutch are active: the languages the twelve home markets\nand the European Union publish their rules in.\n\nA read: it changes nothing and writes no audit row, and any signed-in session may make\nit. There is no permission to hold, because a person has to be able to choose the\nlanguage they read in before they can read anything else. The languages are library\nreference rows, identical for every bank; a platform admin activates or retires one\nwithout a deploy, so read this list rather than hard-coding it. Every row's kind\nis null: a language belongs to no sub-kind.\n\nAnswers a plain array in key order rather than a page, like the other short reference\nreads, and an empty array would be a 200. Errors to branch on: `unauthenticated` (401)\nwithout a session.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session.",
         "operationId": "listLanguages",
         "parameters": [],
         "responses": {
@@ -53287,9 +53314,19 @@
                     "label": "Dansk"
                   },
                   {
+                    "key": "de",
+                    "kind": null,
+                    "label": "Deutsch"
+                  },
+                  {
                     "key": "en",
                     "kind": null,
                     "label": "English"
+                  },
+                  {
+                    "key": "et",
+                    "kind": null,
+                    "label": "Eesti"
                   },
                   {
                     "key": "fi",
@@ -53297,9 +53334,24 @@
                     "label": "Suomi"
                   },
                   {
+                    "key": "lt",
+                    "kind": null,
+                    "label": "Lietuvi\u0173"
+                  },
+                  {
+                    "key": "lv",
+                    "kind": null,
+                    "label": "Latvie\u0161u"
+                  },
+                  {
                     "key": "nb",
                     "kind": null,
                     "label": "Norsk bokm\u00e5l"
+                  },
+                  {
+                    "key": "nl",
+                    "kind": null,
+                    "label": "Nederlands"
                   },
                   {
                     "key": "sv",

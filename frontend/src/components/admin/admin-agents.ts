@@ -140,7 +140,7 @@ export function weekdayLabel(weekday: number, locale: Locale): string {
   return new Intl.DateTimeFormat(localeTags[locale], { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, weekday)));
 }
 
-/** A run hour on the 24-hour clock the Nordics read: 6 is "06:00". */
+/** A run hour on the 24-hour clock: 6 is "06:00". */
 export function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, '0')}:00`;
 }

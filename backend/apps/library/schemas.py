@@ -68,7 +68,7 @@ class LocalizedText(LibraryResponse):
         description=(
             "Which content language the wording is in, as a language key: the BCP 47 "
             "primary tag of at most 8 characters that `GET /reference/languages` lists, "
-            "with `sv`, `en`, `da`, `nb` and `fi` active on day one. The languages are "
+            "with `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` and `nl` active. The languages are "
             "library reference rows a platform admin may extend or retire without a "
             "deploy, so read that endpoint for the live set and compare on the key rather "
             "than on the language's name."
@@ -237,8 +237,10 @@ class ScopeDimension(LibraryResponse):
             "`jurisdiction` dimension the terms are not stored on the record: they are "
             "derived each time it is read, from its instrument's jurisdiction, as the term "
             "of that jurisdiction plus the term of every jurisdiction its rules reach. So a "
-            "European Union instrument's duty lists `eu`, `se`, `dk`, `no` and `fi`, a "
-            "Swedish one lists `se` alone, and an international standard's lists none."
+            "European Union instrument's duty lists `eu`, its member states among the markets "
+            "(`se`, `dk`, `fi`, `ee`, `lv`, `lt`, `de`, `nl`, `at`) and `no`, a Swedish one lists "
+            "`se` alone, a United Kingdom or Swiss one its own country alone, since European "
+            "Union law reaches neither, and an international standard's lists none."
         ),
     )
     all_selected: bool = Field(
@@ -432,8 +434,9 @@ _SCOPE = (
     "instrument's regime is part of it, and so are the jurisdictions the instrument's rules "
     "reach. Those are derived when the record is read and never stored: the term of the "
     "instrument's own jurisdiction and the term of every jurisdiction its rules reach, so "
-    "a European Union instrument reaches Sweden, Denmark, Norway and Finland, a national "
-    "one its own country only, and an international standard no jurisdiction at all."
+    "a European Union instrument reaches its member states among the markets and Norway, "
+    "and neither the United Kingdom nor Switzerland, a national one its own country only, "
+    "and an international standard no jurisdiction at all."
 )
 _IN_FOOTPRINT = (
     "Whether the duty's scope overlaps the bank's own footprint, which is what decides "
@@ -449,8 +452,9 @@ _OUTSIDE_REASON = (
 )
 _ROW_JURISDICTION = (
     "The jurisdiction of the instrument this duty was broken out of, as `{key, kind, label}` "
-    "from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the "
-    "rows seeded on day one). The values are rows an admin manages, not a closed set: a "
+    "from the jurisdiction vocabulary (`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, "
+    "`ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` among the rows the seed "
+    "files). The values are rows an admin manages, not a closed set: a "
     "platform admin may extend, relabel or retire one without a deploy, so read "
     "`GET /reference/jurisdictions` for the live set and match on the key, never on the "
     "label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or "
@@ -1542,7 +1546,9 @@ class ObligationQuery(CamelSchema):
             "`jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and "
             "at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the "
             "shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` "
-            "(Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel "
+            "(Denmark), `no` (Norway), `fi` (Finland), `ee` (Estonia), `lv` (Latvia), `lt` "
+            "(Lithuania), `de` (Germany), `gb` (United Kingdom), `nl` (Netherlands), `at` "
+            "(Austria) and `ch` (Switzerland), which its editors relabel "
             "and retire through approved proposals without changing a key; read "
             "`GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not "
             "an error: it matches nothing. Each value is at most 80 characters; a longer one is "
@@ -1883,7 +1889,8 @@ _INSTRUMENT_LEVEL = (
 )
 _INSTRUMENT_JURISDICTION = (
     "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary "
-    "(`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values "
+    "(`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, "
+    "`at` and `ch`, and `intl` among the rows the seed files). The values "
     "are rows an admin manages, not a closed set: a platform admin may extend, relabel or "
     "retire one without a deploy, so read `GET /reference/jurisdictions` for the live set "
     "and match on the key, never on the label. The `kind` is one of three kinds fixed in "
@@ -2672,7 +2679,8 @@ class LibraryAuthority(LibraryResponse):
     jurisdiction: VocabRef = Field(
         description=(
             "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary "
-            "(`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The "
+            "(`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, "
+            "`nl`, `at` and `ch`, and `intl` among the rows the seed files). The "
             "values are rows an admin manages, not a closed set: a platform admin may extend, "
             "relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for "
             "the live set and match on the key, never on the label. The `kind` is one of three "
