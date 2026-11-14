@@ -225,6 +225,22 @@
       "text": {
         "en": "A binding Minister of Finance regulation, issued under the Investment Funds Act, on the report filed with Finantsinspektsioon once the liquidation of an investment fund has ended. It reaches the management company, and the depositary where it completes a liquidation. In practice the report lists the fund's assets at the decision and at the start of liquidation, each creditor's claim and its settlement, each liquidation cost and each payout to investors, with the key decisions and dates, and is signed by a management board member or the liquidators."
       }
+    },
+    {
+      "key": "ee-rt-i-2016-03-11-10",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111032016010/txt",
+      "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11), RT I, 11.03.2016, 10, original text RT I, 11.03.2016, 10 (in force from 21.03.2016)",
+      "text": {
+        "en": "A binding regulation of the Minister of Justice, issued under the Law of Obligations Act, that sets the form of the European Standardised Information Sheet for consumer credit on residential property. In practice a lender or credit intermediary fills in the annexed model as part B instructs: the lender and intermediary, the loan and its risks, interest and every cost, instalments with worst case and currency examples, ancillary obligations, early repayment, the consumer's rights, complaint routes and the consequences of default, in one document with the warnings highlighted."
+      }
+    },
+    {
+      "key": "ee-rt-i-2010-12-22-4",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/123092015009/txt",
+      "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47), RT I, 22.12.2010, 4, consolidated text RT I, 23.09.2015, 9 (in force from 01.10.2015)",
+      "text": {
+        "en": "A binding regulation of the Minister of Justice, issued under the Law of Obligations Act, that sets the forms of the Standard European Consumer Credit Information sheet and of its shorter version for short-term overdrafts. In practice a lender or credit intermediary gives the consumer the annexed form filled in with the creditor, the credit product, the borrowing rate and annual percentage rate with a representative example, all costs, the withdrawal and early repayment rights and, for distance marketing, the further details the form asks for."
+      }
     }
   ]
 }

@@ -2382,6 +2382,262 @@
           }
         }
       ]
+    },
+    {
+      "title": "Add Euroopa standardinfo teabeleht, the Minister of Justice's regulation on the European Standardised Information Sheet for credit on residential property (Justiitsministri 03.03.2016 määrus nr 11)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/111032016010/txt",
+      "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11), RT I, 11.03.2016, 10, original text RT I, 11.03.2016, 10, in force from 21.03.2016, issued by the Minister of Justice under Võlaõigusseadus § 403³ lg 3, read through the gazette's own interface; entry into force read in § 2 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2016-03-11-10",
+        "titles": {
+          "et": "Euroopa standardinfo teabelehe vormi kehtestamine",
+          "en": "Establishing the form of the European Standardised Information Sheet"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Euroopa standardinfo teabeleht",
+        "officialRef": "Euroopa standardinfo teabelehe vormi kehtestamine (RT I, 11.03.2016, 10)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "justiits-ja-digiministeerium",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-03-21"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Give the European Standardised Information Sheet on the regulation's model, in one legible document with risk warnings highlighted",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6010/JM_m11_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11, RT I, 11.03.2016, 10), § 1, lisa A-osa ja B-osa sissejuhatus p 1, original text RT I, 11.03.2016, 10, in force from 21.03.2016, annex as the gazette publishes it with the text (JM_m11_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-euroopa-standardinfo-teabeleht-form-and-presentation",
+            "titles": {
+              "en": "Give the European Standardised Information Sheet on the regulation's model, in one legible document with risk warnings highlighted"
+            },
+            "summaries": {
+              "en": "A creditor, or where it applies a credit intermediary, completes the European Standardised Information Sheet with the model wording in part A of the annex, replacing the bracketed notes, leaving out information or whole sections that do not apply and renumbering the rest, and following at least the instructions in part B. The information is given in one document in a clearly legible font, every applicable risk warning is highlighted, and the date until which the information stays valid is shown prominently."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1, lisa A-osa ja B-osa sissejuhatus p 1",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Name the creditor and any intermediary with their contacts, advice status and the intermediary's commission",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6010/JM_m11_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11, RT I, 11.03.2016, 10), lisa B-osa 1. ja 2. jagu, original text RT I, 11.03.2016, 10, in force from 21.03.2016, annex as the gazette publishes it with the text (JM_m11_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-euroopa-standardinfo-teabeleht-lender-and-intermediary",
+            "titles": {
+              "en": "Name the creditor and any intermediary with their contacts, advice status and the intermediary's commission"
+            },
+            "summaries": {
+              "en": "The sheet gives the creditor's name, telephone number and geographical address, and for a distance contract its representative in the consumer's member state. A credit intermediary that informs the consumer gives its own contacts, says whether and on what basis advice is provided, and discloses the commission and the creditor paying it where that creditor is not the one named."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa B-osa 1. ja 2. jagu",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Describe the loan's main terms, risks, interest and every cost, with foreign currency and property details where they apply",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6010/JM_m11_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11, RT I, 11.03.2016, 10), lisa B-osa 3. ja 4. jagu, original text RT I, 11.03.2016, 10, in force from 21.03.2016, annex as the gazette publishes it with the text (JM_m11_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-euroopa-standardinfo-teabeleht-loan-and-costs",
+            "titles": {
+              "en": "Describe the loan's main terms, risks, interest and every cost, with foreign currency and property details where they apply"
+            },
+            "summaries": {
+              "en": "The sheet sets out the amount and currency, the type of credit and how principal and interest are repaid, an interest-only note, whether the rate is fixed or variable with its review formula and limits, and the total amount payable as an illustration where the rate can change. Where they apply it adds the mortgage and the assumed property value, the maximum loan-to-value or minimum property value, and for a foreign currency loan the regular warnings at a 20 per cent exchange rate movement and any cap on the amount repayable; costs in the annual percentage rate of charge are listed by category with their amounts, payees and timing, mortgage registration fees included."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa B-osa 3. ja 4. jagu",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Show the number, amount and currency of instalments, a worst case for variable rates and an illustrative repayment schedule",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6010/JM_m11_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11, RT I, 11.03.2016, 10), lisa B-osa 5.–7. jagu, original text RT I, 11.03.2016, 10, in force from 21.03.2016, annex as the gazette publishes it with the text (JM_m11_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-euroopa-standardinfo-teabeleht-instalments-and-schedule",
+            "titles": {
+              "en": "Show the number, amount and currency of instalments, a worst case for variable rates and an illustrative repayment schedule"
+            },
+            "summaries": {
+              "en": "The sheet gives the frequency and number of instalments over the whole term, their currency and amount and when that amount may change. For a variable rate it illustrates the maximum instalment at the cap or, without one, at the highest rate of the last 20 years, for a foreign currency loan it shows the effect of a 20 per cent fall of the consumer's currency, and it explains deferred interest; an illustrative repayment schedule with the set columns and first-year detail is added for deferred interest credit or a rate fixed for the whole term."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa B-osa 5.–7. jagu",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: State the ancillary obligations, early repayment terms, flexibility, the consumer's rights, complaint routes and the consequences of default",
+          "source": "https://www.riigiteataja.ee/aktilisa/1110/3201/6010/JM_m11_lisa.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa standardinfo teabelehe vormi kehtestamine (Justiitsministri 03.03.2016 määrus nr 11, RT I, 11.03.2016, 10), lisa B-osa 8.–15. jagu, original text RT I, 11.03.2016, 10, in force from 21.03.2016, annex as the gazette publishes it with the text (JM_m11_lisa.pdf)",
+          "payload": {
+            "key": "obl-ee-euroopa-standardinfo-teabeleht-obligations-rights-complaints",
+            "titles": {
+              "en": "State the ancillary obligations, early repayment terms, flexibility, the consumer's rights, complaint routes and the consequences of default"
+            },
+            "summaries": {
+              "en": "The sheet lists each additional obligation, such as insuring the property or taking out life insurance, with its duration and costs outside the annual percentage rate and whether ancillary contracts may be taken from a provider of the consumer's choice, the conditions and compensation for early repayment, the transfer and other flexible options, and the withdrawal or reflection and other rights with how to use them. It names the internal complaints contact and the out-of-court body, pointing a consumer in another member state to FIN-NET, describes prominently the main consequences of not meeting the obligations, including any loss of the property, and gives the governing law for a distance contract, the language of later communication, the right to a draft agreement and the supervisor."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa B-osa 8.–15. jagu",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add Tarbijakrediidi standardinfo teabelehed, the Minister of Justice's regulation on the Standard European Consumer Credit Information forms (Justiitsministri 13.12.2010 määrus nr 47)",
+      "source": "https://www.riigiteataja.ee/public-api/api/v1/akt/123092015009/txt",
+      "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47), RT I, 22.12.2010, 4, consolidated text RT I, 23.09.2015, 9, in force from 01.10.2015, issued by the Minister of Justice under Võlaõigusseadus § 403¹ lg 8, read through the gazette's own interface; entry into force read in § 2 of the regulation",
+      "payload": {
+        "key": "ee-rt-i-2010-12-22-4",
+        "titles": {
+          "et": "Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine",
+          "en": "Establishing the forms of the Standard European Consumer Credit Information sheets"
+        },
+        "originalLanguage": "et",
+        "isMachine": true,
+        "shortName": "Tarbijakrediidi standardinfo teabelehed",
+        "officialRef": "Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (RT I, 22.12.2010, 4)",
+        "level": "government_regulation",
+        "jurisdiction": "ee",
+        "authority": "justiits-ja-digiministeerium",
+        "regime": "regime:banking",
+        "inForceFrom": "2011-07-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Fill in the consumer credit information form with the creditor, any intermediary and the credit product",
+          "source": "https://www.riigiteataja.ee/aktilisa/1230/9201/5009/JM_m47_lisa1_uus.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47, RT I, 22.12.2010, 4), § 1 p 1 ja lisa 1 p 1 ja 2, consolidated text RT I, 23.09.2015, 9, in force from 01.10.2015, annex as the gazette publishes it with the text (JM_m47_lisa1_uus.pdf)",
+          "payload": {
+            "key": "obl-ee-tarbijakrediidi-standardinfo-teabelehed-creditor-and-product",
+            "titles": {
+              "en": "Fill in the consumer credit information form with the creditor, any intermediary and the credit product"
+            },
+            "summaries": {
+              "en": "A creditor, with a credit intermediary where there is one, completes the Standard European Consumer Credit Information form in annex 1, filling the boxes marked where applicable when the information matters for the agreement, deleting rows that do not fit the type of credit and replacing the bracketed notes. The form names the creditor and any intermediary with their addresses for the consumer and describes the credit: its type, the amount or credit limit, the conditions and timing of drawdown, the duration, the instalments and their allocation, the total amount payable and, where they apply, the goods or service and cash price of a linked credit, the security required and that repayments do not immediately reduce the capital."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 p 1 ja lisa 1 p 1 ja 2",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: State the borrowing rate, the annual percentage rate with a representative example, compulsory ancillary contracts and every other cost",
+          "source": "https://www.riigiteataja.ee/aktilisa/1230/9201/5009/JM_m47_lisa1_uus.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47, RT I, 22.12.2010, 4), lisa 1 p 3, consolidated text RT I, 23.09.2015, 9, in force from 01.10.2015, annex as the gazette publishes it with the text (JM_m47_lisa1_uus.pdf)",
+          "payload": {
+            "key": "obl-ee-tarbijakrediidi-standardinfo-teabelehed-costs-of-credit",
+            "titles": {
+              "en": "State the borrowing rate, the annual percentage rate with a representative example, compulsory ancillary contracts and every other cost"
+            },
+            "summaries": {
+              "en": "The form gives the borrowing rate or rates, fixed or variable with the index or reference rate and periods, and the annual percentage rate of charge with a representative example of the data and assumptions used. It says whether insurance or another ancillary contract is compulsory for the credit or its terms, and lists, where they apply, account and payment instrument fees, other charges and the conditions for changing them, notary fees and the late payment interest and other costs, with a warning that missed payments can have serious consequences."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 1 p 3",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: State the withdrawal and early repayment rights, the database search notice, the right to a draft agreement and the offer's validity",
+          "source": "https://www.riigiteataja.ee/aktilisa/1230/9201/5009/JM_m47_lisa1_uus.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47, RT I, 22.12.2010, 4), lisa 1 p 4, consolidated text RT I, 23.09.2015, 9, in force from 01.10.2015, annex as the gazette publishes it with the text (JM_m47_lisa1_uus.pdf)",
+          "payload": {
+            "key": "obl-ee-tarbijakrediidi-standardinfo-teabelehed-legal-aspects",
+            "titles": {
+              "en": "State the withdrawal and early repayment rights, the database search notice, the right to a draft agreement and the offer's validity"
+            },
+            "summaries": {
+              "en": "The form states whether the consumer may withdraw within 14 days, the right to repay early at any time and, where it applies, how the creditor's compensation is calculated under § 411 of the Law of Obligations Act. It tells the consumer that the creditor gives the result of a database search free and without delay when credit is refused on it, that a copy of the draft agreement is available free on request unless the creditor stops negotiating, and, where it applies, how long the pre-contractual information binds the creditor."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 1 p 4",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: For distance marketing, add the representative, registration, supervisor, withdrawal steps, governing law, languages and out-of-court redress",
+          "source": "https://www.riigiteataja.ee/aktilisa/1230/9201/5009/JM_m47_lisa1_uus.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47, RT I, 22.12.2010, 4), lisa 1 p 5, consolidated text RT I, 23.09.2015, 9, in force from 01.10.2015, annex as the gazette publishes it with the text (JM_m47_lisa1_uus.pdf)",
+          "payload": {
+            "key": "obl-ee-tarbijakrediidi-standardinfo-teabelehed-distance-marketing",
+            "titles": {
+              "en": "For distance marketing, add the representative, registration, supervisor, withdrawal steps, governing law, languages and out-of-court redress"
+            },
+            "summaries": {
+              "en": "Where the credit is marketed at a distance, the form also gives, as they apply, the creditor's representative in the consumer's member state, its trade register entry and supervisor, practical instructions for withdrawal with the period, address and consequences of not withdrawing, the law governing pre-contractual relations, the clause on governing law or jurisdiction, the languages of the information and later communication, and access to out-of-court complaint and redress bodies."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "lisa 1 p 5",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Use the shorter information form for short-term overdrafts, with repayment on demand and the termination terms",
+          "source": "https://www.riigiteataja.ee/aktilisa/1230/9201/5009/JM_m47_lisa2_uus.pdf",
+          "sourceLabel": "Riigi Teataja, Euroopa tarbijakrediidi standardinfo teabelehtede vormide kehtestamine (Justiitsministri 13.12.2010 määrus nr 47, RT I, 22.12.2010, 4), § 1 p 2 ja lisa 2 p 1–5, consolidated text RT I, 23.09.2015, 9, in force from 01.10.2015, annex as the gazette publishes it with the text (JM_m47_lisa2_uus.pdf)",
+          "payload": {
+            "key": "obl-ee-tarbijakrediidi-standardinfo-teabelehed-overdraft-form",
+            "titles": {
+              "en": "Use the shorter information form for short-term overdrafts, with repayment on demand and the termination terms"
+            },
+            "summaries": {
+              "en": "For a short-term overdraft the creditor uses the form in annex 2, which gives the same contacts, the type of credit, the limit and the duration, where it applies the warning that full repayment may be demanded at any time, the borrowing rate and annual percentage rate with a representative example, the charges from the start of the agreement and the conditions for changing them, late payment costs, the conditions and procedure for terminating the agreement, the database search notice and the distance marketing information."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "§ 1 p 2 ja lisa 2 p 1–5",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
     }
   ]
 }
