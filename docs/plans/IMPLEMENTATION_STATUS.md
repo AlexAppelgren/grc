@@ -452,7 +452,13 @@ the Netherlands, Austria and Switzerland.
   control, credit risk with the debt-service and debt-to-income limits, customer due
   diligence, sanctions risk, outsourcing, remuneration, liquidity, suitability and
   complaints). No regulation of the former Financial and Capital Market Commission is
-  still in force. The baseline now holds 837 instruments and 3,471 obligations.
+  still in force. Then Estonia's (`ee-maarused`): 30 regulations with 100 duties, 12 of
+  Eesti Pank (the housing loan limits, the capital buffers, the reserve and the reports of
+  credit institutions), 16 of the Minister of Finance (the FIU reports, collateral
+  valuation, covered bond stress tests, the UCITS risk rules, the tax information
+  declarations) and 2 Government sanctions, found through Riigi Teataja's own list of each
+  act's implementing acts. Every one of the seven markets now holds its statutes and its
+  regulations: the baseline holds 867 instruments and 3,571 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
@@ -479,7 +485,7 @@ the Netherlands, Austria and Switzerland.
   versions in force on 2026-11-14 (the 2026 consumer credit act in its adopted wording from
   20 November), read from the RIS open-data store's XML and HTML and a third time from its
   PDF, with English and Swedish beside each; all 133 duties carry their text.
-- **In work on this branch:** Estonia's regulations; and the
+- **In work on this branch:** the
   law's own words for Germany's statutes and for the regulations, each
   provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
