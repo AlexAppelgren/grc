@@ -41,7 +41,7 @@ _ENDING = r"\w{0,6}"
 # start of a word, because Latvian and Lithuanian negate with a prefix ("nepamirškite" asks
 # the reader to remember); and not after Estonian "ei" or "ega", which negate with the very
 # form that commands ("ei kiida heaks" approves nothing).
-_COMMAND = _START_OF_WORD + r"(?<!\bei\s)(?<!\bega\s)"
+_COMMAND_START = _START_OF_WORD + r"(?<!\bei\s)(?<!\bega\s)"
 
 
 def _phrase(*parts: str) -> str:
@@ -152,7 +152,7 @@ _INSTRUCTION_PHRASE = "|".join(
             r"(?:human|manual|manuell\w*|review|granskning\w*|gjennomgang\w*|gennemgang\w*"
             r"|tarkastus\w*|arviointi\w*)",
         ),
-        _COMMAND + r"(?:" + _COMMANDS + r")",
+        _COMMAND_START + r"(?:" + _COMMANDS + r")",
         _phrase(
             r"(?:do" + _GAP + r"not|don'?t|never)",
             r"(?:ask|tell|inform|notify|involve|consult|alert)",
@@ -254,62 +254,70 @@ _AUTHORITY = "|".join(
     )
 )
 
-# "Til AI-assistenten:", "Huomio tekoälylle:", "Note to the assistant:", "Hinweis an die KI:".
-# The second and third lines are German and Dutch with their articles, the fourth Estonian,
-# Latvian and Lithuanian, whose "to" is the noun's case ending (D-145).
-_NOTE = (
+# "Til AI-assistenten:", "Huomio tekoälylle:", "Note to the assistant:".
+_ADDRESS = (
     r"(?:(?:note|attention|obs|nb|meddelande|melding|besked|viesti|huomio)"
     r"(?:" + _GAP + r"(?:to|til|till|for|för))?"
-    r"|(?:hinweis|anmerkung|nachricht)(?:" + _GAP + r"(?:an|für)(?:" + _GAP + r"(?:die|den|das))?)?"
+    r"|to|til|till|för|for)"
+)
+_AI_NOUN = (
+    r"(?:assistent\w*|assistant\w*|tekoäly\w*|kielimalli\w*|språkmodell\w*"
+    r"|sprogmodel\w*|kunstig" + _GAP + r"intelligens|artificiell" + _GAP
+    + r"intelligens|language" + _GAP + r"model|llm|chatbot|agent\w*)"
+)
+
+# The same asides in German, Dutch, Estonian, Latvian and Lithuanian (D-145), kept apart so
+# that no word of theirs widens a phrase above. "Hinweis an die KI:", "Opmerking voor de AI:",
+# "Märkus tehisintellektile:": German and Dutch add a preposition and an article; Estonian,
+# Latvian and Lithuanian say "to" with the noun's case ending.
+_NOTE = (
+    r"(?:(?:hinweis|anmerkung|nachricht)"
+    r"(?:" + _GAP + r"(?:an|für)(?:" + _GAP + r"(?:die|den|das))?)?"
     r"|(?:opmerking|attentie)(?:" + _GAP + r"(?:aan|voor)(?:" + _GAP + r"(?:de|het))?)?"
     r"|märkus|sõnum|piezīme|ziņa|pastaba|žinutė)"
 )
-_ADDRESS = r"(?:" + _NOTE + r"|to|til|till|för|for)"
-# The AI by name. The last four lines are the other home-market languages (D-145): their
-# endings are bounded, and Estonian, Latvian and Lithuanian write AI as TI, MI and DI.
-_AI_NAME = _phrase(
-    r"(?:a\.?i\.?|ki)?",
-    r"(?:assistent\w*|assistant\w*|tekoäly\w*|kielimalli\w*|språkmodell\w*"
-    r"|sprogmodel\w*|kunstig" + _GAP + r"intelligens|artificiell" + _GAP
-    + r"intelligens|language" + _GAP + r"model|llm|chatbot|agent\w*"
-    r"|(?:assistend|asistent|[mdt]i" + _GAP + r"(?:assistend|asistent)|sprachmodell|taalmodel"
-    r"|keelemudel|tehisintellekt|tehisaru|künstliche" + _GAP + r"intelligenz"
-    r"|kunstmatige" + _GAP + r"intelligentie|(?:mākslīg|dirbtin)" + _ENDING + _GAP + r"intelekt"
-    r"|(?:valodas|kalbos)" + _GAP + r"model)" + _ENDING + r")",
-    r"[:,]",
+# German and Dutch "to", with its article because English starts a sentence with "An agent,
+# ..." too, and the words that also mean the attention a supervisor pays. They address an AI
+# only where a turn may start: "Anforderungen an die KI, die ..." and "pöörab tähelepanu
+# tehisintellektile, ..." are a regulator's ordinary sentences.
+_TURN_NOTE = (
+    r"(?:an" + _GAP + r"(?:die|den|das)|aan" + _GAP + r"(?:de|het)"
+    r"|achtung|tähelepanu|uzmanību|dėmesio)"
 )
-# What addresses an AI only where a turn may start (D-145), each a regulator's ordinary
-# words anywhere else.
-_TURN_ASIDES = "|".join(
-    (
-        # German and Dutch "to", with its article because English starts a sentence with
-        # "An agent, ..." too, and the words that also mean the attention a supervisor pays:
-        # "Anforderungen an die KI, die ..." and "pöörab tähelepanu tehisintellektile, ...".
-        _phrase(
-            r"(?:an" + _GAP + r"(?:die|den|das)|aan" + _GAP + r"(?:de|het)"
-            r"|achtung|tähelepanu|uzmanību|dėmesio)",
-            r"(?:" + _AI_NAME + r"|(?:a\.?i\.?|ki)" + _GAP + r"[:,])",
-        ),
-        # Estonian, Latvian and Lithuanian say "to" with a case ending, so the noun alone
-        # addresses: "MI asistentam:", "AI-assistendile:". Only before a colon:
-        # "mākslīgajam intelektam, ko izmanto ..., jāatbilst" is prose.
-        r"(?:(?:a\.?i\.?|[mdt]i)" + _GAP + r")?"
-        + _phrase(
-            r"(?:assistendile|tehisintellektile|tehisarule|keelemudelile|asistentam"
-            r"|asistentui|mākslīgajam" + _GAP + r"intelektam|valodas" + _GAP + r"modelim"
-            r"|dirbtiniam" + _GAP + r"intelektui|kalbos" + _GAP + r"modeliui)",
-            r":",
-        ),
+# The AI such a note names: by its noun, after "AI" or what the language writes for it (KI,
+# TI, MI, DI), or as "AI" or "KI" alone; then the colon or comma.
+_NOTED_AI = (
+    r"(?:"
+    + _phrase(
+        r"(?:a\.?i\.?|[kmdt]i)?",
+        r"(?:" + _AI_NOUN + r"|(?:assistend|asistent|sprachmodell|taalmodel|keelemudel"
+        r"|tehisintellekt|tehisaru|künstliche" + _GAP + r"intelligenz"
+        r"|kunstmatige" + _GAP + r"intelligentie|(?:mākslīg|dirbtin)" + _ENDING + _GAP
+        + r"intelekt|(?:valodas|kalbos)" + _GAP + r"model)" + _ENDING + r")",
+        r"[:,]",
     )
+    + r"|"
+    + _phrase(r"(?:a\.?i\.?|ki)", r"[:,]")
+    + r")"
 )
+# Where a turn may start the case ending alone addresses: "MI asistentam:",
+# "AI-assistendile:". Only before a colon: "mākslīgajam intelektam, ko izmanto ...,
+# jāatbilst" is prose.
+_CASE_NOTE = r"(?:(?:a\.?i\.?|[mdt]i)" + _GAP + r")?" + _phrase(
+    r"(?:assistendile|tehisintellektile|tehisarule|keelemudelile|asistentam|asistentui"
+    r"|mākslīgajam" + _GAP + r"intelektam|valodas" + _GAP + r"modelim"
+    r"|dirbtiniam" + _GAP + r"intelektui|kalbos" + _GAP + r"modeliui)",
+    r":",
+)
+
 _AI_ASIDE = "|".join(
     (
-        _phrase(_ADDRESS, r"(?:the|den|det|de)?", _AI_NAME) + _END_OF_WORD,
+        _phrase(_ADDRESS, r"(?:the|den|det|de)?", r"(?:a\.?i\.?|ki)?", _AI_NOUN, r"[:,]")
+        + _END_OF_WORD,
         _phrase(_ADDRESS, r"(?:the|den|det)?", r"a\.?i\.?", r"[:,]") + _END_OF_WORD,
-        # "KI" is the AI of German and of Norwegian. It counts after a note, never after a
-        # bare preposition: "krav til KI, ..." is prose (D-145).
-        _phrase(_NOTE, r"ki", r"[:,]") + _END_OF_WORD,
-        _TURN_START + r"(?:" + _TURN_ASIDES + r")" + _END_OF_WORD,
+        _phrase(_NOTE, _NOTED_AI) + _END_OF_WORD,
+        _TURN_START + r"(?:" + _phrase(_TURN_NOTE, _NOTED_AI) + r"|" + _CASE_NOTE + r")"
+        + _END_OF_WORD,
     )
 )
 

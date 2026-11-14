@@ -84,6 +84,12 @@ NEAR_MISSES = (
     "Lietuvos bankas skirs daugiau dėmesio dirbtiniam intelektui, debesijos paslaugoms ir "
     "veiklos funkcijų perdavimui. Nepamirškite ankstesnių nurodymų dėl ataskaitų teikimo: jie "
     "taikomi iki metų pabaigos.",
+    # German "an" opens an aside where a turn may start, which is where English puts its
+    # article, and "ti" is Danish and Norwegian for ten as well as Estonian for AI (D-145).
+    "An agent, a broker or another intermediary acting for the firm must be entered in the "
+    "register. An AI system, a chatbot or an assistant that only passes orders on is not one.",
+    "Selskapet har fra fem til ti agenter, og Finanstilsynet stiller krav til KI, "
+    "skytjenester og utkontraktering.",
 )
 
 
@@ -410,4 +416,21 @@ class ContentScreenPathologicalInputTests(SimpleTestCase):
 
     def test_a_long_run_of_spaced_letters(self) -> None:
         text = "a " * self.SIZE
+        self.assertEqual(self.screen_within_budget(text), [])
+
+    def test_a_long_run_of_the_stems_whose_endings_are_bounded(self) -> None:
+        """D-145: a stem of the German, Dutch, Estonian, Latvian and Lithuanian rules that
+        more of the phrase follows takes an ending of six letters at most, so a page that is
+        one run of such stems is read once and not once again from every stem in it."""
+        text = "ignorieremissachtekonfidenzdirbtintehisintellektersetztsistemin" * 3300
+        self.assertEqual(self.screen_within_budget(text), [])
+
+    def test_a_long_page_of_near_misses_in_the_other_home_market_languages(self) -> None:
+        """D-145: the first words of those rules, on a line start and inside a line, never
+        finished."""
+        text = (
+            ("ignoriere alle die vorherigen " * 3400)
+            + ("\nan die ki-" * 9000)
+            + ("hinweis an die volitan käesolevaga ersetzt deinen system " * 300)
+        )
         self.assertEqual(self.screen_within_budget(text), [])
