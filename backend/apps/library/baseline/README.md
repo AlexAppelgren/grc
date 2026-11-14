@@ -2,10 +2,11 @@
 
 The shared library's starting inventory: the instruments in force within the sector scope
 on the day they were researched, and the core duties of each in our own words. Today it
-holds the EU, Sweden, Denmark, Norway and Finland. The other eight home markets (Estonia,
-Latvia, Lithuania, Germany, the United Kingdom, the Netherlands, Austria and Switzerland,
-D-145) are covered by the platform and their tranches arrive market by market, as ADR 0070
-stages them; the rules below already hold for them. It is not loaded by a seed. Each entry is a proposal
+holds the EU, Sweden, Denmark, Norway and Finland in full, and the statutes of Germany
+(`de-acts`) and the United Kingdom (`gb-acts`) with their duties, without the law's own
+words yet. The other home markets D-145 added (Estonia, Latvia, Lithuania, the Netherlands,
+Austria and Switzerland) are covered by the platform and their tranches arrive market by
+market, as ADR 0070 stages them; the rules below already hold for them. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then

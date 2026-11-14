@@ -10,11 +10,26 @@ library takes their law in its own language. What needs you, most urgent first.
 
 - [ ] **Decide the order in which the eight markets get their starting inventory.** The
       Nordics hold 65 to 96 regulations and 238 to 383 obligations each, with the law's own
-      words. Nothing of that kind exists yet for Estonia, Latvia, Lithuania, Germany, the
-      United Kingdom, the Netherlands, Austria or Switzerland: it is researched and filed
-      market by market through the proposal queue, as ADR 0070 stages it, and it is
-      several times the work of this change. Default: Germany and the United Kingdom
-      first, then the Baltics, then the Netherlands, Austria and Switzerland.
+      words. Germany and the United Kingdom have their first tranche: their statutes (24
+      and 19) with 169 and 84 obligations, and no law text yet. Nothing exists yet for
+      Estonia, Latvia, Lithuania, the Netherlands, Austria or Switzerland. All of it is
+      researched and filed market by market through the proposal queue, as ADR 0070 stages
+      it, and it is several times the work of this change. Default: finish Germany and
+      the United Kingdom (regulations, supervisors' rules, law text), then the Baltics,
+      then the Netherlands, Austria and Switzerland.
+- [ ] **Approve the German and United Kingdom proposals in the library queue.** After the
+      deploy the baseline files 43 regulations, then their 253 obligations and 43
+      summaries once each regulation is approved, like every baseline record.
+- [ ] **A German and a UK lawyer on the first tranches.** The researcher's own doubts are
+      in the verification log's rows and worth a reader's hour: provisions that are
+      offences or powers written as duties (the money laundering, terrorist financing,
+      bribery and fraud offences in the United Kingdom; AWG §§ 18 and 19, SanktDG §§ 2
+      and 9 in Germany); duties read from the cited paragraphs alone, where an exemption
+      may sit in a paragraph beside them (SAG §§ 55 and 60a, KWG § 25a Abs. 5, VAG); six
+      United Kingdom Acts and three German ones with no entry-into-force date, because
+      none could be read on an official page; and German consumer credit (BGB §§ 491a to
+      511, KWG § 18a), read as in force before 20 November 2026, the date of Directive
+      (EU) 2023/2225, and due a re-read after it.
 - [ ] **Publish the new agent versions in the Platform console**, each agent's next
       version in turn: watch-sweeper 2 then 3, library-confirmer 3, 4 then 5,
       tenant-source-watch 2, scope-researcher 2, library-baseline 2 then 3,
