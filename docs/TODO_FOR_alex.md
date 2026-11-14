@@ -214,6 +214,15 @@ library takes their law in its own language. What needs you, most urgent first.
       "andelsägare" for the "osanikud" of the fund prospectus regulation § 9 p 8; the
       national terms with no EU source ("överkollateraliseringsgrad", "god redovisningssed
       i Estland").
+- [ ] **One Swedish term differs between files: målgrupp or målmarknad.** For a MiFID
+      product's target market, MiFID II's Swedish (Art. 16(3)) and Swedish law say
+      "målgrupp", while the Delegated Directive (EU) 2017/593 and the Insurance
+      Distribution Directive say "målmarknad". The new files follow whichever act their
+      researcher read: de-acts, ee-acts and nl-besluiten mostly "målgrupp"; at-acts, lv-acts
+      and de-verordnungen "målmarknad". Default: "målgrupp" for investment products and
+      "målmarknad" for insurance products, applied in one pass over the files. Also from
+      Germany's regulations: PAngV § 18 is struck and PAngV §§ 16, 17 and 19 and
+      InstitutsVergV § 5 change on 20 November 2026, so those duties need new text then.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as

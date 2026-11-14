@@ -526,7 +526,11 @@ the Netherlands, Austria and Switzerland.
   Swedish beside each; all 131 duties carry their text. Then Estonia's regulations
   (`provisions/ee-maarused.json`): 139 sections and 5 annex points with English and Swedish
   beside each; 98 of 100 duties carry their text, and two do not, because the housing loan
-  limits regulation publishes its formulas only as pictures. The baseline's
+  limits regulation publishes its formulas only as pictures. Last, Germany's regulations
+  (`provisions/de-verordnungen.json`): 142 sections with English and Swedish beside each;
+  109 of 110 duties carry their text, and one does not, because SolvV § 37 publishes its
+  formula only as an image. Every statute tranche and every second tranche of the seven
+  markets now carries the law's own words. The baseline's
   tests filed and approved everything on the branch together (39 tests, 798 s).
 - **In work on this branch:** the
   law's own words for the other regulations, each
