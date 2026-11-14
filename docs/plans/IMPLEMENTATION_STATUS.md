@@ -415,14 +415,21 @@ the Netherlands, Austria and Switzerland.
   the rows. The organisation screen suggests a time zone per market; the public page lists
   the twelve markets with their sources; the published API's descriptions and the design
   cards name the thirteen jurisdictions and ten languages.
-- **Content:** the first tranches of two of the eight markets, each fact read on the
-  official database on 2026-11-14 and logged: Germany's statutes (`de-acts`, 24 acts, 169
-  duties, from gesetze-im-internet.de) and the United Kingdom's Acts (`gb-acts`, 19 Acts, 84
-  duties, from legislation.gov.uk), each with a plain summary per act. The baseline now
-  holds 587 instruments and 2,147 obligations.
-- **Left, deliberately:** the rest of the eight markets' starting inventory, which ADR 0070
-  stages market by market through the proposal door: the six other markets, both markets'
-  regulations and supervisors' rules, and the law's own words for all of it; the interface in the five new languages
+- **Content:** the statutes of six of the eight markets, each fact read on the market's
+  official legal database on 2026-11-14 and logged, each act with its duties in plain
+  words and a plain summary: Germany (`de-acts`, 24 statutes, 169 duties, from
+  gesetze-im-internet.de), the United Kingdom (`gb-acts`, 19 Acts, 84 duties, from
+  legislation.gov.uk), Switzerland (`ch-acts`, 20 acts, 140 duties, from Fedlex), Latvia
+  (`lv-acts`, 20 laws, 136 duties, from Likumi.lv), Austria (`at-acts`, 20 statutes, 133
+  duties, from the RIS open-data interface) and Estonia (`ee-acts`, 17 acts, 133 duties,
+  from Riigi Teataja's interface). That is 120 statutes and 795 duties; the baseline now
+  holds 664 instruments and 2,689 obligations.
+- **In work on this branch:** the Netherlands' statutes; the six markets' regulations; and
+  the law's own words for the six statute tranches, each provision in its original
+  language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
+- **Left, deliberately:** Lithuania, whose register refuses the build session; the
+  supervisors' rules that live outside the legal database (the FCA Handbook, the PRA
+  Rulebook) and the supervisors' circulars; the interface in the five new languages
   (I18N-02, R3); French and Italian for Switzerland; Swedish beside EU texts; licence
   registers beyond Sweden's; a sentence splitter that knows German capitalisation.
 - **Owner-blocked:** publishing the new agent versions in the console, the order of the

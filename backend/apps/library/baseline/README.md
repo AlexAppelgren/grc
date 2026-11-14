@@ -2,11 +2,12 @@
 
 The shared library's starting inventory: the instruments in force within the sector scope
 on the day they were researched, and the core duties of each in our own words. Today it
-holds the EU, Sweden, Denmark, Norway and Finland in full, and the statutes of Germany
-(`de-acts`) and the United Kingdom (`gb-acts`) with their duties, without the law's own
-words yet. The other home markets D-145 added (Estonia, Latvia, Lithuania, the Netherlands,
-Austria and Switzerland) are covered by the platform and their tranches arrive market by
-market, as ADR 0070 stages them; the rules below already hold for them. It is not loaded by a seed. Each entry is a proposal
+holds the EU, Sweden, Denmark, Norway and Finland in full. The eight home markets D-145
+added arrive tranche by tranche, as ADR 0070 stages them: the statutes and their duties
+of Germany (`de-acts`), the United Kingdom (`gb-acts`), Switzerland (`ch-acts`), Latvia
+(`lv-acts`), Austria (`at-acts`) and Estonia (`ee-acts`) are here, without the law's own
+words yet; their regulations, the Netherlands and Lithuania are not. The rules below hold
+for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then
@@ -95,7 +96,10 @@ are checked with the whole baseline, never with a single tranche file.
   and number (`ukpga-2000-8`, `uksi-2017-692`), `fca-<sourcebook>` and `pra-<part>` for the
   regulators' rules; `nl-<BWB id>` (`nl-bwbr0020368`); `at-bgbl-<year>-<number>` for an act
   of the single gazette up to 1996 and `at-bgbl-<part>-<year>-<number>` after it
-  (`at-bgbl-1993-532` for BGBl. Nr. 532/1993, `at-bgbl-i-2001-97` for BGBl. I Nr. 97/2001); `ch-sr-<SR number>`
+  (`at-bgbl-1993-532` for BGBl. Nr. 532/1993, `at-bgbl-i-2001-97` for BGBl. I Nr. 97/2001),
+  and where one gazette number enacted several acts each adds its official abbreviation
+  (`at-bgbl-i-2017-107-wag-2018` and `at-bgbl-i-2017-107-boerseg-2018` for BGBl. I Nr.
+  107/2017); `ch-sr-<SR number>`
   with hyphens for its dots (`ch-sr-952-0`) and `finma-rs-<year>-<number>` for a FINMA
   circular. Lithuania's is decided with its first tranche: its citation format could not
   be read, because its register refused the read.

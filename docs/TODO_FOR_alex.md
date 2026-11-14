@@ -8,28 +8,48 @@ The platform covers the EU and all twelve home markets from this change: a bank 
 any of them as a market it operates in or watches, the watch checks their sources, and the
 library takes their law in its own language. What needs you, most urgent first.
 
-- [ ] **Decide the order in which the eight markets get their starting inventory.** The
-      Nordics hold 65 to 96 regulations and 238 to 383 obligations each, with the law's own
-      words. Germany and the United Kingdom have their first tranche: their statutes (24
-      and 19) with 169 and 84 obligations, and no law text yet. Nothing exists yet for
-      Estonia, Latvia, Lithuania, the Netherlands, Austria or Switzerland. All of it is
-      researched and filed market by market through the proposal queue, as ADR 0070 stages
-      it, and it is several times the work of this change. Default: finish Germany and
-      the United Kingdom (regulations, supervisors' rules, law text), then the Baltics,
-      then the Netherlands, Austria and Switzerland.
-- [ ] **Approve the German and United Kingdom proposals in the library queue.** After the
-      deploy the baseline files 43 regulations, then their 253 obligations and 43
-      summaries once each regulation is approved, like every baseline record.
-- [ ] **A German and a UK lawyer on the first tranches.** The researcher's own doubts are
-      in the verification log's rows and worth a reader's hour: provisions that are
-      offences or powers written as duties (the money laundering, terrorist financing,
-      bribery and fraud offences in the United Kingdom; AWG §§ 18 and 19, SanktDG §§ 2
-      and 9 in Germany); duties read from the cited paragraphs alone, where an exemption
-      may sit in a paragraph beside them (SAG §§ 55 and 60a, KWG § 25a Abs. 5, VAG); six
-      United Kingdom Acts and three German ones with no entry-into-force date, because
-      none could be read on an official page; and German consumer credit (BGB §§ 491a to
-      511, KWG § 18a), read as in force before 20 November 2026, the date of Directive
-      (EU) 2023/2225, and due a re-read after it.
+- [ ] **Approve the home markets' proposals in the library queue.** After the deploy the
+      baseline files 120 statutes for six markets (Germany 24, the United Kingdom 19,
+      Switzerland 20, Latvia 20, Austria 20, Estonia 17), then their 795 obligations and
+      120 summaries once each statute is approved, like every baseline record. The
+      regulations and the law's own words follow the same way as they land.
+- [ ] **What the starting inventory still lacks.** You asked for the new markets to hold
+      everything the first ones hold. The Nordics hold 65 to 96 regulations and 238 to 383
+      obligations each, with the law's own words. Six new markets hold their statutes (17
+      to 24 each); their regulations, the Netherlands' statutes and the law's own words
+      with English and Swedish are in work on this branch. Three things stay out until you
+      act: Lithuania, whose register refuses the build session (below); the PRA Rulebook's
+      text, which needs a licence from the PRA, and the FCA Handbook, which has no
+      interface for its text; and the supervisors' circulars (BaFin's MaRisk, FINMA's and
+      the Austrian FMA's Rundschreiben), which are no legal norms and have no level in the
+      library yet. Default for the circulars: a later tranche once you say they belong.
+- [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
+      verification log's rows and worth a reader's hour.
+      - Germany and the United Kingdom: provisions that are offences or powers written as
+        duties (the money laundering, terrorist financing, bribery and fraud offences in
+        the United Kingdom; AWG §§ 18 and 19, SanktDG §§ 2 and 9 in Germany); duties read
+        from the cited paragraphs alone, where an exemption may sit beside them (SAG §§ 55
+        and 60a, KWG § 25a Abs. 5, VAG); six United Kingdom Acts and three German ones
+        with no entry-into-force date, because none could be read on an official page;
+        and German consumer credit (BGB §§ 491a to 511, KWG § 18a), read as in force
+        before 20 November 2026 and due a re-read after it.
+      - Switzerland: banking secrecy (BankG Art. 47) is a penal provision and was left
+        out; the Obligationenrecht was not opened; no ordinance is in the statutes
+        tranche.
+      - Latvia: the consumer credit rules change on 20 November 2026 and were read as in
+        force on 14 November.
+      - Austria: both consumer credit acts are in, the 2010 act ending and the 2026 act
+        beginning on 20 November 2026; BWG §§ 39, 39b, 42 and 73 and FM-GwG §§ 23 and 23a
+        were amended on 30 October 2026 and read in that wording; SanktG § 5 and BaSAG
+        § 21 are powers written as duties; who is a "Verpflichteter" under the FM-GwG and
+        the exceptions in BWG § 38 Abs. 2 were not read; ZaDiG § 86 (incident reporting)
+        is not written; the register of beneficial owners gets a new act on 10 July 2027.
+      - Estonia: three records state a power, a nullity rule or a prohibition as a duty
+        (FIS § 38, VÕS § 406², TFS advertising); the Law of Obligations Act was read in a
+        version that ends on 31 December 2026; the supervision act's entry into force is
+        1 June 2001 by its own § 66 and 1 January 2002 in the gazette's header, and the
+        record carries the first; the Eesti Pank Act was read and left out, because it
+        gives powers and places no duty on a bank.
 - [ ] **Publish the new agent versions in the Platform console**, each agent's next
       version in turn: watch-sweeper 2 then 3, library-confirmer 3, 4 then 5,
       tenant-source-watch 2, scope-researcher 2, library-baseline 2 then 3,
