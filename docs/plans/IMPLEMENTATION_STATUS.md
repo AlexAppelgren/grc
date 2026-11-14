@@ -465,7 +465,11 @@ the Netherlands, Austria and Switzerland.
   control system, account switching, the internal control of payment institutions,
   binary options and CFDs, crypto-assets) and 6 of the Cabinet (DAC8, the account turnover
   report, the PEP check, confidential information, electronic orders, payment account fee
-  information). The baseline holds 896 instruments and 3,690 obligations.
+  information). Then Switzerland's (`ch-verordnungen-2`): 26 ordinances with 101 duties,
+  4 of FINMA (MarV-FINMA, KreV-FINMA, HBEV-FINMA, AVO-FINMA) and 22 of the Bundesrat
+  (FINMA-PV, TJPV, the cyber security ordinance, two asset-freeze ordinances under the
+  SRVG and seventeen more embargo ordinances, each with its freeze, funds and reporting
+  duties). The baseline holds 922 instruments and 3,791 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
