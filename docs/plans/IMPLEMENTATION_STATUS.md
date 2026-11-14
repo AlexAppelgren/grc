@@ -432,9 +432,13 @@ the Netherlands, Austria and Switzerland.
   publisher's forms (XML and HTML, then Akoma Ntoso as a third reader), with a Swedish
   translation beside each, written for meaning and marked as a machine translation. 78 of
   the 84 duties carry their text; six do not, because the site prints two wordings of the
-  unit and only its editors' notes say which applies, or the unit holds tables.
+  unit and only its editors' notes say which applies, or the unit holds tables. Then the
+  Netherlands' (`provisions/nl-acts.json`): 97 articles from the Basiswettenbestand's
+  consolidated XML of the version in force on 2026-11-14, read by two separately written
+  parsers and a third reader that cuts each article from the raw file, with English and
+  Swedish beside each; all 100 duties carry their text.
 - **In work on this branch:** the seven markets' regulations; and the law's own words
-  for the other six statute tranches, each provision in its original
+  for the other five statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only
