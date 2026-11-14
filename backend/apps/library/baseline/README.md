@@ -13,8 +13,8 @@ Switzerland's, Latvia's, Estonia's and Austria's (`provisions/nl-acts.json`,
 beside the Dutch, the German, the Latvian and the Estonian). The United Kingdom's
 statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`), the
 Netherlands' decrees and regulations (`nl-besluiten`), Switzerland's ordinances
-(`ch-verordnungen`), Austria's regulations (`at-verordnungen`) and Latvia's
-(`lv-noteikumi`) are here too;
+(`ch-verordnungen`), Austria's regulations (`at-verordnungen`), Latvia's
+(`lv-noteikumi`) and Estonia's (`ee-maarused`) are here too;
 the other markets' law text and regulations, and Lithuania, are not here yet. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
@@ -97,7 +97,9 @@ are checked with the whole baseline, never with a single tranche file.
   The other home markets (D-145) take the identifier their own database keeps for an act
   across every version, as read on 2026-11-14 (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`):
   `ee-rt-<the act's first publication reference>` (`ee-rt-i-1999-23-349` for RT I 1999, 23,
-  349, and `ee-rt-i-2025-02-19-9` for RT I, 19.02.2025, 9, the date year first);
+  349, and `ee-rt-i-2025-02-19-9` for RT I, 19.02.2025, 9, the date year first; a
+  regulation first published in the Riigi Teataja Lisa takes `ee-rtl-`, as
+  `ee-rtl-2008-97-1348` for RTL 2008, 97, 1348);
   `lv-ta-<the act's number on likumi.lv>` (`lv-ta-326575`); `de-<the act's name on
   gesetze-im-internet.de>` with a hyphen for an underscore (`de-kredwg`);
   `ukpga-<year>-<chapter>` and `uksi-<year>-<number>`, legislation.gov.uk's own type, year

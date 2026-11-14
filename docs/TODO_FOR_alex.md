@@ -158,6 +158,16 @@ library takes their law in its own language. What needs you, most urgent first.
       makes ESMA's product governance guidelines binding by reference. Not found in force:
       a list of suspicious-transaction indicators, a high-risk third country list and an
       IT and security risk regulation for banks, which come under DORA.
+- [ ] **An Estonian lawyer on the regulations.** The researcher's own doubts: three duties
+      come from an annex of the FIU report regulation that the gazette publishes as a PDF;
+      implements notes name the ECB regulations that the reporting regulations serve; the
+      covered bond stress test period ("at least a quarter") is read as a frequency; the
+      ban on supporting Russian or Belarusian forces is written as a duty that binds a
+      bank. Not found in force: a Minister of Finance regulation on credit institutions'
+      reports, the AML rules of procedure and remote identification regulations, a
+      conduct regulation for investment firms, a CRS due diligence regulation, and any
+      regulation under the Financial Crisis Prevention and Resolution Act. Left out
+      because the Justice Minister made them: the ESIS and SECCI forms for credit.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
