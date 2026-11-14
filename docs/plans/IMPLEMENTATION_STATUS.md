@@ -458,7 +458,14 @@ the Netherlands, Austria and Switzerland.
   valuation, covered bond stress tests, the UCITS risk rules, the tax information
   declarations) and 2 Government sanctions, found through Riigi Teataja's own list of each
   act's implementing acts. Every one of the seven markets now holds its statutes and its
-  regulations: the baseline holds 867 instruments and 3,571 obligations.
+  regulations. The third tranches, the binding regulations the second ones found and left,
+  began with Latvia's (`lv-noteikumi-2`): 29 regulations with 119 duties, 23 of Latvijas
+  Banka (the capital adequacy assessment, credit risk capital, interest rate risk in the
+  banking book, disclosure, fiduciary operations, the external audit of the internal
+  control system, account switching, the internal control of payment institutions,
+  binary options and CFDs, crypto-assets) and 6 of the Cabinet (DAC8, the account turnover
+  report, the PEP check, confidential information, electronic orders, payment account fee
+  information). The baseline holds 896 instruments and 3,690 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
