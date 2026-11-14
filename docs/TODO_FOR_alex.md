@@ -34,6 +34,15 @@ library takes their law in its own language. What needs you, most urgent first.
       Kingdom bank (PRIN, SYSC, COBS, CASS, BCOBS, MCOB, CONC, SUP, DISP) are researched
       the day the token is there. Until then the watch follows the FCA's publications
       feed, which announces each rule change.
+- [ ] **A Swedish reader on the United Kingdom's law text.** The Swedish beside the 91
+      United Kingdom provisions is a machine translation written for meaning. Worth an
+      hour of a Swedish lawyer's reading: "paragraf" for a section with "punkt" and "led"
+      for its parts, "av likgiltighet" for "recklessly", the phrasing of summary
+      conviction and indictment, "brottsutbyte" for "criminal property", "anmälan" and
+      "röjande" for the two senses of "disclosure", and "handelsbolag med begränsat
+      ansvar" for an LLP. Five units are left without text because the site prints two
+      wordings and only its editors' notes say which applies (FSMA s. 56, CCA ss. 77A and
+      86B, POCA s. 370, ECTEA s. 12): say if you want them with a note instead.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
