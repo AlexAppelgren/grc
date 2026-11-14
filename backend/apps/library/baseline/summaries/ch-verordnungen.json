@@ -1,0 +1,246 @@
+{
+  "tranche": "ch-verordnungen",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "ch-sr-952-02",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2014/273/20250101/de/html/fedlex-data-admin-ch-eli-cc-2014-273-20250101-de-html-10.html",
+      "sourceLabel": "Fedlex, Verordnung über die Banken und Sparkassen (Bankenverordnung, BankV), SR 952.02, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Banking Act: it fills in who counts as a bank, what a licence needs, how banks organise and keep accounts, how deposits are protected and how dormant assets are handled. It binds banks and holders of the lighter licence for deposit-takers. In practice a bank reports changes to its licence facts, separates lending, trading, asset management and settlement, runs risk management and an independent internal audit, publishes its accounts on time, keeps a depositor list ready for a payout and publishes a call before liquidating dormant assets."
+      }
+    },
+    {
+      "key": "ch-sr-952-03",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2012/629/20250124/de/html/fedlex-data-admin-ch-eli-cc-2012-629-20250124-de-html-7.html",
+      "sourceLabel": "Fedlex, Verordnung über die Eigenmittel und Risikoverteilung der Banken und Wertpapierhäuser (Eigenmittelverordnung, ERV), SR 952.03, consolidated German text, Stand am 24. Januar 2025",
+      "text": {
+        "en": "The Federal Council's capital rules for banks and account-holding securities firms: which own funds count, how much is needed against credit, market and operational risk, and how far exposure to one counterparty may go. In practice a bank holds Tier 1 capital of 3 per cent of its total exposure and own funds of 8 per cent of its risk-weighted positions plus a buffer, proves this to FINMA every quarter, tells the public about its risks and capital, keeps any single large exposure within 25 per cent of Tier 1 capital and reports its large exposures to its board, its audit firm and FINMA."
+      }
+    },
+    {
+      "key": "ch-sr-952-06",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2012/883/20250101/de/html/fedlex-data-admin-ch-eli-cc-2012-883-20250101-de-html-3.html",
+      "sourceLabel": "Fedlex, Verordnung über die Liquidität der Banken und Wertpapierhäuser (Liquiditätsverordnung, LiqV), SR 952.06, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "The Federal Council's liquidity rules for banks and account-holding securities firms, with qualitative requirements for managing liquidity risk and two ratios taken from the Basel standards. In practice a bank sets its tolerance for liquidity risk, runs stress tests and keeps a contingency plan, holds enough high-quality liquid assets to cover 30 days of stressed outflows, keeps its funding stable over one year, files monthly and quarterly statements with the National Bank, tells FINMA at once when the short-term ratio is missed and publishes its liquidity position."
+      }
+    },
+    {
+      "key": "ch-sr-954-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2019/763/20250101/de/html/fedlex-data-admin-ch-eli-cc-2019-763-20250101-de-html-4.html",
+      "sourceLabel": "Fedlex, Verordnung über die Finanzinstitute (Finanzinstitutsverordnung, FINIV), SR 954.11, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Financial Institutions Act for portfolio managers, trustees, managers of collective assets, fund management companies and securities firms working in or from Switzerland. In practice such a firm writes its organisation and business scope into its constitutional documents, covers the whole business with risk management, puts every delegation of an essential task into an auditable written agreement and tells FINMA before starting business abroad. A securities firm also keeps risk and compliance apart from trading, records orders and reports trades."
+      }
+    },
+    {
+      "key": "ch-sr-950-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2019/759/20220101/de/html/fedlex-data-admin-ch-eli-cc-2019-759-20220101-de-html-11.html",
+      "sourceLabel": "Fedlex, Verordnung über die Finanzdienstleistungen (Finanzdienstleistungsverordnung, FIDLEV), SR 950.11, consolidated German text, Stand am 1. Januar 2022",
+      "text": {
+        "en": "The Federal Council's ordinance under the Financial Services Act. It spells out the conduct and organisation rules for everyone who provides financial services to clients in Switzerland, banks included. In practice a bank tells clients what the service and the instruments are, what they risk and cost, in good time and for retail clients on a durable medium or website, keeps records that let it account to a client within ten working days, reviews its execution criteria every year, trains its staff and takes organisational measures against conflicts of interest."
+      }
+    },
+    {
+      "key": "ch-sr-958-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/854/20250101/de/html/fedlex-data-admin-ch-eli-cc-2015-854-20250101-de-html-4.html",
+      "sourceLabel": "Fedlex, Verordnung über die Finanzmarktinfrastrukturen und das Marktverhalten im Effekten- und Derivatehandel (Finanzmarktinfrastrukturverordnung, FinfraV), SR 958.11, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Financial Market Infrastructure Act. Beside the rules for trading venues and other infrastructures it sets what their participants and the counterparties to derivatives owe. In practice a bank admitted to a trading venue reports each trade with the beneficial owner's identification, and a bank that trades derivatives reports them, confirms and reconciles its uncleared trades on set deadlines, agrees how disputes are settled, exchanges margin and writes down the procedures by which it meets these duties."
+      }
+    },
+    {
+      "key": "ch-sr-951-311",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2006/859/20251125/de/html/fedlex-data-admin-ch-eli-cc-2006-859-20251125-de-html-5.html",
+      "sourceLabel": "Fedlex, Verordnung über die kollektiven Kapitalanlagen (Kollektivanlagenverordnung, KKV), SR 951.311, consolidated German text, Stand am 25. November 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Collective Investment Schemes Act, for Swiss funds and foreign funds offered in Switzerland. It sets the duties of those who manage, keep or represent funds, the investment rules and the role of the custodian bank. In practice a fund manager deals with a fund only at market prices, keeps deciding, executing and administering apart, discloses every cost and runs a liquidity process with stress tests and a crisis plan, and a custodian bank staffs the task properly, keeps each fund's assets apart and supervises its sub-custodians."
+      }
+    },
+    {
+      "key": "ch-sr-955-01",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/791/20261001/de/html/fedlex-data-admin-ch-eli-cc-2015-791-20261001-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über die Bekämpfung der Geldwäscherei und der Terrorismusfinanzierung (Geldwäschereiverordnung, GwV), SR 955.01, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "The Federal Council's ordinance under the Anti-Money Laundering Act. It defines when lending, payment services, trading and other activities make someone a financial intermediary by profession, sets the duties of advisers and of dealers taking large cash payments, and fixes how every financial intermediary behaves once a suspicion is reportable. In practice a bank does not end a relationship of its own accord while a report is due or made, ends it afterwards only in the listed cases with a paper trail, and records it when it tells another intermediary about a report."
+      }
+    },
+    {
+      "key": "ch-sr-955-23",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2004/626/20261001/de/html/fedlex-data-admin-ch-eli-cc-2004-626-20261001-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über die Meldestelle für Geldwäscherei (MGwV), SR 955.23, consolidated German text, Stand am 1. Oktober 2026",
+      "text": {
+        "en": "The Federal Council's ordinance on the Money Laundering Reporting Office, the unit of the Federal Office of Police that receives suspicious activity reports. Most of it governs how the office works and keeps its data; two provisions bind the firms that report to it. In practice a bank's report names a contact person and its supervisor, identifies the client and the beneficial owner, gives the assets and balance involved, describes the relationship and documents the grounds for suspicion, and is filed through the office's information system after registration."
+      }
+    },
+    {
+      "key": "ch-sr-961-011",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2005/735/20260226/de/html/fedlex-data-admin-ch-eli-cc-2005-735-20260226-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über die Beaufsichtigung von privaten Versicherungsunternehmen (Aufsichtsverordnung, AVO), SR 961.011, consolidated German text, Stand am 26. Februar 2026",
+      "text": {
+        "en": "The Federal Council's ordinance under the Insurance Supervision Act. It sets solvency, organisation and conduct detail for private insurers and the rules for insurance intermediaries, among them banks that distribute insurance. In practice an insurer in a banking group hands over the key information document of a qualified life insurance in good time, the insurer or intermediary checks that such a policy is affordable and suitable and keeps records to account within ten working days, and an intermediary that appears untied meets the rules for untied intermediaries."
+      }
+    },
+    {
+      "key": "ch-sr-221-214-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2002/594/20210701/de/html/fedlex-data-admin-ch-eli-cc-2002-594-20210701-de-html-10.html",
+      "sourceLabel": "Fedlex, Verordnung zum Konsumkreditgesetz (VKKG), SR 221.214.11, consolidated German text, Stand am 1. Juli 2021",
+      "text": {
+        "en": "The Federal Council's ordinance to the Consumer Credit Act. It sets how the maximum interest rate for consumer credit is formed, how the information office for consumer credit runs its information system, and the cantonal licence conditions for lenders and brokers other than banks. In practice a bank that lends to consumers keeps its rates at or below the three-month compounded SARON plus 10 percentage points, at least 10 per cent, or plus 12 points for overdrafts and cards, and uses information system data only to check a borrower's creditworthiness."
+      }
+    },
+    {
+      "key": "ch-sr-235-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2022/568/20251201/de/html/fedlex-data-admin-ch-eli-cc-2022-568-20251201-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über den Datenschutz (Datenschutzverordnung, DSV), SR 235.11, consolidated German text, Stand am 1. Dezember 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Data Protection Act. It sets the minimum data security, logging and processing rules for risky processing, the content of transfer clauses and breach notifications, and the handling of access requests. In practice a bank sets technical and organisational measures for confidentiality, availability, integrity and traceability, logs access to large volumes of sensitive data, keeps a processing regulation, puts the required points into its transfer clauses, documents every breach for two years and answers access requests within 30 days."
+      }
+    },
+    {
+      "key": "ch-sr-653-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2016/786/20260101/de/html/fedlex-data-admin-ch-eli-cc-2016-786-20260101-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über den internationalen automatischen Informationsaustausch in Steuersachen (AIAV), SR 653.11, consolidated German text, Stand am 1. Januar 2026",
+      "text": {
+        "en": "The Federal Council's ordinance under the Automatic Exchange of Information Act. It sets which institutions and accounts are exempt, how accounts and payments are classified, and the detail of registration with the Federal Tax Administration, for the common reporting standard and the crypto-asset reporting framework. In practice a bank registers with the Federal Tax Administration by the end of the year in which it becomes a reporting Swiss financial institution, deregisters by the end of the year that status ends, and names the currency of every amount it reports."
+      }
+    },
+    {
+      "key": "ch-sr-211-423-41",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/47/121_125_70/20250101/de/html/fedlex-data-admin-ch-eli-cc-47-121_125_70-20250101-de-html-4.html",
+      "sourceLabel": "Fedlex, Pfandbriefverordnung (PfV), SR 211.423.41, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "The Federal Council's ordinance under the Pfandbrief Act. It sets how the two Pfandbrief central institutions and their member banks register, keep and value the mortgage cover behind Swiss Pfandbriefe and the loans the central institutions grant their members. In practice a member bank keeps a cover register with an inventory of every cover item and a journal of every change, keeps the cover apart and in Switzerland, and keeps loan cover of at least 110 per cent of nominal value at all times; a central institution publishes its cover pool data every half year."
+      }
+    },
+    {
+      "key": "ch-sr-951-131",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2004/233/20261101/de/html/fedlex-data-admin-ch-eli-cc-2004-233-20261101-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung zum Bundesgesetz über die Schweizerische Nationalbank (Nationalbankverordnung, NBV), SR 951.131, consolidated German text, Stand am 1. November 2026",
+      "text": {
+        "en": "The Swiss National Bank's own ordinance under the National Bank Act. It sets the statistical surveys the National Bank runs, the minimum reserve banks hold, and the oversight of systemically important financial market infrastructures. In practice a bank answers the National Bank's surveys truthfully, on time, free of charge and in the prescribed form, holds Swiss franc coins, notes and sight deposits at the National Bank of 4 per cent of its relevant liabilities on average over each period, reports compliance by month end and pays penalty interest on any shortfall."
+      }
+    },
+    {
+      "key": "ch-sr-955-033-0",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/390/20230101/de/html/fedlex-data-admin-ch-eli-cc-2015-390-20230101-de-html-10.html",
+      "sourceLabel": "Fedlex, Verordnung der Eidgenössischen Finanzmarktaufsicht über die Bekämpfung von Geldwäscherei und Terrorismusfinanzierung im Finanzsektor (Geldwäschereiverordnung-FINMA, GwV-FINMA), SR 955.033.0, consolidated German text, Stand am 1. Januar 2023",
+      "text": {
+        "en": "FINMA's ordinance on how the financial intermediaries it supervises directly, banks among them, carry out the Anti-Money Laundering Act. In practice a bank monitors its money laundering risks across the group, refuses criminal assets, terrorist financiers and shell banks, puts originator and beneficiary details into payment orders, sets criteria for higher-risk relationships that senior management decides on, monitors transactions with an IT system, appoints an anti-money laundering unit, has internal directives approved by its board and checks its foreign correspondent banks."
+      }
+    },
+    {
+      "key": "ch-sr-952-024-1",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2019/760/20200101/de/html/fedlex-data-admin-ch-eli-cc-2019-760-20200101-de-html-13.html",
+      "sourceLabel": "Fedlex, Verordnung der Eidgenössischen Finanzmarktaufsicht über die Rechnungslegung (Rechnungslegungsverordnung-FINMA, RelV-FINMA), SR 952.024.1, consolidated German text, Stand am 1. Januar 2020",
+      "text": {
+        "en": "FINMA's ordinance on the accounts of banks, securities firms, financial groups and financial conglomerates: how they draw up single-entity and consolidated accounts and publish annual reports and interim accounts. In practice a bank books every transaction on the day it is concluded, values impaired receivables one by one at liquidation value with individual value adjustments, and builds value adjustments for default risk on receivables that are not impaired by the method its category requires, expected losses for the largest banks, explaining the methods and assumptions in the notes."
+      }
+    },
+    {
+      "key": "ch-sr-954-111",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2020/922/20210101/de/html/fedlex-data-admin-ch-eli-cc-2020-922-20210101-de-html-7.html",
+      "sourceLabel": "Fedlex, Verordnung der Eidgenössischen Finanzmarktaufsicht über die Finanzinstitute (Finanzinstitutsverordnung-FINMA, FINIV-FINMA), SR 954.111, consolidated German text, Stand am 1. Januar 2021",
+      "text": {
+        "en": "FINMA's ordinance under the Financial Institutions Act and Ordinance. It sets the professional liability insurance of portfolio managers, trustees and managers of collective assets, the valuation of managed assets, the risk management of managers of collective assets and the regulatory audit of these firms. In practice a manager of collective assets in a banking group runs an internal control system on a systematic risk analysis, sets its risk tolerance, writes risk management into internal directives with liquidity thresholds per fund and keeps risk control independent."
+      }
+    },
+    {
+      "key": "ch-sr-958-111",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2015/855/20230201/de/html/fedlex-data-admin-ch-eli-cc-2015-855-20230201-de-html-5.html",
+      "sourceLabel": "Fedlex, Verordnung der Eidgenössischen Finanzmarktaufsicht über die Finanzmarktinfrastrukturen und das Marktverhalten im Effekten- und Derivatehandel (Finanzmarktinfrastrukturverordnung-FINMA, FinfraV-FINMA), SR 958.111, consolidated German text, Stand am 1. Februar 2023",
+      "text": {
+        "en": "FINMA's ordinance on the records and trade reports of securities firms and trading venue participants, the clearing duty for OTC derivatives, the disclosure of shareholdings and mandatory takeover offers. In practice a bank that trades securities keeps a standard journal of every order and trade, reports each trade with the prescribed details to the reporting office of the trading venue within the venue's deadline, and notifies holdings that reach, cross or fall below a threshold to the company and the disclosure office within four trading days."
+      }
+    },
+    {
+      "key": "ch-sr-951-312",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2014/707/20210101/de/html/fedlex-data-admin-ch-eli-cc-2014-707-20210101-de-html-14.html",
+      "sourceLabel": "Fedlex, Verordnung der Eidgenössischen Finanzmarktaufsicht über die kollektiven Kapitalanlagen (Kollektivanlagenverordnung-FINMA, KKV-FINMA), SR 951.312, consolidated German text, Stand am 1. Januar 2021",
+      "text": {
+        "en": "FINMA's ordinance on collective investment schemes: securities lending and repos by funds, derivatives and risk measurement, master-feeder structures, accounting and fund audits. It binds fund management companies and investment companies and a bank acting as custodian bank. In practice a custodian bank informs the fund regularly about securities loans, settles lending income at least monthly, monitors collateral, has repo exposures margined every day, and keeps exercising the rights on securities lent or used in repos unless they were assigned."
+      }
+    },
+    {
+      "key": "ch-sr-952-111",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/1997/62_62_62/20150101/de/html/fedlex-data-admin-ch-eli-cc-1997-62_62_62-20150101-de-html-6.html",
+      "sourceLabel": "Fedlex, Verordnung der Eidgenössischen Finanzmarktaufsicht über die ausländischen Banken in der Schweiz (Auslandbankenverordnung-FINMA, ABV-FINMA), SR 952.111, consolidated German text, Stand am 1. Januar 2015",
+      "text": {
+        "en": "FINMA's ordinance on foreign banks in Switzerland: when a foreign bank needs a licence for a branch or a representative office, the conditions, and the accounts and reports of the Swiss branch. In practice the Swiss branch of a foreign bank shows positions towards its parent and related finance companies separately in its accounts, files its annual and interim accounts with FINMA and makes the parent's annual report available within four months, in an official Swiss language or English; a representative office sends that report to FINMA."
+      }
+    },
+    {
+      "key": "ch-sr-952-022-2",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/138/20260924/de/html/fedlex-data-admin-ch-eli-cc-2024-138-20260924-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung der FINMA über die Offenlegungspflichten der Banken und Wertpapierhäuser (OffV-FINMA), SR 952.022.2, consolidated German text, Stand am 24. September 2026",
+      "text": {
+        "en": "FINMA's ordinance on what banks, account-holding securities firms, financial groups and conglomerates publish about capital, liquidity, risks, governance and pay, in the tables of the Basel disclosure standard. Private bankers who do not solicit deposits and Swiss branches of foreign banks are outside it. In practice a bank publishes the key metrics and risk tables its category requires, clearly and consistently, keeps four years online, and publishes yearly data within four months of the annual accounts and interim data within two months."
+      }
+    },
+    {
+      "key": "ch-sr-952-033-11",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2024/140/20250101/de/html/fedlex-data-admin-ch-eli-cc-2024-140-20250101-de-html-4.html",
+      "sourceLabel": "Fedlex, Verordnung der FINMA über die Leverage Ratio und die operationellen Risiken der Banken und Wertpapierhäuser (LROV-FINMA), SR 952.033.11, consolidated German text, Stand am 1. Januar 2025",
+      "text": {
+        "en": "FINMA's technical ordinance on how banks and account-holding securities firms calculate the total exposure for the leverage ratio and the minimum capital for operational risk under the Basel standardised approach. In practice a bank measures its balance sheet, derivative, securities financing and off-balance-sheet positions as prescribed, builds its business indicator from interest, services and financial components, and records for every operational loss event its cause category, activity, gross loss, dates and recoveries."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-176-72",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2022/151/20261105/de/html/fedlex-data-admin-ch-eli-cc-2022-151-20261105-de-html-2.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen im Zusammenhang mit der Situation in der Ukraine, SR 946.231.176.72, consolidated German text, Stand am 5. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act on the situation in Ukraine, Switzerland's measures against Russia and the persons in its Annex 8. Beside trade bans it freezes assets and restricts financial services. In practice a bank freezes the assets of listed persons and those they own or control, makes no funds available to them, reports frozen assets to SECO, refuses deposits above 100,000 francs from Russian nationals, residents and companies, gives them no payment, e-money or crypto services and reports such deposits to SECO yearly."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-08",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2025/194/20261101/de/html/fedlex-data-admin-ch-eli-cc-2025-194-20261101-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber bestimmten Personen, Gruppen, Unternehmen und Organisationen, die mit den Organisationen ISIL (Da’esh) und Al-Kaida in Verbindung stehen, SR 946.231.08, consolidated German text, Stand am 1. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act that carries out the United Nations measures against persons, groups, undertakings and organisations associated with ISIL (Da'esh) and Al-Qaida, listed in its annex. Beside an arms embargo and a travel ban it freezes their assets. In practice a bank screens its clients and payments against the annex, freezes the assets of listed persons and of those acting for or owned by them, makes no funds available to them, reports frozen assets to SECO without delay and confirms the amounts every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-07",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2025/193/20261101/de/html/fedlex-data-admin-ch-eli-cc-2025-193-20261101-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber bestimmten Personen und Gruppen, die mit den Taliban in Verbindung stehen, SR 946.231.07, consolidated German text, Stand am 1. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act that carries out the United Nations measures against persons and groups associated with the Taliban, listed in its annex. Beside an arms embargo and a travel ban it freezes their assets, with an exception for humanitarian aid and basic human needs in Afghanistan. In practice a bank screens clients and payments against the annex, freezes the assets of listed persons and of those acting for or owned by them, makes no funds available to them and reports frozen assets to SECO without delay and every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-143-6",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2025/838/20261101/de/html/fedlex-data-admin-ch-eli-cc-2025-838-20261101-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber der Islamischen Republik Iran, SR 946.231.143.6, consolidated German text, Stand am 1. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Iran. Beside trade bans it freezes the assets of the persons in its Annexes 11 to 14 and restricts banking with Iran. In practice a bank freezes listed assets, makes no funds or financial messaging services available to listed persons, reports frozen assets to SECO, reports transfers to or from Iranian persons above 10,000 francs within five working days, obtains SECO's licence for those above 50,000 francs and opens no account or correspondent relationship with an Iranian bank."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-116-9",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2022/172/20261105/de/html/fedlex-data-admin-ch-eli-cc-2022-172-20261105-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Belarus, SR 946.231.116.9, consolidated German text, Stand am 5. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Belarus. Beside wide trade and service bans it freezes the assets of the persons in its Annex 13 and restricts financial business with Belarus. In practice a bank freezes listed assets, makes no funds available to listed persons, reports frozen assets to SECO, refuses deposits above 100,000 francs from Belarusian nationals, residents and companies unless an exemption applies, provides them no payment, e-money or crypto services, and reports such deposits to SECO every twelve months."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-172-7",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2012/394/20260616/de/html/fedlex-data-admin-ch-eli-cc-2012-394-20260616-de-html.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber Syrien, SR 946.231.172.7, consolidated German text, Stand am 16. Juni 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act against Syria. Beside bans on arms, surveillance equipment and cultural goods it freezes the assets of the persons, companies and organisations in its Annex 7. In practice a bank screens clients and payments against Annex 7, freezes the assets of listed persons, makes no funds available to them unless a humanitarian or official exception applies, reports frozen assets to SECO without delay and confirms the amounts every year by 15 February."
+      }
+    },
+    {
+      "key": "ch-sr-946-231-127-6",
+      "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/2016/280/20261101/de/html/fedlex-data-admin-ch-eli-cc-2016-280-20261101-de-html-1.html",
+      "sourceLabel": "Fedlex, Verordnung über Massnahmen gegenüber der Demokratischen Volksrepublik Korea, SR 946.231.127.6, consolidated German text, Stand am 1. November 2026",
+      "text": {
+        "en": "The Federal Council's sanctions ordinance under the Embargo Act that carries out the United Nations measures against North Korea. Beside trade, shipping and education bans it freezes the assets of the persons in Annex 1 and the vessels in Annex 6 and cuts banking ties. In practice a bank freezes listed assets, makes no funds available to listed persons or vessels, gives no financial services linked to prohibited activities, keeps no ties with North Korean banks and no office or account in North Korea, and reports frozen assets and accounts of North Korean missions to SECO."
+      }
+    }
+  ]
+}
