@@ -51,7 +51,7 @@ markets.
 5. **Authorities and watched sources** for the eight markets are filed with the same change:
    64 authorities (each market's legislature, government and finance ministry, its financial
    supervisors and central bank, its data protection, tax and financial intelligence
-   authorities) and 40 sources (its official legal database and each supervisor's news page
+   authorities) and 39 sources (its official legal database and each supervisor's news page
    and register of binding rules, at the publisher's own feed or data interface where its
    page cannot be read by a program). Each was read on the body's own site, or in an official
    directory where the site refused the read, which is the case for six of Lithuania's seven
@@ -88,9 +88,12 @@ markets.
   interface of its own, that address is the one registered: the Austrian RIS's open-data
   interface, the Austrian FMA's feed, Fedlex's query endpoint and the FCA's publications
   feed. A blocked page is never worked around by a mirror, a cache or a retry from elsewhere
-  (AGT-07, the confirmer's rule). Still without a way in from the build session: Riigi
-  Teataja's list of new acts, the FCA Handbook's own text, and every Lithuanian source,
-  whose open data is refused to the build session's network
+  (AGT-07, the confirmer's rule). The FCA Handbook's terms forbid any automated read of its
+  site other than through its API, which is free and behind a sign-in: its page is not a
+  registered source, and its rules wait for a person to sign up and put the token on the
+  environment. Still without a way in from the build session: Riigi Teataja's list of new
+  acts, Wetten.nl's list of the newest changes, and every Lithuanian source, whose open
+  data is refused to the build session's network
   (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`).
 - Not done: French and Italian for Switzerland; Swedish beside EU texts, which EUR-Lex
   publishes officially; a sentence splitter that knows German capitalisation, so the "what

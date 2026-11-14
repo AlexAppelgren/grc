@@ -8,7 +8,8 @@ page with the address it was read at, what the page said, and a `verified` flag;
 says what did not verify and what had to be chosen.
 
 **What was seeded from it.** 64 authorities (`backend/apps/library/fixtures/prototype_data.json`)
-and 40 watched sources (`backend/apps/library/baseline/sources.json`). Not everything in the
+and 40 watched sources (`backend/apps/library/baseline/sources.json`), 39 since the FCA
+Handbook's page left the list the same day (the table below says why). Not everything in the
 JSON was seeded. Left out: the German Bundesrat, since an act's issuer is the Bundestag; the
 BfDI, which supervises federal public bodies and not private banks; the news listings that
 serve no content without a browser (De Nederlandsche Bank) or were not found (the FMA); and
@@ -55,7 +56,7 @@ Each address below was fetched on 2026-11-14 and answered as described.
 | Austria, Rechtsinformationssystem des Bundes | Answers a program with a security check (503) | The RIS open-data interface, `data.bka.gv.at/ris/api/v2.6/Bundesrecht?Applikation=BgblAuth&Kundmachung.Periode=EinemMonat&DokumenteProSeite=OneHundred`: the authentic Bundesgesetzblatt of the last month as JSON, 59 publications with titles, issuer and ELI | Yes, in place of the site's address |
 | Austria, Finanzmarktaufsichtsbehörde | Every page answers 403 with a challenge | Its own RSS feed, `www.fma.gv.at/feed/`, answers 200 with its newest notices | Yes, in place of the home page. Its Rundschreiben listing has no feed that was found; its regulations are in BGBl. II, which the RIS interface lists |
 | Switzerland, Fedlex | Serves no text without a browser | Its SPARQL endpoint, `fedlex.data.admin.ch/sparqlendpoint`: the query registered returns the 100 newest acts of the Official Compilation with date and German title as JSON; each act's files are found the same way | Yes, in place of the home page |
-| United Kingdom, FCA Handbook | Serves no text without a browser, and its script calls no data interface that was found | None for the Handbook's text. The FCA's publications feed, `www.fca.org.uk/publications/rss.xml`, carries the policy statements and consultations that announce each rule change | The feed is registered beside the Handbook, which stays registered so the coverage log shows the gap |
+| United Kingdom, FCA Handbook | Serves no text without a browser. Its terms of use, read in a browser at `handbook.fca.org.uk/footer-widget/terms-and-conditions`, forbid any automated read of the site: clause 35.3, no "scraper", "robot", "bot" or "any other automated device, program, tool" to access any portion of the website "without Our prior written consent, other than by access to the API Data through the API" | The Handbook API, `handbook.fca.org.uk/handbook-api`: "provides access to Handbook, Technical Standards and Glossary data", free of charge (clause 7), behind a sign-in that gives an API token. Its data may be used under the Open Government Licence v3.0 with the FCA acknowledged (clauses 25 and 26). The FCA's publications feed, `www.fca.org.uk/publications/rss.xml`, on its main site, carries the policy statements and consultations that announce each rule change | The Handbook's page is no longer registered, so no run reads the site against its terms. The feed is registered. The Handbook itself is read once a person has signed up for the API and its token is on the environment |
 | United Kingdom, legislation.gov.uk, the PRA and the Bank | Readable as they are | Feeds as well: `www.legislation.gov.uk/new/data.feed`, `www.bankofengland.co.uk/rss/prudential-regulation-publications`, `www.bankofengland.co.uk/rss/news` | No change needed |
 | Estonia, Riigi Teataja | Serves no text without a browser | One act by its number answers as JSON, text and XML at `riigiteataja.ee/public-api/api/v1/akt/<id>`, which serves a re-check of an act the library holds. No list of newly published acts was found, and the interface is not documented anywhere that was read | No change: new Estonian rules reach the watch through Finantsinspektsioon's and Eesti Pank's pages, which read as plain pages. Riigi Teataja's own answer on a list of new acts is worth asking for |
 | Lithuania, the register, the Seimas system, Lietuvos bankas | 403 with a challenge | The Office of the Seimas publishes open data: its open-data page lists `apps.lrs.lt/sip/p2b.tais_docs` among its data sets, and its press release of 2 July 2025 puts the register's data on the national open data portal. What either serves was not read. From the build session the portal answered with its firewall's block page naming the session's address, and `apps.lrs.lt` reset the connection | No change. Whether the production network is refused too is not known: run one check of each from there. If it is, the way in is to ask the Office of the Seimas and Lietuvos bankas to admit the watch's address |
@@ -80,8 +81,8 @@ source's `authority` points at a key in the same market.
 
 - Three official databases are now JavaScript applications whose HTML has no content: Riigi Teataja (since
   1 June 2026), Fedlex and the FCA Handbook. A watch agent that reads HTML gets an empty shell with status 200.
-  The JSON gives the API each one needs (Riigi Teataja REST API, Fedlex SPARQL endpoint); none was found for
-  the FCA Handbook.
+  The JSON gives the API each one needs (Riigi Teataja REST API, Fedlex SPARQL endpoint); the FCA Handbook's
+  is behind a sign-in (the table above).
 - Sites that refused automated fetches: lb.lt, lrv.lt, vmi.lt, e-tar.lt, e-seimas.lrs.lt, fma.gv.at,
   parliament.uk (Cloudflare challenge, 403); ris.bka.gv.at and bundesfinanzministerium.de (security check, 503).
   dnb.nl and admin.ch refused the command-line fetch but were readable with the web fetch tool.
