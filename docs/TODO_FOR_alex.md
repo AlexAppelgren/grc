@@ -118,6 +118,15 @@ library takes their law in its own language. What needs you, most urgent first.
       regulations made by the AFM and De Nederlandsche Bank together are filed under De
       Nederlandsche Bank; the AFM's CFD and turbo product-intervention decisions are
       filed as authority regulations.
+- [ ] **A Swiss lawyer on the ordinances.** The researcher's own doubts: FINIV-FINMA's
+      duties bind managers of collective assets and carry the nearest seeded term, fund
+      company; the consumer credit interest ordinance (VKKG Art. 1) sits beside the KKG
+      ceiling already in the statutes; the Ukraine and Belarus deposit reports are written
+      as the yearly report, not the first list of 2022. Left out: the
+      Bankeninsolvenzverordnung-FINMA, repealed on 1 October 2025; LiqV-FINMA and
+      RVV-FINMA, which start on 1 January 2027; and ordinances whose issuer is not a seeded
+      authority (the EJPD's maximum consumer credit rate, fedpol's VDIGw, the BAZG's and
+      the Übernahmekommission's).
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as

@@ -438,8 +438,11 @@ the Netherlands, Austria and Switzerland.
   royal decrees, 5 of the Minister of Finance, 7 of De Nederlandsche Bank and 3 of the
   AFM, among them the Bpr and Bgfo Wft, the Wwft's implementing decree and regulation,
   the rules on remuneration and mortgage credit, the CRS and FATCA decrees and De
-  Nederlandsche Bank's Regeling toezicht Sanctiewet 1977. The baseline now holds 754
-  instruments and 3,110 obligations.
+  Nederlandsche Bank's Regeling toezicht Sanctiewet 1977. Then Switzerland's
+  (`ch-verordnungen`): 30 ordinances with 127 duties, 21 of the Bundesrat (among them
+  BankV, ERV, LiqV, FINIV, FIDLEV, FinfraV, KKV, GwV and DSV, and seven embargo ordinances
+  with their freeze, funds and SECO reporting duties), 8 of FINMA and the SNB's NBV. The
+  baseline now holds 784 instruments and 3,237 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
@@ -459,8 +462,8 @@ the Netherlands, Austria and Switzerland.
   document route, with English and Swedish beside each; all 136 duties carry their text.
   Republication rests on the Latvian Copyright Law, 6. pants, which leaves laws and their
   official consolidated versions outside copyright.
-- **In work on this branch:** the regulations of Switzerland, Latvia, Austria and
-  Estonia; and the law's own words
+- **In work on this branch:** the regulations of Latvia, Austria and Estonia; and the
+  law's own words
   for the other three statute tranches, each provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
