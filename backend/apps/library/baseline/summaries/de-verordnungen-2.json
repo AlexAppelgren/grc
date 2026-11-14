@@ -161,6 +161,22 @@
    "text": {
     "en": "A regulation of the Federal Government under the Restructuring Fund Act on how the resolution authority raises the annual contributions to the restructuring fund for credit institutions, adding to the EU rules on contributions to resolution financing. It binds the institutions liable to contribute: CRR credit institutions, investment firms with initial capital of at least 750,000 euros and branches of EU institutions. In practice a bank sends the resolution authority the extra data for its risk indicators within the EU deadlines and confirms that all its contribution data are correct."
    }
+  },
+  {
+   "key": "de-rechzahlv",
+   "source": "https://www.gesetze-im-internet.de/rechzahlv/BJNR368000009.html",
+   "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, consolidated text (Zuletzt geändert durch Art. 25 Abs. 3 G v. 7.8.2021 I 3311)",
+   "text": {
+    "en": "A regulation of the Federal Ministry of Justice, made with the Federal Ministry of Finance under the Commercial Code, that sets how payment institutions and e-money institutions draw up their annual accounts. It binds the institutions under the Payment Services Supervision Act, group accounts included. In practice such an institution uses the set balance sheet and income statement forms, shows payment services, e-money and other business separately, and adds the required notes, such as maturity bands, loans to managers, open forward transactions and the number and volume of payments executed."
+   }
+  },
+  {
+   "key": "de-versvermv-2018",
+   "source": "https://www.gesetze-im-internet.de/versvermv_2018/BJNR248310018.html",
+   "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, consolidated text (Geändert durch Art. 1 V v. 17.2.2025 I Nr. 43)",
+   "text": {
+    "en": "A regulation of the Federal Ministry for Economic Affairs under the Trade Regulation Code on insurance intermediaries and advisers. It binds whoever commercially distributes insurance under § 34d of that Code, which exempts no credit institution, so a bank selling insurance, licensed or as a tied agent, is bound. Here only its duties for such a distributor are recorded. In practice the bank keeps its staff's training records, keeps its register entry current, tells customers at first contact who it is and how it is paid, avoids pay that steers sales, and handles complaints."
+   }
   }
  ]
 }

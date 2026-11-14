@@ -2386,6 +2386,311 @@
      }
     }
    ]
+  },
+  {
+   "title": "Add RechZahlV, the German regulation on the accounts of payment institutions and e-money institutions (Zahlungsinstituts-Rechnungslegungsverordnung)",
+   "source": "https://www.gesetze-im-internet.de/rechzahlv/BJNR368000009.html",
+   "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, made by the Bundesministerium der Justiz under § 330 Abs. 2 HGB (Eingangsformel); full text page with the Vollzitat and the Stand (Zuletzt geändert durch Art. 25 Abs. 3 G v. 7.8.2021 I 3311); entry into force read in § 34",
+   "payload": {
+    "key": "de-rechzahlv",
+    "titles": {
+     "de": "Verordnung über die Rechnungslegung der Zahlungsinstitute und E-Geld-Institute (Zahlungsinstituts-Rechnungslegungsverordnung - RechZahlV)",
+     "en": "Accounting Regulation for Payment Institutions and E-money Institutions"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "RechZahlV",
+    "officialRef": "Zahlungsinstituts-Rechnungslegungsverordnung vom 2. November 2009 (BGBl. I S. 3680)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmjv",
+    "regime": "regime:payments",
+    "inForceFrom": "2009-10-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Draw up the balance sheet and income statement on the forms for payment institutions",
+     "source": "https://www.gesetze-im-internet.de/rechzahlv/__2.html",
+     "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, § 2 und § 31",
+     "payload": {
+      "key": "obl-de-rechzahlv-prescribed-forms",
+      "titles": {
+       "en": "Draw up the balance sheet and income statement on the forms for payment institutions"
+      },
+      "summaries": {
+       "en": "A payment or e-money institution draws up its balance sheet on form 1 and its income statement in vertical format on form 2 in the annexes, instead of the layouts of §§ 266 and 275 of the Commercial Code. The regulation's rules apply to its consolidated accounts too, unless their nature calls for a difference."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 2 und § 31",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show payment services, e-money issuance and other business separately in the accounts",
+     "source": "https://www.gesetze-im-internet.de/rechzahlv/__3.html",
+     "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, § 3",
+     "payload": {
+      "key": "obl-de-rechzahlv-separate-business-lines",
+      "titles": {
+       "en": "Show payment services, e-money issuance and other business separately in the accounts"
+      },
+      "summaries": {
+       "en": "The institution shows the figures for payment services, for issuing e-money and for its other business separately, dividing the balance sheet and income statement items by where they come from as the forms set out. It shows receivables from and liabilities to affiliated undertakings and undertakings in which it holds a participation as separate sub-items of the items listed, or in the notes in the order of those items."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 3",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show subordinated items separately and break customer receivables and liabilities down by residual maturity",
+     "source": "https://www.gesetze-im-internet.de/rechzahlv/__4.html",
+     "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, § 4 und § 7",
+     "payload": {
+      "key": "obl-de-rechzahlv-subordination-and-maturities",
+      "titles": {
+       "en": "Show subordinated items separately and break customer receivables and liabilities down by residual maturity"
+      },
+      "summaries": {
+       "en": "Assets and liabilities that rank behind other creditors in liquidation or insolvency are shown as subordinated, subordinated assets separately under their item or in the notes. In the notes the institution breaks its receivables from and liabilities to customers down by residual maturity into up to three months, three to six months, six to twelve months and over twelve months."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 4 und § 7",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Break income down by geographic market and state loans to managers and board members in the notes",
+     "source": "https://www.gesetze-im-internet.de/rechzahlv/__28.html",
+     "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, § 28 Abs. 2",
+     "payload": {
+      "key": "obl-de-rechzahlv-notes-income-and-management-loans",
+      "titles": {
+       "en": "Break income down by geographic market and state loans to managers and board members in the notes"
+      },
+      "summaries": {
+       "en": "In place of certain Commercial Code disclosures, the notes break interest income, current income from shares and holdings, commission income and other operating income down by geographic markets that differ materially for the institution, unless that would cause it or a 20 per cent holding serious harm. They also state, for each group of persons, the total advances and loans granted to members of the management body, supervisory board, advisory board or similar body and the guarantees given for them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 28 Abs. 2",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Add the required item disclosures and the number and volume of payments executed to the notes",
+     "source": "https://www.gesetze-im-internet.de/rechzahlv/__29.html",
+     "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, § 29",
+     "payload": {
+      "key": "obl-de-rechzahlv-notes-additional-disclosures",
+      "titles": {
+       "en": "Add the required item disclosures and the number and volume of payments executed to the notes"
+      },
+      "summaries": {
+       "en": "The notes break down marketable securities into listed and unlisted, state securities not valued at the lower of cost or market and how they are distinguished, explain material amounts in the other assets, liabilities, income and expense items, and give significant administration and agency services for third parties, foreign currency assets and liabilities in euros, land and equipment, and the terms of large subordinated borrowings. They also state the number of payment transactions the institution executed and their volume in euros."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 29",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: List open forward transactions by type in the notes and say whether they hedge or trade",
+     "source": "https://www.gesetze-im-internet.de/rechzahlv/__30.html",
+     "sourceLabel": "Gesetze im Internet, Zahlungsinstituts-Rechnungslegungsverordnung (RechZahlV), BGBl. I S. 3680, § 30",
+     "payload": {
+      "key": "obl-de-rechzahlv-forward-transactions",
+      "titles": {
+       "en": "List open forward transactions by type in the notes and say whether they hedge or trade"
+      },
+      "summaries": {
+       "en": "The notes list the types of foreign currency, interest rate and other price-related forward transactions not yet settled at the balance sheet date, in those three groups, and state for each group whether a material part serves to hedge interest, exchange rate or market price movements and whether a material part is trading business."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 30",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VersVermV, the German regulation on insurance intermediation and advice (Versicherungsvermittlungsverordnung), as far as it binds a credit institution distributing insurance",
+   "source": "https://www.gesetze-im-internet.de/versvermv_2018/BJNR248310018.html",
+   "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, made by the Bundesministerium für Wirtschaft und Energie (footnote to the title); full text page with the Vollzitat and the Stand (Geändert durch Art. 1 V v. 17.2.2025 I Nr. 43); entry into force read in the footnote to the title",
+   "payload": {
+    "key": "de-versvermv-2018",
+    "titles": {
+     "de": "Verordnung über die Versicherungsvermittlung und -beratung (Versicherungsvermittlungsverordnung - VersVermV)",
+     "en": "Insurance Distribution Regulation"
+    },
+    "originalLanguage": "de",
+    "isMachine": true,
+    "shortName": "VersVermV",
+    "officialRef": "Versicherungsvermittlungsverordnung vom 17. Dezember 2018 (BGBl. I S. 2483; 2019 I S. 411)",
+    "level": "government_regulation",
+    "jurisdiction": "de",
+    "authority": "bmwe",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-12-20"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep five years of records of the insurance distribution training of the firm and its staff",
+     "source": "https://www.gesetze-im-internet.de/versvermv_2018/__7.html",
+     "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, § 7",
+     "payload": {
+      "key": "obl-de-versvermv-training-records",
+      "titles": {
+       "en": "Keep five years of records of the insurance distribution training of the firm and its staff"
+      },
+      "summaries": {
+       "en": "A distributor bound to continuing training under § 34d Abs. 9 of the Trade Regulation Code makes sure the training matches the activities carried on and collects evidence of the training it and its staff involved in distribution took, showing each person, the date, scope, content and title of the measure and the provider. It keeps the records for five years from the end of the training year on a durable medium at its business premises and gives the chamber of commerce, when ordered, a declaration on the form in Annex 4 that the training duty was met."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 7",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the intermediary register data and any change to them without delay",
+     "source": "https://www.gesetze-im-internet.de/versvermv_2018/__9.html",
+     "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, § 9",
+     "payload": {
+      "key": "obl-de-versvermv-register-notifications",
+      "titles": {
+       "en": "Report the intermediary register data and any change to them without delay"
+      },
+      "summaries": {
+       "en": "A distributor that must be entered in the intermediary register reports the data to be entered to the register authority and any change to them without delay. A tied agent that needs no licence under § 34d Abs. 7 of the Trade Regulation Code has its data reported only through the insurer under § 48 Abs. 4 of the Insurance Supervision Act."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 9",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Hold the product and target market information and do not pay staff in ways that steer sales",
+     "source": "https://www.gesetze-im-internet.de/versvermv_2018/__14.html",
+     "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, § 14",
+     "payload": {
+      "key": "obl-de-versvermv-product-information-and-staff-pay",
+      "titles": {
+       "en": "Hold the product and target market information and do not pay staff in ways that steer sales"
+      },
+      "summaries": {
+       "en": "The distributor must hold all relevant information on each insurance product and its approval process, including its target market, except for large risks. It must not pay or assess its staff in a way that conflicts with their duty to act in the policyholder's best interest, nor set incentives through pay, sales targets or otherwise to recommend one product where another would meet the customer's needs better."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 14",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell the policyholder at first contact who the firm is, its register status and how it is paid",
+     "source": "https://www.gesetze-im-internet.de/versvermv_2018/__15.html",
+     "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, § 15 und § 16",
+     "payload": {
+      "key": "obl-de-versvermv-first-contact-information",
+      "titles": {
+       "en": "Tell the policyholder at first contact who the firm is, its register status and how it is paid"
+      },
+      "summaries": {
+       "en": "At the first business contact the distributor gives the policyholder, on paper or under set conditions another durable medium or a website, clearly, free of charge and in an agreed or official language, its name and address, the capacity in which it is registered and how to check the entry, whether it advises, the nature and source of its pay and any other benefits, holdings above 10 per cent with insurers in either direction, and the address of the dispute resolution body. After a telephone contact the information follows at once, and the distributor makes sure its staff give the same information, except for reinsurance and large risks."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 15 und § 16",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:insurance_distribution",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Set and apply insurance complaint guidelines, keep a complaints register and answer promptly",
+     "source": "https://www.gesetze-im-internet.de/versvermv_2018/__17.html",
+     "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, § 17",
+     "payload": {
+      "key": "obl-de-versvermv-complaints-handling",
+      "titles": {
+       "en": "Set and apply insurance complaint guidelines, keep a complaints register and answer promptly"
+      },
+      "summaries": {
+       "en": "A distributor licensed under § 34d Abs. 1 or 2 of the Trade Regulation Code sets guidelines for handling complaints, applies and monitors them and makes them available in writing to the staff concerned. It sets up a complaints function where its size calls for it, registers every complaint and lets the chamber of commerce inspect the register, acknowledges and examines each complaint and answers without delay in plain language or explains the delay, publishes how to complain, gives reasons where it cannot meet a complaint, and takes part in the insurance dispute resolution procedure when the policyholder calls on it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 17",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Avoid conflicts and keep inducements from harming the quality of insurance investment product sales",
+     "source": "https://www.gesetze-im-internet.de/versvermv_2018/__18.html",
+     "sourceLabel": "Gesetze im Internet, Versicherungsvermittlungsverordnung (VersVermV), BGBl. I S. 2483; 2019 I S. 411, § 18 und § 19",
+     "payload": {
+      "key": "obl-de-versvermv-investment-product-conflicts-and-inducements",
+      "titles": {
+       "en": "Avoid conflicts and keep inducements from harming the quality of insurance investment product sales"
+      },
+      "summaries": {
+       "en": "A distributor of insurance-based investment products takes appropriate steps to identify and avoid conflicts of interest between itself, its staff and connected persons and its policyholders, applying § 48a Abs. 4 and 5 of the Insurance Supervision Act accordingly. It makes sure that any inducement it pays or receives from a third party in connection with such a sale does not harm the quality of the service or its duty to act honestly, fairly and professionally in the policyholder's best interest."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "§ 18 und § 19",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    }
+   ]
   }
  ]
 }
