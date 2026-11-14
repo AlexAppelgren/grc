@@ -6,10 +6,11 @@ holds the EU, Sweden, Denmark, Norway and Finland in full. The eight home market
 added arrive tranche by tranche, as ADR 0070 stages them: the statutes and their duties
 of Germany (`de-acts`), the United Kingdom (`gb-acts`), Switzerland (`ch-acts`), Latvia
 (`lv-acts`), Austria (`at-acts`), Estonia (`ee-acts`) and the Netherlands (`nl-acts`) are
-here. Four of them also carry the law's own words: the United Kingdom's
+here. Five of them also carry the law's own words: the United Kingdom's
 (`provisions/gb-acts.json`, Swedish beside the English original) and the Netherlands',
-Switzerland's and Latvia's (`provisions/nl-acts.json`, `ch-acts.json` and `lv-acts.json`,
-English and Swedish beside the Dutch, the German and the Latvian). The United Kingdom's
+Switzerland's, Latvia's and Estonia's (`provisions/nl-acts.json`, `ch-acts.json`,
+`lv-acts.json` and `ee-acts.json`, English and Swedish beside the Dutch, the German, the
+Latvian and the Estonian). The United Kingdom's
 statutory instruments (`gb-si`), Germany's regulations (`de-verordnungen`), the
 Netherlands' decrees and regulations (`nl-besluiten`) and Switzerland's ordinances
 (`ch-verordnungen`) are here too;

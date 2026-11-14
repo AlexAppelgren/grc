@@ -461,10 +461,14 @@ the Netherlands, Austria and Switzerland.
   on 2026-11-14, read from its desktop and mobile pages and a third time through its
   document route, with English and Swedish beside each; all 136 duties carry their text.
   Republication rests on the Latvian Copyright Law, 6. pants, which leaves laws and their
-  official consolidated versions outside copyright.
+  official consolidated versions outside copyright. Then Estonia's
+  (`provisions/ee-acts.json`): 137 sections of the versions in force on 2026-11-14, read
+  from Riigi Teataja's XML and plain text and a third time from its printed PDF, with the
+  gazette's amendment notes kept in place and English and Swedish beside each; all 133
+  duties carry their text.
 - **In work on this branch:** the regulations of Latvia, Austria and Estonia; and the
-  law's own words
-  for the other three statute tranches, each provision in its original
+  law's own words for Germany's and Austria's statutes and for the regulations, each
+  provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only
