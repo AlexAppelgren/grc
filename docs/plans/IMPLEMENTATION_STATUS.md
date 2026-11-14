@@ -490,8 +490,14 @@ the Netherlands, Austria and Switzerland.
   of the Minister of Foreign Affairs (terrorism, ISIS and Al Qaida, Ukraine, the Russian
   Federation, Belarus, Iran, Syria, Libya, North Korea, human rights), the Bmfo, Bptfg and
   Bm Wft, the bank data referral portal, the banker's oath and De Nederlandsche Bank's
-  recognition of three other states' systemic risk buffers. The baseline holds 1,015
-  instruments and 4,143 obligations.
+  recognition of three other states' systemic risk buffers. Last, the United Kingdom's
+  (`gb-si-2`): 29 instruments with 123 duties, 26 sanctions regimes under the Sanctions
+  and Anti-Money Laundering Act 2018 (Belarus, Syria, Venezuela, Libya, Iraq, Myanmar,
+  chemical weapons, cyber, irregular migration, Iran nuclear and sixteen more), each with
+  its freeze, funds, licence and reporting duties, the MiFI Regulations' position limit
+  duty, the cryptoasset reporting regulations and the Mortgage Credit Directive Order.
+  Every one of the seven markets now holds three tranches: the baseline holds 1,044
+  instruments and 4,266 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
