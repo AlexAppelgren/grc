@@ -1,0 +1,2689 @@
+{
+  "tranche": "gb-si",
+  "researchedOn": "2026-11-14",
+  "instruments": [
+    {
+      "title": "Add the Money Laundering Regulations 2017, S.I. 2017/692 (The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017)",
+      "source": "https://www.legislation.gov.uk/uksi/2017/692/contents",
+      "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), revised text as it stands on 2026-11-14 (latest revised version dated 2026-06-30); made by the Treasury under section 2(2) of the European Communities Act 1972 and sections 168(4)(b), 402(1)(b), 417(1) and 428(3) of the Financial Services and Markets Act 2000, as its opening words read; in force from 2017-06-26 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2017/692/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2017-692",
+        "titles": {
+          "en": "The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017"
+        },
+        "originalLanguage": "en",
+        "shortName": "Money Laundering Regulations 2017",
+        "officialRef": "The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017, S.I. 2017/692",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:aml",
+        "inForceFrom": "2017-06-26"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Assess and record the firm's money laundering and terrorist financing risks",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/18",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), reg. 18, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-risk-assessment",
+            "titles": {
+              "en": "Assess and record the firm's money laundering and terrorist financing risks"
+            },
+            "summaries": {
+              "en": "A firm within the regulations must identify and assess, by appropriate steps, the money laundering and terrorist financing risks its business faces, looking at its customers, the countries it operates in, its products and services, its transactions and its delivery channels, and at information from its supervisor. It keeps an up-to-date written record of the steps taken, unless its supervisor has said in writing that none is needed, and gives the assessment and that record to the supervisor on request."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 18",
+            "dutyType": "governance"
+          }
+        },
+        {
+          "title": "Add the duty: Keep written anti-money laundering policies, controls and procedures approved by senior management",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/19",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), reg. 19, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-policies-controls-procedures",
+            "titles": {
+              "en": "Keep written anti-money laundering policies, controls and procedures approved by senior management"
+            },
+            "summaries": {
+              "en": "The firm must establish, maintain and regularly review policies, controls and procedures that manage the risks found in its risk assessment, proportionate to its size and nature and approved by senior management, and keep a written record of them, of changes to them and of how they were communicated inside the business. They cover risk management, internal controls, customer due diligence, reliance and record keeping, compliance monitoring, the scrutiny of unusually complex or large transactions and the assessment of new products and technology before they are adopted. Where relevant they are communicated to branches and subsidiaries outside the United Kingdom."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 19",
+            "dutyType": "governance"
+          }
+        },
+        {
+          "title": "Add the duty: Appoint a responsible senior officer and a nominated officer, screen staff and keep an independent audit function",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/21",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), reg. 21, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-internal-controls",
+            "titles": {
+              "en": "Appoint a responsible senior officer and a nominated officer, screen staff and keep an independent audit function"
+            },
+            "summaries": {
+              "en": "Where its size and nature make it appropriate, the firm must make a board member or senior manager responsible for compliance with the regulations, screen relevant employees before and during their appointment, and set up an independent audit function that tests its policies, controls and procedures. It must appoint a nominated officer and tell its supervisory authority who holds each post within 14 days of an appointment. It also keeps systems that let it answer fully and rapidly when financial investigators, constables or the other officers the regulation lists ask whether it has, or had in the previous five years, a business relationship with a person."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 21",
+            "dutyType": "governance"
+          }
+        },
+        {
+          "title": "Add the duty: Train relevant staff and agents to recognise money laundering, terrorist financing and proliferation financing",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/24",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), reg. 24, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-training",
+            "titles": {
+              "en": "Train relevant staff and agents to recognise money laundering, terrorist financing and proliferation financing"
+            },
+            "summaries": {
+              "en": "The firm must take appropriate measures so that relevant employees, and agents whose work is of the same kind, know the law on money laundering, terrorist financing, proliferation financing and data protection that bears on the regulations, and are regularly trained to recognise and deal with transactions and situations that may be related to them. It keeps a written record of the measures taken and the training given."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 24",
+            "dutyType": "governance"
+          }
+        },
+        {
+          "title": "Add the duty: Identify and verify customers and beneficial owners and monitor the relationship",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/27",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), regs. 27 and 28, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-customer-due-diligence",
+            "titles": {
+              "en": "Identify and verify customers and beneficial owners and monitor the relationship"
+            },
+            "summaries": {
+              "en": "The firm must apply customer due diligence when it establishes a business relationship, carries out an occasional transfer of funds above £800 or another occasional transaction of £12,000 or more, suspects money laundering or terrorist financing, or doubts identification information it holds, and to existing customers at appropriate times on a risk basis. It identifies the customer and verifies that identity, identifies any beneficial owner and takes reasonable measures to verify who that is, and assesses the purpose and intended nature of the relationship. It then monitors the relationship, scrutinising transactions and keeping its due diligence information up to date."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 27 and 28",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Stop transactions and end the relationship when due diligence cannot be completed",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/31",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), reg. 31, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-cease-when-due-diligence-fails",
+            "titles": {
+              "en": "Stop transactions and end the relationship when due diligence cannot be completed"
+            },
+            "summaries": {
+              "en": "Where the firm cannot apply the required customer due diligence measures to a customer, it must not carry out a transaction with or for that customer, must not establish a business relationship, and must end any existing one. It must also consider whether to make a disclosure under Part 7 of the Proceeds of Crime Act 2002 or Part 3 of the Terrorism Act 2000. Money deposited may be repaid to the depositor, with the required consent where a disclosure has to be made."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 31",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Apply enhanced due diligence to high-risk cases and politically exposed persons",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/33",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), regs. 33 and 35, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-enhanced-due-diligence",
+            "titles": {
+              "en": "Apply enhanced due diligence to high-risk cases and politically exposed persons"
+            },
+            "summaries": {
+              "en": "The firm must apply enhanced customer due diligence and enhanced ongoing monitoring in every case of high risk, among them business with a person established in a country on the Financial Action Task Force's call for action list, correspondent relationships, customers who are politically exposed persons or their family members or known close associates, and unusually complex or large transactions. It needs risk-management systems to find out whether a customer or beneficial owner is a politically exposed person. For such a customer it obtains senior management approval for the relationship, takes adequate measures to find out where the customer's wealth and the funds involved come from, and monitors the relationship more closely."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 33 and 35",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Keep due diligence and transaction records for five years",
+          "source": "https://www.legislation.gov.uk/uksi/2017/692/regulation/40",
+          "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), reg. 40, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-money-laundering-regulations-2017-record-keeping",
+            "titles": {
+              "en": "Keep due diligence and transaction records for five years"
+            },
+            "summaries": {
+              "en": "The firm must keep copies of the documents and information obtained for customer due diligence, and enough supporting records of the transactions covered to reconstruct them. It keeps them for five years from the day it knows or has reasonable grounds to believe the occasional transaction is complete or the business relationship has ended; transaction records within a relationship need not be kept for more than 10 years. After that it deletes the personal data unless another enactment, court proceedings or the data subject's consent allows it to keep them."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 40",
+            "dutyType": "record_keeping"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Payment Services Regulations 2017, S.I. 2017/752",
+      "source": "https://www.legislation.gov.uk/uksi/2017/752/contents",
+      "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), revised text as it stands on 2026-11-14 (latest revised version dated 2026-04-28); made by the Treasury under section 2(2) of the European Communities Act 1972 and sections 22(1) and (5) and 428(3) of the Financial Services and Markets Act 2000, among the powers its opening words list; in force from 2017-08-13 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2017-752",
+        "titles": {
+          "en": "The Payment Services Regulations 2017"
+        },
+        "originalLanguage": "en",
+        "shortName": "Payment Services Regulations 2017",
+        "officialRef": "The Payment Services Regulations 2017, S.I. 2017/752",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:payments",
+        "inForceFrom": "2017-08-13"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Safeguard funds received for payment transactions",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/23",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 23, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-safeguard-relevant-funds",
+            "titles": {
+              "en": "Safeguard funds received for payment transactions"
+            },
+            "summaries": {
+              "en": "An authorised payment institution must safeguard the sums it receives for the execution of payment transactions, either by keeping them apart from all other funds and, if still held at the end of the next business day, placing them in a designated safeguarding account at the Bank of England or at an authorised credit institution, or in secure, liquid assets the FCA approves, or by covering them with an insurance policy or comparable guarantee. It must keep organisational arrangements that minimise the risk of losing those funds through fraud, misuse, negligence or poor administration."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 23",
+            "dutyType": "governance",
+            "effectiveFrom": "2018-01-13",
+            "terms": [
+              "legal_entity:payment_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Give the payment service user the required information before the contract binds",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/43",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), regs. 43 and 48, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-information-before-contract",
+            "titles": {
+              "en": "Give the payment service user the required information before the contract binds"
+            },
+            "summaries": {
+              "en": "Before a user is bound by a single payment service contract, the provider must give or make available the identifier needed for the payment, the maximum execution time, the charges, any exchange rate and the parts of Schedule 4 that are relevant to the contract. Before a framework contract binds the user, it must provide in good time the full set of information listed in Schedule 4. Where the contract is concluded at the user's request by a means of distance communication that does not allow this, the information follows immediately afterwards."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 43 and 48",
+            "dutyType": "disclosure",
+            "effectiveFrom": "2018-01-13"
+          }
+        },
+        {
+          "title": "Add the duty: Refund an unauthorised payment by the end of the next business day",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/76",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 76, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-refund-unauthorised-payments",
+            "titles": {
+              "en": "Refund an unauthorised payment by the end of the next business day"
+            },
+            "summaries": {
+              "en": "Where a payment was executed without the payer's consent, the provider must refund its amount and put the debited account back in the state it would have been in, as soon as practicable and at the latest by the close of the business day after it learns of the transaction. The time limit does not apply where the provider has reasonable grounds to suspect fraud by the user and reports those grounds in writing. Where the payment went through a payment initiation service provider, the account provider still makes the refund."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 76",
+            "dutyType": "conduct",
+            "effectiveFrom": "2018-01-13"
+          }
+        },
+        {
+          "title": "Add the duty: Credit the payee's provider by the end of the business day after the payment order is received",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/86",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 86, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-execution-time",
+            "titles": {
+              "en": "Credit the payee's provider by the end of the business day after the payment order is received"
+            },
+            "summaries": {
+              "en": "The payer's provider must make sure the amount reaches the account of the payee's provider by the end of the business day following receipt of the payment order, or the second business day for a paper order. Where it has reasonable grounds to suspect the order follows fraud or dishonesty by someone other than the payer, it may delay the payment to make enquiries, for no longer than necessary and never beyond the fourth business day, and must tell the payer of the delay and the reasons."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 86",
+            "dutyType": "conduct",
+            "effectiveFrom": "2018-01-13"
+          }
+        },
+        {
+          "title": "Add the duty: Report a major operational or security incident to the FCA without undue delay",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/99",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 99, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-incident-reporting",
+            "titles": {
+              "en": "Report a major operational or security incident to the FCA without undue delay"
+            },
+            "summaries": {
+              "en": "A provider that learns of a major operational or security incident must notify the FCA without undue delay, in the form and with the content the FCA directs. If the incident affects or may affect the financial interests of its users, it must also tell them without undue delay about the incident and what they can do to limit its effects."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 99",
+            "dutyType": "reporting",
+            "effectiveFrom": "2018-01-13"
+          }
+        },
+        {
+          "title": "Add the duty: Apply strong customer authentication to online account access and electronic payments",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/100",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 100, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-strong-customer-authentication",
+            "titles": {
+              "en": "Apply strong customer authentication to online account access and electronic payments"
+            },
+            "summaries": {
+              "en": "A provider must apply strong customer authentication when a user accesses a payment account online, initiates an electronic payment or does anything through a remote channel that may carry a risk of payment fraud, and for remote electronic payments the authentication must link the transaction to a specific amount and payee. It must protect the confidentiality and integrity of users' security credentials, and an account provider must let payment initiation and account information providers rely on its authentication. Technical standards may set exemptions."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 100",
+            "dutyType": "technical",
+            "effectiveFrom": "2019-09-14",
+            "terms": [
+              "channel:digital"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Answer payment service complaints within 15 business days",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/101",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 101, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-complaints-15-business-days",
+            "titles": {
+              "en": "Answer payment service complaints within 15 business days"
+            },
+            "summaries": {
+              "en": "For users who cannot take a complaint to the Financial Ombudsman Service, the provider must have and apply adequate and effective procedures for resolving complaints about rights and obligations under Parts 6 and 7. It must reply to every point on paper or another agreed durable medium within 15 business days of receiving the complaint. In exceptional cases beyond its control it sends a holding reply with reasons and a deadline no later than 35 business days after receipt."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 101",
+            "dutyType": "conduct",
+            "effectiveFrom": "2018-01-13"
+          }
+        },
+        {
+          "title": "Add the duty: Give payment service providers access to payment account services on fair terms",
+          "source": "https://www.legislation.gov.uk/uksi/2017/752/regulation/105",
+          "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), reg. 105, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2017/752/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-payment-services-regulations-2017-access-to-bank-accounts",
+            "titles": {
+              "en": "Give payment service providers access to payment account services on fair terms"
+            },
+            "summaries": {
+              "en": "A credit institution must grant payment service providers, and applicants for authorisation or registration, access to payment account services on terms that are objective, proportionate and non-discriminatory, wide enough for them to provide payment services efficiently. It states its criteria when asked about access and keeps arrangements to apply them properly. If it refuses or withdraws access it must notify the FCA with reasons."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 105",
+            "dutyType": "conduct",
+            "effectiveFrom": "2018-01-13",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Electronic Money Regulations 2011, S.I. 2011/99",
+      "source": "https://www.legislation.gov.uk/uksi/2011/99/contents",
+      "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), revised text as it stands on 2026-11-14 (latest revised version dated 2026-02-25); made by the Treasury under section 2(2) of the European Communities Act 1972, as its opening words read; in force from 2011-02-09 (reg. 1(2)(a)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2011-99",
+        "titles": {
+          "en": "The Electronic Money Regulations 2011"
+        },
+        "originalLanguage": "en",
+        "shortName": "Electronic Money Regulations 2011",
+        "officialRef": "The Electronic Money Regulations 2011, S.I. 2011/99",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:payments",
+        "inForceFrom": "2011-02-09"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Safeguard funds received in exchange for electronic money",
+          "source": "https://www.legislation.gov.uk/uksi/2011/99/regulation/20",
+          "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), regs. 20 to 22, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-electronic-money-regulations-2011-safeguard-funds",
+            "titles": {
+              "en": "Safeguard funds received in exchange for electronic money"
+            },
+            "summaries": {
+              "en": "An electronic money institution must safeguard the funds it has received in exchange for issued electronic money. It either keeps them apart from all other funds and, if still held at the end of the next business day, places them in a designated safeguarding account at the Bank of England or at an authorised credit institution, or in secure, liquid, low-risk assets held with an authorised custodian, or covers them with an insurance policy or comparable guarantee payable into such an account. Funds received by payment instrument are safeguarded once credited or made available, and at the latest five business days after the electronic money was issued."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 20 to 22",
+            "dutyType": "governance",
+            "effectiveFrom": "2011-04-30",
+            "terms": [
+              "legal_entity:emoney_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Hold own funds of at least 350,000 euro or the calculated requirement at all times",
+          "source": "https://www.legislation.gov.uk/uksi/2011/99/regulation/19",
+          "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), reg. 19, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-electronic-money-regulations-2011-own-funds",
+            "titles": {
+              "en": "Hold own funds of at least 350,000 euro or the calculated requirement at all times"
+            },
+            "summaries": {
+              "en": "An authorised electronic money institution must at all times hold own funds at least equal to the greater of 350,000 euro and the own funds requirement calculated under Schedule 2, as adjusted by any direction of the FCA. A small electronic money institution whose average outstanding electronic money reaches 500,000 euro must hold the amount calculated under paragraph 14 of that Schedule."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 19",
+            "dutyType": "governance",
+            "effectiveFrom": "2011-04-30",
+            "terms": [
+              "legal_entity:emoney_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Notify the FCA before outsourcing an operational function and keep control of important ones",
+          "source": "https://www.legislation.gov.uk/uksi/2011/99/regulation/26",
+          "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), reg. 26, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-electronic-money-regulations-2011-outsourcing",
+            "titles": {
+              "en": "Notify the FCA before outsourcing an operational function and keep control of important ones"
+            },
+            "summaries": {
+              "en": "An authorised electronic money institution must notify the FCA when it intends to contract out any operational function relating to issuing, distributing or redeeming electronic money or to providing payment services. An important operational function, an information technology system among them, may be outsourced only if the institution's internal control and the FCA's ability to monitor it are not impaired, senior management keeps its responsibility, and the institution's obligations to holders and the conditions of its authorisation are unaffected."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 26",
+            "dutyType": "governance",
+            "effectiveFrom": "2011-04-30",
+            "terms": [
+              "legal_entity:emoney_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Keep records of compliance with the prudential rules for at least five years",
+          "source": "https://www.legislation.gov.uk/uksi/2011/99/regulation/27",
+          "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), reg. 27, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-electronic-money-regulations-2011-record-keeping",
+            "titles": {
+              "en": "Keep records of compliance with the prudential rules for at least five years"
+            },
+            "summaries": {
+              "en": "An electronic money institution must maintain the records that relate to its compliance with Part 3 of the regulations, in particular those the FCA needs to supervise that compliance, and keep each for at least five years from the day it was created."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 27",
+            "dutyType": "record_keeping",
+            "effectiveFrom": "2011-04-30",
+            "terms": [
+              "legal_entity:emoney_institution"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Issue electronic money at par and redeem it at par whenever the holder asks",
+          "source": "https://www.legislation.gov.uk/uksi/2011/99/regulation/39",
+          "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), regs. 39 to 41, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-electronic-money-regulations-2011-issue-and-redeem-at-par",
+            "titles": {
+              "en": "Issue electronic money at par and redeem it at par whenever the holder asks"
+            },
+            "summaries": {
+              "en": "An electronic money issuer must issue electronic money at par value without delay when it receives funds, and redeem the monetary value held at par at any time the holder asks. The contract must state the conditions of redemption and any fees clearly and prominently, and the holder is told of them before being bound. A redemption fee may be charged only if the contract states it and only for redemption before the contract ends, on early termination by the holder, or more than a year after termination, and it must be proportionate to the costs actually incurred."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 39 to 41",
+            "dutyType": "conduct",
+            "effectiveFrom": "2011-04-30"
+          }
+        },
+        {
+          "title": "Add the duty: Pay no interest or time-related benefit on electronic money",
+          "source": "https://www.legislation.gov.uk/uksi/2011/99/regulation/45",
+          "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), reg. 45, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2011/99/regulation/1"
+          },
+          "payload": {
+            "key": "obl-gb-electronic-money-regulations-2011-no-interest",
+            "titles": {
+              "en": "Pay no interest or time-related benefit on electronic money"
+            },
+            "summaries": {
+              "en": "An electronic money issuer must not award interest for holding electronic money, or any other benefit linked to the length of time a holder holds it."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 45",
+            "dutyType": "conduct",
+            "effectiveFrom": "2011-04-30"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Payment Accounts Regulations 2015, S.I. 2015/2038",
+      "source": "https://www.legislation.gov.uk/uksi/2015/2038/contents",
+      "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), revised text as it stands on 2026-11-14 (latest revised version dated 2026-04-28); made by the Treasury under section 2(2) of the European Communities Act 1972, as its opening words read; in force from 2016-09-18 (reg. 1(2)(b)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2015-2038",
+        "titles": {
+          "en": "The Payment Accounts Regulations 2015"
+        },
+        "originalLanguage": "en",
+        "shortName": "Payment Accounts Regulations 2015",
+        "officialRef": "The Payment Accounts Regulations 2015, S.I. 2015/2038",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-09-18"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Give consumers a fee information document before a payment account contract",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/8",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), reg. 8, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-fee-information-document",
+            "titles": {
+              "en": "Give consumers a fee information document before a payment account contract"
+            },
+            "summaries": {
+              "en": "In good time before a consumer enters into a contract for a payment account, the provider offering the account must hand the consumer a fee information document. Schedule 1 sets what the document contains and how it is presented."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 8",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Send each consumer an annual statement of fees free of charge",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/10",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), reg. 10, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-statement-of-fees",
+            "titles": {
+              "en": "Send each consumer an annual statement of fees free of charge"
+            },
+            "summaries": {
+              "en": "Every consumer who holds a payment account must receive from the provider, free of charge, a statement of fees once a year. The way it is sent is agreed with the consumer, and it is given on paper if the consumer asks. Schedule 2 sets its content."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 10",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Offer consumers a switching service between payment accounts",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/14",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), reg. 14, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-switching-service",
+            "titles": {
+              "en": "Offer consumers a switching service between payment accounts"
+            },
+            "summaries": {
+              "en": "Every payment service provider must let consumers switch between payment accounts in the same currency held with providers located in the United Kingdom. The service must meet the requirements of Schedule 3 unless it is provided under an alternative arrangement that regulation 15 allows."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 14",
+            "dutyType": "conduct",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Do not discriminate between legally resident consumers who apply for or use a payment account",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/18",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), reg. 18, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-non-discrimination",
+            "titles": {
+              "en": "Do not discriminate between legally resident consumers who apply for or use a payment account"
+            },
+            "summaries": {
+              "en": "When a consumer who lives lawfully in the United Kingdom applies for or uses a payment account, a credit institution may not treat that consumer differently because of nationality, place of residence or any of the personal characteristics the regulation lists, such as sex, race, religion, disability, age or sexual orientation. The conditions for holding a basic account must not be discriminatory either."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 18",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Offer a payment account with basic features to every eligible consumer",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/22",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), regs. 22 and 23, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-offer-basic-account",
+            "titles": {
+              "en": "Offer a payment account with basic features to every eligible consumer"
+            },
+            "summaries": {
+              "en": "A credit institution the Treasury has designated must offer a basic account to every eligible consumer who applies for one. A consumer is eligible if legally resident in the United Kingdom, which includes people with no fixed address and asylum seekers, and either holds no payment account with those features at a United Kingdom credit institution or is ineligible for the institution's other payment accounts. The institution verifies that the consumer has no such account unless it relies on the consumer's declaration."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 22 and 23",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Charge no fee for the standard sterling services of a basic account",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/20",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), reg. 20, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-basic-account-no-fees",
+            "titles": {
+              "en": "Charge no fee for the standard sterling services of a basic account"
+            },
+            "summaries": {
+              "en": "A credit institution must not charge a fee for opening, operating or closing a basic account, paying in, withdrawing cash, direct debits, card payments or credit transfers when the service is provided in sterling. It must not charge a fee when a payment fails for lack of funds, and no fee or interest when the account is overrun. For a service in another currency it may charge a reasonable fee."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 20",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Open or refuse a basic account within 10 business days and explain a refusal",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/24",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), regs. 24 and 25, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-basic-account-decision",
+            "titles": {
+              "en": "Open or refuse a basic account within 10 business days and explain a refusal"
+            },
+            "summaries": {
+              "en": "A designated credit institution must decide promptly whether to open a basic account, and at the latest within 10 business days of receiving the completed application. It must refuse where opening the account would be unlawful, for instance under the Fraud Act 2006, the money laundering regulations or section 40 of the Immigration Act 2014. On refusal it tells the consumer the reason in writing, free of charge and without delay where it lawfully may, and explains how to complain to it and to the Financial Ombudsman Service."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 24 and 25",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail",
+              "lifecycle_stage:onboarding"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Close a basic account only on the listed grounds and with the required notice",
+          "source": "https://www.legislation.gov.uk/uksi/2015/2038/regulation/26",
+          "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), reg. 26, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-payment-accounts-regulations-2015-basic-account-closure",
+            "titles": {
+              "en": "Close a basic account only on the listed grounds and with the required notice"
+            },
+            "summaries": {
+              "en": "A designated credit institution may close a basic account only on a ground the regulation lists, such as knowing use for illegal purposes, no transaction for more than 24 consecutive months, incorrect information at application, loss of legal residence or a later account elsewhere with the same services. For inactivity, loss of residence or another account it gives the grounds in writing and free of charge at least two months before closure, or at least 90 days for a contract entered into on or after 28 April 2026. The notice tells the consumer how to complain to the institution and to the Financial Ombudsman Service."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 26",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank",
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Excluded Activities and Prohibitions Order 2014, S.I. 2014/2080 (The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014)",
+      "source": "https://www.legislation.gov.uk/uksi/2014/2080/contents",
+      "sourceLabel": "legislation.gov.uk, The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014 (S.I. 2014/2080), revised text as it stands on 2026-11-14 (latest revised version dated 2025-02-04); made by the Treasury under sections 142D, 142E and 142F of the Financial Services and Markets Act 2000, as its opening words read; in force from 2015-01-01 (art. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2014/2080/article/1"
+      },
+      "payload": {
+        "key": "uksi-2014-2080",
+        "titles": {
+          "en": "The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014"
+        },
+        "originalLanguage": "en",
+        "shortName": "Excluded Activities and Prohibitions Order 2014",
+        "officialRef": "The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014, S.I. 2014/2080",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:banking",
+        "inForceFrom": "2015-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Deal in investments as principal only within the order's exceptions",
+          "source": "https://www.legislation.gov.uk/uksi/2014/2080/article/4",
+          "sourceLabel": "legislation.gov.uk, The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014 (S.I. 2014/2080), arts. 4, 6 and 9, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2014/2080/article/1"
+          },
+          "payload": {
+            "key": "obl-gb-excluded-activities-and-prohibitions-order-2014-dealing-as-principal-exceptions",
+            "titles": {
+              "en": "Deal in investments as principal only within the order's exceptions"
+            },
+            "summaries": {
+              "en": "For a ring-fenced body, dealing in investments as principal is an excluded activity unless it falls within articles 6 to 12 of the order. The exceptions cover transactions whose sole or main purpose is to limit the body's or its group's exposure to risks such as changes in interest rates, exchange rates or prices, default risk and liquidity risk, the buying and selling of liquid assets to manage liquidity, and derivatives sold to account holders that meet the requirements of articles 10 or 11 and all the conditions in article 12."
+            },
+            "originalLanguage": "en",
+            "refLabel": "arts. 4, 6 and 9",
+            "dutyType": "conduct",
+            "effectiveFrom": "2019-01-01",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Do not trade commodities as principal except for own use or as collateral",
+          "source": "https://www.legislation.gov.uk/uksi/2014/2080/article/5",
+          "sourceLabel": "legislation.gov.uk, The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014 (S.I. 2014/2080), art. 5, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2014/2080/article/1"
+          },
+          "payload": {
+            "key": "obl-gb-excluded-activities-and-prohibitions-order-2014-no-commodities-trading",
+            "titles": {
+              "en": "Do not trade commodities as principal except for own use or as collateral"
+            },
+            "summaries": {
+              "en": "Buying or selling commodities as principal is an excluded activity for a ring-fenced body. It may still deal in commodities it or a subsidiary needs for its own use or consumption, to take or realise a security interest over them, or under a title transfer collateral arrangement, and where another exception of the order applies."
+            },
+            "originalLanguage": "en",
+            "refLabel": "art. 5",
+            "dutyType": "conduct",
+            "effectiveFrom": "2019-01-01",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Use inter-bank payment systems as a direct participant unless a listed condition is met",
+          "source": "https://www.legislation.gov.uk/uksi/2014/2080/article/13",
+          "sourceLabel": "legislation.gov.uk, The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014 (S.I. 2014/2080), art. 13, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2014/2080/article/1"
+          },
+          "payload": {
+            "key": "obl-gb-excluded-activities-and-prohibitions-order-2014-payment-system-access",
+            "titles": {
+              "en": "Use inter-bank payment systems as a direct participant unless a listed condition is met"
+            },
+            "summaries": {
+              "en": "A ring-fenced body must not enter into a transaction that lets it use the services of an inter-bank payment system unless it is a direct participant in that system. Otherwise one of the article's conditions has to be met: it reaches the system through a ring-fenced body of its own group that is a direct participant, it is not eligible to participate directly, it could still make its payments by another route if the intermediary failed, or the PRA has given permission."
+            },
+            "originalLanguage": "en",
+            "refLabel": "art. 13",
+            "dutyType": "conduct",
+            "effectiveFrom": "2019-01-01",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Incur no exposure to a financial institution unless an exemption applies",
+          "source": "https://www.legislation.gov.uk/uksi/2014/2080/article/14",
+          "sourceLabel": "legislation.gov.uk, The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014 (S.I. 2014/2080), art. 14, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2014/2080/article/1"
+          },
+          "payload": {
+            "key": "obl-gb-excluded-activities-and-prohibitions-order-2014-no-financial-institution-exposures",
+            "titles": {
+              "en": "Incur no exposure to a financial institution unless an exemption applies"
+            },
+            "summaries": {
+              "en": "A ring-fenced body may take on an exposure to a financial institution only where an exemption in article 14 or in articles 15 to 19C covers it. The exemptions include transactions whose main purpose is to hedge the body's or its group's risks and the holding of liquid assets to meet liquidity requirements, and the later articles add trade finance, securitisation and covered bonds, conduit lending, repo transactions, ancillary exposures, infrastructure financing and small exposures."
+            },
+            "originalLanguage": "en",
+            "refLabel": "art. 14",
+            "dutyType": "conduct",
+            "effectiveFrom": "2019-01-01",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Bank Recovery and Resolution (No. 2) Order 2014, S.I. 2014/3348",
+      "source": "https://www.legislation.gov.uk/uksi/2014/3348/contents",
+      "sourceLabel": "legislation.gov.uk, The Bank Recovery and Resolution (No. 2) Order 2014 (S.I. 2014/3348), revised text as it stands on 2026-11-14 (latest revised version dated 2026-01-01); made by the Treasury under section 2(2) of the European Communities Act 1972, section 192B(4) of the Financial Services and Markets Act 2000 and section 230 of the Banking Act 2009, as its opening words read; in force from 2015-01-10 (art. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2014/3348/article/1"
+      },
+      "payload": {
+        "key": "uksi-2014-3348",
+        "titles": {
+          "en": "The Bank Recovery and Resolution (No. 2) Order 2014"
+        },
+        "originalLanguage": "en",
+        "shortName": "Bank Recovery and Resolution (No. 2) Order 2014",
+        "officialRef": "The Bank Recovery and Resolution (No. 2) Order 2014, S.I. 2014/3348",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:banking",
+        "inForceFrom": "2015-01-10"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Give the recovery plan the content Schedule A1 requires and have the management body approve it",
+          "source": "https://www.legislation.gov.uk/uksi/2014/3348/schedule/A1/paragraph/2",
+          "sourceLabel": "legislation.gov.uk, The Bank Recovery and Resolution (No. 2) Order 2014 (S.I. 2014/3348), Sch. A1 paras. 2, 4, 10 and 11, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-bank-recovery-and-resolution-no-2-order-2014-recovery-plan-content",
+            "titles": {
+              "en": "Give the recovery plan the content Schedule A1 requires and have the management body approve it"
+            },
+            "summaries": {
+              "en": "A recovery plan or group recovery plan must contain what Schedule A1 lists, among them a summary of the capacity to restore the firm's financial position, capital and liquidity actions, access to contingency funding, the critical functions, the arrangements to keep access to market infrastructure and operational processes, and a communication plan. It must not assume any access to extraordinary public financial support. It must show that the management body assessed and approved it before it went to the regulator, and must include a framework of indicators marking the points at which recovery actions may be taken."
+            },
+            "originalLanguage": "en",
+            "refLabel": "Sch. A1 paras. 2, 4, 10 and 11",
+            "dutyType": "governance",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Monitor the recovery indicators and notify the regulator at once of a decision to depart from them",
+          "source": "https://www.legislation.gov.uk/uksi/2014/3348/schedule/A1/paragraph/13",
+          "sourceLabel": "legislation.gov.uk, The Bank Recovery and Resolution (No. 2) Order 2014 (S.I. 2014/3348), Sch. A1 paras. 13 to 15, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-bank-recovery-and-resolution-no-2-order-2014-recovery-indicator-decisions",
+            "titles": {
+              "en": "Monitor the recovery indicators and notify the regulator at once of a decision to depart from them"
+            },
+            "summaries": {
+              "en": "The plan must describe the arrangements the firm has made to monitor its recovery indicators regularly. The management body may act under the plan although an indicator has not been met, or decide not to act although one has, and the firm must notify the appropriate regulator of either decision without delay."
+            },
+            "originalLanguage": "en",
+            "refLabel": "Sch. A1 paras. 13 to 15",
+            "dutyType": "reporting",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Have an intra-group financial support agreement approved by the members and report on it every year",
+          "source": "https://www.legislation.gov.uk/uksi/2014/3348/article/98",
+          "sourceLabel": "legislation.gov.uk, The Bank Recovery and Resolution (No. 2) Order 2014 (S.I. 2014/3348), arts. 98 and 100, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-bank-recovery-and-resolution-no-2-order-2014-group-financial-support-agreements",
+            "titles": {
+              "en": "Have an intra-group financial support agreement approved by the members and report on it every year"
+            },
+            "summaries": {
+              "en": "An authorised group financial support agreement binds a United Kingdom group entity only once its members have approved it by ordinary resolution, after the directors have made available a memorandum setting out the resolution and the terms of the agreement. The directors must then prepare an annual report on how the agreement has performed and how decisions under it were implemented, and send it to every member by each anniversary of the agreement."
+            },
+            "originalLanguage": "en",
+            "refLabel": "arts. 98 and 100",
+            "dutyType": "governance"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Public Offers and Admissions to Trading Regulations 2024, S.I. 2024/105",
+      "source": "https://www.legislation.gov.uk/uksi/2024/105/contents",
+      "sourceLabel": "legislation.gov.uk, The Public Offers and Admissions to Trading Regulations 2024 (S.I. 2024/105), revised text as it stands on 2026-11-14 (latest revised version dated 2026-01-19); made by the Treasury under sections 21, 22(1) and (5), 71K to 71R, 138EA(3) and 428(3) of, and paragraph 25 of Schedule 2 to, the Financial Services and Markets Act 2000, as its opening words read; in force from 2024-01-30 (reg. 2(1)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2024/105/regulation/2"
+      },
+      "payload": {
+        "key": "uksi-2024-105",
+        "titles": {
+          "en": "The Public Offers and Admissions to Trading Regulations 2024"
+        },
+        "originalLanguage": "en",
+        "shortName": "Public Offers and Admissions to Trading Regulations 2024",
+        "officialRef": "The Public Offers and Admissions to Trading Regulations 2024, S.I. 2024/105",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:securities",
+        "inForceFrom": "2024-01-30"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Offer securities to the public in the United Kingdom only where Schedule 1 allows it",
+          "source": "https://www.legislation.gov.uk/uksi/2024/105/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The Public Offers and Admissions to Trading Regulations 2024 (S.I. 2024/105), reg. 12, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2025/1078/regulation/5"
+          },
+          "payload": {
+            "key": "obl-gb-public-offers-and-admissions-to-trading-regulations-2024-public-offers-only-when-exempt",
+            "titles": {
+              "en": "Offer securities to the public in the United Kingdom only where Schedule 1 allows it"
+            },
+            "summaries": {
+              "en": "An offer of relevant securities to the public in the United Kingdom is unlawful unless it is of a kind listed in Part 1 of Schedule 1, or consists entirely of a combination of those kinds. Part 2 of the Schedule adds supplementary provision."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 12",
+            "dutyType": "conduct",
+            "effectiveFrom": "2026-01-19"
+          }
+        },
+        {
+          "title": "Add the duty: Give every investor in an offer the material information disclosed to selected investors",
+          "source": "https://www.legislation.gov.uk/uksi/2024/105/regulation/13",
+          "sourceLabel": "legislation.gov.uk, The Public Offers and Admissions to Trading Regulations 2024 (S.I. 2024/105), reg. 13, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2025/1078/regulation/5"
+          },
+          "payload": {
+            "key": "obl-gb-public-offers-and-admissions-to-trading-regulations-2024-equal-disclosure-of-material-information",
+            "titles": {
+              "en": "Give every investor in an offer the material information disclosed to selected investors"
+            },
+            "summaries": {
+              "en": "For an offer of relevant securities to the public of £1,000,000 or more over 12 months under the Schedule 1 exemptions the regulation names, any material information an issuer or offeror discloses to selected investors, orally or in writing, must also reach the other investors. Where the offer needs a prospectus or similar document, the information goes into that document or a supplement to it; otherwise it is shared with all the other investors the offer is aimed at."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 13",
+            "dutyType": "disclosure",
+            "effectiveFrom": "2026-01-19"
+          }
+        },
+        {
+          "title": "Add the duty: Put in a prospectus all the information an investor needs for an informed assessment",
+          "source": "https://www.legislation.gov.uk/uksi/2024/105/regulation/23",
+          "sourceLabel": "legislation.gov.uk, The Public Offers and Admissions to Trading Regulations 2024 (S.I. 2024/105), reg. 23, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2025/1078/regulation/5"
+          },
+          "payload": {
+            "key": "obl-gb-public-offers-and-admissions-to-trading-regulations-2024-prospectus-necessary-information",
+            "titles": {
+              "en": "Put in a prospectus all the information an investor needs for an informed assessment"
+            },
+            "summaries": {
+              "en": "A prospectus, like an MTF admission prospectus, has to include the information material to an investor for an informed view of the financial position, results, assets, liabilities and prospects of the issuer and any guarantor, of the rights attached to the securities, and of the reasons for the issue and its effect on the issuer. For debt securities prospects are read as creditworthiness, and the information may vary with the issuer, the securities and the circumstances."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 23",
+            "dutyType": "disclosure",
+            "effectiveFrom": "2026-01-19"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Securitisation Regulations 2024, S.I. 2024/102",
+      "source": "https://www.legislation.gov.uk/uksi/2024/102/contents",
+      "sourceLabel": "legislation.gov.uk, The Securitisation Regulations 2024 (S.I. 2024/102), revised text as it stands on 2026-11-14 (latest revised version dated 2024-11-22); made by the Treasury under sections 3RE, 71K, 71M to 71Q, 138EA and 428(3) of the Financial Services and Markets Act 2000 and sections 4, 84(2) and 86(5) and (6) of the Financial Services and Markets Act 2023, as its opening words read; in force from 2024-01-30 (reg. 2(1)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2024/102/regulation/2"
+      },
+      "payload": {
+        "key": "uksi-2024-102",
+        "titles": {
+          "en": "The Securitisation Regulations 2024"
+        },
+        "originalLanguage": "en",
+        "shortName": "Securitisation Regulations 2024",
+        "officialRef": "The Securitisation Regulations 2024, S.I. 2024/102",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:securities",
+        "inForceFrom": "2024-01-30"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: As originator or sponsor, do not use a special purpose entity in a high-risk jurisdiction",
+          "source": "https://www.legislation.gov.uk/uksi/2024/102/regulation/8A",
+          "sourceLabel": "legislation.gov.uk, The Securitisation Regulations 2024 (S.I. 2024/102), reg. 8A(1), revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2024/102/regulation/2"
+          },
+          "payload": {
+            "key": "obl-gb-securitisation-regulations-2024-no-high-risk-jurisdiction-sspe",
+            "titles": {
+              "en": "As originator or sponsor, do not use a special purpose entity in a high-risk jurisdiction"
+            },
+            "summaries": {
+              "en": "The originator and the sponsor of a securitisation must make sure that it is not carried out through a securitisation special purpose entity established outside the United Kingdom in a country the Financial Action Task Force currently lists as a high-risk jurisdiction subject to a call for enhanced due diligence or for countermeasures."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 8A(1)",
+            "dutyType": "conduct",
+            "effectiveFrom": "2024-11-01"
+          }
+        },
+        {
+          "title": "Add the duty: As an institutional investor, do not invest in a securitisation through a high-risk jurisdiction",
+          "source": "https://www.legislation.gov.uk/uksi/2024/102/regulation/8A",
+          "sourceLabel": "legislation.gov.uk, The Securitisation Regulations 2024 (S.I. 2024/102), reg. 8A(2), revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2024/102/regulation/2"
+          },
+          "payload": {
+            "key": "obl-gb-securitisation-regulations-2024-no-investment-in-high-risk-sspe",
+            "titles": {
+              "en": "As an institutional investor, do not invest in a securitisation through a high-risk jurisdiction"
+            },
+            "summaries": {
+              "en": "Institutional investors may not put money into a securitisation that uses a securitisation special purpose entity established outside the United Kingdom in a country on the Financial Action Task Force's list of high-risk jurisdictions subject to a call for enhanced due diligence or for countermeasures."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 8A(2)",
+            "dutyType": "conduct",
+            "effectiveFrom": "2024-11-01"
+          }
+        },
+        {
+          "title": "Add the duty: Use the STS label only for a securitisation that qualifies for it",
+          "source": "https://www.legislation.gov.uk/uksi/2024/102/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The Securitisation Regulations 2024 (S.I. 2024/102), reg. 12, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2024/102/regulation/2"
+          },
+          "payload": {
+            "key": "obl-gb-securitisation-regulations-2024-sts-designation-use",
+            "titles": {
+              "en": "Use the STS label only for a securitisation that qualifies for it"
+            },
+            "summaries": {
+              "en": "An originator, sponsor or securitisation special purpose entity may call its securitisation simple, transparent and standardised, use the term STS or any designation referring to those terms, only if it is an STS securitisation, an overseas STS securitisation of a country designated by Treasury regulations, or a qualifying EU securitisation notified to ESMA and listed by it before 11 p.m. on 30 June 2026."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 12",
+            "dutyType": "conduct",
+            "effectiveFrom": "2024-11-01"
+          }
+        },
+        {
+          "title": "Add the duty: Take reasonable care that nobody under a temporary management ban takes management decisions",
+          "source": "https://www.legislation.gov.uk/uksi/2024/102/regulation/38",
+          "sourceLabel": "legislation.gov.uk, The Securitisation Regulations 2024 (S.I. 2024/102), reg. 38, revised text as it stands on 2026-11-14",
+          "fieldSources": {
+            "effectiveFrom": "https://www.legislation.gov.uk/uksi/2024/102/regulation/2"
+          },
+          "payload": {
+            "key": "obl-gb-securitisation-regulations-2024-no-prohibited-managers",
+            "titles": {
+              "en": "Take reasonable care that nobody under a temporary management ban takes management decisions"
+            },
+            "summaries": {
+              "en": "An originator, sponsor or securitisation special purpose entity must take reasonable care that no individual holds an office or position with responsibility for management decisions in breach of a temporary prohibition the FCA or the PRA has imposed under regulation 37."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 38",
+            "dutyType": "governance",
+            "effectiveFrom": "2024-11-01"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Consumer Credit (Disclosure of Information) Regulations 2010, S.I. 2010/1013",
+      "source": "https://www.legislation.gov.uk/uksi/2010/1013/contents",
+      "sourceLabel": "legislation.gov.uk, The Consumer Credit (Disclosure of Information) Regulations 2010 (S.I. 2010/1013), revised text as it stands on 2026-11-14 (latest revised version dated 2023-07-11); made by the Secretary of State under section 2(2) of the European Communities Act 1972 and sections 55(1), 182(2) and 189(1) of the Consumer Credit Act 1974, as its opening words read; in force from 2010-04-30 (reg. 1(1)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2010/1013/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2010-1013",
+        "titles": {
+          "en": "The Consumer Credit (Disclosure of Information) Regulations 2010"
+        },
+        "originalLanguage": "en",
+        "shortName": "Consumer Credit (Disclosure of Information) Regulations 2010",
+        "officialRef": "The Consumer Credit (Disclosure of Information) Regulations 2010, S.I. 2010/1013",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:banking",
+        "inForceFrom": "2010-04-30"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Give the borrower the pre-contract credit information on the standard form in good time",
+          "source": "https://www.legislation.gov.uk/uksi/2010/1013/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The Consumer Credit (Disclosure of Information) Regulations 2010 (S.I. 2010/1013), regs. 3 and 8, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-consumer-credit-disclosure-of-information-regulations-2010-pre-contract-credit-information",
+            "titles": {
+              "en": "Give the borrower the pre-contract credit information on the standard form in good time"
+            },
+            "summaries": {
+              "en": "In good time before a regulated consumer credit agreement is made, the creditor must disclose the pre-contract credit information listed in regulation 3(4), such as the type and total amount of credit, the duration, the rate of interest, the APR and the total amount payable. It uses the form in Schedule 1, in writing and in a form the borrower can take away, completed as the notes to the form require, and gives any additional information in a separate document. It need not repeat what a credit intermediary has already disclosed in the same way."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 3 and 8",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail",
+              "lifecycle_stage:onboarding"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Disclose the required credit information in telephone and other distance sales",
+          "source": "https://www.legislation.gov.uk/uksi/2010/1013/regulation/4",
+          "sourceLabel": "legislation.gov.uk, The Consumer Credit (Disclosure of Information) Regulations 2010 (S.I. 2010/1013), regs. 4 and 5, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-consumer-credit-disclosure-of-information-regulations-2010-telephone-and-distance-contracts",
+            "titles": {
+              "en": "Disclose the required credit information in telephone and other distance sales"
+            },
+            "summaries": {
+              "en": "For an agreement made by telephone as a distance contract, the creditor may give a shorter set of information beforehand only if the borrower explicitly consents: the caller's identity, the main characteristics of the credit, the total price and the right to withdraw or cancel. After any telephone agreement, and after an agreement made at the borrower's request by another means of distance communication that does not allow disclosure beforehand, the full pre-contract credit information follows on the Schedule 1 form immediately."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 4 and 5",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Give the pre-contract information required for an authorised non-business overdraft",
+          "source": "https://www.legislation.gov.uk/uksi/2010/1013/regulation/10",
+          "sourceLabel": "legislation.gov.uk, The Consumer Credit (Disclosure of Information) Regulations 2010 (S.I. 2010/1013), reg. 10, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-consumer-credit-disclosure-of-information-regulations-2010-overdraft-pre-contract-information",
+            "titles": {
+              "en": "Give the pre-contract information required for an authorised non-business overdraft"
+            },
+            "summaries": {
+              "en": "The creditor must give the borrower, in good time before it agrees an authorised non-business overdraft with the borrower, the information regulation 10(3) lists, including the type of credit, the creditor's identity, the total amount and duration of credit, the interest rate and its conditions, how the agreement can be ended, whether repayment on demand may be required and the charges for late payment and default, in the manner regulation 11 sets."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 10",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Consumer Credit (Agreements) Regulations 2010, S.I. 2010/1014",
+      "source": "https://www.legislation.gov.uk/uksi/2010/1014/contents",
+      "sourceLabel": "legislation.gov.uk, The Consumer Credit (Agreements) Regulations 2010 (S.I. 2010/1014), revised text as it stands on 2026-11-14 (latest revised version dated 2023-07-11); made by the Secretary of State under sections 60, 61(1)(a), 105(9), 114(1), 182(2) and 189(1) of the Consumer Credit Act 1974, as its opening words read; in force from 2011-02-01 (reg. 1(2)(a)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2010/1014/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2010-1014",
+        "titles": {
+          "en": "The Consumer Credit (Agreements) Regulations 2010"
+        },
+        "originalLanguage": "en",
+        "shortName": "Consumer Credit (Agreements) Regulations 2010",
+        "officialRef": "The Consumer Credit (Agreements) Regulations 2010, S.I. 2010/1014",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:banking",
+        "inForceFrom": "2011-02-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Put the prescribed information and the statutory statements in every regulated credit agreement",
+          "source": "https://www.legislation.gov.uk/uksi/2010/1014/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The Consumer Credit (Agreements) Regulations 2010 (S.I. 2010/1014), reg. 3, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-consumer-credit-agreements-regulations-2010-agreement-content",
+            "titles": {
+              "en": "Put the prescribed information and the statutory statements in every regulated credit agreement"
+            },
+            "summaries": {
+              "en": "The document embodying a regulated consumer credit agreement must contain the information in Schedule 1 for that type of agreement, presented clearly and concisely, legible and in a colour distinct from the background. It must also contain the statements of the borrower's protection and remedies in the forms of Schedule 2, unless the agreement is exempted, and details of any security the borrower gives."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 3",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Have the agreement signed in the prescribed manner with the prescribed terms",
+          "source": "https://www.legislation.gov.uk/uksi/2010/1014/regulation/4",
+          "sourceLabel": "legislation.gov.uk, The Consumer Credit (Agreements) Regulations 2010 (S.I. 2010/1014), reg. 4, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-consumer-credit-agreements-regulations-2010-signing-and-prescribed-terms",
+            "titles": {
+              "en": "Have the agreement signed in the prescribed manner with the prescribed terms"
+            },
+            "summaries": {
+              "en": "The terms in paragraphs 5, 6, 7, 11 and 14 of Schedule 1 are the prescribed terms that must appear in the document if the agreement is not to be improperly executed. The document must have a space for the borrower's signature, and the borrower and the creditor sign it in the way the regulation sets, with the dates inserted."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 4",
+            "dutyType": "conduct",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Set out the required terms of an authorised overdraft in writing",
+          "source": "https://www.legislation.gov.uk/uksi/2010/1014/regulation/8",
+          "sourceLabel": "legislation.gov.uk, The Consumer Credit (Agreements) Regulations 2010 (S.I. 2010/1014), reg. 8, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-consumer-credit-agreements-regulations-2010-overdraft-agreement-content",
+            "titles": {
+              "en": "Set out the required terms of an authorised overdraft in writing"
+            },
+            "summaries": {
+              "en": "For an authorised business or non-business overdraft agreement, the creditor must set out in writing, clearly and concisely, the type of credit, the parties' identities and addresses, the duration, the credit limit and drawdown conditions, the interest rate and its conditions, the total charge for credit, any right to demand full repayment at any time and the charges payable."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 8",
+            "dutyType": "disclosure"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Small and Medium Sized Business (Credit Information) Regulations 2015, S.I. 2015/1945",
+      "source": "https://www.legislation.gov.uk/uksi/2015/1945/contents",
+      "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Credit Information) Regulations 2015 (S.I. 2015/1945), revised text as it stands on 2026-11-14 (latest revised version dated 2020-12-31); made by the Treasury under sections 4, 6(1) to (8), 7(1) and (2), 28(2) and 161(2) of the Small Business, Enterprise and Employment Act 2015, as its opening words read; in force from 2016-01-01 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2015/1945/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2015-1945",
+        "titles": {
+          "en": "The Small and Medium Sized Business (Credit Information) Regulations 2015"
+        },
+        "originalLanguage": "en",
+        "shortName": "Small and Medium Sized Business (Credit Information) Regulations 2015",
+        "officialRef": "The Small and Medium Sized Business (Credit Information) Regulations 2015, S.I. 2015/1945",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Send small business credit information to a designated credit reference agency that asks for it",
+          "source": "https://www.legislation.gov.uk/uksi/2015/1945/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Credit Information) Regulations 2015 (S.I. 2015/1945), reg. 3, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-small-and-medium-sized-business-credit-information-regulations-2015-share-credit-information",
+            "titles": {
+              "en": "Send small business credit information to a designated credit reference agency that asks for it"
+            },
+            "summaries": {
+              "en": "A designated bank must provide the credit information it holds on each small or medium sized business customer that has agreed to it, when a designated credit reference agency makes a valid written request. It provides the information within 30 days of the request and updates it every month afterwards unless the agency says it no longer needs updates, adding customers who have newly agreed."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 3",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank",
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Include the customer's agreement to credit information sharing in the standard terms",
+          "source": "https://www.legislation.gov.uk/uksi/2015/1945/regulation/5",
+          "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Credit Information) Regulations 2015 (S.I. 2015/1945), reg. 5, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-small-and-medium-sized-business-credit-information-regulations-2015-customer-agreement-term",
+            "titles": {
+              "en": "Include the customer's agreement to credit information sharing in the standard terms"
+            },
+            "summaries": {
+              "en": "Where a designated bank begins providing a customer with one of the services the Schedule lists, from the day the regulations came into force, it must include in the standard terms for that service a term by which the customer agrees to information about the service being provided to credit reference agencies under regulation 3."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 5",
+            "dutyType": "conduct",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Keep records showing compliance for at least five years",
+          "source": "https://www.legislation.gov.uk/uksi/2015/1945/regulation/24",
+          "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Credit Information) Regulations 2015 (S.I. 2015/1945), reg. 24, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-small-and-medium-sized-business-credit-information-regulations-2015-records-five-years",
+            "titles": {
+              "en": "Keep records showing compliance for at least five years"
+            },
+            "summaries": {
+              "en": "A designated bank or credit reference agency must keep the records that show whether it complied with the requirements that apply to it, in retrievable and legible form, for at least five years from the day each was created."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 24",
+            "dutyType": "record_keeping",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Small and Medium Sized Business (Finance Platforms) Regulations 2015, S.I. 2015/1946",
+      "source": "https://www.legislation.gov.uk/uksi/2015/1946/contents",
+      "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Finance Platforms) Regulations 2015 (S.I. 2015/1946), revised text as it stands on 2026-11-14 (latest revised version dated 2018-01-13); made by the Treasury under sections 5, 6(1) to (4) and (9), 7(1) and (2), 28(2) and 161(2) of the Small Business, Enterprise and Employment Act 2015, as its opening words read; in force from 2016-01-01 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2015/1946/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2015-1946",
+        "titles": {
+          "en": "The Small and Medium Sized Business (Finance Platforms) Regulations 2015"
+        },
+        "originalLanguage": "en",
+        "shortName": "Small and Medium Sized Business (Finance Platforms) Regulations 2015",
+        "officialRef": "The Small and Medium Sized Business (Finance Platforms) Regulations 2015, S.I. 2015/1946",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:banking",
+        "inForceFrom": "2016-01-01"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Refer a rejected small business finance application to every designated finance platform",
+          "source": "https://www.legislation.gov.uk/uksi/2015/1946/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Finance Platforms) Regulations 2015 (S.I. 2015/1946), regs. 3 and 5, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-small-and-medium-sized-business-finance-platforms-regulations-2015-refer-rejected-applications",
+            "titles": {
+              "en": "Refer a rejected small business finance application to every designated finance platform"
+            },
+            "summaries": {
+              "en": "When a small or medium sized business's application for finance to a designated bank fails and the business agrees, the bank must send all the specified information it holds on the application to all designated finance platforms by the end of the working day after the business confirms its agreement. The duty does not apply to facilities under £1,000 or for less than 30 days, to applications made through a broker, or where the business faces payment proceedings or a formal demand."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 3 and 5",
+            "dutyType": "reporting",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Ask a rejected small business whether it agrees to a referral and otherwise send it the platforms information",
+          "source": "https://www.legislation.gov.uk/uksi/2015/1946/regulation/4",
+          "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Finance Platforms) Regulations 2015 (S.I. 2015/1946), reg. 4, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-small-and-medium-sized-business-finance-platforms-regulations-2015-ask-for-agreement",
+            "titles": {
+              "en": "Ask a rejected small business whether it agrees to a referral and otherwise send it the platforms information"
+            },
+            "summaries": {
+              "en": "When the bank tells the business that its application has failed, or by the end of the next working day after the business rejects the bank's offer, it must ask whether the business agrees to its information going to the platforms and ask for any specified information it does not hold. If the business does not agree, the bank sends it the generic platforms information within five working days of asking."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 4",
+            "dutyType": "disclosure",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the International Tax Compliance Regulations 2015, S.I. 2015/878",
+      "source": "https://www.legislation.gov.uk/uksi/2015/878/contents",
+      "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), revised text as it stands on 2026-11-14 (latest revised version dated 2025-07-16); made by the Treasury under section 136 of the Finance Act 2002 and section 222(1), (2) and (3) of the Finance Act 2013, as its opening words read; in force from 2015-04-15 (reg. 1(1)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2015/878/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2015-878",
+        "titles": {
+          "en": "The International Tax Compliance Regulations 2015"
+        },
+        "originalLanguage": "en",
+        "shortName": "International Tax Compliance Regulations 2015",
+        "officialRef": "The International Tax Compliance Regulations 2015, S.I. 2015/878",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:tax",
+        "inForceFrom": "2015-04-15"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Apply the CRS and FATCA due diligence procedures to identify reportable accounts",
+          "source": "https://www.legislation.gov.uk/uksi/2015/878/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), reg. 3(1) and (2), revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-international-tax-compliance-regulations-2015-due-diligence",
+            "titles": {
+              "en": "Apply the CRS and FATCA due diligence procedures to identify reportable accounts"
+            },
+            "summaries": {
+              "en": "A reporting financial institution must put in place, and keep, arrangements designed to identify, for each financial account, where the account holder and any controlling person are resident for tax purposes and whether the account is reportable. It does so by applying the due diligence procedures of the Common Reporting Standard or the FATCA agreement, as the case requires."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 3(1) and (2)",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Keep records of the due diligence steps and the information collected for five years",
+          "source": "https://www.legislation.gov.uk/uksi/2015/878/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), reg. 3(2A) and (2B), revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-international-tax-compliance-regulations-2015-due-diligence-records",
+            "titles": {
+              "en": "Keep records of the due diligence steps and the information collected for five years"
+            },
+            "summaries": {
+              "en": "The institution must record the steps it took to meet its due diligence duty and the information it collected in doing so. It keeps the records for five years from the end of the year in which a reportable account was last included in a return, or, for an account treated as not reportable, from the end of the last year in which it relied on the procedures to treat it that way."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 3(2A) and (2B)",
+            "dutyType": "record_keeping",
+            "effectiveFrom": "2017-05-17"
+          }
+        },
+        {
+          "title": "Add the duty: File the annual CRS and FATCA return with HMRC by 31 May",
+          "source": "https://www.legislation.gov.uk/uksi/2015/878/regulation/6",
+          "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), reg. 6, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-international-tax-compliance-regulations-2015-annual-return",
+            "titles": {
+              "en": "File the annual CRS and FATCA return with HMRC by 31 May"
+            },
+            "summaries": {
+              "en": "For every calendar year the institution must make a return to HMRC with the information the relevant agreement requires on each reportable account it maintained during the year and each pre-existing account it identified as reportable. The return is submitted electronically by 31 May of the following year."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 6",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Tell individual account holders by 31 January that their information will be reported",
+          "source": "https://www.legislation.gov.uk/uksi/2015/878/regulation/10",
+          "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), reg. 10, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-international-tax-compliance-regulations-2015-notify-individuals",
+            "titles": {
+              "en": "Tell individual account holders by 31 January that their information will be reported"
+            },
+            "summaries": {
+              "en": "The institution must tell each individual reportable person or specified US person that information about them will be reported to HMRC and may be passed to the government of another territory under the relevant agreement. It does so by 31 January of the year after the first year in which the individual's account is reportable."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 10",
+            "dutyType": "disclosure"
+          }
+        },
+        {
+          "title": "Add the duty: Register with HMRC as a reporting or specified non-reporting financial institution",
+          "source": "https://www.legislation.gov.uk/uksi/2015/878/regulation/10A",
+          "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), reg. 10A, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-international-tax-compliance-regulations-2015-register-with-hmrc",
+            "titles": {
+              "en": "Register with HMRC as a reporting or specified non-reporting financial institution"
+            },
+            "summaries": {
+              "en": "Reporting financial institutions and specified non-reporting financial institutions alike must give HMRC notice of registration in the form it directs, by the later of 31 December 2025 and 31 January of the year after the calendar year in which it first comes within the relevant definition."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 10A",
+            "dutyType": "reporting",
+            "effectiveFrom": "2025-07-16"
+          }
+        },
+        {
+          "title": "Add the duty: Keep responsibility for due diligence and reporting when a service provider does the work",
+          "source": "https://www.legislation.gov.uk/uksi/2015/878/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), reg. 12, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-international-tax-compliance-regulations-2015-service-providers",
+            "titles": {
+              "en": "Keep responsibility for due diligence and reporting when a service provider does the work"
+            },
+            "summaries": {
+              "en": "A reporting financial institution may have a service provider carry out its due diligence and reporting obligations, but they remain the institution's own obligations."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 12",
+            "dutyType": "governance"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the International Tax Enforcement (Disclosable Arrangements) Regulations 2023, S.I. 2023/38",
+      "source": "https://www.legislation.gov.uk/uksi/2023/38/contents",
+      "sourceLabel": "legislation.gov.uk, The International Tax Enforcement (Disclosable Arrangements) Regulations 2023 (S.I. 2023/38), text as made, the only version legislation.gov.uk holds for it; made by the Treasury under section 136 of the Finance Act 2002 and section 84 of the Finance Act 2019, as its opening words read; in force from 2023-03-28 (reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2023/38/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2023-38",
+        "titles": {
+          "en": "The International Tax Enforcement (Disclosable Arrangements) Regulations 2023"
+        },
+        "originalLanguage": "en",
+        "shortName": "International Tax Enforcement (Disclosable Arrangements) Regulations 2023",
+        "officialRef": "The International Tax Enforcement (Disclosable Arrangements) Regulations 2023, S.I. 2023/38",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:tax",
+        "inForceFrom": "2023-03-28"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Report a CRS avoidance arrangement or opaque offshore structure to HMRC within 30 days",
+          "source": "https://www.legislation.gov.uk/uksi/2023/38/regulation/3",
+          "sourceLabel": "legislation.gov.uk, The International Tax Enforcement (Disclosable Arrangements) Regulations 2023 (S.I. 2023/38), regs. 3, 4 and 10, text as made, the only version legislation.gov.uk holds for it",
+          "payload": {
+            "key": "obl-gb-international-tax-enforcement-disclosable-arrangements-regulations-2023-disclose-within-30-days",
+            "titles": {
+              "en": "Report a CRS avoidance arrangement or opaque offshore structure to HMRC within 30 days"
+            },
+            "summaries": {
+              "en": "An intermediary that makes such an arrangement or structure available for implementation, or provides relevant services in respect of it, and that acts through a United Kingdom branch or office or is resident, managed or incorporated in the United Kingdom, must make a return to HMRC with the information the model rules require, as far as it knows or holds it. The return is made electronically within 30 days beginning with the day after the arrangement was made available or the services were supplied."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 3, 4 and 10",
+            "dutyType": "reporting",
+            "terms": [
+              "lifecycle_stage:reporting"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Tell the other intermediaries and taxpayers within 30 days that a return was made",
+          "source": "https://www.legislation.gov.uk/uksi/2023/38/regulation/9",
+          "sourceLabel": "legislation.gov.uk, The International Tax Enforcement (Disclosable Arrangements) Regulations 2023 (S.I. 2023/38), reg. 9, text as made, the only version legislation.gov.uk holds for it",
+          "payload": {
+            "key": "obl-gb-international-tax-enforcement-disclosable-arrangements-regulations-2023-notify-other-parties",
+            "titles": {
+              "en": "Tell the other intermediaries and taxpayers within 30 days that a return was made"
+            },
+            "summaries": {
+              "en": "An intermediary or reportable taxpayer that has made a return must give written notice of that fact, within 30 days of the return, to everyone it is aware of, or ought reasonably to be aware of, as another intermediary or reportable taxpayer for that arrangement or structure."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 9",
+            "dutyType": "disclosure"
+          }
+        },
+        {
+          "title": "Add the duty: Give HMRC the information and documents a notice requires to check compliance",
+          "source": "https://www.legislation.gov.uk/uksi/2023/38/regulation/11",
+          "sourceLabel": "legislation.gov.uk, The International Tax Enforcement (Disclosable Arrangements) Regulations 2023 (S.I. 2023/38), reg. 11, text as made, the only version legislation.gov.uk holds for it",
+          "payload": {
+            "key": "obl-gb-international-tax-enforcement-disclosable-arrangements-regulations-2023-answer-hmrc-information-notices",
+            "titles": {
+              "en": "Give HMRC the information and documents a notice requires to check compliance"
+            },
+            "summaries": {
+              "en": "An officer of HMRC who reasonably suspects that a person is an intermediary or reportable taxpayer may require information or documents by written notice to check compliance, and the person must provide them within the period the notice sets, which is at least 30 days, by the means and in the form reasonably required."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 11",
+            "dutyType": "reporting"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Privacy and Electronic Communications (EC Directive) Regulations 2003, S.I. 2003/2426",
+      "source": "https://www.legislation.gov.uk/uksi/2003/2426/contents",
+      "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), revised text as it stands on 2026-11-14 (latest revised version dated 2026-09-30); made by the Secretary of State under section 2(2) of the European Communities Act 1972, as its opening words read; in force from 2003-12-11 (reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2003/2426/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2003-2426",
+        "titles": {
+          "en": "The Privacy and Electronic Communications (EC Directive) Regulations 2003"
+        },
+        "originalLanguage": "en",
+        "shortName": "Privacy and Electronic Communications (EC Directive) Regulations 2003",
+        "officialRef": "The Privacy and Electronic Communications (EC Directive) Regulations 2003, S.I. 2003/2426",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:data_protection",
+        "inForceFrom": "2003-12-11"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Store or read information on a user's device only with consent or under an exception",
+          "source": "https://www.legislation.gov.uk/uksi/2003/2426/regulation/6",
+          "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), reg. 6 and Sch. A1 paras. 2, 4 and 5, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-privacy-and-electronic-communications-ec-directive-regulations-2003-device-storage-consent",
+            "titles": {
+              "en": "Store or read information on a user's device only with consent or under an exception"
+            },
+            "summaries": {
+              "en": "No one may place information on a subscriber's or user's device, or read information already held on it, which includes collecting what the device sends out automatically, unless an exception in Schedule A1 applies. The main exception is that the user has clear and comprehensive information about the purpose and gives consent, which may be signified through browser settings; others cover storage strictly necessary for the service the user asked for and, with information and a free means to object, statistics used to improve the service or website."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 6 and Sch. A1 paras. 2, 4 and 5",
+            "dutyType": "technical",
+            "terms": [
+              "channel:digital"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Make automated marketing calls only to subscribers who have consented",
+          "source": "https://www.legislation.gov.uk/uksi/2003/2426/regulation/19",
+          "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), reg. 19, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-privacy-and-electronic-communications-ec-directive-regulations-2003-automated-marketing-calls",
+            "titles": {
+              "en": "Make automated marketing calls only to subscribers who have consented"
+            },
+            "summaries": {
+              "en": "A recorded marketing message may be sent through an automated calling or communication system only to a line whose subscriber has told the caller that it consents for the time being, and only if the caller shows its calling line identity or a number on which it can be contacted."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 19",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Show the caller's number and respect objections and the preference register on marketing calls",
+          "source": "https://www.legislation.gov.uk/uksi/2003/2426/regulation/21",
+          "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), reg. 21, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-privacy-and-electronic-communications-ec-directive-regulations-2003-live-marketing-calls",
+            "titles": {
+              "en": "Show the caller's number and respect objections and the preference register on marketing calls"
+            },
+            "summaries": {
+              "en": "Anyone making marketing calls must not hide the calling line identity and must present a number on which it can be contacted. It must not make unsolicited marketing calls to a subscriber who has asked not to receive them or to a number listed on the register kept under regulation 26 for at least 28 days, unless that subscriber has told the caller it does not object to its calls."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 21",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Send marketing emails and texts to individuals only with consent or under the existing customer exception",
+          "source": "https://www.legislation.gov.uk/uksi/2003/2426/regulation/22",
+          "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), reg. 22, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-privacy-and-electronic-communications-ec-directive-regulations-2003-electronic-mail-marketing",
+            "titles": {
+              "en": "Send marketing emails and texts to individuals only with consent or under the existing customer exception"
+            },
+            "summaries": {
+              "en": "Unsolicited marketing by electronic mail, which includes text messages, may be sent to an individual subscriber only if the recipient has told the sender that it consents for the time being. The exception allows marketing of the sender's own similar products and services to a person whose details it obtained in a sale or negotiations for a sale, provided the person was given a simple, free way to refuse when the details were collected and in every later message."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 22",
+            "dutyType": "conduct",
+            "terms": [
+              "channel:digital"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Never disguise the sender of marketing email and always give a valid address to opt out",
+          "source": "https://www.legislation.gov.uk/uksi/2003/2426/regulation/23",
+          "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), reg. 23, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-privacy-and-electronic-communications-ec-directive-regulations-2003-sender-identity",
+            "titles": {
+              "en": "Never disguise the sender of marketing email and always give a valid address to opt out"
+            },
+            "summaries": {
+              "en": "A marketing communication by electronic mail must not disguise or conceal the identity of the person on whose behalf it is sent, must give a valid address to which the recipient can send a request to stop, and must not breach, or encourage visits to websites that breach, regulation 7 of the Electronic Commerce (EC Directive) Regulations 2002."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 23",
+            "dutyType": "conduct",
+            "terms": [
+              "channel:digital"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Financial Services (Distance Marketing) Regulations 2004, S.I. 2004/2095",
+      "source": "https://www.legislation.gov.uk/uksi/2004/2095/contents",
+      "sourceLabel": "legislation.gov.uk, The Financial Services (Distance Marketing) Regulations 2004 (S.I. 2004/2095), revised text as it stands on 2026-11-14 (latest revised version dated 2026-07-15); made by the Treasury under section 2(2) of the European Communities Act 1972, as its opening words read; in force from 2004-10-31 (reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2004/2095/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2004-2095",
+        "titles": {
+          "en": "The Financial Services (Distance Marketing) Regulations 2004"
+        },
+        "originalLanguage": "en",
+        "shortName": "Financial Services (Distance Marketing) Regulations 2004",
+        "officialRef": "The Financial Services (Distance Marketing) Regulations 2004, S.I. 2004/2095",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:banking",
+        "inForceFrom": "2004-10-31"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Give the consumer the Schedule 1 information in good time before a distance contract binds",
+          "source": "https://www.legislation.gov.uk/uksi/2004/2095/regulation/7",
+          "sourceLabel": "legislation.gov.uk, The Financial Services (Distance Marketing) Regulations 2004 (S.I. 2004/2095), reg. 7, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-financial-services-distance-marketing-regulations-2004-information-before-contract",
+            "titles": {
+              "en": "Give the consumer the Schedule 1 information in good time before a distance contract binds"
+            },
+            "summaries": {
+              "en": "In good time before a consumer is bound by a distance contract, the supplier must give the information in Schedule 1, clearly and in a way suited to the means of communication, and make its commercial purpose clear. For a payment services contract only the parts of Schedule 1 the regulation names are needed, and on a telephone call the supplier states its identity and purpose at the start and may give the shorter Schedule 2 information if the consumer explicitly agrees. Regulation 4 takes an authorised person's contract made in carrying on a regulated activity out of this duty."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 7",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Send the contract terms and the required information on paper or another durable medium",
+          "source": "https://www.legislation.gov.uk/uksi/2004/2095/regulation/8",
+          "sourceLabel": "legislation.gov.uk, The Financial Services (Distance Marketing) Regulations 2004 (S.I. 2004/2095), reg. 8, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-financial-services-distance-marketing-regulations-2004-terms-on-durable-medium",
+            "titles": {
+              "en": "Send the contract terms and the required information on paper or another durable medium"
+            },
+            "summaries": {
+              "en": "The supplier must give the consumer all the contractual terms and the Schedule 1 information on paper or another durable medium available to the consumer, in good time before the consumer is bound, or immediately afterwards where the contract was made at the consumer's request by a means that did not allow this. Regulated consumer credit agreements for which the pre-contract credit information has been disclosed are excepted."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 8",
+            "dutyType": "disclosure",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Refund the consumer within 30 days when a distance contract is cancelled",
+          "source": "https://www.legislation.gov.uk/uksi/2004/2095/regulation/13",
+          "sourceLabel": "legislation.gov.uk, The Financial Services (Distance Marketing) Regulations 2004 (S.I. 2004/2095), reg. 13, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-financial-services-distance-marketing-regulations-2004-refund-on-cancellation",
+            "titles": {
+              "en": "Refund the consumer within 30 days when a distance contract is cancelled"
+            },
+            "summaries": {
+              "en": "When a consumer cancels a distance contract, the supplier must refund any sum paid under it as soon as possible and within 30 calendar days of the cancellation, less only a charge in proportion to the service actually provided, and only if the consumer was told of that amount beforehand as the regulation requires. Any security given for the contract is treated as never having had effect."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 13",
+            "dutyType": "conduct",
+            "terms": [
+              "client_category:retail"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Russia (Sanctions) (EU Exit) Regulations 2019, S.I. 2019/855",
+      "source": "https://www.legislation.gov.uk/uksi/2019/855/contents",
+      "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), revised text as it stands on 2026-11-14 (latest revised version dated 2026-05-20); made by the Secretary of State under sections 1, 3 to 5, 7, 9 to 11, 15 to 17, 19 to 21, 54 and 62 of, and Schedule 1 to, the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2019-04-11 (reg. 1(3)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2019/855/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2019-855",
+        "titles": {
+          "en": "The Russia (Sanctions) (EU Exit) Regulations 2019"
+        },
+        "originalLanguage": "en",
+        "shortName": "Russia (Sanctions) (EU Exit) Regulations 2019",
+        "officialRef": "The Russia (Sanctions) (EU Exit) Regulations 2019, S.I. 2019/855",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2019-04-11"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/11",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 11, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 11",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), regs. 12 and 13, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 12 and 13",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/67",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 67, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 67",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/70",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 70, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, or that it is holding funds or economic resources for a prohibited person. It states the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Where it keeps holding such funds or resources for a prohibited person, it reports their nature and amount as of 30 September by 30 November each year."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 70",
+            "dutyType": "reporting",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Do not deal in transferable securities or money-market instruments of the listed Russian entities",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/16",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 16, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-no-dealing-in-restricted-securities",
+            "titles": {
+              "en": "Do not deal in transferable securities or money-market instruments of the listed Russian entities"
+            },
+            "summaries": {
+              "en": "No one may deal, directly or indirectly, in a transferable security or money-market instrument with a maturity of more than 30 days issued after the dates the regulation sets by a person listed in Schedule 2, by an entity owned by such a person, or by someone acting on its behalf, when they know or have reasonable cause to suspect it. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 16",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Grant no restricted loan or credit to the listed Russian entities",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/17",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 17, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-no-restricted-loans",
+            "titles": {
+              "en": "Grant no restricted loan or credit to the listed Russian entities"
+            },
+            "summaries": {
+              "en": "No one may grant, or enter into an arrangement to grant, a relevant loan, which covers loans or credit of more than 30 days to persons listed in Schedule 2, entities they own and others the regulation describes, when they know or have reasonable cause to suspect it. Nor may anyone make funds available to an entity so that it can grant such a loan. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 17",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Keep no correspondent banking relationship with, and process no payment for, a designated bank",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/17A",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 17A, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-no-correspondent-banking-with-designated-banks",
+            "titles": {
+              "en": "Keep no correspondent banking relationship with, and process no payment for, a designated bank"
+            },
+            "summaries": {
+              "en": "A United Kingdom credit or financial institution must neither start nor keep up a correspondent banking relationship with a person designated for this purpose, or with a credit or financial institution that person owns or controls, and must not process any payment going to, coming from or passing through any of them, when it knows or has reasonable cause to suspect it. Processing includes clearing and settlement, and a breach is an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 17A",
+            "dutyType": "conduct",
+            "effectiveFrom": "2022-03-01",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Provide no trust services to or for a designated person or a person connected with Russia",
+          "source": "https://www.legislation.gov.uk/uksi/2019/855/regulation/18C",
+          "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), reg. 18C, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-russia-sanctions-eu-exit-regulations-2019-no-trust-services",
+            "titles": {
+              "en": "Provide no trust services to or for a designated person or a person connected with Russia"
+            },
+            "summaries": {
+              "en": "No one may provide trust services, such as creating or managing a trust, acting as trustee or nominee shareholder or providing a trust's address, to or for the benefit of a person designated for this purpose. Nor may anyone provide them to or for a person connected with Russia, except under an arrangement under which it provided them immediately before 16 December 2022. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 18C",
+            "dutyType": "conduct",
+            "effectiveFrom": "2022-12-16"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019, S.I. 2019/577",
+      "source": "https://www.legislation.gov.uk/uksi/2019/577/contents",
+      "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/577), revised text as it stands on 2026-11-14 (latest revised version dated 2026-05-13); made by the Treasury under sections 1, 3, 9 to 11, 15 to 17, 21, 54, 56 and 62 of the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2020-12-07 (the note on reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2019/577/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2019-577",
+        "titles": {
+          "en": "The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019"
+        },
+        "originalLanguage": "en",
+        "shortName": "Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019",
+        "officialRef": "The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019, S.I. 2019/577",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-treasury",
+        "regime": "regime:aml",
+        "inForceFrom": "2020-12-07"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/577/regulation/11",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/577), reg. 11, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-sanctions-eu-exit-regulations-2019-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 11",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds or financial services available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/577/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/577), regs. 12 and 13, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-sanctions-eu-exit-regulations-2019-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds or financial services available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds or financial services at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 12 and 13",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2019/577/regulation/20",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/577), reg. 20, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-sanctions-eu-exit-regulations-2019-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 20",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2019/577/regulation/21",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/577), reg. 21, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-sanctions-eu-exit-regulations-2019-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 21",
+            "dutyType": "reporting",
+            "effectiveFrom": "2020-12-31"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019, S.I. 2019/573",
+      "source": "https://www.legislation.gov.uk/uksi/2019/573/contents",
+      "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/573), revised text as it stands on 2026-11-14 (latest revised version dated 2026-05-13); made by the Secretary of State under sections 1, 3 to 5, 9 to 11, 15 to 17, 19 to 21, 54, 56 and 62 of, and Schedule 1 to, the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2019-03-25 (the note on reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2019/573/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2019-573",
+        "titles": {
+          "en": "The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019"
+        },
+        "originalLanguage": "en",
+        "shortName": "Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019",
+        "officialRef": "The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019, S.I. 2019/573",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2019-03-25"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/573/regulation/11",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/573), reg. 11, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-international-sanctions-eu-exit-regulations-2019-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 11",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds or financial services available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/573/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/573), regs. 12 and 13, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-international-sanctions-eu-exit-regulations-2019-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds or financial services available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds or financial services at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 12 and 13",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2019/573/regulation/32",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/573), reg. 32, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-international-sanctions-eu-exit-regulations-2019-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 32",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2019/573/regulation/34",
+          "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/573), reg. 34, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-counter-terrorism-international-sanctions-eu-exit-regulations-2019-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 34",
+            "dutyType": "reporting",
+            "effectiveFrom": "2020-12-31"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019, S.I. 2019/466",
+      "source": "https://www.legislation.gov.uk/uksi/2019/466/contents",
+      "sourceLabel": "legislation.gov.uk, The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/466), revised text as it stands on 2026-11-14 (latest revised version dated 2026-05-13); made by the Secretary of State under sections 1, 3, 5, 8, 9, 13, 15 to 17, 19 to 21, 54, 56 and 62 of, and Schedule 1 to, the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2019-03-25 (the note on reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2019/466/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2019-466",
+        "titles": {
+          "en": "The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019"
+        },
+        "originalLanguage": "en",
+        "shortName": "ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019",
+        "officialRef": "The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019, S.I. 2019/466",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2019-03-25"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/466/regulation/8",
+          "sourceLabel": "legislation.gov.uk, The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/466), reg. 8, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-isil-daesh-and-al-qaida-united-nations-sanctions-eu-exit-regulations-2019-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 8",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/466/regulation/9",
+          "sourceLabel": "legislation.gov.uk, The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/466), regs. 9 and 10, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-isil-daesh-and-al-qaida-united-nations-sanctions-eu-exit-regulations-2019-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 9 and 10",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2019/466/regulation/30",
+          "sourceLabel": "legislation.gov.uk, The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/466), reg. 30, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-isil-daesh-and-al-qaida-united-nations-sanctions-eu-exit-regulations-2019-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 30",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2019/466/regulation/31",
+          "sourceLabel": "legislation.gov.uk, The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/466), reg. 31, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-isil-daesh-and-al-qaida-united-nations-sanctions-eu-exit-regulations-2019-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 31",
+            "dutyType": "reporting",
+            "effectiveFrom": "2020-12-31"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Global Human Rights and International Humanitarian Law Sanctions Regulations 2026, S.I. 2026/1071",
+      "source": "https://www.legislation.gov.uk/uksi/2026/1071/contents",
+      "sourceLabel": "legislation.gov.uk, The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026 (S.I. 2026/1071), revised text as it stands on 2026-11-14 (latest revised version dated 2026-10-15); made by the Secretary of State under sections 1, 3, 3A, 4, 9 to 12, 15 to 17, 21, 45, 54 and 62 of the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2026-10-15 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2026/1071/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2026-1071",
+        "titles": {
+          "en": "The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026"
+        },
+        "originalLanguage": "en",
+        "shortName": "Global Human Rights and International Humanitarian Law Sanctions Regulations 2026",
+        "officialRef": "The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026, S.I. 2026/1071",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2026-10-15"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2026/1071/regulation/14",
+          "sourceLabel": "legislation.gov.uk, The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026 (S.I. 2026/1071), reg. 14, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-human-rights-and-international-humanitarian-law-sanctions-regulations-2026-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 14",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2026/1071/regulation/15",
+          "sourceLabel": "legislation.gov.uk, The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026 (S.I. 2026/1071), regs. 15 and 16, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-human-rights-and-international-humanitarian-law-sanctions-regulations-2026-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 15 and 16",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2026/1071/regulation/30",
+          "sourceLabel": "legislation.gov.uk, The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026 (S.I. 2026/1071), reg. 30, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-human-rights-and-international-humanitarian-law-sanctions-regulations-2026-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 30",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2026/1071/regulation/33",
+          "sourceLabel": "legislation.gov.uk, The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026 (S.I. 2026/1071), reg. 33, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-human-rights-and-international-humanitarian-law-sanctions-regulations-2026-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 33",
+            "dutyType": "reporting"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Global Anti-Corruption Sanctions Regulations 2021, S.I. 2021/488",
+      "source": "https://www.legislation.gov.uk/uksi/2021/488/contents",
+      "sourceLabel": "legislation.gov.uk, The Global Anti-Corruption Sanctions Regulations 2021 (S.I. 2021/488), revised text as it stands on 2026-11-14 (latest revised version dated 2026-05-13); made by the Secretary of State under sections 1, 3, 4, 9 to 11, 15 to 17, 21, 54 and 62 of the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2021-04-26 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2021/488/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2021-488",
+        "titles": {
+          "en": "The Global Anti-Corruption Sanctions Regulations 2021"
+        },
+        "originalLanguage": "en",
+        "shortName": "Global Anti-Corruption Sanctions Regulations 2021",
+        "officialRef": "The Global Anti-Corruption Sanctions Regulations 2021, S.I. 2021/488",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2021-04-26"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2021/488/regulation/11",
+          "sourceLabel": "legislation.gov.uk, The Global Anti-Corruption Sanctions Regulations 2021 (S.I. 2021/488), reg. 11, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-anti-corruption-sanctions-regulations-2021-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 11",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2021/488/regulation/12",
+          "sourceLabel": "legislation.gov.uk, The Global Anti-Corruption Sanctions Regulations 2021 (S.I. 2021/488), regs. 12 and 13, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-anti-corruption-sanctions-regulations-2021-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 12 and 13",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2021/488/regulation/22",
+          "sourceLabel": "legislation.gov.uk, The Global Anti-Corruption Sanctions Regulations 2021 (S.I. 2021/488), reg. 22, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-anti-corruption-sanctions-regulations-2021-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 22",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2021/488/regulation/24",
+          "sourceLabel": "legislation.gov.uk, The Global Anti-Corruption Sanctions Regulations 2021 (S.I. 2021/488), reg. 24, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-global-anti-corruption-sanctions-regulations-2021-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 24",
+            "dutyType": "reporting"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Iran (Sanctions) Regulations 2023, S.I. 2023/1314",
+      "source": "https://www.legislation.gov.uk/uksi/2023/1314/contents",
+      "sourceLabel": "legislation.gov.uk, The Iran (Sanctions) Regulations 2023 (S.I. 2023/1314), revised text as it stands on 2026-11-14 (latest revised version dated 2026-09-29); made by the Secretary of State under sections 1, 3, 3A, 4, 5, 7, 9 to 12, 14 to 17, 19 to 21, 45, 54 and 62 of, and Schedule 1 to, the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2023-12-14 (reg. 1(2)). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2023/1314/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2023-1314",
+        "titles": {
+          "en": "The Iran (Sanctions) Regulations 2023"
+        },
+        "originalLanguage": "en",
+        "shortName": "Iran (Sanctions) Regulations 2023",
+        "officialRef": "The Iran (Sanctions) Regulations 2023, S.I. 2023/1314",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2023-12-14"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2023/1314/regulation/15",
+          "sourceLabel": "legislation.gov.uk, The Iran (Sanctions) Regulations 2023 (S.I. 2023/1314), reg. 15, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-iran-sanctions-regulations-2023-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 15",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2023/1314/regulation/16",
+          "sourceLabel": "legislation.gov.uk, The Iran (Sanctions) Regulations 2023 (S.I. 2023/1314), regs. 16 and 17, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-iran-sanctions-regulations-2023-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 16 and 17",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2023/1314/regulation/64",
+          "sourceLabel": "legislation.gov.uk, The Iran (Sanctions) Regulations 2023 (S.I. 2023/1314), reg. 64, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-iran-sanctions-regulations-2023-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence, for oneself or anyone else. Anyone who acts, or claims to act, under a Treasury licence and does not comply with every condition of the licence also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 64",
+            "dutyType": "conduct"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2023/1314/regulation/68",
+          "sourceLabel": "legislation.gov.uk, The Iran (Sanctions) Regulations 2023 (S.I. 2023/1314), reg. 68, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-iran-sanctions-regulations-2023-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 68",
+            "dutyType": "reporting"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add the Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019, S.I. 2019/411",
+      "source": "https://www.legislation.gov.uk/uksi/2019/411/contents",
+      "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), revised text as it stands on 2026-11-14 (latest revised version dated 2026-05-13); made by the Secretary of State under sections 1, 3 to 11, 13 to 17, 19 to 21, 54, 56 and 62 of, and Schedule 1 to, the Sanctions and Anti-Money Laundering Act 2018, among the provisions its opening words list; in force from 2019-03-25 (the note on reg. 1). Open Government Licence v3.0",
+      "fieldSources": {
+        "inForceFrom": "https://www.legislation.gov.uk/uksi/2019/411/regulation/1"
+      },
+      "payload": {
+        "key": "uksi-2019-411",
+        "titles": {
+          "en": "The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019"
+        },
+        "originalLanguage": "en",
+        "shortName": "Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019",
+        "officialRef": "The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019, S.I. 2019/411",
+        "level": "government_regulation",
+        "jurisdiction": "gb",
+        "authority": "hm-government",
+        "regime": "regime:aml",
+        "inForceFrom": "2019-03-25"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Freeze the funds and economic resources of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/411/regulation/13",
+          "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), reg. 13, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-democratic-peoples-republic-of-korea-sanctions-eu-exit-regulations-2019-asset-freeze",
+            "titles": {
+              "en": "Freeze the funds and economic resources of a designated person"
+            },
+            "summaries": {
+              "en": "Anyone who knows, or has reasonable cause to suspect, that funds or economic resources belong to a designated person or are held or controlled by one must not deal with them. Dealing with funds covers using, moving, transferring or allowing access to them, any change in their amount, location, ownership or destination, and changes such as portfolio management that would enable their use; dealing with economic resources means exchanging them for, or using them to obtain, funds, goods or services. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 13",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Make no funds available to or for the benefit of a designated person",
+          "source": "https://www.legislation.gov.uk/uksi/2019/411/regulation/14",
+          "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), regs. 14 and 15, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-democratic-peoples-republic-of-korea-sanctions-eu-exit-regulations-2019-no-funds-to-designated-persons",
+            "titles": {
+              "en": "Make no funds available to or for the benefit of a designated person"
+            },
+            "summaries": {
+              "en": "No one may, knowing or with reasonable cause to suspect it, put funds at the disposal of a designated person, whether directly or through others, or provide them to anyone else for a designated person's benefit. Making them available indirectly includes making them available to a person the designated person owns or controls, and a designated person benefits when it obtains a significant financial benefit, such as the discharge of a debt it is responsible for. A breach is an offence, subject to the exceptions and licences the regulations provide."
+            },
+            "originalLanguage": "en",
+            "refLabel": "regs. 14 and 15",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Act under a Treasury licence only within its conditions and apply for one truthfully",
+          "source": "https://www.legislation.gov.uk/uksi/2019/411/regulation/95",
+          "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), reg. 95, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-democratic-peoples-republic-of-korea-sanctions-eu-exit-regulations-2019-licence-conditions",
+            "titles": {
+              "en": "Act under a Treasury licence only within its conditions and apply for one truthfully"
+            },
+            "summaries": {
+              "en": "It is an offence knowingly or recklessly to give materially false information or a false document to obtain a Treasury licence or a Treasury direction, for oneself or anyone else. Anyone who relies on a Treasury licence, or on an exception from a requirement by a Treasury direction, and does not comply with its conditions also commits an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 95",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Report designated persons, frozen assets and suspected breaches to the Treasury",
+          "source": "https://www.legislation.gov.uk/uksi/2019/411/regulation/99",
+          "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), reg. 99, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-democratic-peoples-republic-of-korea-sanctions-eu-exit-regulations-2019-report-to-treasury",
+            "titles": {
+              "en": "Report designated persons, frozen assets and suspected breaches to the Treasury"
+            },
+            "summaries": {
+              "en": "A relevant firm, every firm with a Part 4A permission among them, must tell the Treasury as soon as practicable when information that reached it in its business gives it knowledge, or reasonable grounds for suspicion, that someone is a designated person or has broken a finance prohibition or committed a licensing offence, stating the grounds, the identifying information it holds and, for a customer, the funds and economic resources it holds for that customer. Anyone who holds funds or economic resources of a designated person reports their nature and amount as of 30 September by 30 November each year, and a relevant institution tells the Treasury without delay when it credits a frozen account or transfers funds from one."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 99",
+            "dutyType": "reporting",
+            "effectiveFrom": "2020-12-31"
+          }
+        },
+        {
+          "title": "Add the duty: Open no account or correspondent relationship with a North Korean bank and set up no office in North Korea",
+          "source": "https://www.legislation.gov.uk/uksi/2019/411/regulation/18",
+          "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), reg. 18, revised text as it stands on 2026-11-14",
+          "payload": {
+            "key": "obl-gb-democratic-peoples-republic-of-korea-sanctions-eu-exit-regulations-2019-no-dprk-banking-links",
+            "titles": {
+              "en": "Open no account or correspondent relationship with a North Korean bank and set up no office in North Korea"
+            },
+            "summaries": {
+              "en": "A United Kingdom credit or financial institution must not open a bank account with, establish a correspondent banking relationship or joint venture with, or take an ownership interest in a credit or financial institution domiciled in North Korea, its branches or subsidiaries anywhere, or one owned or controlled by a person domiciled there, when it knows or has reasonable cause to suspect it. Nor may it open a representative office, branch or subsidiary in North Korea, and a breach is an offence."
+            },
+            "originalLanguage": "en",
+            "refLabel": "reg. 18",
+            "dutyType": "conduct",
+            "effectiveFrom": "2020-12-31",
+            "terms": [
+              "legal_entity:bank"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

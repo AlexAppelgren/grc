@@ -1,0 +1,198 @@
+{
+  "tranche": "gb-si",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "uksi-2017-692",
+      "source": "https://www.legislation.gov.uk/uksi/2017/692/contents",
+      "sourceLabel": "legislation.gov.uk, The Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 (S.I. 2017/692), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's money laundering regulations. They bind banks and other credit and financial institutions, and the other businesses listed in regulation 8, as relevant persons. In practice a bank assesses its money laundering and terrorist financing risks in writing, keeps policies and controls approved by senior management, appoints a nominated officer, trains staff, identifies and verifies customers and beneficial owners, applies enhanced checks to high-risk cases and politically exposed persons, and keeps its records for five years."
+      }
+    },
+    {
+      "key": "uksi-2017-752",
+      "source": "https://www.legislation.gov.uk/uksi/2017/752/contents",
+      "sourceLabel": "legislation.gov.uk, The Payment Services Regulations 2017 (S.I. 2017/752), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations on payment services in the United Kingdom: who may provide them, how payment institutions safeguard customers' funds, what a customer is told and the rights and duties of each side in a payment. They bind banks, payment institutions, electronic money issuers and other payment service providers. In practice a provider gives the required information before a contract, executes payments by the end of the next business day, refunds unauthorised payments, applies strong customer authentication, answers complaints within 15 business days and reports major incidents to the FCA."
+      }
+    },
+    {
+      "key": "uksi-2011-99",
+      "source": "https://www.legislation.gov.uk/uksi/2011/99/contents",
+      "sourceLabel": "legislation.gov.uk, The Electronic Money Regulations 2011 (S.I. 2011/99), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations on issuing electronic money in the United Kingdom. They set who may issue it, how electronic money institutions are authorised or registered, and what every issuer owes the holder. They bind electronic money institutions and, for the rules on issue and redemption, banks and other issuers. In practice an institution safeguards the funds received for electronic money, holds own funds of at least 350,000 euro, notifies outsourcing and keeps records for five years, and every issuer issues at par, redeems at par on request and pays no interest on electronic money."
+      }
+    },
+    {
+      "key": "uksi-2015-2038",
+      "source": "https://www.legislation.gov.uk/uksi/2015/2038/contents",
+      "sourceLabel": "legislation.gov.uk, The Payment Accounts Regulations 2015 (S.I. 2015/2038), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations on consumers' payment accounts: comparable fee information, a switching service and access to a basic bank account. They bind providers of consumer payment accounts and the credit institutions the Treasury designates to offer basic accounts. In practice a bank gives a fee information document before a contract and a statement of fees each year, offers switching, does not discriminate between legally resident consumers, and if designated offers eligible consumers a fee-free basic account, decides applications within 10 business days and closes one only on the listed grounds."
+      }
+    },
+    {
+      "key": "uksi-2014-2080",
+      "source": "https://www.legislation.gov.uk/uksi/2014/2080/contents",
+      "sourceLabel": "legislation.gov.uk, The Financial Services and Markets Act 2000 (Excluded Activities and Prohibitions) Order 2014 (S.I. 2014/2080), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "One of the Treasury orders that give ring-fencing its content. It says when dealing in investments or commodities as principal is an excluded activity for a ring-fenced body, and bars such a body from exposures to financial institutions and from indirect access to payment systems, each with exceptions. It binds ring-fenced bodies. In practice a ring-fenced bank trades as principal only to hedge, manage liquidity or sell simple derivatives to customers within fixed limits, and checks each exposure to a financial institution against an exemption."
+      }
+    },
+    {
+      "key": "uksi-2014-3348",
+      "source": "https://www.legislation.gov.uk/uksi/2014/3348/contents",
+      "sourceLabel": "legislation.gov.uk, The Bank Recovery and Resolution (No. 2) Order 2014 (S.I. 2014/3348), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The Treasury order that completes the United Kingdom's recovery and resolution regime. It designates the authorities and sets how recovery plans, resolution plans, resolvability, intra-group financial support, early intervention and the minimum requirement for own funds and eligible liabilities are handled. Most of it gives the PRA, the FCA and the Bank of England their tasks. It binds banks, investment firms and their groups in what a recovery plan contains and in how intra-group financial support agreements are approved and reported on."
+      }
+    },
+    {
+      "key": "uksi-2024-105",
+      "source": "https://www.legislation.gov.uk/uksi/2024/105/contents",
+      "sourceLabel": "legislation.gov.uk, The Public Offers and Admissions to Trading Regulations 2024 (S.I. 2024/105), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations that replaced the retained prospectus regulation on 19 January 2026. They make public offers of securities and admissions to trading designated activities, prohibit public offers in the United Kingdom unless a Schedule 1 exemption applies, and leave the prospectus rules to the FCA. They bind issuers, offerors and those responsible for a prospectus, banks among them. In practice a bank offering its own securities relies on an exemption, treats investors equally when disclosing material information and makes its prospectus complete."
+      }
+    },
+    {
+      "key": "uksi-2024-102",
+      "source": "https://www.legislation.gov.uk/uksi/2024/102/contents",
+      "sourceLabel": "legislation.gov.uk, The Securitisation Regulations 2024 (S.I. 2024/102), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations that replaced the retained securitisation regulation on 1 November 2024. They make acting as originator, sponsor, original lender or securitisation special purpose entity a designated activity, leave the detailed requirements to FCA and PRA rules, and govern the STS label, securitisation repositories and third party verifiers. They bind banks as originators, sponsors and institutional investors. In practice a bank avoids special purpose entities in high-risk jurisdictions, uses the STS label only for qualifying deals and keeps banned individuals out of management."
+      }
+    },
+    {
+      "key": "uksi-2010-1013",
+      "source": "https://www.legislation.gov.uk/uksi/2010/1013/contents",
+      "sourceLabel": "legislation.gov.uk, The Consumer Credit (Disclosure of Information) Regulations 2010 (S.I. 2010/1013), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations on the information a lender gives a consumer before a regulated consumer credit agreement is made. They bind creditors under regulated consumer credit agreements, banks that lend to consumers among them. In practice a bank gives the borrower the pre-contract credit information in good time on the standard form in Schedule 1, in writing and in a form the borrower can take away, gives shorter information by telephone only with the borrower's consent and the full form afterwards, and uses the shorter overdraft form for authorised non-business overdrafts."
+      }
+    },
+    {
+      "key": "uksi-2010-1014",
+      "source": "https://www.legislation.gov.uk/uksi/2010/1014/contents",
+      "sourceLabel": "legislation.gov.uk, The Consumer Credit (Agreements) Regulations 2010 (S.I. 2010/1014), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations on the form and content of regulated consumer credit agreements. They bind creditors under regulated consumer credit agreements, banks among them, and decide which terms are the prescribed terms without which an agreement is improperly executed under the Consumer Credit Act 1974. In practice a bank's credit agreements carry the information in Schedule 1 clearly and legibly, the statutory statements of the borrower's protection and remedies and details of any security, a signature box for the borrower, and for overdrafts the shorter written content regulation 8 lists."
+      }
+    },
+    {
+      "key": "uksi-2015-1945",
+      "source": "https://www.legislation.gov.uk/uksi/2015/1945/contents",
+      "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Credit Information) Regulations 2015 (S.I. 2015/1945), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations that open up banks' credit data on small and medium sized businesses. They bind the banks the Treasury designates and the designated credit reference agencies, under the FCA's supervision. In practice a designated bank sends the credit information it holds on its small and medium sized business customers to a designated credit reference agency that asks for it, within 30 days and then monthly, puts a term in its standard terms by which customers agree to this, and keeps records of its compliance for five years."
+      }
+    },
+    {
+      "key": "uksi-2015-1946",
+      "source": "https://www.legislation.gov.uk/uksi/2015/1946/contents",
+      "sourceLabel": "legislation.gov.uk, The Small and Medium Sized Business (Finance Platforms) Regulations 2015 (S.I. 2015/1946), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations that make the largest banks refer small businesses they turn down for finance to designated finance platforms. They bind the banks the Treasury designates and the designated platforms. In practice a designated bank that rejects a small or medium sized business's application for finance asks the business whether it agrees to a referral, sends the specified information to every designated platform by the end of the next working day after the business agrees, and otherwise sends the business general information about the platforms within five working days."
+      }
+    },
+    {
+      "key": "uksi-2015-878",
+      "source": "https://www.legislation.gov.uk/uksi/2015/878/contents",
+      "sourceLabel": "legislation.gov.uk, The International Tax Compliance Regulations 2015 (S.I. 2015/878), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations that carry the Common Reporting Standard and the United Kingdom's FATCA agreement with the United States into domestic law. They bind reporting financial institutions as the Common Reporting Standard and the FATCA agreement define them, banks among them. In practice a bank runs the due diligence procedures to find each account holder's tax residence and its reportable accounts, keeps records of that work, files an annual return with HMRC by 31 May, tells individual account holders by 31 January that their information will be reported, and registers with HMRC."
+      }
+    },
+    {
+      "key": "uksi-2023-38",
+      "source": "https://www.legislation.gov.uk/uksi/2023/38/contents",
+      "sourceLabel": "legislation.gov.uk, The International Tax Enforcement (Disclosable Arrangements) Regulations 2023 (S.I. 2023/38), text as made, the only version legislation.gov.uk holds for it. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations that put the OECD's model mandatory disclosure rules on CRS avoidance arrangements and opaque offshore structures into United Kingdom law, in place of the earlier regulations of 2020. They bind intermediaries with a United Kingdom presence, which a bank can be, and in some cases the reportable taxpayer. In practice a bank that designs, markets or services such an arrangement files a return with HMRC within 30 days, tells the other intermediaries and taxpayers that it has done so, and answers HMRC's information notices."
+      }
+    },
+    {
+      "key": "uksi-2003-2426",
+      "source": "https://www.legislation.gov.uk/uksi/2003/2426/contents",
+      "sourceLabel": "legislation.gov.uk, The Privacy and Electronic Communications (EC Directive) Regulations 2003 (S.I. 2003/2426), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's rules on privacy in electronic communications, enforced by the Information Commission. Beside communications providers, they bind every organisation that uses cookies and similar technology or markets by telephone, text or email, banks among them. In practice a bank stores or reads information on a customer's device only with consent or under an exception in Schedule A1, emails and texts marketing only with consent or to existing customers for similar products with an opt-out, screens marketing calls against objections and the register, and never hides its identity."
+      }
+    },
+    {
+      "key": "uksi-2004-2095",
+      "source": "https://www.legislation.gov.uk/uksi/2004/2095/contents",
+      "sourceLabel": "legislation.gov.uk, The Financial Services (Distance Marketing) Regulations 2004 (S.I. 2004/2095), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The regulations on financial services sold to consumers at a distance, by telephone, post or online without meeting face to face. Their information and cancellation rules do not apply to an authorised person's contracts within its regulated activities, which FCA rules cover, so for a bank they reach mainly payment services and other contracts outside that scope. In practice a supplier gives the Schedule 1 information before the consumer is bound, sends the terms on paper or another durable medium, and refunds within 30 days when a consumer cancels within the 14 days allowed."
+      }
+    },
+    {
+      "key": "uksi-2019-855",
+      "source": "https://www.legislation.gov.uk/uksi/2019/855/contents",
+      "sourceLabel": "legislation.gov.uk, The Russia (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/855), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's sanctions regime on Russia, made under the Sanctions and Anti-Money Laundering Act 2018. Its finance part freezes the assets of designated persons and bans making funds available to them, and restricts dealing in securities of listed Russian entities, lending to them, correspondent banking with designated banks and trust services; other parts restrict trade, ships, aircraft and services. Its prohibitions apply to any person, banks included. In practice a bank screens against the designations, freezes, refuses prohibited business and reports to the Treasury."
+      }
+    },
+    {
+      "key": "uksi-2019-577",
+      "source": "https://www.legislation.gov.uk/uksi/2019/577/contents",
+      "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/577), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "One of the United Kingdom's two counter-terrorism sanctions regimes, made by the Treasury under the Sanctions and Anti-Money Laundering Act 2018 to prevent terrorism and protect national security. Its finance part freezes the funds and economic resources of the persons the Treasury designates and bans making funds or financial services available to them. Its prohibitions apply to any person, banks included. In practice a bank screens customers and payments against the designations, freezes matching assets, acts only under a Treasury licence where one is needed and reports to the Treasury."
+      }
+    },
+    {
+      "key": "uksi-2019-573",
+      "source": "https://www.legislation.gov.uk/uksi/2019/573/contents",
+      "sourceLabel": "legislation.gov.uk, The Counter-Terrorism (International Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/573), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The second of the United Kingdom's counter-terrorism sanctions regimes, made by the Secretary of State under the Sanctions and Anti-Money Laundering Act 2018 to prevent terrorism and carry out the United Kingdom's duties under UN Security Council resolution 1373 (2001). Its finance part freezes the assets of designated persons and bans making funds or financial services available to them. Its prohibitions apply to any person, banks included. In practice a bank screens against the designations, freezes, acts only under a Treasury licence and reports to the Treasury."
+      }
+    },
+    {
+      "key": "uksi-2019-466",
+      "source": "https://www.legislation.gov.uk/uksi/2019/466/contents",
+      "sourceLabel": "legislation.gov.uk, The ISIL (Da'esh) and Al-Qaida (United Nations Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/466), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's sanctions regime giving effect to the UN Security Council's sanctions against ISIL (Da'esh) and Al-Qaida, made under the Sanctions and Anti-Money Laundering Act 2018. Its finance part freezes the funds and economic resources of designated persons and bans making funds available to them, and its other parts restrict trade. Its prohibitions apply to any person, banks included. In practice a bank screens customers and payments against the designations, freezes, acts only under a Treasury licence and reports to the Treasury."
+      }
+    },
+    {
+      "key": "uksi-2026-1071",
+      "source": "https://www.legislation.gov.uk/uksi/2026/1071/contents",
+      "sourceLabel": "legislation.gov.uk, The Global Human Rights and International Humanitarian Law Sanctions Regulations 2026 (S.I. 2026/1071), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's sanctions regime against serious violations of human rights and of international humanitarian law, made under the Sanctions and Anti-Money Laundering Act 2018. It replaced the Global Human Rights Sanctions Regulations 2020 on 15 October 2026. Its finance part freezes the assets of designated persons and bans making funds available to them, and its prohibitions apply to any person, banks included. In practice a bank screens against the designations, freezes, acts only under a Treasury licence and reports to the Treasury."
+      }
+    },
+    {
+      "key": "uksi-2021-488",
+      "source": "https://www.legislation.gov.uk/uksi/2021/488/contents",
+      "sourceLabel": "legislation.gov.uk, The Global Anti-Corruption Sanctions Regulations 2021 (S.I. 2021/488), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's sanctions regime against serious corruption, made under the Sanctions and Anti-Money Laundering Act 2018. The Secretary of State designates persons involved in serious corruption, and the finance part freezes their funds and economic resources and bans making funds available to them. Its prohibitions apply to any person, banks included. In practice a bank screens customers and payments against the designations, freezes matching assets, acts only under a Treasury licence and reports to the Treasury, including an annual report of frozen assets."
+      }
+    },
+    {
+      "key": "uksi-2023-1314",
+      "source": "https://www.legislation.gov.uk/uksi/2023/1314/contents",
+      "sourceLabel": "legislation.gov.uk, The Iran (Sanctions) Regulations 2023 (S.I. 2023/1314), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's sanctions regime on Iran, made under the Sanctions and Anti-Money Laundering Act 2018 to encourage Iran's government to respect human rights and to deter certain activities of that government or of armed groups it backs. Its finance part freezes the assets of designated persons and bans making funds available to them, and other parts restrict trade, ships and immigration. In practice a bank screens customers and payments against the designations, freezes matching assets, acts only under a Treasury licence and reports to the Treasury."
+      }
+    },
+    {
+      "key": "uksi-2019-411",
+      "source": "https://www.legislation.gov.uk/uksi/2019/411/contents",
+      "sourceLabel": "legislation.gov.uk, The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019 (S.I. 2019/411), revised text as it stands on 2026-11-14. Open Government Licence v3.0",
+      "text": {
+        "en": "The United Kingdom's sanctions regime on North Korea, made under the Sanctions and Anti-Money Laundering Act 2018 to carry out the United Kingdom's obligations under UN Security Council resolutions on North Korea. Its finance part freezes the assets of designated persons, bans making funds available to them and bars banks from accounts, correspondent relationships and offices involving North Korean banks; other parts restrict trade, ships and aircraft. In practice a bank screens, freezes, avoids North Korean banking links and reports to the Treasury."
+      }
+    }
+  ]
+}
