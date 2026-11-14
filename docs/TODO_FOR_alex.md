@@ -150,6 +150,14 @@ library takes their law in its own language. What needs you, most urgent first.
       change to the FMA-IPV (BGBl. II Nr. 181/2026) could not be worked into the
       consolidated text; ZEIMV, EKV 2016 and VMV 2018 rest partly on repealed statutes;
       AndKo-SoV's duties are conditions of a relief.
+- [ ] **A Latvian lawyer on the regulations.** The researcher's own doubts: the consumer
+      credit regulation (No 691/2016) gets a new version on 20 November 2026 that was not
+      read; the distance contract regulation (No 561/2026) gives way to any other act on
+      the same matter; points 45 to 48 of the sanctions risk regulation partly read as
+      permissions and are written as duties to assess and manage the risk; one regulation
+      makes ESMA's product governance guidelines binding by reference. Not found in force:
+      a list of suspicious-transaction indicators, a high-risk third country list and an
+      IT and security risk regulation for banks, which come under DORA.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
