@@ -1440,6 +1440,13 @@
    "url": "https://fiu.ee/"
   },
   {
+   "key": "justiits-ja-digiministeerium",
+   "code": "Justiits- ja Digiministeerium",
+   "name": "Justiits- ja Digiministeerium",
+   "jurisdiction": "EE",
+   "url": "https://www.justdigi.ee/"
+  },
+  {
    "key": "saeima",
    "code": "Saeima",
    "name": "Latvijas Republikas Saeima",
@@ -1587,6 +1594,27 @@
    "url": "https://www.zoll.de/DE/FIU/fiu_node.html"
   },
   {
+   "key": "bmwe",
+   "code": "BMWE",
+   "name": "Bundesministerium für Wirtschaft und Energie",
+   "jurisdiction": "DE",
+   "url": "https://www.bundeswirtschaftsministerium.de/"
+  },
+  {
+   "key": "bmi-de",
+   "code": "BMI (DE)",
+   "name": "Bundesministerium des Innern",
+   "jurisdiction": "DE",
+   "url": "https://www.bmi.bund.de/"
+  },
+  {
+   "key": "bmjv",
+   "code": "BMJV",
+   "name": "Bundesministerium der Justiz und für Verbraucherschutz",
+   "jurisdiction": "DE",
+   "url": "https://www.bmjv.de/"
+  },
+  {
    "key": "uk-parliament",
    "code": "UK Parliament",
    "name": "UK Parliament",
@@ -1720,6 +1748,13 @@
    "url": "https://www.fiu-nederland.nl/"
   },
   {
+   "key": "ministerie-van-buitenlandse-zaken",
+   "code": "BZ",
+   "name": "Ministerie van Buitenlandse Zaken",
+   "jurisdiction": "NL",
+   "url": "https://www.rijksoverheid.nl/ministeries/ministerie-van-buitenlandse-zaken"
+  },
+  {
    "key": "parlament-at",
    "code": "Parlament (AT)",
    "name": "Parlament Österreich",
@@ -1767,6 +1802,13 @@
    "name": "Geldwäschemeldestelle",
    "jurisdiction": "AT",
    "url": "https://www.bundeskriminalamt.at/308/start.aspx"
+  },
+  {
+   "key": "bmasgpk",
+   "code": "BMASGPK",
+   "name": "Bundesministerium für Arbeit, Soziales, Gesundheit, Pflege und Konsumentenschutz",
+   "jurisdiction": "AT",
+   "url": "https://www.sozialministerium.gv.at/"
   },
   {
    "key": "bundesversammlung",
@@ -1830,6 +1872,13 @@
    "name": "Meldestelle für Geldwäscherei",
    "jurisdiction": "CH",
    "url": "https://www.fedpol.admin.ch/de/geldwaescherei"
+  },
+  {
+   "key": "ejpd",
+   "code": "EJPD",
+   "name": "Eidgenössisches Justiz- und Polizeidepartement",
+   "jurisdiction": "CH",
+   "url": "https://www.ejpd.admin.ch/"
   }
  ],
  "instruments": [
