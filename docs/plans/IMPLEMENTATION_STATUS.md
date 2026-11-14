@@ -441,8 +441,12 @@ the Netherlands, Austria and Switzerland.
   Nederlandsche Bank's Regeling toezicht Sanctiewet 1977. Then Switzerland's
   (`ch-verordnungen`): 30 ordinances with 127 duties, 21 of the Bundesrat (among them
   BankV, ERV, LiqV, FINIV, FIDLEV, FinfraV, KKV, GwV and DSV, and seven embargo ordinances
-  with their freeze, funds and SECO reporting duties), 8 of FINMA and the SNB's NBV. The
-  baseline now holds 784 instruments and 3,237 obligations.
+  with their freeze, funds and SECO reporting duties), 8 of FINMA and the SNB's NBV. Then
+  Austria's (`at-verordnungen`): 26 regulations with 103 duties, 20 of the FMA (among them
+  KI-RMV, CRR-BV 2021, KP-V 2025, VERA-V, the Online-IDV and the reporting regulations), 3
+  of the Finance Minister (the account register and capital outflow regulations) and 3 of
+  the Oesterreichische Nationalbank. No asset-freezing regulation under the SanktG 2024 is
+  in the RIS. The baseline now holds 810 instruments and 3,340 obligations.
 - **The law's own words:** the United Kingdom's first (`provisions/gb-acts.json`): 91
   sections and Schedule paragraphs from legislation.gov.uk, the revised text in force on
   2026-11-14 read at its dated address, each cut by script and read twice from two of the
@@ -469,7 +473,7 @@ the Netherlands, Austria and Switzerland.
   versions in force on 2026-11-14 (the 2026 consumer credit act in its adopted wording from
   20 November), read from the RIS open-data store's XML and HTML and a third time from its
   PDF, with English and Swedish beside each; all 133 duties carry their text.
-- **In work on this branch:** the regulations of Latvia, Austria and Estonia; and the
+- **In work on this branch:** the regulations of Latvia and Estonia; and the
   law's own words for Germany's statutes and for the regulations, each
   provision in its original
   language with English and Swedish beside it (Swedish alone beside a United Kingdom text).

@@ -142,6 +142,14 @@ library takes their law in its own language. What needs you, most urgent first.
       identifier); "skyldigheterna att iaktta tillbörlig aktsamhet" for the duties of
       WiEReG entities; VAG § 109(3) point 3, whose ambiguous comma was read the way
       Solvency II Art. 49 reads; and the long units AIFMG § 19, WiEReG § 5 and FM-GwG § 6.
+- [ ] **An Austrian lawyer on the regulations.** The researcher's own doubts: no
+      asset-freezing regulation under the SanktG 2024 is in the RIS's federal law, and the
+      Oesterreichische Nationalbank's Kundmachung DL 2/2002, which § 19 SanktG 2024 deems
+      such a regulation, is not in it either, so Austria's sanctions duties rest on the
+      statute alone; KP-V 2025 § 7 Abs. 2 changes on 1 July 2027; the RIS notes that one
+      change to the FMA-IPV (BGBl. II Nr. 181/2026) could not be worked into the
+      consolidated text; ZEIMV, EKV 2016 and VMV 2018 rest partly on repealed statutes;
+      AndKo-SoV's duties are conditions of a relief.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
