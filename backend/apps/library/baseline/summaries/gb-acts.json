@@ -1,0 +1,158 @@
+{
+  "tranche": "gb-acts",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "ukpga-2000-8",
+      "source": "https://www.legislation.gov.uk/ukpga/2000/8/contents",
+      "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The United Kingdom's central financial services statute. It makes it an offence to carry on a regulated activity without authorisation, restricts financial promotions and gives the FCA and the PRA their powers to authorise, make rules, supervise and enforce. It binds every bank, insurer, investment firm and other authorised firm. In practice a bank holds a Part 4A permission and stays within it, has its senior managers approved, certifies other key staff each year, trains staff in the conduct rules, and reports disciplinary action and changes of control."
+      }
+    },
+    {
+      "key": "ukpga-2012-21",
+      "source": "https://www.legislation.gov.uk/ukpga/2012/21/contents",
+      "sourceLabel": "legislation.gov.uk, Financial Services Act 2012 (2012 c. 21), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act that amends three financial statutes, the Financial Services and Markets Act 2000, the Bank of England Act 1998 and the Banking Act 2009, and makes other provision about financial services and markets. Its own lasting rules for firms are the criminal offences in Part 7, which bind everyone dealing in or talking about investments. In practice a bank and its staff make no false or misleading statement and hide no material fact to induce an investment decision, create no false impression of a market or price, and give no false information for the setting of a benchmark."
+      }
+    },
+    {
+      "key": "ukpga-2013-33",
+      "source": "https://www.legislation.gov.uk/ukpga/2013/33/contents",
+      "sourceLabel": "legislation.gov.uk, Financial Services (Banking Reform) Act 2013 (2013 c. 33), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act on banking reform. It added ring-fencing and the rules on senior managers and the certification of staff to the Financial Services and Markets Act 2000, set up the Payment Systems Regulator and made it a crime for a senior manager to cause a bank to fail by a decision taken far below the standard expected. It binds banks, their senior managers and participants in payment systems. In practice a bank meets the ring-fencing and approval duties now found in the 2000 Act and answers the Payment Systems Regulator's requests for information truthfully."
+      }
+    },
+    {
+      "key": "ukpga-2023-29",
+      "source": "https://www.legislation.gov.uk/ukpga/2023/29/contents",
+      "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2023 (2023 c. 29), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act that changes how United Kingdom financial services law is made. It revokes the EU-derived financial services legislation listed in its Schedule 1, in stages set by Treasury regulations, and amends the Financial Services and Markets Act 2000, adding the designated activities regime and the permission needed to approve financial promotions. Its rules for firms are found in the laws it changes and not in the Act itself. In practice a bank follows the 2000 Act as amended and tracks which retained EU rules have been replaced by regulators' rules."
+      }
+    },
+    {
+      "key": "ukpga-2009-1",
+      "source": "https://www.legislation.gov.uk/ukpga/2009/1/contents",
+      "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The Act behind the special resolution regime for failing banks. It gives the Bank of England its stabilisation powers, such as the transfer of a bank's business to a private purchaser or a resolution company and bail-in, and sets up the bank insolvency and bank administration procedures and the oversight of payment systems. It binds banks, their group companies and anyone starting insolvency proceedings against a bank. In practice a bank answers the Bank of England's resolution information requests, and a group keeps services running for a transferred business."
+      }
+    },
+    {
+      "key": "ukpga-1974-39",
+      "source": "https://www.legislation.gov.uk/ukpga/1974/39/contents",
+      "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The Act that governs regulated consumer credit and consumer hire agreements: how an agreement is made and copied to the borrower, what information and statements the lender sends during its life, what happens on arrears and default, and when the lender answers for a supplier. It binds creditors and owners under regulated agreements, banks that lend to consumers among them. In practice a bank supplies copies and statements on time, honours the 14-day right to withdraw, gives notice of rate changes, serves arrears and default notices before enforcing, and gives settlement figures on request."
+      }
+    },
+    {
+      "key": "ukpga-2014-22",
+      "source": "https://www.legislation.gov.uk/ukpga/2014/22/contents",
+      "sourceLabel": "legislation.gov.uk, Immigration Act 2014 (2014 c. 22), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act on immigration that, among much else, limits access to services by immigration status. Its sections 40 to 40H bind banks and building societies that offer current accounts. In practice a bank checks a person against information supplied by the Secretary of State, through a specified anti-fraud organisation or data-matching authority, before opening a current account, checks its existing current accounts as Treasury regulations require, notifies the Secretary of State of an account it believes is operated for a disqualified person, and closes such accounts once told to."
+      }
+    },
+    {
+      "key": "ukpga-2015-4",
+      "source": "https://www.legislation.gov.uk/ukpga/2015/4/contents",
+      "sourceLabel": "legislation.gov.uk, Insurance Act 2015 (2015 c. 4), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act that makes new provision about insurance contracts and amends the Third Parties (Rights against Insurers) Act 2010. It binds insurers in their contracts with consumers and with businesses. In practice an insurer pays what is due on a claim within a reasonable time under a term implied into every policy, cannot rely on a term that leaves a consumer worse off than the Act provides, and may depart from the Act in a non-consumer contract only by a clear and unambiguous term that it drew to the insured's attention before the contract was made."
+      }
+    },
+    {
+      "key": "ukpga-2002-29",
+      "source": "https://www.legislation.gov.uk/ukpga/2002/29/contents",
+      "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The United Kingdom's main statute on the proceeds of crime: confiscation, civil recovery, the money laundering offences and investigators' powers. Part 7 binds everyone and adds reporting duties for the regulated sector, which includes banks. In practice a bank does not deal with property it knows or suspects is criminal without an authorised disclosure and consent, its staff report suspicion to the nominated officer, who reports to the National Crime Agency, nobody tips off the customer, and the bank answers customer information, account monitoring and information orders."
+      }
+    },
+    {
+      "key": "ukpga-2000-11",
+      "source": "https://www.legislation.gov.uk/ukpga/2000/11/contents",
+      "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The United Kingdom's principal Act on terrorism. Its provisions on terrorist property make it an offence to raise, provide or arrange funds for terrorism or to help conceal terrorist property, and add reporting duties for the regulated sector. It binds everyone, with particular rules for banks, other regulated firms and insurers. In practice staff of a bank report knowledge or suspicion of terrorist financing to the nominated officer or a constable as soon as practicable, nobody tips off the customer, and the bank answers financial information and account monitoring orders."
+      }
+    },
+    {
+      "key": "ukpga-2018-13",
+      "source": "https://www.legislation.gov.uk/ukpga/2018/13/contents",
+      "sourceLabel": "legislation.gov.uk, Sanctions and Anti-Money Laundering Act 2018 (2018 c. 13), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The Act under which the United Kingdom imposes sanctions and makes its money laundering rules. It lets ministers make sanctions regulations, among them financial sanctions that freeze the funds of designated persons and restrict financial services, and regulations against money laundering and terrorist financing. What a bank has to do is set out in the regulations made under it and not in the Act itself. In practice a bank follows each set of regulations, and the Act protects it from civil claims for acts done in the reasonable belief that they comply."
+      }
+    },
+    {
+      "key": "ukpga-2010-23",
+      "source": "https://www.legislation.gov.uk/ukpga/2010/23/contents",
+      "sourceLabel": "legislation.gov.uk, Bribery Act 2010 (2010 c. 23), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The United Kingdom's anti-bribery statute. It makes it an offence to give or take a bribe or to bribe a foreign public official, and makes a commercial organisation criminally liable when a person associated with it bribes to win or keep business, unless it had adequate procedures to prevent that. It binds individuals and every organisation formed in the United Kingdom or carrying on business there. In practice a bank forbids its staff and agents to give or take bribes and keeps procedures designed to prevent bribery on its behalf, which are its defence if an associated person bribes."
+      }
+    },
+    {
+      "key": "ukpga-2006-35",
+      "source": "https://www.legislation.gov.uk/ukpga/2006/35/contents",
+      "sourceLabel": "legislation.gov.uk, Fraud Act 2006 (2006 c. 35), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The Act that defines the offence of fraud in England and Wales and Northern Ireland: fraud by false representation, by failing to disclose information and by abuse of position. It binds everyone, and where a company commits the offence its directors and officers who consented or connived are guilty too. In practice a bank and its staff do not dishonestly mislead customers, counterparties or authorities, do not withhold information they are legally bound to disclose, and do not abuse a position of trust over another person's financial interests."
+      }
+    },
+    {
+      "key": "ukpga-2022-10",
+      "source": "https://www.legislation.gov.uk/ukpga/2022/10/contents",
+      "sourceLabel": "legislation.gov.uk, Economic Crime (Transparency and Enforcement) Act 2022 (2022 c. 10), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act that set up the register of overseas entities and changed the law on unexplained wealth orders and sanctions. Part 1 binds overseas entities, above all those registered as owners of land in the United Kingdom, which can include a foreign bank or a group company holding property here. In practice such an entity takes reasonable steps to identify its registrable beneficial owners, registers with the registrar, updates its entry within 14 days after every 12-month update period and never files misleading information."
+      }
+    },
+    {
+      "key": "ukpga-2023-56",
+      "source": "https://www.legislation.gov.uk/ukpga/2023/56/contents",
+      "sourceLabel": "legislation.gov.uk, Economic Crime and Corporate Transparency Act 2023 (2023 c. 56), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act on economic crime and corporate transparency. For a bank its main rule is the offence of failure to prevent fraud in section 199, fully in force since 1 September 2025: a large organisation is criminally liable when an employee, agent, subsidiary or other associated person commits a listed fraud offence to benefit it or those it serves, unless it had reasonable prevention procedures. In practice a bank that meets the size tests keeps procedures designed to stop people who act for it committing fraud, and can show them if an offence occurs."
+      }
+    },
+    {
+      "key": "ukpga-2017-22",
+      "source": "https://www.legislation.gov.uk/ukpga/2017/22/contents",
+      "sourceLabel": "legislation.gov.uk, Criminal Finances Act 2017 (2017 c. 22), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act that amends the Proceeds of Crime Act 2002, makes provision about terrorist property and creates two corporate offences that apply when someone associated with a company or partnership facilitates another person's tax evasion. Part 3 binds every body corporate and partnership, banks included. In practice a bank keeps reasonable procedures to stop its employees, agents and others who perform services for it from helping anyone evade United Kingdom or foreign tax, because those procedures are its defence if an associated person does so."
+      }
+    },
+    {
+      "key": "ukpga-2011-11",
+      "source": "https://www.legislation.gov.uk/ukpga/2011/11/contents",
+      "sourceLabel": "legislation.gov.uk, Finance Act 2011 (2011 c. 11), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The Finance Act of 2011. For financial firms its lasting part is Schedule 23, the data-gathering powers of HM Revenue and Customs, in force since 1 April 2012. It binds the relevant data-holders the Schedule lists, among them anyone who pays or credits interest, or through whom that is done, and businesses that settle card payments for retailers. In practice a bank provides the data that a data-holder notice requires, keeps the documents the notice covers, and tells HMRC when it finds that data it supplied was inaccurate."
+      }
+    },
+    {
+      "key": "ukpga-2018-12",
+      "source": "https://www.legislation.gov.uk/ukpga/2018/12/contents",
+      "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "The Act that regulates the processing of information about individuals in the United Kingdom beside the UK GDPR. It adds conditions and safeguards for processing, sets out how the Information Commission enforces the law and creates the offences relating to personal data. It binds controllers and anyone who handles personal data, banks and their staff included. In practice a bank keeps an appropriate policy document where Schedule 1 requires one, handles data protection complaints within the statutory times, and makes sure nobody obtains, alters or destroys personal data unlawfully."
+      }
+    },
+    {
+      "key": "ukpga-2025-18",
+      "source": "https://www.legislation.gov.uk/ukpga/2025/18/contents",
+      "sourceLabel": "legislation.gov.uk, Data (Use and Access) Act 2025 (2025 c. 18), revised text as it stands on 2026-11-14",
+      "text": {
+        "en": "An Act on the use of and access to data. Part 1 lets the Secretary of State or the Treasury make regulations requiring a data holder to give customer data to the customer or to a person the customer authorises, Part 2 deals with digital verification services, and Part 5 amends the UK GDPR and the Data Protection Act 2018. Its changes for a bank are read in those amended laws, such as the complaints duty in section 164A of the 2018 Act. In practice a bank follows the amended data protection rules and watches for regulations on customer data."
+      }
+    }
+  ]
+}

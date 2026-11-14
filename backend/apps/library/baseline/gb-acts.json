@@ -1,0 +1,2002 @@
+{
+ "tranche": "gb-acts",
+ "researchedOn": "2026-11-14",
+ "instruments": [
+  {
+   "title": "Add FSMA 2000, the Financial Services and Markets Act 2000 (2000 c. 8)",
+   "source": "https://www.legislation.gov.uk/ukpga/2000/8/contents",
+   "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), revised text: contents, and s. 431(1), which brought the commencement provisions into force on the passing of the Act; the Act was passed on 14 June 2000, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2000/8/section/431"
+   },
+   "payload": {
+    "key": "ukpga-2000-8",
+    "titles": {
+     "en": "Financial Services and Markets Act 2000"
+    },
+    "originalLanguage": "en",
+    "shortName": "FSMA 2000",
+    "officialRef": "2000 c. 8",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:banking",
+    "inForceFrom": "2000-06-14"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Carry on regulated activities in the United Kingdom only when authorised or exempt",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/19",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 19, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/uksi/2001/3538/article/2"
+     },
+     "payload": {
+      "key": "obl-gb-fsma-2000-general-prohibition",
+      "titles": {
+       "en": "Carry on regulated activities in the United Kingdom only when authorised or exempt"
+      },
+      "summaries": {
+       "en": "A firm needs to be an authorised person or an exempt person before it carries on any regulated activity in the UK or holds itself out as doing so. The Act calls this the general prohibition, and section 23 makes a breach a criminal offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 19",
+      "dutyType": "conduct",
+      "effectiveFrom": "2001-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Keep regulated activities within the permission the firm holds",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/20",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 20, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-stay-within-permission",
+      "titles": {
+       "en": "Keep regulated activities within the permission the firm holds"
+      },
+      "summaries": {
+       "en": "An authorised firm that carries on a regulated activity in the UK outside its Part 4A permission, or a permission arising from another provision of the Act, is treated as having breached a requirement of the FCA, and of the PRA too if it is PRA-authorised. For credit-related regulated activities acting outside permission is also an offence under section 23(1A)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 20",
+      "dutyType": "conduct",
+      "effectiveFrom": "2001-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Communicate financial promotions only as an authorised person or with approved content",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/21",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 21, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-financial-promotion-restriction",
+      "titles": {
+       "en": "Communicate financial promotions only as an authorised person or with approved content"
+      },
+      "summaries": {
+       "en": "Nobody acting in the course of business may communicate an invitation or inducement to engage in investment activity or claims management activity unless they are an authorised person or an authorised person has approved the content. A communication from abroad is caught only if it can have an effect in the UK, and Treasury orders set the exemptions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 21",
+      "dutyType": "conduct",
+      "effectiveFrom": "2001-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Approve other people's financial promotions only with the FCA's permission",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/55NA",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 55NA, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-promotion-approval-permission",
+      "titles": {
+       "en": "Approve other people's financial promotions only with the FCA's permission"
+      },
+      "summaries": {
+       "en": "An authorised firm may approve the content of someone else's communication for the financial promotion restriction only if the FCA has given it permission under this section, and only within the terms of that permission. Approving outside the permission counts as breaching an FCA requirement; section 21(2A) also allows approvals that regulations under section 55NB exempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 55NA",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-02-07"
+     }
+    },
+    {
+     "title": "Add the duty: Take reasonable care that nobody under a prohibition order performs a function for the firm",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/56",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 56(6), revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-no-prohibited-individuals",
+      "titles": {
+       "en": "Take reasonable care that nobody under a prohibition order performs a function for the firm"
+      },
+      "summaries": {
+       "en": "The FCA and the PRA can prohibit an individual who is not fit and proper from performing functions in relation to regulated activities. An authorised or exempt firm must take reasonable care that none of its functions relating to a regulated activity is performed by someone a prohibition order bars from that function."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 56(6)",
+      "dutyType": "governance",
+      "effectiveFrom": "2001-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Have senior managers and other controlled-function holders approved by the regulator before they act",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/59",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 59, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-approval-for-controlled-functions",
+      "titles": {
+       "en": "Have senior managers and other controlled-function holders approved by the regulator before they act"
+      },
+      "summaries": {
+       "en": "An authorised firm must take reasonable care that nobody performs a controlled function for it, whether under its own arrangements or a contractor's, without the approval of the FCA or the PRA for that function. Controlled functions are the ones the regulators specify in their rules, senior management functions among them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 59",
+      "dutyType": "governance",
+      "effectiveFrom": "2001-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Satisfy yourself that a candidate is fit and proper before applying for approval",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/60A",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 60A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-vet-candidates",
+      "titles": {
+       "en": "Satisfy yourself that a candidate is fit and proper before applying for approval"
+      },
+      "summaries": {
+       "en": "Before it applies to a regulator for approval of a person for a controlled function, the firm must itself be satisfied that the candidate is fit and proper to perform it. It looks in particular at the qualifications, training, competence and personal characteristics that the regulator's general rules require for that kind of function."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 60A",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-03-07"
+     }
+    },
+    {
+     "title": "Add the duty: Review each approved person's fitness at least once a year and report grounds for withdrawal",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/63",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 63(2A), revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-annual-fitness-review",
+      "titles": {
+       "en": "Review each approved person's fitness at least once a year and report grounds for withdrawal"
+      },
+      "summaries": {
+       "en": "At least once a year, for each person approved on its application, the firm must consider whether anything would justify a regulator in withdrawing the approval. If it concludes that something would, it must notify the regulator of those grounds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 63(2A)",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-03-07"
+     }
+    },
+    {
+     "title": "Add the duty: Certify that staff in significant-harm functions are fit and proper, and renew the certificate yearly",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/63E",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), ss. 63E and 63F, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-certify-staff",
+      "titles": {
+       "en": "Certify that staff in significant-harm functions are fit and proper, and renew the certificate yearly"
+      },
+      "summaries": {
+       "en": "The firm must take reasonable care that no employee performs a function the regulators have specified as a significant-harm function without a valid certificate from the firm. It may issue a certificate only if satisfied the person is fit and proper; the certificate lasts 12 months and sets out the parts of the firm's affairs the person will be involved in. A decision not to certify is explained to the person in writing, and the firm keeps a record of every employee holding a certificate."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 63E and 63F",
+      "dutyType": "governance",
+      "effectiveFrom": "2017-03-07"
+     }
+    },
+    {
+     "title": "Add the duty: Tell staff which conduct rules apply to them and train them to understand the rules",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/64B",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 64B, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-conduct-rules-training",
+      "titles": {
+       "en": "Tell staff which conduct rules apply to them and train them to understand the rules"
+      },
+      "summaries": {
+       "en": "Where a regulator has made conduct rules, the firm must tell its approved persons, employees and directors which of the rules apply to them. It must take all reasonable steps, suitable training among them, to make sure they understand how those rules apply to them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 64B",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Notify the regulator of disciplinary action taken for a reason its rules specify",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/64C",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 64C, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-notify-disciplinary-action",
+      "titles": {
+       "en": "Notify the regulator of disciplinary action taken for a reason its rules specify"
+      },
+      "summaries": {
+       "en": "When the firm gives a formal written warning to, suspends or dismisses, or cuts or recovers the pay of an approved person, employee or director, and one of its reasons is a reason the regulator's rules specify, it must notify that regulator. For a PRA-authorised firm the regulator is the FCA or the PRA, otherwise the FCA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 64C",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-03-07"
+     }
+    },
+    {
+     "title": "Add the duty: Carry on a designated activity only as designated activity regulations and rules allow",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/71L",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 71L, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-designated-activities",
+      "titles": {
+       "en": "Carry on a designated activity only as designated activity regulations and rules allow"
+      },
+      "summaries": {
+       "en": "Nobody may carry on a designated activity where, or so far as, designated activity regulations prohibit it. Anyone carrying on one that is allowed must follow the designated activity rules made under section 71N for it and every other requirement the regulations impose on that activity."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 71L",
+      "dutyType": "conduct",
+      "effectiveFrom": "2023-08-29"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a ring-fenced bank out of excluded activities and Treasury prohibitions",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/142G",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 142G, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-ring-fence-excluded-activities",
+      "titles": {
+       "en": "Keep a ring-fenced bank out of excluded activities and Treasury prohibitions"
+      },
+      "summaries": {
+       "en": "A ring-fenced body that carries on an excluded activity, or holds itself out as doing so, or breaches a prohibition in a Treasury order under section 142E is treated as having contravened a requirement of its regulator: the PRA for a PRA-authorised body, otherwise the FCA. The breach is not a criminal offence and does not make a transaction void."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 142G",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ],
+      "effectiveFrom": "2019-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Notify the regulator before acquiring, increasing, reducing or giving up control of a UK authorised firm",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/178",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), ss. 178 and 191D, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-change-in-control-notice",
+      "titles": {
+       "en": "Notify the regulator before acquiring, increasing, reducing or giving up control of a UK authorised firm"
+      },
+      "summaries": {
+       "en": "Anyone who decides to take control of a UK authorised firm, or to raise the level of control they already have, has to notify the appropriate regulator in writing before doing so, and anyone who decides to reduce or give up control has to do the same before the disposal. The regulator is the PRA for a PRA-authorised firm and otherwise the FCA, and holdings of persons acting in concert are counted together."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 178 and 191D",
+      "dutyType": "reporting",
+      "effectiveFrom": "2009-03-21"
+     }
+    },
+    {
+     "title": "Add the duty: Promote collective investment schemes only where the Act allows it",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/238",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 238, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsma-2000-collective-investment-scheme-promotion",
+      "titles": {
+       "en": "Promote collective investment schemes only where the Act allows it"
+      },
+      "summaries": {
+       "en": "An authorised firm may not invite or induce anyone to take part in a collective investment scheme unless it is an authorised unit trust scheme, an authorised contractual scheme, a scheme of an authorised open-ended investment company or a recognised scheme, or an exemption in FCA rules or a Treasury order applies. A communication from abroad is caught only if it can have an effect in the UK."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 238",
+      "dutyType": "conduct",
+      "effectiveFrom": "2001-12-01"
+     }
+    },
+    {
+     "title": "Add the duty: Never give the FCA or the PRA false or misleading information",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/8/section/398",
+     "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2000 (2000 c. 8), s. 398, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/uksi/2001/3538/article/2"
+     },
+     "payload": {
+      "key": "obl-gb-fsma-2000-no-misleading-the-regulator",
+      "titles": {
+       "en": "Never give the FCA or the PRA false or misleading information"
+      },
+      "summaries": {
+       "en": "It is an offence to give a regulator, knowingly or recklessly, materially false or misleading information when purporting to comply with a requirement under the Act or under the other financial services legislation the section lists. The section applies where no other provision of the Act already makes giving that information an offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 398",
+      "dutyType": "reporting",
+      "effectiveFrom": "2001-12-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add FS Act 2012, the Financial Services Act 2012 (2012 c. 21)",
+   "source": "https://www.legislation.gov.uk/ukpga/2012/21/contents",
+   "sourceLabel": "legislation.gov.uk, Financial Services Act 2012 (2012 c. 21), revised text: contents, and s. 122(1), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 19 December 2012, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2012/21/section/122"
+   },
+   "payload": {
+    "key": "ukpga-2012-21",
+    "titles": {
+     "en": "Financial Services Act 2012"
+    },
+    "originalLanguage": "en",
+    "shortName": "FS Act 2012",
+    "officialRef": "2012 c. 21",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:securities",
+    "inForceFrom": "2012-12-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make no false or misleading statement to induce an investment decision",
+     "source": "https://www.legislation.gov.uk/ukpga/2012/21/section/89",
+     "sourceLabel": "legislation.gov.uk, Financial Services Act 2012 (2012 c. 21), s. 89, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fs-act-2012-misleading-statements",
+      "titles": {
+       "en": "Make no false or misleading statement to induce an investment decision"
+      },
+      "summaries": {
+       "en": "It is an offence to make a statement known to be materially false or misleading, to make one recklessly, or dishonestly to conceal material facts, in order to induce another person to enter into or stay out of a relevant agreement or to use or not use rights under a relevant investment, or being reckless as to whether it may do so. The statement, the person induced or the agreement must have a connection with the United Kingdom."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 89",
+      "dutyType": "conduct",
+      "effectiveFrom": "2013-04-01"
+     }
+    },
+    {
+     "title": "Add the duty: Create no false or misleading impression of an investment's market, price or value",
+     "source": "https://www.legislation.gov.uk/ukpga/2012/21/section/90",
+     "sourceLabel": "legislation.gov.uk, Financial Services Act 2012 (2012 c. 21), s. 90, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fs-act-2012-misleading-impressions",
+      "titles": {
+       "en": "Create no false or misleading impression of an investment's market, price or value"
+      },
+      "summaries": {
+       "en": "It is an offence intentionally to create a false or misleading impression of the market for relevant investments, or of their price or value, in order to induce someone to deal or not deal in them, or knowing or reckless that the impression is false and intending or aware that it is likely to bring a gain or cause a loss. Acting in line with price stabilising rules, control of information rules or the buy-back and stabilisation exemption of the market abuse regulation is a defence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 90",
+      "dutyType": "conduct",
+      "effectiveFrom": "2013-04-01"
+     }
+    },
+    {
+     "title": "Add the duty: Make no false or misleading statement and create no false impression that could affect a benchmark",
+     "source": "https://www.legislation.gov.uk/ukpga/2012/21/section/91",
+     "sourceLabel": "legislation.gov.uk, Financial Services Act 2012 (2012 c. 21), s. 91, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fs-act-2012-benchmark-statements",
+      "titles": {
+       "en": "Make no false or misleading statement and create no false impression that could affect a benchmark"
+      },
+      "summaries": {
+       "en": "It is an offence to make a false or misleading statement, knowingly or recklessly, during arrangements for setting a relevant benchmark and intending that it be used for that purpose. It is also an offence intentionally to create a false or misleading impression of the price or value of an investment or of an interest rate, knowing or reckless that it is false and knowing that it may affect the setting of a relevant benchmark."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 91",
+      "dutyType": "conduct",
+      "effectiveFrom": "2013-04-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add FSBRA 2013, the Financial Services (Banking Reform) Act 2013 (2013 c. 33)",
+   "source": "https://www.legislation.gov.uk/ukpga/2013/33/contents",
+   "sourceLabel": "legislation.gov.uk, Financial Services (Banking Reform) Act 2013 (2013 c. 33), revised text: contents, and s. 148(1), which brought Part 8 into force on the day the Act was passed; the Act was passed on 18 December 2013, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2013/33/section/148"
+   },
+   "payload": {
+    "key": "ukpga-2013-33",
+    "titles": {
+     "en": "Financial Services (Banking Reform) Act 2013"
+    },
+    "originalLanguage": "en",
+    "shortName": "FSBRA 2013",
+    "officialRef": "2013 c. 33",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:banking",
+    "inForceFrom": "2013-12-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Take no decision as a senior manager that causes the bank to fail through conduct far below standard",
+     "source": "https://www.legislation.gov.uk/ukpga/2013/33/section/36",
+     "sourceLabel": "legislation.gov.uk, Financial Services (Banking Reform) Act 2013 (2013 c. 33), ss. 36 and 37, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsbra-2013-reckless-decision-causing-failure",
+      "titles": {
+       "en": "Take no decision as a senior manager that causes the bank to fail through conduct far below standard"
+      },
+      "summaries": {
+       "en": "A senior manager of a UK deposit-taker or PRA-regulated investment firm commits an offence by taking or agreeing to a decision about how the business is run, or failing to take steps to prevent one, while aware of a risk that it may cause the institution or another financial institution in its group to fail, where their conduct falls far below what could reasonably be expected and the decision does cause the failure. Insurers and credit unions are outside the offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 36 and 37",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-03-07"
+     }
+    },
+    {
+     "title": "Add the duty: Give the Payment Systems Regulator the information and documents it requires by notice",
+     "source": "https://www.legislation.gov.uk/ukpga/2013/33/section/81",
+     "sourceLabel": "legislation.gov.uk, Financial Services (Banking Reform) Act 2013 (2013 c. 33), s. 81, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsbra-2013-psr-information",
+      "titles": {
+       "en": "Give the Payment Systems Regulator the information and documents it requires by notice"
+      },
+      "summaries": {
+       "en": "The Payment Systems Regulator may require a person, by written notice, to provide information or documents it needs for its payment systems functions, in the form, at the time and for the period the notice specifies. A participant in a regulated payment system may be told to notify it whenever events of a specified kind occur."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 81",
+      "dutyType": "reporting",
+      "effectiveFrom": "2014-03-01"
+     }
+    },
+    {
+     "title": "Add the duty: Do not destroy documents or give false information in a Payment Systems Regulator inquiry",
+     "source": "https://www.legislation.gov.uk/ukpga/2013/33/section/90",
+     "sourceLabel": "legislation.gov.uk, Financial Services (Banking Reform) Act 2013 (2013 c. 33), s. 90, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-fsbra-2013-psr-no-false-information",
+      "titles": {
+       "en": "Do not destroy documents or give false information in a Payment Systems Regulator inquiry"
+      },
+      "summaries": {
+       "en": "Anyone aware of, or suspecting, an investigation under Part 5 that is under way or likely must not falsify, hide, destroy or dispose of a document relevant to it, and nobody may knowingly or recklessly give materially false or misleading information in answer to a requirement. A failure to comply with a requirement without reasonable excuse can be dealt with by the court as a contempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 90",
+      "dutyType": "conduct",
+      "effectiveFrom": "2014-03-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add FSMA 2023, the Financial Services and Markets Act 2023 (2023 c. 29)",
+   "source": "https://www.legislation.gov.uk/ukpga/2023/29/contents",
+   "sourceLabel": "legislation.gov.uk, Financial Services and Markets Act 2023 (2023 c. 29), revised text: contents, and s. 86(1), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 29 June 2023, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2023/29/section/86"
+   },
+   "payload": {
+    "key": "ukpga-2023-29",
+    "titles": {
+     "en": "Financial Services and Markets Act 2023"
+    },
+    "originalLanguage": "en",
+    "shortName": "FSMA 2023",
+    "officialRef": "2023 c. 29",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-06-29"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add the Banking Act 2009, 2009 c. 1",
+   "source": "https://www.legislation.gov.uk/ukpga/2009/1/contents",
+   "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), revised text: contents, and s. 263, under which the Act came into force by Treasury order",
+   "payload": {
+    "key": "ukpga-2009-1",
+    "titles": {
+     "en": "Banking Act 2009"
+    },
+    "originalLanguage": "en",
+    "shortName": "Banking Act 2009",
+    "officialRef": "2009 c. 1",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Draw up a business reorganisation plan when a bail-in instrument requires one",
+     "source": "https://www.legislation.gov.uk/ukpga/2009/1/section/48H",
+     "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), s. 48H, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-banking-act-2009-business-reorganisation-plan",
+      "titles": {
+       "en": "Draw up a business reorganisation plan when a bail-in instrument requires one"
+      },
+      "summaries": {
+       "en": "A resolution instrument may require the bank's directors, or a resolution administrator, to draw up a plan that assesses the factors that led to the bank meeting the first resolution condition and sets out the measures and timetable for restoring its viability, to submit it to the Bank of England in the time allowed and to report on progress. If the Bank of England requires changes, the amended plan has to be sent back within the time allowed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 48H",
+      "dutyType": "governance",
+      "effectiveFrom": "2014-12-31"
+     }
+    },
+    {
+     "title": "Add the duty: Keep providing services and facilities to whoever takes over a transferred banking business",
+     "source": "https://www.legislation.gov.uk/ukpga/2009/1/section/63",
+     "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), s. 63, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-banking-act-2009-continuity-property-transfer",
+      "titles": {
+       "en": "Keep providing services and facilities to whoever takes over a transferred banking business"
+      },
+      "summaries": {
+       "en": "Where all or part of a bank's business has been transferred to a commercial purchaser or a resolution company under the special resolution regime, the residual bank and every company in its group must supply the services and facilities the transferee needs to run that business effectively. The obligation can be enforced like a contract, carries a right to reasonable payment and continues if the provider becomes insolvent."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 63",
+      "dutyType": "conduct",
+      "effectiveFrom": "2009-02-21"
+     }
+    },
+    {
+     "title": "Add the duty: Keep providing services and facilities to a bank whose ownership changed in resolution",
+     "source": "https://www.legislation.gov.uk/ukpga/2009/1/section/66",
+     "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), s. 66, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-banking-act-2009-continuity-share-transfer",
+      "titles": {
+       "en": "Keep providing services and facilities to a bank whose ownership changed in resolution"
+      },
+      "summaries": {
+       "en": "Where ownership of a bank has been transferred or changed under the special resolution regime, each company that was in its group immediately beforehand must supply the services and facilities the bank needs to operate effectively. The obligation can be enforced like a contract, carries a right to reasonable payment and continues if the provider becomes insolvent."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 66",
+      "dutyType": "conduct",
+      "effectiveFrom": "2009-02-21"
+     }
+    },
+    {
+     "title": "Add the duty: Give the Bank of England the resolution information and documents it requires",
+     "source": "https://www.legislation.gov.uk/ukpga/2009/1/section/83ZA",
+     "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), s. 83ZA, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-banking-act-2009-resolution-information",
+      "titles": {
+       "en": "Give the Bank of England the resolution information and documents it requires"
+      },
+      "summaries": {
+       "en": "The Bank of England may by written notice require a bank, a banking group company or a person connected with a bank to provide information or produce documents it reasonably needs for its resolution functions, within a reasonable period and at the place the notice names. An authorised officer may ask for them without delay, and the Bank may set the form and require verification."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 83ZA",
+      "dutyType": "reporting",
+      "effectiveFrom": "2015-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Notify the PRA and the Bank of England before starting insolvency proceedings for a bank",
+     "source": "https://www.legislation.gov.uk/ukpga/2009/1/section/120",
+     "sourceLabel": "legislation.gov.uk, Banking Act 2009 (2009 c. 1), s. 120, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-banking-act-2009-notice-before-insolvency",
+      "titles": {
+       "en": "Notify the PRA and the Bank of England before starting insolvency proceedings for a bank"
+      },
+      "summaries": {
+       "en": "An administration application, a winding-up petition, a resolution for voluntary winding up and the appointment of an administrator for a bank cannot go ahead until notice has gone to the PRA and the Bank of England and a copy of it has been filed with the court. After that either seven days must pass or both authorities must have said they will not use a stabilisation power or apply for a bank insolvency order."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 120",
+      "dutyType": "reporting",
+      "effectiveFrom": "2009-02-21"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add CCA 1974, the Consumer Credit Act 1974 (1974 c. 39)",
+   "source": "https://www.legislation.gov.uk/ukpga/1974/39/contents",
+   "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), revised text: contents, and s. 192 and Schedule 3, under which the Act came into force in stages by order",
+   "payload": {
+    "key": "ukpga-1974-39",
+    "titles": {
+     "en": "Consumer Credit Act 1974"
+    },
+    "originalLanguage": "en",
+    "shortName": "CCA 1974",
+    "officialRef": "1974 c. 39",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:banking"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the borrower a copy of the signed credit agreement",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/61A",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 61A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-copy-of-executed-agreement",
+      "titles": {
+       "en": "Give the borrower a copy of the signed credit agreement"
+      },
+      "summaries": {
+       "en": "Once a regulated consumer credit agreement has been made, the creditor has to give the debtor a copy of the executed agreement and of any document it refers to. If an identical unexecuted copy was already given, the creditor may instead confirm in writing that the agreement is executed and identical and that a copy can be requested during the withdrawal period. An agreement made without these steps is not properly executed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 61A",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2011-02-01"
+     }
+    },
+    {
+     "title": "Add the duty: Let a borrower withdraw from a credit agreement within 14 days",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/66A",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 66A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-right-of-withdrawal",
+      "titles": {
+       "en": "Let a borrower withdraw from a credit agreement within 14 days"
+      },
+      "summaries": {
+       "en": "The debtor under a regulated consumer credit agreement may withdraw without giving a reason by telling the creditor, orally or in writing, within 14 days counted from the day after the latest of the making of the agreement, the notification of the credit limit and the receipt of the copy of the agreement. The creditor may then recover only the credit drawn and the interest accrued on it, payable within 30 days, and must tell any third party providing a linked ancillary service without delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 66A",
+      "dutyType": "conduct",
+      "effectiveFrom": "2011-02-01"
+     }
+    },
+    {
+     "title": "Add the duty: Answer to the borrower for the supplier's misrepresentation or breach of contract",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/75",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 75, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-connected-lender-liability",
+      "titles": {
+       "en": "Answer to the borrower for the supplier's misrepresentation or breach of contract"
+      },
+      "summaries": {
+       "en": "Where credit under a debtor-creditor-supplier agreement financed a purchase and the debtor has a claim against the supplier for misrepresentation or breach of contract, the debtor has the same claim against the creditor, who is liable together with the supplier. The rule does not reach a single item priced at £100 or less or at more than £30,000, and the creditor may look to the supplier for an indemnity."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 75",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Send regular statements under a fixed-sum credit agreement",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/77A",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 77A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-fixed-sum-statements",
+      "titles": {
+       "en": "Send regular statements under a fixed-sum credit agreement"
+      },
+      "summaries": {
+       "en": "The creditor under a regulated fixed-sum credit agreement has to send the debtor statements for consecutive periods of no more than a year each, the first starting when the agreement is made or when the account first moves. Each statement is due within 30 days after the end of its period, and the debtor cannot be charged for it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 77A",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2008-10-01"
+     }
+    },
+    {
+     "title": "Add the duty: Send statements and, on request, a copy of the agreement under a running-account credit agreement",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/78",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 78, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-running-account-statements",
+      "titles": {
+       "en": "Send statements and, on request, a copy of the agreement under a running-account credit agreement"
+      },
+      "summaries": {
+       "en": "The creditor under a regulated running-account credit agreement has to send the debtor statements of the account at least every twelve months, and at the end of each payment or charging period in which the account moved. On a written request and a £1 fee it also gives a copy of the agreement with a signed statement of the account, of what is payable now and of what will fall due."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 78",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Tell the borrower in writing before an interest rate change takes effect",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/78A",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 78A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-interest-rate-change-notice",
+      "titles": {
+       "en": "Tell the borrower in writing before an interest rate change takes effect"
+      },
+      "summaries": {
+       "en": "A change to the interest rate under a regulated consumer credit agreement cannot take effect until the creditor has told the debtor in writing of the change and of any new payment amount, number or frequency. Where the agreement ties the rate to a publicly available reference rate and provides for periodic information instead, that is enough; for authorised overdrafts the duty applies only to increases."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 78A",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2011-02-01"
+     }
+    },
+    {
+     "title": "Add the duty: Send an arrears notice within 14 days once two payments are overdue, and then every six months",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/86B",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 86B, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-arrears-notices",
+      "titles": {
+       "en": "Send an arrears notice within 14 days once two payments are overdue, and then every six months"
+      },
+      "summaries": {
+       "en": "When a debtor or hirer under an agreement the section covers has fallen behind by at least the total of the last two payments due, the creditor or owner has 14 days to give a notice of sums in arrears and must repeat it at least every six months until the arrears are cleared or a judgment is given. Each notice carries the current arrears information sheet, and the debtor cannot be charged for it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 86B",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2008-10-01"
+     }
+    },
+    {
+     "title": "Add the duty: Serve a default notice and wait at least 14 days before acting on a borrower's breach",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/87",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), ss. 87 and 88, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-default-notice",
+      "titles": {
+       "en": "Serve a default notice and wait at least 14 days before acting on a borrower's breach"
+      },
+      "summaries": {
+       "en": "A creditor or owner that wants to terminate a regulated agreement, demand early payment, recover goods or land, restrict the debtor's rights or enforce security because of a breach must first serve a default notice in the prescribed form. The notice names the breach and what has to be done or paid by a date at least 14 days after service, includes the current default information sheet, and nothing may be done before that date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 87 and 88",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Give a settlement figure when the borrower asks for one",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/97",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 97, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-settlement-statement",
+      "titles": {
+       "en": "Give a settlement figure when the borrower asks for one"
+      },
+      "summaries": {
+       "en": "When the debtor under a regulated consumer credit agreement asks, the creditor has to supply, within the prescribed period, a statement in the prescribed form of the amount needed to pay off the debt, with particulars of how it is worked out. Until it does, it cannot enforce the agreement; a request made within a month of one already answered need not be met."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 97",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Tell an applicant when credit is refused on credit reference agency information",
+     "source": "https://www.legislation.gov.uk/ukpga/1974/39/section/157",
+     "sourceLabel": "legislation.gov.uk, Consumer Credit Act 1974 (1974 c. 39), s. 157, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cca-1974-credit-reference-agency-disclosure",
+      "titles": {
+       "en": "Tell an applicant when credit is refused on credit reference agency information"
+      },
+      "summaries": {
+       "en": "A creditor that decides not to go ahead with a prospective regulated agreement because of information from a credit reference agency must say so when it tells the applicant, and give the agency's name, address and telephone number. In other cases it must name any agency it consulted, within the prescribed period of a written request made no later than 28 days after negotiations ended."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 157",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Immigration Act 2014, 2014 c. 22",
+   "source": "https://www.legislation.gov.uk/ukpga/2014/22/contents",
+   "sourceLabel": "legislation.gov.uk, Immigration Act 2014 (2014 c. 22), revised text: contents, and s. 75(1), which brought Part 7 into force on the day the Act was passed; the Act was passed on 14 May 2014, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2014/22/section/75"
+   },
+   "payload": {
+    "key": "ukpga-2014-22",
+    "titles": {
+     "en": "Immigration Act 2014"
+    },
+    "originalLanguage": "en",
+    "shortName": "Immigration Act 2014",
+    "officialRef": "2014 c. 22",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-05-14"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Run an immigration status check before opening a current account",
+     "source": "https://www.legislation.gov.uk/ukpga/2014/22/section/40",
+     "sourceLabel": "legislation.gov.uk, Immigration Act 2014 (2014 c. 22), s. 40, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-immigration-act-2014-status-check-before-opening",
+      "titles": {
+       "en": "Run an immigration status check before opening a current account"
+      },
+      "summaries": {
+       "en": "A bank or building society may open a current account for a person who is in the UK and needs leave to enter or remain but has none only if a status check with a specified anti-fraud organisation or data-matching authority shows the person is not disqualified, or the check cannot be made for reasons outside its control. Adding someone to an account as a holder, signatory or named beneficiary counts as opening one."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 40",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:onboarding"
+      ],
+      "effectiveFrom": "2014-12-12"
+     }
+    },
+    {
+     "title": "Add the duty: Check existing current accounts for disqualified persons as Treasury regulations require",
+     "source": "https://www.legislation.gov.uk/ukpga/2014/22/section/40A",
+     "sourceLabel": "legislation.gov.uk, Immigration Act 2014 (2014 c. 22), s. 40A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-immigration-act-2014-periodic-immigration-checks",
+      "titles": {
+       "en": "Check existing current accounts for disqualified persons as Treasury regulations require"
+      },
+      "summaries": {
+       "en": "A bank or building society has to check each current account it holds, other than accounts that Treasury regulations exclude, at the times or frequency those regulations set, to see whether it is operated by or for a disqualified person according to information the Secretary of State supplies. It has to arrange with a specified anti-fraud organisation or data-matching authority to be able to make the checks and pay any reasonable fee under those arrangements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 40A",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:ongoing"
+      ],
+      "effectiveFrom": "2017-10-30"
+     }
+    },
+    {
+     "title": "Add the duty: Tell the Secretary of State of a current account operated for a disqualified person",
+     "source": "https://www.legislation.gov.uk/ukpga/2014/22/section/40B",
+     "sourceLabel": "legislation.gov.uk, Immigration Act 2014 (2014 c. 22), s. 40B, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-immigration-act-2014-notify-disqualified-account",
+      "titles": {
+       "en": "Tell the Secretary of State of a current account operated for a disqualified person"
+      },
+      "summaries": {
+       "en": "When an immigration check turns up a current account that the bank or building society believes is operated by or for a disqualified person, it has to notify the Secretary of State as soon as reasonably practicable. It also gives the further information that Treasury regulations prescribe, in the prescribed form and manner."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 40B",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ],
+      "effectiveFrom": "2017-10-30"
+     }
+    },
+    {
+     "title": "Add the duty: Close a disqualified person's accounts when notified, unless a freezing order is in play",
+     "source": "https://www.legislation.gov.uk/ukpga/2014/22/section/40G",
+     "sourceLabel": "legislation.gov.uk, Immigration Act 2014 (2014 c. 22), s. 40G, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-immigration-act-2014-close-disqualified-accounts",
+      "titles": {
+       "en": "Close a disqualified person's accounts when notified, unless a freezing order is in play"
+      },
+      "summaries": {
+       "en": "Once the Secretary of State has confirmed that a person the bank reported is disqualified and has sent the bank the notification the Act provides for, the bank or building society has to close each account operated by or for that person as soon as reasonably practicable, apart from accounts that are under a freezing order or the subject of an application for one. It may delay for a reasonable time where the account is overdrawn or closure would significantly harm another holder."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 40G",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ],
+      "effectiveFrom": "2017-10-30"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Insurance Act 2015, 2015 c. 4",
+   "source": "https://www.legislation.gov.uk/ukpga/2015/4/contents",
+   "sourceLabel": "legislation.gov.uk, Insurance Act 2015 (2015 c. 4), revised text: contents, and s. 23(4), which brought the commencement section into force on the day the Act was passed; the Act was passed on 12 February 2015, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2015/4/section/23"
+   },
+   "payload": {
+    "key": "ukpga-2015-4",
+    "titles": {
+     "en": "Insurance Act 2015"
+    },
+    "originalLanguage": "en",
+    "shortName": "Insurance Act 2015",
+    "officialRef": "2015 c. 4",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:insurance",
+    "inForceFrom": "2015-02-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Pay sums due on an insurance claim within a reasonable time",
+     "source": "https://www.legislation.gov.uk/ukpga/2015/4/section/13A",
+     "sourceLabel": "legislation.gov.uk, Insurance Act 2015 (2015 c. 4), s. 13A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-insurance-act-2015-pay-claims-in-reasonable-time",
+      "titles": {
+       "en": "Pay sums due on an insurance claim within a reasonable time"
+      },
+      "summaries": {
+       "en": "Every insurance contract carries an implied term that the insurer pays what is due on a claim within a reasonable time, which allows time to investigate and assess it. What is reasonable depends on matters such as the type of insurance, the size and complexity of the claim, regulatory rules and factors outside the insurer's control, and an insurer with reasonable grounds to dispute a claim is not in breach merely by withholding payment while the dispute lasts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 13A",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:insurer"
+      ],
+      "effectiveFrom": "2017-05-04"
+     }
+    },
+    {
+     "title": "Add the duty: Keep consumer insurance terms no worse for the consumer than Parts 3 and 4 of the Act",
+     "source": "https://www.legislation.gov.uk/ukpga/2015/4/section/15",
+     "sourceLabel": "legislation.gov.uk, Insurance Act 2015 (2015 c. 4), s. 15, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-insurance-act-2015-no-contracting-out-consumers",
+      "titles": {
+       "en": "Keep consumer insurance terms no worse for the consumer than Parts 3 and 4 of the Act"
+      },
+      "summaries": {
+       "en": "Any contract term, in the consumer insurance contract itself or elsewhere, that would leave the consumer worse off on a matter covered by Part 3 or Part 4 of the Act than those Parts provide has no effect to that extent. The rule does not reach a contract that settles a claim."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 15",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:insurer",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make a term that departs from the Act clear and point it out to the business customer beforehand",
+     "source": "https://www.legislation.gov.uk/ukpga/2015/4/section/17",
+     "sourceLabel": "legislation.gov.uk, Insurance Act 2015 (2015 c. 4), ss. 16 and 17, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-insurance-act-2015-transparency-of-disadvantageous-terms",
+      "titles": {
+       "en": "Make a term that departs from the Act clear and point it out to the business customer beforehand"
+      },
+      "summaries": {
+       "en": "In a non-consumer insurance contract a term that leaves the insured worse off than the Act provides takes effect only if the insurer took sufficient steps to draw it to the insured's attention before the contract or variation was agreed and the term is clear and unambiguous about its effect. The kind of insured involved and the circumstances of the transaction are taken into account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 16 and 17",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add POCA 2002, the Proceeds of Crime Act 2002 (2002 c. 29)",
+   "source": "https://www.legislation.gov.uk/ukpga/2002/29/contents",
+   "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), revised text: contents, and s. 458, under which the Act came into force by order",
+   "payload": {
+    "key": "ukpga-2002-29",
+    "titles": {
+     "en": "Proceeds of Crime Act 2002"
+    },
+    "originalLanguage": "en",
+    "shortName": "POCA 2002",
+    "officialRef": "2002 c. 29",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not handle criminal property or help another person keep or use it",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/327",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), ss. 327, 328 and 329, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-no-dealing-in-criminal-property",
+      "titles": {
+       "en": "Do not handle criminal property or help another person keep or use it"
+      },
+      "summaries": {
+       "en": "It is an offence to conceal, disguise, convert, transfer or remove criminal property, to become concerned in an arrangement known or suspected to help someone else acquire, keep, use or control it, or to acquire, use or possess it. No offence is committed where an authorised disclosure was made and, if it was made beforehand, the appropriate consent was obtained; a deposit-taker, electronic money institution or payment institution operating an account is also outside the offences below the threshold amount set under section 339A."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 327, 328 and 329",
+      "dutyType": "conduct",
+      "effectiveFrom": "2003-02-24"
+     }
+    },
+    {
+     "title": "Add the duty: Report knowledge or suspicion of money laundering to the nominated officer as soon as practicable",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/330",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 330, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-report-suspicion-internally",
+      "titles": {
+       "en": "Report knowledge or suspicion of money laundering to the nominated officer as soon as practicable"
+      },
+      "summaries": {
+       "en": "A person who, through business in the regulated sector, comes to know or suspect, or has reasonable grounds to know or suspect, that someone else is engaged in money laundering has to disclose it to the firm's nominated officer or to an authorised National Crime Agency officer as soon as is practicable. The disclosure gives the person's identity and where the laundered property is, as far as the discloser knows them, together with the information behind the suspicion."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 330",
+      "dutyType": "reporting",
+      "effectiveFrom": "2003-02-24"
+     }
+    },
+    {
+     "title": "Add the duty: Pass internal money laundering reports to the National Crime Agency as soon as practicable",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/331",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 331, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-nominated-officer-report",
+      "titles": {
+       "en": "Pass internal money laundering reports to the National Crime Agency as soon as practicable"
+      },
+      "summaries": {
+       "en": "A nominated officer who, because of a report received under section 330, knows or suspects, or has reasonable grounds to know or suspect, that someone is engaged in money laundering has to disclose it to an authorised National Crime Agency officer as soon as is practicable. Not doing so without a reasonable excuse is an offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 331",
+      "dutyType": "reporting",
+      "effectiveFrom": "2003-02-24"
+     }
+    },
+    {
+     "title": "Add the duty: Do not tip off anyone that a suspicious activity report was made or an investigation is under way",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/333A",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 333A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-no-tipping-off",
+      "titles": {
+       "en": "Do not tip off anyone that a suspicious activity report was made or an investigation is under way"
+      },
+      "summaries": {
+       "en": "A person in the regulated sector must not reveal that a disclosure under Part 7 has been made, or that an investigation into a money laundering offence is being considered or carried out, where that is likely to prejudice an investigation and the information reached them through regulated-sector business. Sections 333B to 333D allow certain disclosures within an undertaking or group, between institutions and in other listed cases."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 333A",
+      "dutyType": "conduct",
+      "effectiveFrom": "2007-12-26"
+     }
+    },
+    {
+     "title": "Add the duty: Let the nominated officer consent to a suspect transaction only once the National Crime Agency allows it or the time limits pass",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/336",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 336, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-consent-before-suspect-transaction",
+      "titles": {
+       "en": "Let the nominated officer consent to a suspect transaction only once the National Crime Agency allows it or the time limits pass"
+      },
+      "summaries": {
+       "en": "A nominated officer may consent to a prohibited act only after disclosing to the National Crime Agency that the property is criminal property and one of three things has happened: the Agency has consented, seven working days have passed without a refusal, or consent was refused and the 31-day moratorium has run out. Consenting otherwise, knowing or suspecting the act is prohibited, is an offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 336",
+      "dutyType": "conduct",
+      "effectiveFrom": "2003-02-24"
+     }
+    },
+    {
+     "title": "Add the duty: Provide the information a court's information order requires",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/339ZH",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 339ZH, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-information-orders",
+      "titles": {
+       "en": "Provide the information a court's information order requires"
+      },
+      "summaries": {
+       "en": "On an application by the National Crime Agency or, in Scotland, a procurator fiscal, a court may order a business in the regulated sector to provide information that would help a money laundering investigation, the Agency's analysis of money laundering or a request from a foreign authority. The firm has to provide what the order specifies, in the way and by the date it sets, and a magistrates' court may order a payment of up to £5,000 for non-compliance."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 339ZH",
+      "dutyType": "reporting",
+      "effectiveFrom": "2017-10-31"
+     }
+    },
+    {
+     "title": "Add the duty: Do nothing that prejudices a confiscation, civil recovery or money laundering investigation",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/342",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 342, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-no-prejudicing-investigation",
+      "titles": {
+       "en": "Do nothing that prejudices a confiscation, civil recovery or money laundering investigation"
+      },
+      "summaries": {
+       "en": "Someone who knows or suspects that an investigation the section lists, such as a confiscation, civil recovery or money laundering investigation, is under way or about to start must not make a disclosure likely to prejudice it, and must not falsify, hide, destroy or dispose of documents relevant to it or let that happen. A disclosure made without knowing or suspecting that it would prejudice the investigation, or made under a function or requirement of the Act, is not caught."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 342",
+      "dutyType": "conduct",
+      "effectiveFrom": "2003-02-24"
+     }
+    },
+    {
+     "title": "Add the duty: Provide customer information when a customer information order requires it",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/363",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), ss. 363 and 366, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-customer-information-orders",
+      "titles": {
+       "en": "Provide customer information when a customer information order requires it"
+      },
+      "summaries": {
+       "en": "Where a judge has made a customer information order, a financial institution it covers has to give an appropriate officer, on written notice, whatever customer information it holds about the person under investigation, in the manner and by the time the officer requires. Failing to comply without reasonable excuse, or knowingly or recklessly giving a materially false or misleading statement, is an offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 363 and 366",
+      "dutyType": "reporting",
+      "effectiveFrom": "2003-02-24"
+     }
+    },
+    {
+     "title": "Add the duty: Report account activity for the period an account monitoring order sets",
+     "source": "https://www.legislation.gov.uk/ukpga/2002/29/section/370",
+     "sourceLabel": "legislation.gov.uk, Proceeds of Crime Act 2002 (2002 c. 29), s. 370, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-poca-2002-account-monitoring-orders",
+      "titles": {
+       "en": "Report account activity for the period an account monitoring order sets"
+      },
+      "summaries": {
+       "en": "Where a judge has made an account monitoring order, the financial institution named in it has to give an appropriate officer the account information the order describes, for the period it states and in the manner and at the times it states. That period cannot run for more than 90 days from the day the order is made."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 370",
+      "dutyType": "reporting",
+      "effectiveFrom": "2003-02-24"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Terrorism Act 2000, 2000 c. 11",
+   "source": "https://www.legislation.gov.uk/ukpga/2000/11/contents",
+   "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), revised text: contents, and s. 128, under which the Act came into force by order",
+   "payload": {
+    "key": "ukpga-2000-11",
+    "titles": {
+     "en": "Terrorism Act 2000"
+    },
+    "originalLanguage": "en",
+    "shortName": "Terrorism Act 2000",
+    "officialRef": "2000 c. 11",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not provide, receive or arrange funds or property for terrorism, or help conceal terrorist property",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/section/15",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), ss. 15, 17 and 18, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-no-funding-of-terrorism",
+      "titles": {
+       "en": "Do not provide, receive or arrange funds or property for terrorism, or help conceal terrorist property"
+      },
+      "summaries": {
+       "en": "It is an offence to invite, receive or provide money or other property that is meant for terrorism or that the person has reasonable cause to suspect may serve it, and to take part in an arrangement that makes money or property available to someone while knowing or having reasonable cause to suspect such use. It is also an offence to take part in an arrangement that helps another person keep or control terrorist property, unless the person proves they neither knew nor had reasonable cause to suspect that it related to terrorist property."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 15, 17 and 18",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Do not pay an insurance claim for money handed over to meet a terrorist demand",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/section/17A",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), s. 17A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-no-insurance-payment-for-terrorist-demand",
+      "titles": {
+       "en": "Do not pay an insurance claim for money handed over to meet a terrorist demand"
+      },
+      "summaries": {
+       "en": "An insurer commits an offence if it pays under an insurance contract for money or other property that has been or will be handed over to meet a demand made wholly or partly for terrorist purposes, where the insurer or the person authorising the payment knows or has reasonable cause to suspect this. Officers who consented to or connived in the payment, or whose neglect it is attributable to, are liable as well."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 17A",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:insurer"
+      ],
+      "effectiveFrom": "2015-02-12"
+     }
+    },
+    {
+     "title": "Add the duty: Report knowledge or suspicion of terrorist financing as soon as practicable",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/section/21A",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), s. 21A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-report-terrorist-financing-suspicion",
+      "titles": {
+       "en": "Report knowledge or suspicion of terrorist financing as soon as practicable"
+      },
+      "summaries": {
+       "en": "A person who, through business in the regulated sector, comes to know or suspect, or has reasonable grounds to know or suspect, that someone has committed or attempted an offence under sections 15 to 18 has to disclose the information to a constable or to the firm's nominated officer as soon as is practicable. A reasonable excuse and legal privilege are exceptions, and a court looks at whether approved guidance was followed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 21A",
+      "dutyType": "reporting",
+      "effectiveFrom": "2001-12-20"
+     }
+    },
+    {
+     "title": "Add the duty: Do not tip off anyone about a terrorist financing disclosure or investigation",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/section/21D",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), s. 21D, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-no-tipping-off",
+      "titles": {
+       "en": "Do not tip off anyone about a terrorist financing disclosure or investigation"
+      },
+      "summaries": {
+       "en": "A person in the regulated sector must not reveal that a disclosure under the Act's terrorist property provisions has been made, or that an investigation into an offence under them is being considered or carried out, where that is likely to prejudice an investigation and the information reached them through regulated-sector business."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 21D",
+      "dutyType": "conduct",
+      "effectiveFrom": "2007-12-26"
+     }
+    },
+    {
+     "title": "Add the duty: Do nothing that prejudices a terrorist investigation",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/section/39",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), s. 39, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-no-prejudicing-investigation",
+      "titles": {
+       "en": "Do nothing that prejudices a terrorist investigation"
+      },
+      "summaries": {
+       "en": "Someone aware, or with reasonable cause to suspect, that a terrorist investigation by a constable is under way or planned, or that a disclosure under sections 19 to 21B or 38B has been or will be made, must not tell anyone anything likely to prejudice the investigation or interfere with material likely to be relevant to it. Not knowing or having cause to suspect the effect, and a reasonable excuse, are defences."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 39",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Provide customer information when a financial information order requires it",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/schedule/6/paragraph/1",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), Sch. 6 para. 1, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-financial-information-orders",
+      "titles": {
+       "en": "Provide customer information when a financial information order requires it"
+      },
+      "summaries": {
+       "en": "Once an order under Schedule 6 is made for a terrorist investigation, the constable or counter-terrorism financial investigator it names may require a financial institution within the order to hand over customer information. The institution has to do so in the manner and time specified, whatever other restriction on disclosure exists; failure is an offence unless the information was not held or compliance was not reasonably practicable."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 6 para. 1",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Report account activity for the period a terrorism account monitoring order sets",
+     "source": "https://www.legislation.gov.uk/ukpga/2000/11/schedule/6A/paragraph/2",
+     "sourceLabel": "legislation.gov.uk, Terrorism Act 2000 (2000 c. 11), Sch. 6A para. 2, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-terrorism-act-2000-account-monitoring-orders",
+      "titles": {
+       "en": "Report account activity for the period a terrorism account monitoring order sets"
+      },
+      "summaries": {
+       "en": "Where a judge has made an account monitoring order for a terrorist investigation, the financial institution named in it has to give an appropriate officer information of the description specified about the accounts the named person holds with it. It does so for the period, in the manner, at the times and at the places the order sets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 6A para. 2",
+      "dutyType": "reporting",
+      "effectiveFrom": "2001-12-20"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SAMLA 2018, the Sanctions and Anti-Money Laundering Act 2018 (2018 c. 13)",
+   "source": "https://www.legislation.gov.uk/ukpga/2018/13/contents",
+   "sourceLabel": "legislation.gov.uk, Sanctions and Anti-Money Laundering Act 2018 (2018 c. 13), revised text: contents, and s. 64(1), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 23 May 2018, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2018/13/section/64"
+   },
+   "payload": {
+    "key": "ukpga-2018-13",
+    "titles": {
+     "en": "Sanctions and Anti-Money Laundering Act 2018"
+    },
+    "originalLanguage": "en",
+    "shortName": "SAMLA 2018",
+    "officialRef": "2018 c. 13",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml",
+    "inForceFrom": "2018-05-23"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add the Bribery Act 2010, 2010 c. 23",
+   "source": "https://www.legislation.gov.uk/ukpga/2010/23/contents",
+   "sourceLabel": "legislation.gov.uk, Bribery Act 2010 (2010 c. 23), revised text: contents, and s. 19(2), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 8 April 2010, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2010/23/section/19"
+   },
+   "payload": {
+    "key": "ukpga-2010-23",
+    "titles": {
+     "en": "Bribery Act 2010"
+    },
+    "originalLanguage": "en",
+    "shortName": "Bribery Act 2010",
+    "officialRef": "2010 c. 23",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml",
+    "inForceFrom": "2010-04-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not offer, promise or give a bribe",
+     "source": "https://www.legislation.gov.uk/ukpga/2010/23/section/1",
+     "sourceLabel": "legislation.gov.uk, Bribery Act 2010 (2010 c. 23), s. 1, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2010/23/section/19"
+     },
+     "payload": {
+      "key": "obl-gb-bribery-act-2010-no-bribing",
+      "titles": {
+       "en": "Do not offer, promise or give a bribe"
+      },
+      "summaries": {
+       "en": "It is an offence to offer, promise or give a financial or other advantage in order to induce or reward the improper performance of a function or activity, or knowing or believing that accepting it would itself be improper performance. It makes no difference whether the advantage passes through a third party or goes to someone other than the person performing the function."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 1",
+      "dutyType": "conduct",
+      "effectiveFrom": "2011-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Do not request, agree to receive or accept a bribe",
+     "source": "https://www.legislation.gov.uk/ukpga/2010/23/section/2",
+     "sourceLabel": "legislation.gov.uk, Bribery Act 2010 (2010 c. 23), s. 2, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2010/23/section/19"
+     },
+     "payload": {
+      "key": "obl-gb-bribery-act-2010-no-being-bribed",
+      "titles": {
+       "en": "Do not request, agree to receive or accept a bribe"
+      },
+      "summaries": {
+       "en": "It is an offence to request, agree to receive or accept a financial or other advantage with the intention that a function or activity be performed improperly as a result, as a reward for improper performance, or where the request or acceptance is itself improper performance, and where a function is performed improperly in anticipation or in consequence of it. It makes no difference whether the advantage comes through a third party or is for someone else's benefit."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 2",
+      "dutyType": "conduct",
+      "effectiveFrom": "2011-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Do not bribe a foreign public official",
+     "source": "https://www.legislation.gov.uk/ukpga/2010/23/section/6",
+     "sourceLabel": "legislation.gov.uk, Bribery Act 2010 (2010 c. 23), s. 6, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2010/23/section/19"
+     },
+     "payload": {
+      "key": "obl-gb-bribery-act-2010-no-bribing-foreign-officials",
+      "titles": {
+       "en": "Do not bribe a foreign public official"
+      },
+      "summaries": {
+       "en": "It is an offence to offer, promise or give an advantage to a foreign public official, or to someone else at the official's request or with the official's agreement, in order to influence the official in that capacity and to win or keep business or a business advantage. There is no offence where the written law that applies to the official permits or requires the official to be influenced in that way."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 6",
+      "dutyType": "conduct",
+      "effectiveFrom": "2011-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Keep adequate procedures to prevent bribery by people acting for the firm",
+     "source": "https://www.legislation.gov.uk/ukpga/2010/23/section/7",
+     "sourceLabel": "legislation.gov.uk, Bribery Act 2010 (2010 c. 23), s. 7, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2010/23/section/19"
+     },
+     "payload": {
+      "key": "obl-gb-bribery-act-2010-adequate-procedures",
+      "titles": {
+       "en": "Keep adequate procedures to prevent bribery by people acting for the firm"
+      },
+      "summaries": {
+       "en": "A commercial organisation that is incorporated or formed in the UK, or carries on business there, commits an offence when a person associated with it bribes someone in order to win or keep business or a business advantage for it. The organisation has a defence if it proves that it had adequate procedures in place designed to stop associated persons doing so."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2011-07-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Fraud Act 2006, 2006 c. 35",
+   "source": "https://www.legislation.gov.uk/ukpga/2006/35/contents",
+   "sourceLabel": "legislation.gov.uk, Fraud Act 2006 (2006 c. 35), revised text: contents, and s. 15(1), under which the Act apart from ss. 15 and 16 came into force by order",
+   "payload": {
+    "key": "ukpga-2006-35",
+    "titles": {
+     "en": "Fraud Act 2006"
+    },
+    "originalLanguage": "en",
+    "shortName": "Fraud Act 2006",
+    "officialRef": "2006 c. 35",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make no dishonest false representation for gain or to cause loss",
+     "source": "https://www.legislation.gov.uk/ukpga/2006/35/section/2",
+     "sourceLabel": "legislation.gov.uk, Fraud Act 2006 (2006 c. 35), s. 2, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2006/35/section/15"
+     },
+     "payload": {
+      "key": "obl-gb-fraud-act-2006-no-false-representation",
+      "titles": {
+       "en": "Make no dishonest false representation for gain or to cause loss"
+      },
+      "summaries": {
+       "en": "A person commits fraud by dishonestly making a representation they know is or might be untrue or misleading, with the intention of making a gain or of causing loss, or a risk of loss, to someone else. The representation can be express or implied, about fact or law, and can be made to a system or device as well as to a person."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 2",
+      "dutyType": "conduct",
+      "effectiveFrom": "2007-01-15"
+     }
+    },
+    {
+     "title": "Add the duty: Do not dishonestly withhold information there is a legal duty to disclose",
+     "source": "https://www.legislation.gov.uk/ukpga/2006/35/section/3",
+     "sourceLabel": "legislation.gov.uk, Fraud Act 2006 (2006 c. 35), s. 3, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2006/35/section/15"
+     },
+     "payload": {
+      "key": "obl-gb-fraud-act-2006-no-dishonest-non-disclosure",
+      "titles": {
+       "en": "Do not dishonestly withhold information there is a legal duty to disclose"
+      },
+      "summaries": {
+       "en": "A person commits fraud by dishonestly keeping back from someone information that the law obliges them to disclose to that person, with the intention of making a gain or of causing loss, or a risk of loss, to someone else."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 3",
+      "dutyType": "conduct",
+      "effectiveFrom": "2007-01-15"
+     }
+    },
+    {
+     "title": "Add the duty: Do not abuse a position of trust over another person's financial interests",
+     "source": "https://www.legislation.gov.uk/ukpga/2006/35/section/4",
+     "sourceLabel": "legislation.gov.uk, Fraud Act 2006 (2006 c. 35), s. 4, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2006/35/section/15"
+     },
+     "payload": {
+      "key": "obl-gb-fraud-act-2006-no-abuse-of-position",
+      "titles": {
+       "en": "Do not abuse a position of trust over another person's financial interests"
+      },
+      "summaries": {
+       "en": "A person who holds a position in which they are expected to look after, or not to act against, someone else's financial interests commits fraud by dishonestly abusing that position with the intention of making a gain or of causing loss, or a risk of loss, to someone else. A failure to act can be abuse just as an act can."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 4",
+      "dutyType": "conduct",
+      "effectiveFrom": "2007-01-15"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ECTEA 2022, the Economic Crime (Transparency and Enforcement) Act 2022 (2022 c. 10)",
+   "source": "https://www.legislation.gov.uk/ukpga/2022/10/contents",
+   "sourceLabel": "legislation.gov.uk, Economic Crime (Transparency and Enforcement) Act 2022 (2022 c. 10), revised text: contents, and s. 69(3), which brought Chapter 2 of Part 3 and Part 4 into force on the day the Act was passed; the Act was passed on 15 March 2022, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2022/10/section/69"
+   },
+   "payload": {
+    "key": "ukpga-2022-10",
+    "titles": {
+     "en": "Economic Crime (Transparency and Enforcement) Act 2022"
+    },
+    "originalLanguage": "en",
+    "shortName": "ECTEA 2022",
+    "officialRef": "2022 c. 10",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml",
+    "inForceFrom": "2022-03-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Update the overseas entity's register entry after every 12-month update period",
+     "source": "https://www.legislation.gov.uk/ukpga/2022/10/section/7",
+     "sourceLabel": "legislation.gov.uk, Economic Crime (Transparency and Enforcement) Act 2022 (2022 c. 10), s. 7, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-ectea-2022-updating-duty",
+      "titles": {
+       "en": "Update the overseas entity's register entry after every 12-month update period"
+      },
+      "summaries": {
+       "en": "A registered overseas entity has 14 days after each update period, which runs for 12 months from registration and then from the end of the last period, to deliver to the registrar the statements and information the section lists. They include whether the entity's registrable beneficial owners changed during the period and a confirmation that section 12 was complied with; an entity may shorten a period by notifying the registrar."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 7",
+      "dutyType": "reporting",
+      "effectiveFrom": "2023-01-16"
+     }
+    },
+    {
+     "title": "Add the duty: Take reasonable steps to identify the overseas entity's beneficial owners before filing",
+     "source": "https://www.legislation.gov.uk/ukpga/2022/10/section/12",
+     "sourceLabel": "legislation.gov.uk, Economic Crime (Transparency and Enforcement) Act 2022 (2022 c. 10), s. 12, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-ectea-2022-identify-beneficial-owners",
+      "titles": {
+       "en": "Take reasonable steps to identify the overseas entity's beneficial owners before filing"
+      },
+      "summaries": {
+       "en": "Before it applies for registration, complies with the updating duty or applies for removal, an overseas entity has to take reasonable steps to identify its registrable beneficial owners and to obtain the required information about them and about any trust involved. Those steps include giving an information notice, to be answered within one month, to anyone it knows to be a registrable beneficial owner or has reasonable cause to think is one."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 12",
+      "dutyType": "governance",
+      "effectiveFrom": "2022-10-12"
+     }
+    },
+    {
+     "title": "Add the duty: Deliver no misleading, false or deceptive document or statement to the registrar",
+     "source": "https://www.legislation.gov.uk/ukpga/2022/10/section/32",
+     "sourceLabel": "legislation.gov.uk, Economic Crime (Transparency and Enforcement) Act 2022 (2022 c. 10), s. 32, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-ectea-2022-no-false-filing",
+      "titles": {
+       "en": "Deliver no misleading, false or deceptive document or statement to the registrar"
+      },
+      "summaries": {
+       "en": "It is an offence, without reasonable excuse, to deliver to the registrar a document, or to make to the registrar a statement, that is materially misleading, false or deceptive for the purposes of the register of overseas entities. Where a legal entity commits the offence, every officer of it who is in default commits it too."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 32",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-03-04"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ECCTA 2023, the Economic Crime and Corporate Transparency Act 2023 (2023 c. 56)",
+   "source": "https://www.legislation.gov.uk/ukpga/2023/56/contents",
+   "sourceLabel": "legislation.gov.uk, Economic Crime and Corporate Transparency Act 2023 (2023 c. 56), revised text: contents, and s. 219(2), which brought Part 6 and the listed provisions into force on the day the Act was passed; the Act was passed on 26 October 2023, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2023/56/section/219"
+   },
+   "payload": {
+    "key": "ukpga-2023-56",
+    "titles": {
+     "en": "Economic Crime and Corporate Transparency Act 2023"
+    },
+    "originalLanguage": "en",
+    "shortName": "ECCTA 2023",
+    "officialRef": "2023 c. 56",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-10-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep reasonable procedures to prevent fraud by people acting for the organisation",
+     "source": "https://www.legislation.gov.uk/ukpga/2023/56/section/199",
+     "sourceLabel": "legislation.gov.uk, Economic Crime and Corporate Transparency Act 2023 (2023 c. 56), ss. 199 and 201, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-eccta-2023-prevent-fraud",
+      "titles": {
+       "en": "Keep reasonable procedures to prevent fraud by people acting for the organisation"
+      },
+      "summaries": {
+       "en": "A large organisation commits an offence when an employee, agent, subsidiary or other person associated with it commits a listed fraud offence intending to benefit the organisation or someone to whom the associate provides services on its behalf. It has a defence if it proves that reasonable fraud prevention procedures were in place, or that none could reasonably be expected. An organisation is large if in the previous financial year it met two of three tests: turnover above £36 million, balance sheet total above £18 million, more than 250 employees."
+      },
+      "originalLanguage": "en",
+      "refLabel": "ss. 199 and 201",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-09-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add CFA 2017, the Criminal Finances Act 2017 (2017 c. 22)",
+   "source": "https://www.legislation.gov.uk/ukpga/2017/22/contents",
+   "sourceLabel": "legislation.gov.uk, Criminal Finances Act 2017 (2017 c. 22), revised text: contents, and s. 58(6), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 27 April 2017, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2017/22/section/58"
+   },
+   "payload": {
+    "key": "ukpga-2017-22",
+    "titles": {
+     "en": "Criminal Finances Act 2017"
+    },
+    "originalLanguage": "en",
+    "shortName": "CFA 2017",
+    "officialRef": "2017 c. 22",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:tax",
+    "inForceFrom": "2017-04-27"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep reasonable procedures to prevent staff and agents facilitating UK tax evasion",
+     "source": "https://www.legislation.gov.uk/ukpga/2017/22/section/45",
+     "sourceLabel": "legislation.gov.uk, Criminal Finances Act 2017 (2017 c. 22), s. 45, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cfa-2017-prevent-uk-tax-evasion-facilitation",
+      "titles": {
+       "en": "Keep reasonable procedures to prevent staff and agents facilitating UK tax evasion"
+      },
+      "summaries": {
+       "en": "A body corporate or partnership commits an offence when a person acting as its employee, agent or other associated person criminally facilitates someone else's evasion of UK tax. It has a defence if it proves that it had the prevention procedures that could reasonably be expected of it in the circumstances, or that it was not reasonable to expect any."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 45",
+      "dutyType": "governance",
+      "effectiveFrom": "2017-09-30"
+     }
+    },
+    {
+     "title": "Add the duty: Keep reasonable procedures to prevent staff and agents facilitating foreign tax evasion",
+     "source": "https://www.legislation.gov.uk/ukpga/2017/22/section/46",
+     "sourceLabel": "legislation.gov.uk, Criminal Finances Act 2017 (2017 c. 22), s. 46, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-cfa-2017-prevent-foreign-tax-evasion-facilitation",
+      "titles": {
+       "en": "Keep reasonable procedures to prevent staff and agents facilitating foreign tax evasion"
+      },
+      "summaries": {
+       "en": "A body corporate or partnership that is formed in the UK or carries on business there, or whose associated person does part of the facilitating there, commits an offence when that person facilitates the evasion of a foreign tax and the conduct is criminal in the country concerned and would count as fraudulent evasion in the eyes of a UK court. It has a defence if it proves that it had the prevention procedures that could reasonably be expected of it, or that it was not reasonable to expect any."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 46",
+      "dutyType": "governance",
+      "effectiveFrom": "2017-09-30"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Finance Act 2011, 2011 c. 11",
+   "source": "https://www.legislation.gov.uk/ukpga/2011/11/contents",
+   "sourceLabel": "legislation.gov.uk, Finance Act 2011 (2011 c. 11), revised text: contents, and Sch. 23 para. 65, which brought Schedule 23 into force on 1 April 2012",
+   "payload": {
+    "key": "ukpga-2011-11",
+    "titles": {
+     "en": "Finance Act 2011"
+    },
+    "originalLanguage": "en",
+    "shortName": "Finance Act 2011",
+    "officialRef": "2011 c. 11",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:tax"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide the data HMRC requires by a data-holder notice",
+     "source": "https://www.legislation.gov.uk/ukpga/2011/11/schedule/23/paragraph/1",
+     "sourceLabel": "legislation.gov.uk, Finance Act 2011 (2011 c. 11), Sch. 23 paras. 1, 12 and 13A, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2011/11/schedule/23/paragraph/65"
+     },
+     "payload": {
+      "key": "obl-gb-finance-act-2011-data-holder-notice",
+      "titles": {
+       "en": "Provide the data HMRC requires by a data-holder notice"
+      },
+      "summaries": {
+       "en": "An officer of Revenue and Customs may by written notice require a relevant data-holder to provide data of the kind that Treasury regulations specify for that type of holder. Relevant data-holders include anyone who pays or credits interest, or through whom that is done, and anyone contractually bound to pay retailers in settlement of payment card transactions; the data may be general or about particular persons and may include personal data."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 23 paras. 1, 12 and 13A",
+      "dutyType": "reporting",
+      "effectiveFrom": "2012-04-01"
+     }
+    },
+    {
+     "title": "Add the duty: Keep documents that a data-holder notice covers or is likely to cover",
+     "source": "https://www.legislation.gov.uk/ukpga/2011/11/schedule/23/paragraph/30",
+     "sourceLabel": "legislation.gov.uk, Finance Act 2011 (2011 c. 11), Sch. 23 para. 30, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2011/11/schedule/23/paragraph/65"
+     },
+     "payload": {
+      "key": "obl-gb-finance-act-2011-keep-material-documents",
+      "titles": {
+       "en": "Keep documents that a data-holder notice covers or is likely to cover"
+      },
+      "summaries": {
+       "en": "Hiding, destroying or getting rid of a document counts as failing to comply with a data-holder notice, with a £300 penalty, once the notice asking for it has arrived or HMRC has said that one will or is likely to be given. The document no longer has to be kept once the notice is complied with, unless HMRC has asked in writing for it to be preserved."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 23 para. 30",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2012-04-01"
+     }
+    },
+    {
+     "title": "Add the duty: Give HMRC accurate data and report an inaccuracy once it is found",
+     "source": "https://www.legislation.gov.uk/ukpga/2011/11/schedule/23/paragraph/32",
+     "sourceLabel": "legislation.gov.uk, Finance Act 2011 (2011 c. 11), Sch. 23 para. 32, revised text as it stands on 2026-11-14",
+     "fieldSources": {
+      "effectiveFrom": "https://www.legislation.gov.uk/ukpga/2011/11/schedule/23/paragraph/65"
+     },
+     "payload": {
+      "key": "obl-gb-finance-act-2011-accurate-data",
+      "titles": {
+       "en": "Give HMRC accurate data and report an inaccuracy once it is found"
+      },
+      "summaries": {
+       "en": "A data-holder that provides inaccurate data in answer to a data-holder notice faces a penalty of up to £3,000 where the inaccuracy is careless or deliberate, where it knew of the inaccuracy when providing the data and did not tell HMRC then, or where it finds the inaccuracy later and does not take reasonable steps to tell HMRC."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 23 para. 32",
+      "dutyType": "reporting",
+      "effectiveFrom": "2012-04-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DPA 2018, the Data Protection Act 2018 (2018 c. 12)",
+   "source": "https://www.legislation.gov.uk/ukpga/2018/12/contents",
+   "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), revised text: contents, and s. 212(2), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 23 May 2018, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2018/12/section/212"
+   },
+   "payload": {
+    "key": "ukpga-2018-12",
+    "titles": {
+     "en": "Data Protection Act 2018"
+    },
+    "originalLanguage": "en",
+    "shortName": "DPA 2018",
+    "officialRef": "2018 c. 12",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2018-05-23"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep an appropriate policy document where a Schedule 1 processing condition requires one",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/schedule/1/paragraph/39",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), Sch. 1 paras. 39 and 40, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-appropriate-policy-document",
+      "titles": {
+       "en": "Keep an appropriate policy document where a Schedule 1 processing condition requires one"
+      },
+      "summaries": {
+       "en": "A controller that relies on a Schedule 1 condition requiring one needs a document that explains how it secures compliance with the UK GDPR's data protection principles for that processing and what its retention and erasure policies are, with an indication of how long the data is likely to be kept. It keeps the document from the start of the processing until six months after it stops, reviews and updates it from time to time, and gives it to the Information Commission free of charge on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 1 paras. 39 and 40",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Record the Schedule 1 condition relied on in the record of processing",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/schedule/1/paragraph/41",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), Sch. 1 para. 41, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-record-of-schedule-1-processing",
+      "titles": {
+       "en": "Record the Schedule 1 condition relied on in the record of processing"
+      },
+      "summaries": {
+       "en": "For processing that relies on a Schedule 1 condition requiring an appropriate policy document, the record of processing kept under Article 30 of the UK GDPR has to state which condition is relied on and how the processing is lawful under Article 6. It also says whether the data is retained and erased in line with the policy document and, if not, why."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Sch. 1 para. 41",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Take data protection complaints, acknowledge them within 30 days and answer without undue delay",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/section/164A",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), s. 164A, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-handle-data-protection-complaints",
+      "titles": {
+       "en": "Take data protection complaints, acknowledge them within 30 days and answer without undue delay"
+      },
+      "summaries": {
+       "en": "A controller has to make it easy for a data subject to complain that their personal data has been handled in breach of the UK GDPR or Part 3 of the Act, for instance through a complaint form that can be completed electronically. It acknowledges each complaint within 30 days of receiving it and then, without undue delay, takes appropriate steps to respond, which include making enquiries and reporting progress, and tells the complainant the outcome."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 164A",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-06-19"
+     }
+    },
+    {
+     "title": "Add the duty: Do not obtain, disclose or keep personal data without the controller's consent",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/section/170",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), s. 170, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-no-unlawful-obtaining",
+      "titles": {
+       "en": "Do not obtain, disclose or keep personal data without the controller's consent"
+      },
+      "summaries": {
+       "en": "It is an offence knowingly or recklessly to obtain or disclose personal data, to procure its disclosure to another person, or to keep it after obtaining it, when the controller has not consented. The defences include that the act was necessary for preventing, investigating or detecting crime, was required or authorised by law or a court, or was justified in the public interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 170",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Do not re-identify de-identified personal data without the controller's consent",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/section/171",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), s. 171, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-no-re-identification",
+      "titles": {
+       "en": "Do not re-identify de-identified personal data without the controller's consent"
+      },
+      "summaries": {
+       "en": "It is an offence knowingly or recklessly to take steps that make de-identified personal data attributable to a specific person again, unless the controller responsible for de-identifying it has consented. The defences include that the re-identification was necessary for preventing, investigating or detecting crime, was required or authorised by law or a court, or was justified in the public interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 171",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Do not alter or destroy information to defeat a subject access request",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/section/173",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), s. 173, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-no-altering-data-to-defeat-access-request",
+      "titles": {
+       "en": "Do not alter or destroy information to defeat a subject access request"
+      },
+      "summaries": {
+       "en": "Once a person has made an access or portability request that they are entitled to have answered, the controller and anyone it employs or directs must not alter, deface, block, erase, destroy or hide information in order to stop it being disclosed. It is a defence that the change would have happened anyway, or that the person reasonably believed the requester had no right to the information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 173",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Do not require a job applicant, worker, supplier or customer to produce a relevant record",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/section/184",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), s. 184, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-no-enforced-subject-access",
+      "titles": {
+       "en": "Do not require a job applicant, worker, supplier or customer to produce a relevant record"
+      },
+      "summaries": {
+       "en": "It is an offence to require someone to hand over or give access to a relevant record in connection with recruiting or continuing to employ them or with a contract for services, or as a condition of providing goods, facilities or services to the public. Relevant records are the health records and the records about convictions, cautions and statutory functions that Schedule 18 defines; a requirement that the law demands or authorises, or that is justified in the public interest, is a defence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 184",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Do not destroy or falsify material covered by an information or assessment notice",
+     "source": "https://www.legislation.gov.uk/ukpga/2018/12/section/148",
+     "sourceLabel": "legislation.gov.uk, Data Protection Act 2018 (2018 c. 12), s. 148, revised text as it stands on 2026-11-14",
+     "payload": {
+      "key": "obl-gb-dpa-2018-no-destroying-material-under-notice",
+      "titles": {
+       "en": "Do not destroy or falsify material covered by an information or assessment notice"
+      },
+      "summaries": {
+       "en": "A person who has been given an information notice or an assessment notice by the Information Commission must not destroy, get rid of, hide, block or falsify the information, documents, equipment or material it covers, or let that happen, in order to stop the Commission seeing it. It is a defence that the same would have happened had no notice been given."
+      },
+      "originalLanguage": "en",
+      "refLabel": "s. 148",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DUAA 2025, the Data (Use and Access) Act 2025 (2025 c. 18)",
+   "source": "https://www.legislation.gov.uk/ukpga/2025/18/contents",
+   "sourceLabel": "legislation.gov.uk, Data (Use and Access) Act 2025 (2025 c. 18), revised text: contents, and s. 142(2), which brought the listed provisions into force on the day the Act was passed; the Act was passed on 19 June 2025, the date printed at its head",
+   "fieldSources": {
+    "inForceFrom": "https://www.legislation.gov.uk/ukpga/2025/18/section/142"
+   },
+   "payload": {
+    "key": "ukpga-2025-18",
+    "titles": {
+     "en": "Data (Use and Access) Act 2025"
+    },
+    "originalLanguage": "en",
+    "shortName": "DUAA 2025",
+    "officialRef": "2025 c. 18",
+    "level": "act",
+    "jurisdiction": "gb",
+    "authority": "uk-parliament",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2025-06-19"
+   },
+   "obligations": []
+  }
+ ]
+}
