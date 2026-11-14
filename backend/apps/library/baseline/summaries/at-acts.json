@@ -1,0 +1,166 @@
+{
+  "tranche": "at-acts",
+  "researchedOn": "2026-11-14",
+  "summaries": [
+    {
+      "key": "at-bgbl-1993-532",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40281283/NOR40281283.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Bankwesengesetz (BWG), BGBl. Nr. 532/1993, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 93/2026)",
+      "text": {
+        "en": "Austria's central banking statute: it sets which business needs a banking licence and how credit institutions are governed and supervised by the Financial Market Authority and the Oesterreichische Nationalbank. It binds credit institutions and, in parts, financial institutions and holding companies. In practice a bank runs risk management proportionate to its business, keeps written compliance policies, an internal audit and a complaints procedure, applies the pay principles to its risk takers, notifies the authority of outsourcing and of changes in management, and keeps banking secrecy."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2014-98",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40275852/NOR40275852.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Sanierungs- und Abwicklungsgesetz (BaSAG), BGBl. I Nr. 98/2014, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 5/2026)",
+      "text": {
+        "en": "Austria's bank recovery and resolution statute, carrying out the Bank Recovery and Resolution Directive. It binds credit institutions, certain investment firms and their holding companies. In practice a bank draws up a recovery plan and updates it at least once a year, gives the resolution authority the information it needs for resolution planning, holds its minimum amount of own funds and eligible liabilities at all times, writes bail-in recognition into contracts under third-country law, and tells the authority at once if it is failing or likely to fail."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2015-117",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40249833/NOR40249833.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Einlagensicherungs- und Anlegerentschädigungsgesetz (ESAEG), BGBl. I Nr. 117/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 93/2026)",
+      "text": {
+        "en": "Austria's deposit guarantee and investor compensation statute. It binds credit institutions established in Austria that take deposits or provide the investment services the act protects, and the schemes they belong to. In practice a bank belongs to a protection scheme, pays the contributions the scheme sets on time, reports its covered deposits to the scheme by 31 January each year, and tells depositors and investors in its branches or on its website which scheme protects them, without advertising unlimited cover."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2021-199",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40275772/NOR40275772.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Pfandbriefgesetz (PfandBG), BGBl. I Nr. 199/2021, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 5/2026)",
+      "text": {
+        "en": "Austria's covered bond statute, carrying out the Covered Bond Directive. It binds credit institutions that issue covered bonds under a programme approved by the Financial Market Authority. In practice an issuing bank keeps its outstanding bonds covered at all times, enters every cover asset in a cover register, runs a risk management unit independent of the operating business, holds a liquidity buffer for the net outflows of the next 180 days, publishes cover pool data on its website every quarter and reports on its programmes to the authority every quarter."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2010-28",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40117859/NOR40117859.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verbraucherkreditgesetz (VKrG), BGBl. I Nr. 28/2010, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 36/2026)",
+      "text": {
+        "en": "Austria's consumer credit statute of 2010, in force until 19 November 2026, when the Consumer Credit Act 2026 replaces it for new agreements. It binds every lender and credit intermediary that grants credit to consumers and keeps applying to agreements concluded before that date. In practice a bank gives the standard European credit information before the contract, checks the consumer's creditworthiness and warns of doubts, shows a representative example in advertising that quotes rates, and hands every party a copy of the written agreement."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2026-36",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40278393/NOR40278393.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verbraucherkreditgesetz 2026 (VKrG 2026), BGBl. I Nr. 36/2026, consolidated text read through the RIS open-data interface (original version)",
+      "text": {
+        "en": "Austria's new consumer credit statute, adopted in June 2026 and in force from 20 November 2026 for agreements concluded from that day. It binds every lender and credit intermediary that grants credit to consumers, with separate rules for overdrafts, deferred payment and leasing. In practice a bank grants no credit the consumer has not asked for, carries a cost warning in its advertising, gives the standard information form and adequate explanations before the contract, lends only after a thorough creditworthiness check, and shows forbearance before enforcement."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2015-135",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40176305/NOR40176305.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Hypothekar- und Immobilienkreditgesetz (HIKrG), BGBl. I Nr. 135/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 62/2026)",
+      "text": {
+        "en": "Austria's statute on consumer loans secured on real estate or taken to buy or keep property. It binds every lender and credit intermediary offering such credit to consumers. In practice a bank keeps general information on its mortgage products available, hands over the personalised European Standardised Information Sheet before the consumer is bound, lends only after a thorough creditworthiness assessment that does not lean on the property's value, keeps a binding offer open for at least seven days, and does not tie the loan to other financial products."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2016-35",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40198574/NOR40198574.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Verbraucherzahlungskontogesetz (VZKG), BGBl. I Nr. 35/2016, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 5/2025)",
+      "text": {
+        "en": "Austria's statute on consumer payment accounts, carrying out the Payment Accounts Directive. Its fee transparency and switching rules bind every payment service provider that offers payment accounts to consumers, and its basic account rules bind credit institutions. In practice a bank hands over a fee information document before the contract and a statement of fees every year, completes an account switch within the five-day steps the act sets, opens a basic payment account for any consumer lawfully resident in the Union within ten business days, and ends such an account only on listed grounds."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2017-107-wag-2018",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40281418/NOR40281418.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wertpapieraufsichtsgesetz 2018 (WAG 2018), BGBl. I Nr. 107/2017, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 93/2026)",
+      "text": {
+        "en": "Austria's statute on investment services, carrying the conduct and organisation rules of MiFID II. It binds credit institutions and investment firms that provide investment services, and licenses investment firms and investment service undertakings. In practice a firm keeps compliance procedures and records including recorded calls, approves each product for a target market, protects client assets, manages conflicts of interest and third-party payments, tests suitability or appropriateness before it serves a client, and takes all sufficient steps to execute orders on the best terms."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2017-107-boerseg-2018",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276862/NOR40276862.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Börsegesetz 2018 (BörseG 2018), BGBl. I Nr. 107/2017, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 62/2026)",
+      "text": {
+        "en": "Austria's stock exchange statute. It governs exchanges and their members, the transparency duties of issuers whose securities are admitted to a regulated market, and the national side of the market abuse rules. In practice a bank instructs its staff on the insider dealing ban and keeps internal rules on passing on information, a listed issuer publishes its annual report within four months and its half-year report within three, holders report voting rights that cross the thresholds within two trading days, and every supervised employer keeps a confidential channel for reporting breaches."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2011-77",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40279166/NOR40279166.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Investmentfondsgesetz 2011 (InvFG 2011), BGBl. I Nr. 77/2011, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 93/2026)",
+      "text": {
+        "en": "Austria's statute on UCITS funds and the companies that manage them. It binds management companies, the depositary banks that hold fund assets, and those who market funds in Austria. In practice a management company keeps documented decision-making, internal controls and records, runs permanent compliance and risk management functions, treats all unit holders alike and appoints a single depositary bank for each fund, and the depositary sees that units are issued and redeemed, valued and paid for as the act and the fund rules require."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2013-135",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40279071/NOR40279071.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Alternative Investmentfonds Manager-Gesetz (AIFMG), BGBl. I Nr. 135/2013, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 57/2026)",
+      "text": {
+        "en": "Austria's statute on managers of alternative investment funds. It binds every manager licensed or registered in Austria and the depositaries of the funds they manage. In practice a manager acts honestly and in the interest of its funds and their investors, sets a remuneration policy consistent with sound risk management, identifies and manages conflicts of interest, separates risk management from the operating units, runs a liquidity management system with regular stress tests, has a single depositary appointed for each fund and produces an annual report within six months of the year end."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2018-17",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40275829/NOR40275829.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Zahlungsdienstegesetz 2018 (ZaDiG 2018), BGBl. I Nr. 17/2018, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 59/2026)",
+      "text": {
+        "en": "Austria's payment services statute, carrying out the second Payment Services Directive. It licenses payment institutions and sets the information duties, rights and liabilities for every payment service provider, banks included. In practice a provider gives customers the framework contract terms and two months' notice of changes, executes payments by the end of the next business day, refunds an unauthorised payment by the end of the following business day, asks for strong customer authentication and manages operational and security risks, while a payment institution safeguards users' funds."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2010-107",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40123781/NOR40123781.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), E-Geldgesetz 2010, BGBl. I Nr. 107/2010, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 5/2025)",
+      "text": {
+        "en": "Austria's electronic money statute. It says who may issue e-money, licenses e-money institutions and sets the issue and redemption rules that bind every issuer, banks included. In practice an issuer issues e-money at par for the funds it receives, redeems it at par whenever the holder asks, charges a redemption fee only in the three cases the act allows and pays no interest on it, while an e-money institution also safeguards the funds it has received and keeps the governance, outsourcing and internal audit arrangements of a payment institution."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2015-34",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40276278/NOR40276278.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Versicherungsaufsichtsgesetz 2016 (VAG 2016), BGBl. I Nr. 34/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 6/2026)",
+      "text": {
+        "en": "Austria's insurance supervision statute, carrying out Solvency II and the conduct rules for insurers under the Insurance Distribution Directive. It binds insurance and reinsurance undertakings. In practice an insurer keeps an effective governance and risk management system, carries out its own risk and solvency assessment, stays responsible for what it outsources and notifies critical outsourcing beforehand, approves each product through a product governance process, and gives the policyholder a personal recommendation before the contract unless the customer waives advice."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2016-118",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40281474/NOR40281474.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Finanzmarkt-Geldwäschegesetz (FM-GwG), BGBl. I Nr. 118/2016, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 94/2026)",
+      "text": {
+        "en": "Austria's anti-money-laundering statute for the financial market. It binds credit institutions, financial institutions and crypto-asset service providers, under the supervision of the Financial Market Authority. In practice a bank assesses its own money laundering and sanctions risks, identifies each customer and beneficial owner and monitors the relationship, applies enhanced measures to higher risks and politically exposed persons, reports suspicions to the financial intelligence unit without tipping off, keeps its records for ten years and appoints an anti-money-laundering officer."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2017-136",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40281472/NOR40281472.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Wirtschaftliche Eigentümer Registergesetz (WiEReG), BGBl. I Nr. 136/2017, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 94/2026)",
+      "text": {
+        "en": "Austria's statute on the register of beneficial owners, in force until 9 July 2027, when a new act of 2027 replaces it. It binds every company, foundation and trust in its scope to know and report its beneficial owners, and sets how banks and other obliged entities use the register. In practice a bank, as a legal entity, checks its own beneficial owners every year and reports them within four weeks, and as an obliged entity it uses register extracts on a risk basis only and flags entries it knows to be wrong."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2025-5",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40268361/NOR40268361.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Sanktionengesetz 2024 (SanktG 2024), BGBl. I Nr. 5/2025, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 5/2025)",
+      "text": {
+        "en": "Austria's statute for carrying out United Nations and European Union sanctions and for national sanctions of its own. It binds everyone in Austria and sets extra duties for financial market participants, meaning credit institutions, financial institutions and crypto-asset service providers. In practice a bank keeps written, board-approved procedures for sanctions compliance, freezes incoming payments for a listed person and tells the Financial Market Authority at once, reports the assets it holds for listed persons, and releases frozen assets only with the authority's permit."
+      }
+    },
+    {
+      "key": "at-bgbl-i-1999-165",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40262691/NOR40262691.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Datenschutzgesetz (DSG), BGBl. I Nr. 165/1999, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 50/2025)",
+      "text": {
+        "en": "Austria's national data protection statute, which carries out and supplements the General Data Protection Regulation and sets up the data protection authority. It binds every controller and processor in Austria, financial firms included. In practice a bank keeps personal data confidential, binds its staff by contract to pass data on only on its instruction and tells them what a breach means, and where it uses video surveillance it records only on a lawful ground, secures and logs the recordings, deletes them when no longer needed and marks the monitored area."
+      }
+    },
+    {
+      "key": "at-bgbl-i-2015-116-gmsg",
+      "source": "https://ogd.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40273328/NOR40273328.html",
+      "sourceLabel": "Rechtsinformationssystem des Bundes (RIS), Gemeinsamer Meldestandard-Gesetz (GMSG), BGBl. I Nr. 116/2015, consolidated text read through the RIS open-data interface (last amended by BGBl. I Nr. 96/2025)",
+      "text": {
+        "en": "Austria's statute for the common reporting standard on financial accounts, carrying out the EU directive on administrative cooperation in taxation. It binds reporting financial institutions, banks among them. In practice an institution registers with the tax office, obtains a tax residence self-certification when an individual opens an account, records the reportable information for all account holders, reports each reportable account electronically by the end of July, files a nil report where it has none, and keeps its due diligence records for seven years."
+      }
+    }
+  ]
+}
