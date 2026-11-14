@@ -43,6 +43,15 @@ library takes their law in its own language. What needs you, most urgent first.
       ansvar" for an LLP. Five units are left without text because the site prints two
       wordings and only its editors' notes say which applies (FSMA s. 56, CCA ss. 77A and
       86B, POCA s. 370, ECTEA s. 12): say if you want them with a note instead.
+- [ ] **A Dutch and a Swedish reader on the Netherlands' law text.** English and Swedish
+      stand beside the 97 Dutch articles, machine translations written for meaning. Worth
+      a reader's hour: Swedish for Dutch-only concepts ("person som bestämmer
+      verksamhetens inriktning" for a beleidsbepaler, "förvaltarskap" and
+      "förmögenhetsförvaltning" for curatele and bewind, "stämningsman" for a
+      deurwaarder, "belåningsgrad" for a dekkingspercentage), "voidable" for vernietigbaar,
+      and "alternative investment fund" for a beleggingsinstelling, which the Wft defines
+      by the AIFM Directive. Misprints of the official text are kept as printed (Wwft art.
+      3(10) cites "Richtlijn 77/79/EEG", WIBB art. 10ob(5) "Richtlijn 2016/11/EU").
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
