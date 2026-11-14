@@ -127,6 +127,13 @@ library takes their law in its own language. What needs you, most urgent first.
       RVV-FINMA, which start on 1 January 2027; and ordinances whose issuer is not a seeded
       authority (the EJPD's maximum consumer credit rate, fedpol's VDIGw, the BAZG's and
       the Übernahmekommission's).
+- [ ] **An Estonian and a Swedish reader on Estonia's law text.** English and Swedish stand
+      beside the 137 Estonian sections, machine translations written for meaning, with the
+      gazette's amendment notes kept in place and translated. Worth a reader's hour:
+      "direktion" and "tillsynsråd" for a juhatus and a nõukogu; "auktoriserad revisor"
+      for a vandeaudiitor, where the EU's Swedish says "lagstadgad revisor"; "suspensive
+      condition" and "uppskjutande villkor" for an edasilükkav tingimus; "privat" and
+      "publikt aktiebolag" for an osaühing and an aktsiaselts.
 - [ ] **A lawyer of each market on its statutes.** Each researcher's own doubts are in the
       verification log's rows and worth a reader's hour.
       - Germany and the United Kingdom: provisions that are offences or powers written as
