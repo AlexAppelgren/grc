@@ -120,9 +120,9 @@ laptop). The cloud machine has 4 CPUs and 15 GB, enough for a full E2E stack of 
    `claude/<task>`, and a short prompt that names the task and its brief and points at "The
    session's rules" below. Then it runs the routine once.
 2. **The session** runs `bash scripts/cloud-setup.sh` (with `--e2e` when its gates include E2E),
-   builds the task test-first exactly like a local sub-agent, runs its gates, commits, and
-   pushes only its own `claude/<task>-…` branch. It never pushes `main` or `candidate` and
-   never opens a pull request.
+   builds the task test-first exactly like a local sub-agent, runs its gates, commits, pushes
+   its own `claude/<task>-…` branch, and ships the finished change to `main` the way the
+   local checkout does (rule 6 below). It never opens a pull request.
 3. **Follow it** with `RemoteTrigger` `list_runs` and `get_run_log`: a cloud session sends no
    completion notice, so the main agent checks it whenever it is next active.
 4. **Review and integrate** as for a worktree: `git fetch origin claude/<task>-…`, read the
@@ -146,8 +146,15 @@ A cloud session's prompt only names its task and brief; these are its standing r
    dependencies.
 5. Run every gate the task lists, then `bash scripts/prepush.sh --quick`; all must be green.
 6. Commit on the session's own `claude/...` branch with a playbook 13.4 message (no model or
-   tool names, no Co-Authored-By line) and `git push -u origin HEAD`. Never push `main` or
-   `candidate`, never open a pull request, never send push notifications.
+   tool names, no Co-Authored-By line) and `git push -u origin HEAD`. Then ship it as the
+   local checkout does (Alex, 2026-11-15: "follow the same pattern as on local machine";
+   CLAUDE.md section 7): every commit bound for `main` a whole slice that passes the gates
+   (fold checkpoint commits first), `prepush.sh --quick` green, the commit pushed to
+   `candidate`, `ci.yml` and `codeql.yml` started on `candidate` by hand and both green on
+   that commit, then `main` fast-forwarded to the same commit. `scripts/ship.sh` does this
+   where `gh` reaches GitHub; where it does not, take the same steps with the session's
+   GitHub tools. Wait for another session's run on `candidate` to end before pushing to it.
+   Never open a pull request, never send push notifications.
 7. End with a report: branch and commit; files changed; each gate and its result; every
    default taken; any deviation from the task and why; what a reviewer should look at.
 
