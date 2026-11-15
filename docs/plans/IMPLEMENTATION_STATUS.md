@@ -555,9 +555,14 @@ the Netherlands, Austria and Switzerland.
   formula only as an image. Every statute tranche and every second tranche of the seven
   markets now carries the law's own words. The baseline's
   tests filed and approved everything on the branch together (39 tests, 798 s).
-- **In work on this branch:** the law's own words for the seven third tranches, each
-  provision in its original language with English and Swedish beside it (Swedish alone
-  beside a United Kingdom text); Switzerland's is in.
+- **The law's own words for the third tranches** (`provisions/<market>-...-2.json`), read
+  and translated as the earlier files were: Switzerland 92 articles, Latvia 287 points,
+  Austria 79 sections, the Netherlands 94 articles, Estonia 175 units, the United Kingdom
+  201 provisions and Germany 130 sections. Every new market now holds 65 to 77
+  instruments and 285 to 386 obligations, as deep as the Nordics (65 to 96 and 238 to
+  383), with 3,184 provisions in all; the baseline holds 1,049 instruments, 4,290
+  obligations and 6,511 provisions. The Swedish for a MiFID product's target market is
+  "målgrupp" in every file and "målmarknad" for an insurance product.
 - **Left, deliberately:** Lithuania, whose register refuses the build session; the
   supervisors' rules that live outside the legal database (the FCA Handbook, read only
   through its API once a person has signed up for it, and the PRA Rulebook, whose text

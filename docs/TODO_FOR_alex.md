@@ -9,16 +9,18 @@ any of them as a market it operates in or watches, the watch checks their source
 library takes their law in its own language. What needs you, most urgent first.
 
 - [ ] **Approve the home markets' proposals in the library queue.** After the deploy the
-      baseline files 135 statutes for seven markets (Germany 24, the United Kingdom 19,
-      Switzerland 20, Latvia 20, Austria 20, Estonia 17, the Netherlands 15), then their
-      895 obligations and 135 summaries once each statute is approved, like every
-      baseline record. The
-      regulations and the law's own words follow the same way as they land.
+      baseline files 505 instruments for seven markets (Switzerland 77, Estonia 77, Latvia
+      76, Germany 72, the United Kingdom 72, Austria 66, the Netherlands 65), then their
+      2,396 obligations and 505 summaries once each instrument is approved, then 3,184
+      provisions, the law's own words, once each duty they cite is approved, like every
+      baseline record. That is a large queue: plan the approvals market by market.
 - [ ] **What the starting inventory still lacks.** You asked for the new markets to hold
-      everything the first ones hold. The Nordics hold 65 to 96 regulations and 238 to 383
-      obligations each, with the law's own words. Seven new markets hold their statutes (15
-      to 24 each); their regulations and the law's own words with English and Swedish
-      are in work on this branch. Three things stay out until you
+      everything the first ones hold. The Nordics hold 65 to 96 instruments and 238 to 383
+      obligations each, with the law's own words; the seven new markets now hold 65 to 77
+      instruments and 285 to 386 obligations each, every duty with the words of the law it
+      cites in the original language and English and Swedish beside it (Swedish alone
+      beside a United Kingdom text), except where a table or a picture holds the text.
+      Three things stay out until you
       act: Lithuania, whose register refuses the build session (below); the FCA Handbook,
       which needs your sign-up for its API (next item), and the PRA Rulebook's text,
       which needs a licence from the PRA; and the supervisors' circulars (BaFin's MaRisk, FINMA's and

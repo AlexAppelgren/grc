@@ -10,8 +10,7 @@ its statutes (`<market>-acts`) and its regulations (`de-verordnungen`, `gb-si`,
 the further regulations those found
 (the same names with `-2`), each with its duties and a plain summary per instrument. The statutes and the regulations carry
 the law's own words in `provisions/` under the same names, with Swedish beside an English
-original and English and Swedish beside every other; the third tranches' law text is not
-here yet. Lithuania is not here: its register refuses the build session. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
+original and English and Swedish beside every other, the third tranches' too. Lithuania is not here: its register refuses the build session. The rules below hold for every market. It is not loaded by a seed. Each entry is a proposal
 that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
 files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then
