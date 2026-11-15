@@ -16,8 +16,8 @@ says the same thing in the same order.
 
 | Seed | What it creates | What breaks without it |
 |---|---|---|
-| Languages | `en`, `sv`, `da`, `nb`, `fi` with their text search configurations | No label can be stored and every picker is empty |
-| Jurisdictions | EU, SE, DK, NO, FI | No instrument can be filed and provision kinds have no jurisdiction |
+| Languages | `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl` with their text search configurations | No label can be stored and every picker is empty |
+| Jurisdictions | EU, SE, DK, NO, FI, EE, LV, LT, DE, GB, NL, AT, CH and International | No instrument can be filed and provision kinds have no jurisdiction |
 | Library vocabularies | Tier-two lists with their `kind` rows and defaults (instrument levels, provision kinds, change types, duty types, relation types, source kinds, term dimensions, urgency) | Agents get an empty vocabulary read and every classification is `unknown_key` |
 | Taxonomy terms | The scope terms of the eleven dimensions the footprint is built from | No footprint can be set and no obligation can be scoped |
 | Authorities | The authority of each jurisdiction | No instrument or source can name who issued it |

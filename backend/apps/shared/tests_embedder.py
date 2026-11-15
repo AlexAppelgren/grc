@@ -1,10 +1,11 @@
 """Embedder and reranker adapters (playbook 16, DECISIONS D-09, SRC-01, AC-SRC1).
 
 The mock embedder has to behave the way a real one does, not the way a hash does. Chunk 7
-builds hybrid search and the evaluation gate against it, so a question asked in any of the
-five content languages must reach the obligation whose summary says the same thing in
-English or Swedish. These tests run the concept questions of `eval/retrieval.jsonl` over
-the prototype corpus by the vector leg alone, with no keyword leg to lean on.
+builds hybrid search and the evaluation gate against it, so a question asked in any content
+language must reach the obligation whose summary says the same thing in English or
+Swedish (D-145 took the languages from five to ten). These tests run the concept questions
+of `eval/retrieval.jsonl` over the prototype corpus by the vector leg alone, with no keyword
+leg to lean on.
 
 Identifiers are deliberately not the embedder's job (AC-SRC1): "FFFS 2017:2" carries no
 concept, keeps a plain hash vector, and is won by keyword in chunk 7.
@@ -19,6 +20,7 @@ from pathlib import Path
 from django.conf import settings
 from django.test import SimpleTestCase, override_settings
 
+from apps.library.seeds import LANGUAGES
 from apps.shared.adapters import embedder, reranker
 
 BACKEND = Path(settings.BASE_DIR)
@@ -86,7 +88,7 @@ class MockEmbedderVectors(SimpleTestCase):
 
 
 class MockEmbedderConcepts(SimpleTestCase):
-    """AC-SRC1 and D-09: the concept leg, over the prototype corpus, in all five languages."""
+    """AC-SRC1 and D-09: the concept leg, over the prototype corpus, in every language."""
 
     corpus: list[tuple[str, str]]
     adapter: embedder.EmbedderAdapter
@@ -106,9 +108,10 @@ class MockEmbedderConcepts(SimpleTestCase):
                     misses.append(f"{row['id']} ({row['language']}) {row['query']!r}: {key} not in {ranked}")
         self.assertEqual(misses, [], "\n".join(misses))
 
-    def test_the_concept_questions_cover_all_five_content_languages(self) -> None:
+    def test_the_concept_questions_cover_every_content_language(self) -> None:
+        """The languages are the seed's, so one added there needs its questions here (D-145)."""
         languages = {row["language"] for row in _questions("concept")}
-        self.assertEqual(languages, {"en", "sv", "da", "nb", "fi"})
+        self.assertEqual(languages, set(LANGUAGES))
 
     def test_nudging_in_onboarding_is_answered_first_by_the_esma_warnings_obligation(self) -> None:
         ranked = _ranked("nudging in onboarding", self.corpus, self.adapter)

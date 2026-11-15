@@ -19,6 +19,10 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 
 import search_eval as se  # noqa: E402
 
+# The content languages of apps/library/seeds/__init__.py (`LANGUAGES`), spelled out because
+# these tests run as plain unittest without Django and cannot import the seed (D-145).
+CONTENT_LANGUAGES = {"en", "sv", "da", "nb", "fi", "et", "lv", "lt", "de", "nl"}
+
 EXPECTED = {
     "in_scope": True,
     "change_type": "adopted",
@@ -470,8 +474,10 @@ class RealSets(unittest.TestCase):
         se.validate_retrieval(retrieval)
         se.validate_classification(classification)
         self.assertGreaterEqual(len(retrieval), 40)
-        self.assertEqual({r["language"] for r in retrieval}, {"en", "sv", "da", "nb", "fi"})
-        self.assertGreaterEqual(len([r for r in classification if not r["injection"]]), 40)
+        self.assertEqual({r["language"] for r in retrieval}, CONTENT_LANGUAGES)
+        clean = [r for r in classification if not r["injection"]]
+        self.assertEqual({r["language"] for r in clean}, CONTENT_LANGUAGES)
+        self.assertGreaterEqual(len(clean), 40)
         self.assertGreaterEqual(len([r for r in classification if r["injection"]]), 10)
         self.assertTrue(all("predictions" not in r for r in retrieval + classification), "committed sets carry no mock predictions")
         se.validate_baseline(se.load_json(se.EVAL / "baseline.json"))

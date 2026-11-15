@@ -36,7 +36,10 @@ Easier: adding a sixth content language is a row and a text search
 configuration, not a migration of every table. Harder: reads join or
 prefetch translations, so list endpoints pin their query counts. To
 remember: the embedding model must cover all five languages (D-09) and the
-evaluation set checks it per language.
+evaluation set checks it per language. ADR 0070 (2026-11-14) added five more
+languages and found what "not a migration of every table" leaves out: the
+search index's generated `tsv` column names each configuration, so a language
+is a seed row and one search migration.
 
 ## Implementation plan (when staged)
 

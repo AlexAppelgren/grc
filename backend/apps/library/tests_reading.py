@@ -414,12 +414,18 @@ class ObligationListPerformance(TestCase):
         self.assertLess(min(spent), settings.API_BUDGET_MS)
 
 
+# The Union and every country whose parent it is, in the seed's order (D-28, D-145): its
+# member states and Norway, and neither the United Kingdom nor Switzerland.
+UNION_REACH = ["eu", "se", "dk", "no", "fi", "ee", "lv", "lt", "de", "nl", "at"]
+
+
 class JurisdictionDerivationTests(TestCase):
-    """FP-04, D-28, D-29, D-38: the jurisdictions an instrument's rules reach are derived by
-    the one scope rule at match time, from the mirror link and the jurisdiction's parent, and
-    never stored. A Union rule reaches the Union and every country whose parent it is,
-    Norway included; a national rule its own country; a standards body's jurisdiction, which
-    no term mirrors, nothing. The SQL twins agree, and an obligation carries each term once."""
+    """FP-04, D-28, D-29, D-38, D-145: the jurisdictions an instrument's rules reach are
+    derived by the one scope rule at match time, from the mirror link and the jurisdiction's
+    parent, and never stored. A Union rule reaches the Union and every country whose parent it
+    is, Norway included and the United Kingdom not; a national rule its own country; a
+    standards body's jurisdiction, which no term mirrors, nothing. The SQL twins agree, and an
+    obligation carries each term once."""
 
     tenant: Tenant
     reader: User
@@ -432,7 +438,7 @@ class JurisdictionDerivationTests(TestCase):
         cls.tenant = factories.tenant(slug="derived-jurisdictions")
         cls.reader = factories.member_user(cls.tenant, roles=("reader",))
         cls.instruments = {
-            key: build.instrument(key=f"derived-{key}", regime="regime:securities", jurisdiction=key) for key in ("eu", "se", "dk", "no", "intl")
+            key: build.instrument(key=f"derived-{key}", regime="regime:securities", jurisdiction=key) for key in ("eu", "se", "dk", "no", "gb", "intl")
         }
         cls.obligations = {key: build.obligation(instrument, key=f"obl-derived-{key}") for key, instrument in cls.instruments.items()}
         # Its own regime term as well as its instrument's: the review finding behind the
@@ -446,11 +452,11 @@ class JurisdictionDerivationTests(TestCase):
         scopes = instrument_scopes([instrument.id for instrument in self.instruments.values()])
         self.assertEqual(
             {key: self.derived(scopes[instrument.id]) for key, instrument in self.instruments.items()},
-            {"eu": ["eu", "se", "dk", "no", "fi"], "se": ["se"], "dk": ["dk"], "no": ["no"], "intl": []},
+            {"eu": UNION_REACH, "se": ["se"], "dk": ["dk"], "no": ["no"], "gb": ["gb"], "intl": []},
         )
         self.assertEqual({key: [term.key for term in scopes[i.id]["regime"]] for key, i in self.instruments.items()}, {key: ["securities"] for key in self.instruments})
         obligations = obligation_scopes([obligation.id for obligation in self.obligations.values()])
-        self.assertEqual(self.derived(obligations[self.obligations["eu"].id]), ["eu", "se", "dk", "no", "fi"], "an obligation inherits it")
+        self.assertEqual(self.derived(obligations[self.obligations["eu"].id]), UNION_REACH, "an obligation inherits it")
         self.assertFalse(ObligationTerm.objects.filter(term__jurisdiction__isnull=False).exists(), "nothing is stored")
 
     def test_an_inherited_term_the_obligation_already_carries_is_listed_once(self) -> None:
@@ -472,7 +478,8 @@ class JurisdictionDerivationTests(TestCase):
         response = self.client.get(URL, {"footprint": "all"}, **sign_in(self.reader, tenant=self.tenant))
         rows = {row["stableKey"]: row for row in response.json()["items"]}
         union = {entry["dimension"]["key"]: entry for entry in rows["obl-derived-eu"]["scope"]}["jurisdiction"]
-        self.assertEqual(([term["key"] for term in union["terms"]], union["allSelected"]), (["eu", "se", "dk", "no", "fi"], True))
+        # Not every market any more: a Union rule reaches neither the United Kingdom nor Switzerland (D-145).
+        self.assertEqual(([term["key"] for term in union["terms"]], union["allSelected"]), (UNION_REACH, False))
         self.assertEqual((rows["obl-derived-eu"]["inFootprint"], rows["obl-derived-dk"]["inFootprint"]), (True, True))
         swedish = rows["obl-derived-se"]
         self.assertEqual(

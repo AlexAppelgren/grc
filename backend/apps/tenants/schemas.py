@@ -30,7 +30,7 @@ from apps.taxonomy.schemas import FootprintTermRef
 __all__ = ["CamelSchema"]
 
 # The examples are the prototype's bank (`design/prototype/index.html`, seeded as tenant A
-# for the journeys) and the second Nordic bank beside it. Never a real customer.
+# for the journeys) and the second bank beside it. Never a real customer.
 _EXAMPLE_LANGUAGE_SV: dict[str, JsonValue] = {"key": "sv", "kind": None, "label": "Svenska"}
 _EXAMPLE_LANGUAGE_EN: dict[str, JsonValue] = {"key": "en", "kind": None, "label": "English"}
 _EXAMPLE_LANGUAGE_DA: dict[str, JsonValue] = {"key": "da", "kind": None, "label": "Dansk"}
@@ -251,7 +251,7 @@ class TenantOut(CamelSchema):
             "The language the bank reads and writes in first: it decides which version of a "
             "library record a reader is shown when they have expressed no preference, and "
             "which language a briefing is written in. A reference to a language row by its "
-            "key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are "
+            "key — `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl` — with a label to show. Languages are "
             "library reference rows, not a vocabulary a bank's admin may extend; read "
             "`GET /reference/languages` for the set on offer. Null only while a brand-new "
             "organisation has not chosen one."
@@ -340,8 +340,8 @@ class TenantPatch(CamelSchema):
         default=None,
         max_length=8,
         description=(
-            "The key of the language the bank should read and write in first — `sv`, `en`, "
-            "`da`, `nb` or `fi` — at most 8 characters. A key, never a label. Omit the field "
+            "The key of the language the bank should read and write in first — `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl` — "
+            "at most 8 characters. A key, never a label. Omit the field "
             "to leave it alone; a key that is not an active language row is refused with "
             "`unknown_key`. The languages on offer are library reference rows and not a "
             "vocabulary a bank's admin may extend."
@@ -601,7 +601,7 @@ class ConsoleTenantRow(CamelSchema):
     default_language: VocabRef | None = Field(
         description=(
             "The language the bank reads and writes in first, as a reference to a language row "
-            "by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are "
+            "by key — `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl` — with a label to show. Languages are "
             "library reference rows and not a vocabulary a bank's admin may extend. Null until "
             "the bank's own administrator chooses one on its Organisation profile: an "
             "organisation created through this console starts without one."

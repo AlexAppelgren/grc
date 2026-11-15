@@ -1566,7 +1566,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         card = read.json()
         self.assertEqual(card["summary"]["language"], "en")
         self.assertEqual({(text["language"], text["isOriginal"], text["isMachine"]) for text in card["summaryTranslations"]}, {("en", True, False), *((language, False, True) for language in MISSING)})
-        self.assertEqual(len(card["nameTranslations"]), 5)
+        self.assertEqual(len(card["nameTranslations"]), len(MISSING) + 1)
         tenancy.clear_tenant()
         again = translations_body(key="fffs-2017-2", titles={"sv": "FFFS 2017:2"})
         filed = self._post("/proposals", again, sign_in(self.second_editor))

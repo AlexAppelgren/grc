@@ -73,9 +73,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | built |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term. Until hardened, a bank whose only member able to approve is the requester may approve its own request, with the step-up, marked and audited (D-125) | M | R1 | built |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
-| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
+| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway, and neither the United Kingdom nor Switzerland; watching hides nothing and adds a view | M | R1 | built |
 | FP-05 | The regulatory scope suggested from the register facts: the terms the companies' businesses, licences and branches give the group, and each company's licence-bound exclusions; filed as an ordinary change request and approved by a second person with step-up; exclusions narrow only what the register offers for that company (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | built |
-| I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
+| I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl` as translation rows; jurisdictions EU, SE, DK, NO, FI, EE, LV, LT, DE, GB, NL, AT, CH as data (D-145) | M | R1 | built |
 | OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | built |
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -488,12 +488,13 @@ Then Finland reads as not followed
 
 ### FP-S12 — Jurisdiction terms mirror the jurisdiction rows and cannot be proposed `@integration` (FP-04)
 ```gherkin
-Given the seeded jurisdictions EU, Sweden, Denmark, Norway and Finland
+Given the seeded jurisdictions: the EU and the twelve home markets from Sweden to Switzerland
 Then the jurisdiction dimension holds exactly one term per active jurisdiction, with the same key and labels
-And each country's term has the EU's term as parent, Norway's included
+And each country the EU's rules reach has the EU's term as parent, Norway's included
+And the United Kingdom's and Switzerland's terms have no parent
 And the international jurisdiction gets no mirrored term
-And GET /tenant/footprint lists five jurisdiction terms
-And GET /taxonomy/terms marks exactly those five terms as mirrored
+And GET /tenant/footprint lists thirteen jurisdiction terms
+And GET /taxonomy/terms marks exactly those thirteen terms as mirrored
 When a proposal adds or renames a term in the jurisdiction dimension
 Then it answers 422 jurisdiction_term_mirrored and nothing reaches the queue
 When an obligation proposal's scope or a change's terms name a jurisdiction term
@@ -631,7 +632,7 @@ And a member of tenant B who opens its address gets "not found"
 
 ### I18N-S1 — Languages and jurisdictions are rows, never columns or branches `@integration` (I18N-01)
 ```gherkin
-Given the seeded languages en, sv, da, nb, fi and the jurisdictions EU, SE, DK, NO, FI with their authorities
+Given the seeded languages en, sv, da, nb, fi, et, lv, lt, de, nl and the jurisdictions EU, SE, DK, NO, FI, EE, LV, LT, DE, GB, NL, AT, CH with their authorities
 And the International jurisdiction row for standards bodies, of kind international
 Then no model column and no code branch names a language or a country
 And instrument.jurisdiction and authority.jurisdiction reference the jurisdiction table

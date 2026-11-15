@@ -190,7 +190,7 @@ Feed, inventory, roadmap, briefing and reports respect the footprint, with a vis
 
 ### I18N-01 (M, R1, `taxonomy`)
 
-Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data.
+Content in `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl` as translation rows; jurisdictions EU, SE, DK, NO, FI, EE, LV, LT, DE, GB, NL, AT, CH as data (D-145).
 
 - **T-I18N-01-1** Backend. Scenarios: I18N-S1, I18N-S2. Spec: `backend/apps/taxonomy/app.md`.
 

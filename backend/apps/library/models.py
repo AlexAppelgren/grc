@@ -28,7 +28,7 @@ from apps.shared.kinds import choices
 class Language(models.Model):
     """A content or UI language (I18N-01): immutable `key` (BCP 47 primary tag), a name
     in that language, the PostgreSQL text search configuration search chunks use, and an
-    active flag. Seeded: en, sv, da, nb, fi."""
+    active flag. Seeded: en, sv, da, nb, fi, et, lv, lt, de, nl (D-145)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     key = models.SlugField(max_length=8, unique=True)
@@ -57,8 +57,8 @@ class JurisdictionKind(enum.StrEnum):
 
 
 class Jurisdiction(Vocabulary):
-    """A jurisdiction (I18N-01): `eu`, `se`, `dk`, `no`, `fi` and `intl` (D-38), seeded with a
-    parent and the language its legal texts are written in.
+    """A jurisdiction (I18N-01): `eu`, the twelve home markets (D-145) and `intl` (D-38),
+    seeded with a parent and the language its legal texts are written in.
 
     `parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026), not
     membership: Norway is outside the Union and still reached by EU financial rules

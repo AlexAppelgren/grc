@@ -25,7 +25,7 @@ repository. Unzip it at the root of a new repo.
 | `KICKOFF_PROMPT.md` | The first message for the session |
 | `CLAUDE.md` | Bootstrap agent context: read order, precedence, invariants, working agreement |
 | `PRD.md` | Requirements with IDs, acceptance criteria, golden-path journeys, the permission matrix, the release plan |
-| `docs/PLAYBOOK.md` | Your playbook, adapted: Postgres everywhere, two zones, passkey-only sign-in, vocabularies as rows, pills and labels, agents, five languages, bank assurance, one branch for now |
+| `docs/PLAYBOOK.md` | Your playbook, adapted: Postgres everywhere, two zones, passkey-only sign-in, vocabularies as rows, pills and labels, agents, ten languages, bank assurance, one branch for now |
 | `docs/DECISIONS.md` | Seventeen open decisions, each with the default the build uses, so it never waits |
 | `docs/TODO_FOR_alex.md` | What needs you, ordered by what blocks testing |
 | `docs/plans/Solution_Design.md` | Architecture, zones, modules, key mechanics, control mapping |

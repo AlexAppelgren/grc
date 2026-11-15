@@ -1226,6 +1226,7 @@ def unwatch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
                             {"key": "eu", "kind": "supranational", "label": "European Union", "parentKey": None, "defaultLanguage": {"key": "en", "kind": None, "label": "English"}},
                             {"key": "se", "kind": "country", "label": "Sweden", "parentKey": "eu", "defaultLanguage": {"key": "sv", "kind": None, "label": "Svenska"}},
                             {"key": "no", "kind": "country", "label": "Norway", "parentKey": "eu", "defaultLanguage": {"key": "nb", "kind": None, "label": "Norsk bokmål"}},
+                            {"key": "gb", "kind": "country", "label": "United Kingdom", "parentKey": None, "defaultLanguage": {"key": "en", "kind": None, "label": "English"}},
                         ]
                     }
                 }
@@ -1235,8 +1236,10 @@ def unwatch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
 )
 @answers_problems
 def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
-    """Every active jurisdiction, in the library's order: the European Union, the Nordic
-    countries and the international standards bodies, each with its kind, the jurisdiction
+    """Every active jurisdiction, in the library's order: the European Union, the twelve
+    home markets (Sweden, Denmark, Norway, Finland, Estonia, Latvia, Lithuania, Germany, the
+    United Kingdom, the Netherlands, Austria and Switzerland) and the international
+    standards bodies, each with its kind, the jurisdiction
     whose rules also reach it and the language its legal texts are written in. Call it to
     fill a jurisdiction picker or to label a record's jurisdiction key.
 

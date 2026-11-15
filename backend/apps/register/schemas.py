@@ -1790,7 +1790,8 @@ class RegisterApplicabilityInstrument(LibraryResponse):
     jurisdiction: VocabRef = Field(
         description=(
             "Where the regulation applies, as a row of the shared library's jurisdiction vocabulary "
-            "(`se`, `dk`, `no`, `fi`, `eu` and `intl` on day one), which a platform admin may extend, "
+            "(`eu`, the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, `lv`, `lt`, `de`, `gb`, `nl`, `at` "
+            "and `ch`, and `intl` among the rows the seed files), which a platform admin may extend, "
             "relabel or retire; read `GET /reference/jurisdictions` for the live set and match on the "
             "key. A library fact, the same for every bank."
         )

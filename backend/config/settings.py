@@ -412,7 +412,7 @@ SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24, min=0, max=87
 STANDARDS_PUBLISHER_HOSTS = [
     host.lower()
     for host in env_list(
-        "STANDARDS_PUBLISHER_HOSTS", "iso.org,iec.ch,sis.se,ds.dk,standard.no,sfs.fi,pcisecuritystandards.org"
+        "STANDARDS_PUBLISHER_HOSTS", "iso.org,iec.ch,sis.se,ds.dk,standard.no,sfs.fi,evs.ee,lvs.lv,lasa.lrv.lt,din.de,dinmedia.de,bsigroup.com,nen.nl,austrian-standards.at,snv.ch,pcisecuritystandards.org"
     )
 ]
 WATCH_RUN_MAX_PROPOSALS = env_int("WATCH_RUN_MAX_PROPOSALS", 50, min=1, max=10_000)

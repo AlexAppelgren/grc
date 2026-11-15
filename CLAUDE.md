@@ -5,9 +5,11 @@
 Compliance Watch keeps one obligations inventory current and carries every
 regulatory change from first sighting to signed-off evidence. Research agents
 find and propose, people decide, and every decision is logged. It is built for
-enterprise banks in the Nordics: Swedish, Danish, Norwegian, Finnish and EU
-sources, five content languages, bank-grade access control, and an assurance
-pack a vendor review can use.
+enterprise banks in northern Europe: the European Union and twelve home markets
+(Sweden, Denmark, Norway, Finland, Estonia, Latvia, Lithuania, Germany, the
+United Kingdom, the Netherlands, Austria and Switzerland), each market's sources
+in the language they are published in, ten content languages, bank-grade access
+control, and an assurance pack a vendor review can use.
 
 Two zones hold the data: a shared library of sourced public facts that changes
 only through approved proposals, and a tenant zone of one bank's judgement and

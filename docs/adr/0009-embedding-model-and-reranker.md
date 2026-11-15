@@ -4,8 +4,9 @@
 
 ## Context
 
-Search must cover `sv`, `da`, `nb`, `fi` and `en` (I18N-01, SRC-01). No
-candidate covering all five at 1024 dimensions has been verified
+Search must cover `sv`, `da`, `nb`, `fi` and `en` (I18N-01, SRC-01), and since
+ADR 0070 (2026-11-14) `et`, `lv`, `lt`, `de` and `nl` as well. No candidate
+covering all of them at 1024 dimensions has been verified
 (`Verification_Log.md`). pgvector's HNSW index supports `vector` up to 2,000
 dimensions (verified earlier, 2026-09-18), so 1024 leaves room. pgvector
 0.5.0 is the newest Python package on PyPI (verified 2026-09-19).

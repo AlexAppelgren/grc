@@ -253,14 +253,15 @@ Retiring the last active row under a fixed kind answers 409 `category_empty` (VO
   row. It is a platform scope only; a tenant key that carries it is refused.
   Nothing else about a key changes, and a key still cannot step up.
 
-## 3. Nordic scope (PRD I18N, playbook 17)
+## 3. Markets and languages (PRD I18N, playbook 17)
 
 - Replace `summary_sv`/`summary_en`, `text_sv`/`text_en`, `label_sv`/`label_en`
   and every `lang IN ('sv','en')` check with translation rows and a language
   table. `search_chunk.lang` references the language table, and its `tsv`
   uses the language's text search configuration.
 - `instrument.jurisdiction` and `authority.jurisdiction` reference a
-  jurisdiction table. Seed EU, SE, DK, NO, FI with their authorities.
+  jurisdiction table. Seed EU, SE, DK, NO, FI with their authorities, and since
+  PRD 0.12 (D-145) the other eight home markets: EE, LV, LT, DE, GB, NL, AT, CH.
 - `app_user.locale` references the language table.
 - `jurisdiction.parent` is "the jurisdiction whose rules reach this one", not membership
   of a union (D-28, ADR 0026). Norway's parent is the EU: it is outside the Union but
@@ -650,7 +651,8 @@ in `docs/DECISIONS.md`; the researched detail is in
   column="owner_tenant_id")` emits since H15, so the chunk table carries the same
   policies as `agent_run` and `source`. Its `lang` is a foreign key to the
   `language` rows and its generated `tsv` carries one branch per content language
-  (`english`, `swedish`, `danish`, `norwegian`, `finnish`), so schema.sql's
+  (`english`, `swedish`, `danish`, `norwegian`, `finnish`, and since search 0005
+  `lithuanian`, `german`, `dutch` and `simple` for Estonian and Latvian, D-145), so schema.sql's
   `CHECK (lang IN ('sv', 'en'))`, which would have refused Danish, Norwegian and
   Finnish, goes with the LIBRARY label (§3).
 - `calendar_feed` (D-52) is new: a token prefix plus SHA-256, the owner, the

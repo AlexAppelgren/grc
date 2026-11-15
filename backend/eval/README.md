@@ -5,8 +5,8 @@ sets here and compares the result with the recorded baseline within the toleranc
 
 | File | Holds | State |
 |---|---|---|
-| `retrieval.jsonl` | 54 labelled questions over the prototype corpus, en 17, sv 16, da 7, nb 7, fi 7 | Filled (chunk 3 data work) |
-| `classification.jsonl` | 42 labelled change texts (8 from the prototype, 34 authored Nordic variants), 10 texts with embedded instructions for the AGT-07 screen, and 8 AGT-08 texts: 4 off-sector, 1 law that cites a standard, 3 about a standard | Filled |
+| `retrieval.jsonl` | 89 labelled questions over the prototype corpus: en 17, sv 16, and 7 each in da, nb, fi, et, lv, lt, de and nl | Filled (chunk 3 data work; D-145 added et, lv, lt, de and nl) |
+| `classification.jsonl` | 70 labelled change texts (8 from the prototype, 62 authored in its voice, in the ten content languages and for every home market), 15 texts with embedded instructions for the AGT-07 screen, 8 AGT-08 texts (4 off-sector, 1 law that cites a standard, 3 about a standard), and two single rows, `mj-01` (FP-S12) and `sa-01` (D-118) | Filled |
 | `baseline.json` | The last accepted value of every metric, per track, with who recorded it and when | `recorded: false`. The retrieval track is wired and **not yet recorded**: see below |
 | `tolerance.json` | How far a metric may fall under the baseline before the gate fails, with the rationale | Filled |
 | `tests_scoring.py` | Unit tests for the scoring and gate logic, run by `search_eval.py --self-test` and, so that a build runs them, by the backend suite (`apps/search/tests_eval.py`) | Filled |
@@ -41,7 +41,7 @@ dimensions the expectation names (empty matches empty) and a miss outright when 
 prediction sends any term of a dimension the row lists in `mirrored_dimensions` (every row
 lists `jurisdiction`: a change's market comes from its authority, never from a term,
 FP-S12; `mj-01` is a national supervisor's page written for that rule), screen the set equality of
-`risk_flags`, where the ten injection rows expect `["embedded_instructions"]` and every
+`risk_flags`, where the fifteen injection rows expect `["embedded_instructions"]` and every
 other row expects `[]`. Metrics are reported per language and per kind of text: clean,
 injection, off-sector, a law that cites a standard, and a standard's own record.
 
@@ -164,6 +164,19 @@ stable keys of the hits, best first, from the widest page the API serves.
 - Exit 0 passes, 1 fails; malformed sets, a missing file or a bad evaluator spec fail
   with the file or spec named.
 
-The five content languages are what checks the embedding model choice (D-09): the Danish,
-Norwegian and Finnish questions target the same obligations as the English and Swedish
-ones, so a monolingual embedder scores visibly worse on them.
+The ten content languages are what checks the embedding model choice (D-09, D-145): the
+Danish, Norwegian, Finnish, Estonian, Latvian, Lithuanian, German and Dutch questions
+target the same obligations as the English and Swedish ones, so a monolingual embedder
+scores visibly worse on them.
+
+The classification set holds change texts in the same ten languages and from every home
+market: Estonia, Latvia, Lithuania, Germany, Austria, Switzerland (in German), the
+Netherlands and the United Kingdom (in English) beside Sweden, Denmark, Norway, Finland
+and the EU. It holds at least one text with embedded instructions in each of the ten, so
+the screen is scored in every language an agent reads. The rows D-145 added name no account
+type, because the account types of the fixture are Swedish products.
+
+The languages are the rows of `LANGUAGES` in `apps/library/seeds/__init__.py`. The Django
+tests compare the sets with that seed (`apps/agents/tests_screen.py`,
+`apps/shared/tests_embedder.py`); `tests_scoring.py` runs without Django and names the ten
+itself, so a language added to the seed is added there too.

@@ -80,7 +80,7 @@ __all__ = [
     "WhatAppliesSummary",
 ]
 
-# The examples are one night's sweep by the shipped `watch-sweeper` definition over Nordic
+# The examples are one night's sweep by the shipped `watch-sweeper` definition over national
 # and EU sources (FFFS and the EU instruments the prototype tracks). Never a real customer.
 _EXAMPLE_RUN_ID = "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10"
 _EXAMPLE_MODEL = "regwatch-2026-08"
@@ -566,9 +566,9 @@ _EXAMPLE_REQUEST: dict[str, JsonValue] = {
 }
 _EXAMPLE_WATCH: dict[str, JsonValue] = {
     "key": "watch-sweeper",
-    "name": "Nordic and EU regulatory watch",
+    "name": "National and EU regulatory watch",
     "purpose": "Checks the registered sources for new or changed regulation every night.",
-    "jurisdictions": ["se", "dk", "no", "fi", "eu"],
+    "jurisdictions": ["se", "dk", "no", "fi", "ee", "lv", "lt", "de", "gb", "nl", "at", "ch", "eu"],
     "cadence": "daily",
     "nextRunAt": "2026-09-25T02:00:00Z",
     "lastRun": {"finishedAt": "2026-09-24T02:18:41Z", "status": "succeeded"},

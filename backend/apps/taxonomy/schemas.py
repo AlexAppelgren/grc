@@ -113,7 +113,8 @@ class JurisdictionRow(CamelSchema):
     key: str = Field(
         description=(
             "The jurisdiction's immutable key, the lowercased code a record, a market and a filter carry: "
-            "seeded on day one are `eu` (the European Union), `se`, `dk`, `no`, `fi` and `intl` "
+            "seeded are `eu` (the European Union), the twelve home markets `se`, `dk`, `no`, `fi`, `ee`, "
+            "`lv`, `lt`, `de`, `gb`, `nl`, `at` and `ch`, and `intl` "
             "(international standards bodies). Jurisdictions are rows of the shared library's "
             "`jurisdiction` vocabulary, which the platform's library editors may extend without a deploy; "
             "a bank's admin cannot add one. This endpoint lists the live set, and a key never changes."
@@ -145,7 +146,8 @@ class JurisdictionRow(CamelSchema):
             "The key of the jurisdiction whose rules also reach this one, such as `eu` for Sweden and for "
             "Norway, which is outside the Union but bound by its financial rules through the EEA "
             "Agreement. It says whose law reaches here, not membership. Null by default, for a "
-            "jurisdiction nothing reaches (`eu`, `intl`). A row of the same `jurisdiction` vocabulary, "
+            "jurisdiction nothing reaches: `eu`, `intl`, and the United Kingdom (`gb`) and Switzerland "
+            "(`ch`), which European Union law does not reach. A row of the same `jurisdiction` vocabulary, "
             "which the platform's library editors may extend and a bank's admin may not."
         ),
         examples=["eu"],
@@ -155,8 +157,8 @@ class JurisdictionRow(CamelSchema):
         description=(
             "The language this jurisdiction's legal texts are written in, such as Swedish (`sv`) for "
             "Sweden and English (`en`) for the European Union: the original a translation is made from. "
-            "Its key is a row of the platform's language vocabulary (`en`, `sv`, `da`, `nb`, `fi` on day "
-            "one), which only the platform adds to and no bank admin can extend; its kind is always null. "
+            "Its key is a row of the platform's language vocabulary (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`), "
+            "which only the platform adds to and no bank admin can extend; its kind is always null. "
             "Every jurisdiction names one, so the default of null never reaches a reader."
         ),
     )
@@ -186,7 +188,7 @@ _KINDS_BY_LIST = (
 _LABELS_WRITE = (
     "The value's name per content language, as a map from language key to text, such as "
     '`{"en": "Custody", "sv": "Förvaring"}`. The keys are the platform\'s content languages, `en`, `sv`, '
-    "`da`, `nb` and `fi`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any "
+    "`da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` and `nl`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any "
     "other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty "
     "text is ignored, and at least one label must be left or the write answers 422 `validation_error`."
 )
@@ -397,7 +399,7 @@ class VocabularyRow(CamelSchema):
     labels: dict[str, str] = Field(
         default_factory=dict,
         description=(
-            "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb` or `fi`) to "
+            "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`) to "
             "text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the "
             "original and which a machine translated. For display and editing, never for matching."
         ),
@@ -511,7 +513,7 @@ class VocabularyRowDetail(VocabularyRow):
     original_language: str | None = Field(
         default=None,
         description=(
-            "The content language the value was first named in (`en`, `sv`, `da`, `nb` or `fi`), which every "
+            "The content language the value was first named in (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`), which every "
             "other label translates: English when English was among its first labels, otherwise the language "
             "they were written in. Null for a value whose labels name no original."
         ),
@@ -658,7 +660,7 @@ class VocabularyPatchBody(WriteBody):
     labels: dict[str, str] | None = Field(
         default=None,
         description=(
-            "The labels to set, per content language (`en`, `sv`, `da`, `nb` or `fi`), merged into those the "
+            "The labels to set, per content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`), merged into those the "
             "value has: a language named here gets this text and counts as a person's from now on, and a "
             "language left out keeps its label. Null or absent changes no label. An unknown language answers "
             "422 `unknown_key`, and a map whose every text is empty 422 `validation_error`. The key stays what "
@@ -888,7 +890,7 @@ class VocabularySuggestionRow(CamelSchema):
     labels: dict[str, str] = Field(
         default_factory=dict,
         description=(
-            "The labels the member suggested, per content language (`en`, `sv`, `da`, `nb` or `fi`), as they "
+            "The labels the member suggested, per content language (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`), as they "
             "typed them apart from surrounding spaces."
         ),
         examples=[{"en": "Pension transfers"}],
@@ -1002,7 +1004,7 @@ class TaxonomyTermRow(CamelSchema):
     labels: dict[str, str] = Field(
         default_factory=dict,
         description=(
-            "Every label the term has, by language key (`en`, `sv`, `da`, `nb`, `fi`), for an editor "
+            "Every label the term has, by language key (`en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl`), for an editor "
             "showing all translations at once. A language with no label is absent rather than empty; "
             "defaults to an empty map only for a term nobody labelled."
         ),
@@ -1183,7 +1185,7 @@ class TaxonomyTermCreateBody(WriteBody):
     )
     labels: dict[str, str] = Field(
         description=(
-            "The term's name by language key, at least one: `en`, `sv`, `da`, `nb` or `fi`, the platform's "
+            "The term's name by language key, at least one: `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de` or `nl`, the platform's "
             "content languages. Blank labels are dropped; none left answers 422 `validation_error`, and a "
             "language the platform does not hold answers 422 `unknown_key` with the valid ones."
         ),

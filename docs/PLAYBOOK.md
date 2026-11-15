@@ -1,12 +1,12 @@
 # Compliance Watch playbook
 
 **What this is.** The engineering playbook for Compliance Watch (brand: bleqq), a
-compliance inventory and regulatory watch platform for enterprise banks in the
-Nordics. It started as the Eden OS playbook and keeps everything that made that
+compliance inventory and regulatory watch platform for enterprise banks in
+northern Europe: the EU and twelve home markets (PRD section 1). It started as the Eden OS playbook and keeps everything that made that
 repo good: gates that block, tests against the real thing, structural guards,
 the document chain, whole slices. Everything specific to a booking and payments
 product has been replaced with what this product needs: two data zones,
-passkey-only sign-in, admin-owned vocabularies, research agents, five
+passkey-only sign-in, admin-owned vocabularies, research agents, ten
 languages and an assurance track for bank customers.
 
 **How to use it.**
@@ -30,8 +30,8 @@ languages and an assurance track for bank customers.
 | `<PRD>` | `PRD.md`, with a version log at the top |
 | `<design>` | `design/` (prototype, system cards, brand) |
 | Tenancy | Multi-tenant with two zones, library and tenant (Section 14) |
-| Languages | `en`, `sv`, `da`, `nb`, `fi` for content. The UI ships `en` and `sv` first (Section 17) |
-| Jurisdictions | EU, SE, DK, NO, FI, as data |
+| Languages | `en`, `sv`, `da`, `nb`, `fi`, `et`, `lv`, `lt`, `de`, `nl` for content. The UI ships `en` and `sv` first (Section 17) |
+| Jurisdictions | EU, SE, DK, NO, FI, EE, LV, LT, DE, GB, NL, AT, CH, as data (D-145) |
 | Default tenant timezone | `Europe/Stockholm`. Storage is always UTC |
 | `<privacy law>` | GDPR |
 | Data region | EU only. Railway EU West |
@@ -1182,8 +1182,10 @@ always does.
 - Translatable text lives in translation rows keyed by language, with the
   original language marked and machine translations labelled as such.
 - Search chunks exist per language and use the matching Postgres text search
-  configuration (`swedish`, `danish`, `norwegian`, `finnish`, `english`).
-  The embedding model must cover all five, which the evaluation set checks.
+  configuration (`swedish`, `danish`, `norwegian`, `finnish`, `english`,
+  `lithuanian`, `german`, `dutch`, and `simple` for Estonian and Latvian, which
+  PostgreSQL 16 has no configuration for). The embedding model must cover all
+  ten languages, which the evaluation set checks.
 - UI copy lives in message catalogs. `messages-check.mjs` fails CI when a key
   is missing in any shipped language. E2E runs in one pinned language.
 - Users pick a UI language and a content language order. Dates, numbers and

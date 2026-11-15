@@ -29,7 +29,8 @@ from apps.shared.models import OutboxEvent
 from apps.shared.tenancy import library_write
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
-MISSING = ["da", "fi", "nb", "sv"]
+# Every content language but English, the original of the records below (I18N-01, D-145).
+MISSING = ["da", "de", "et", "fi", "lt", "lv", "nb", "nl", "sv"]
 
 
 class Translating(MockLlm):
@@ -89,7 +90,7 @@ class Translator(TestCase):
         self.assertEqual(proposal.payload["titles"]["sv"], "[sv] Assess suitability")
         self.assertEqual((sorted(proposal.payload["summaries"]), proposal.payload["version"], proposal.payload["summariesFrom"]), (MISSING, 1, "en"))
         generation = AiGeneration.objects.get(purpose="translation")
-        self.assertEqual((generation.agent_run_id, generation.subject_id, generation.prompt_template), (proposal.agent_run_id, self.duty.id, "library-translator/v1"))
+        self.assertEqual((generation.agent_run_id, generation.subject_id, generation.prompt_template), (proposal.agent_run_id, self.duty.id, "library-translator/v2"))
         assert generation.agent_run_id is not None
         run = AgentRun.objects.get(pk=generation.agent_run_id)
         self.assertEqual((run.agent.key, run.status, run.stats["proposalsSubmitted"], run.stats["modelCalls"]), ("library-translator", "succeeded", 1, 1))

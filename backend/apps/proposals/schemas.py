@@ -260,8 +260,8 @@ class ProposalObligationPayload(WriteBody):
 ObligationKey = Annotated[str, Field(max_length=120, pattern=STABLE_KEY_PATTERN)]
 # A content language, by its key (`Language.key`, a slug of at most 8 characters).
 LanguageKey = Annotated[str, Field(max_length=8, pattern=r"^[a-z0-9-]+$")]
-# At most every content language but the original: the library holds five (I18N-01).
-PROVISION_OFFICIAL_LANGUAGES_MAX = 4
+# At most every content language but the original: the library holds ten (I18N-01, D-145).
+PROVISION_OFFICIAL_LANGUAGES_MAX = 9
 
 
 class ProposalProvisionPayload(WriteBody):
@@ -276,14 +276,15 @@ class ProposalProvisionPayload(WriteBody):
 
     `texts` is the law's own words per content language. `originalLanguage` is the one the
     authority published, which is the language its jurisdiction writes law in (Swedish for
-    Swedish law, English for a Union act): any other is 422 `validation_error`, so a
+    Swedish law, German for German, Austrian and Swiss law, English for a Union or a United
+    Kingdom act): any other is 422 `validation_error`, so a
     translation is never recorded as the original of the law. That rule is a provision's
     alone: a title or a summary is bleqq's own wording, and its original is the language it
     was written in. `officialLanguages` names the other languages of `texts` the authority
     itself published, such as the Swedish text of a Finnish act: each is stored neither as
     the original nor as machine-made, and only a language the authority publishes in beside
     the original may be named (Swedish beside Finnish), else 422 `validation_error`; at most
-    four language keys of at most 8 characters each. Every remaining text is stored as a
+    nine language keys of at most 8 characters each. Every remaining text is stored as a
     machine translation (INV-05, D-142), whatever `isMachine` says and whoever approves: a
     translation of law is never stored unmarked, where it would read as the authority's own.
 
@@ -1538,8 +1539,9 @@ class ProposalCreateBody(WriteBody):
             "`parent` (the stable key of a provision of the same instrument, left out at the top), "
             "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` (the law's own words per language), "
             "`originalLanguage` (the language the authority published the text in, which must be the "
-            "language its instrument's jurisdiction writes law in, Swedish for Swedish law and English for "
-            "a Union act, else 422 `validation_error`: a translation is never the original of the law, "
+            "language its instrument's jurisdiction writes law in, Swedish for Swedish law, German for German, "
+            "Austrian and Swiss law and English for a Union or a United Kingdom act, else 422 `validation_error`: "
+            "a translation is never the original of the law, "
             "though a title or a summary, being bleqq's own wording, keeps the language it was written "
             "in), `officialLanguages` (the other languages of `texts` the authority itself published, such "
             "as the Swedish text of a Finnish act, each stored neither as the original nor as machine-made; "

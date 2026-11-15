@@ -59,7 +59,7 @@
   "library.scope.all": "Show all items",
   "library.watchedMarket": "Market we watch: {jurisdiction}",
   "library.empty.watched.title": "The markets we watch add nothing here",
-  "library.empty.watched.body": "The markets we watch bring no obligation that the other filters allow. EU rules already show, because they reach the markets we operate in.",
-  "library.empty.watchedInstruments.body": "The markets we watch bring no regulation that the other filters allow. EU rules already show, because they reach the markets we operate in.",
+  "library.empty.watched.body": "The markets we watch bring no obligation that the other filters allow. EU rules that reach a market we operate in already show.",
+  "library.empty.watchedInstruments.body": "The markets we watch bring no regulation that the other filters allow. EU rules that reach a market we operate in already show.",
   "library.privateToUs": "Private to us"
 }

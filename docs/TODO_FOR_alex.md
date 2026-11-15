@@ -2,6 +2,110 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## Every home market (2026-11-14, PRD 0.12, D-145, ADR 0070)
+
+The platform covers the EU and all twelve home markets from this change: a bank can name
+any of them as a market it operates in or watches, the watch checks their sources, and the
+library takes their law in its own language. What needs you, most urgent first.
+
+- [ ] **Decide the order in which the eight markets get their starting inventory.** The
+      Nordics hold 65 to 96 regulations and 238 to 383 obligations each, with the law's own
+      words. Germany and the United Kingdom have their first tranche: their statutes (24
+      and 19) with 169 and 84 obligations, and no law text yet. Nothing exists yet for
+      Estonia, Latvia, Lithuania, the Netherlands, Austria or Switzerland. All of it is
+      researched and filed market by market through the proposal queue, as ADR 0070 stages
+      it, and it is several times the work of this change. Default: finish Germany and
+      the United Kingdom (regulations, supervisors' rules, law text), then the Baltics,
+      then the Netherlands, Austria and Switzerland.
+- [ ] **Approve the German and United Kingdom proposals in the library queue.** After the
+      deploy the baseline files 43 regulations, then their 253 obligations and 43
+      summaries once each regulation is approved, like every baseline record.
+- [ ] **A German and a UK lawyer on the first tranches.** The researcher's own doubts are
+      in the verification log's rows and worth a reader's hour: provisions that are
+      offences or powers written as duties (the money laundering, terrorist financing,
+      bribery and fraud offences in the United Kingdom; AWG §§ 18 and 19, SanktDG §§ 2
+      and 9 in Germany); duties read from the cited paragraphs alone, where an exemption
+      may sit in a paragraph beside them (SAG §§ 55 and 60a, KWG § 25a Abs. 5, VAG); six
+      United Kingdom Acts and three German ones with no entry-into-force date, because
+      none could be read on an official page; and German consumer credit (BGB §§ 491a to
+      511, KWG § 18a), read as in force before 20 November 2026, the date of Directive
+      (EU) 2023/2225, and due a re-read after it.
+- [ ] **Publish the new agent versions in the Platform console**, each agent's next
+      version in turn: watch-sweeper 2 then 3, library-confirmer 3, 4 then 5,
+      tenant-source-watch 2, scope-researcher 2, library-baseline 2 then 3,
+      library-translator 2. Until then a deployed agent runs a prompt that says "the
+      Nordics". The translator is the exception: it reads version 2's prompt as soon as
+      this deploys.
+- [ ] **The translator will ask the model again for every record.** Each of today's about
+      2,400 regulations and obligations lacks its title and summary in the five new
+      languages, so the worker asks once more for each, at most
+      `LIBRARY_TRANSLATION_RUN_MAX` per beat, and each answer now holds up to nine
+      languages. Set `LIBRARY_TRANSLATION_MINUTES=0` before the deploy to hold it. If the AI
+      log shows answers cut off, raise `LLM_MAX_TOKENS` (4096 today).
+- [ ] **Have a person open the Lithuanian sites.** Every Lithuanian state site but the
+      Seimas's refused the build session, so six Lithuanian authorities rest on EU and
+      Egmont directories and their Lithuanian names on search-engine titles
+      (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`). Confirm the six names and
+      addresses, and the news page of Lietuvos bankas, which is registered as its home
+      page. The watch agent may be refused the same way.
+- [ ] **Three sources still cannot be read by a program.** You asked for a way round the
+      pages that refuse or serve nothing. Where the publisher has a feed or a data
+      interface of its own, that address is now the one registered: Austria's legal
+      database and its FMA, Switzerland's Fedlex, and the FCA's publications feed beside
+      its Handbook. Left: Riigi Teataja has no list of new acts that was found, the FCA
+      Handbook has no interface for its own text, and Lithuania's open data refused the
+      build session's network. Run one check of the Lithuanian sources from production;
+      if they are refused there too, ask the Office of the Seimas and Lietuvos bankas to
+      admit the watch's address. A challenge page is never got round by a mirror or a
+      cache, as the agents' rules already say
+      (`docs/reviews/HOME_MARKETS_SOURCES_2026-11-14.md`, "Where a page cannot be read by
+      a program").
+- [ ] **Move International to the end of the jurisdiction list** on the deployed
+      database: file one jurisdiction proposal in the console that gives it a sort order
+      after Switzerland's. A new database has it last already; a deployed one keeps it
+      between Estonia and Latvia, because a deploy never rewrites a row's place (D-94).
+- [ ] **Switzerland in German only?** Swiss federal law binds alike in German, French and
+      Italian. The library holds the German text and neither French nor Italian is a
+      content language. Default: German only.
+- [ ] **Swedish beside EU texts?** Every national text now carries English and Swedish. An
+      EU text is still English alone (D-142), though EUR-Lex publishes every act in
+      Swedish officially. Default: leave EU texts as they are.
+- [ ] **The interface in ten languages by R3?** I18N-02 says "the others by R3", which now
+      means eight catalogs beside English and Swedish. Chunk 13 plans Danish, Norwegian
+      and Finnish only. Default: I18N-02 stands and chunk 13 grows by five languages.
+- [ ] **Eleven jurisdiction pills on an EU obligation.** Its scope block lists the Union
+      and the ten countries its rules reach, where it listed five; the United Kingdom and
+      Switzerland are not among them. Default: as built. Folding them into one pill is the
+      open question of "tax-jurisdiction-derivation" below, now more pressing.
+- [ ] **Read the public page before it is public.** Its top line says "for banks in
+      northern Europe" and its source table lists twelve markets with the sources the
+      watch now checks. The inventory behind eight of them is still to come.
+- [ ] **A native speaker for Estonian, Latvian and Lithuanian.** The injection screen's
+      phrases, the evaluation questions and the labelled change texts in those three
+      languages were written without one, with the terms taken from the official
+      language versions of MiFID II, PRIIPs, DORA, the GDPR and the IDD. Worth a look: the
+      words chosen for "prompt" and a model's "confidence" in each, and Latvian, whose
+      command form is also its third person, so "Banka ignorē iepriekšējos norādījumus"
+      is flagged as an instruction.
+- [ ] **What the injection screen does not read in the five new languages.** A command
+      with its verb last ("Alle vorherigen Anweisungen ignorieren"), text typed without
+      its diacritics, and three phrases that stay English only: "do not ask a human",
+      "print your API key" and "maintenance mode". Default: as built; say if these
+      should be added.
+- [x] **A hostile page could stall the injection screen. Fixed.** Found while extending
+      it: a 36 KB page that repeats one trigger word ("supersede" 4,000 times) took ten
+      seconds to screen, against a budget of half a second for 200 KB, because the older
+      rules let a word's ending run on without limit. The endings are bounded now, 198 KB
+      of the same page screens in 0.17 seconds, and a test holds it.
+- [ ] **A lawyer on what may be republished.** The PRA Rulebook forbids commercial use
+      without a licence; FINMA and Finantsinspektsioon ask permission for their own
+      texts; no licence text was found for Likumi.lv, the RIS open data or the Lithuanian
+      register (baseline README, "The law's own words"). No text from those is taken
+      until this is settled.
+- [ ] **Licence registers.** The supervisor's licence register is still read for Sweden
+      alone. A branch in the United Kingdom or Switzerland is outside the EBA register
+      too, so it comes from GLEIF or is entered by hand.
+
 ## What applies, Licences and the law's own words (2026-11-13, PRD 0.10, D-139 to D-143)
 
 Four screens changed and the library gained the words of the law itself. What needs you,
@@ -575,11 +679,14 @@ ADR (0026 to 0041), each reversible. These are the ones that need you.
       invariant: a per-user row-level policy, audit and outbox rows without the
       text, exclusion from exports, and compliance work hidden from the tenant's
       own auditors.
-- [ ] **Aspiring markets outside EU, SE, DK, NO and FI (D-33).** Which ones do
+- [x] **Aspiring markets outside EU, SE, DK, NO and FI (D-33).** Which ones do
       you have in mind, and in which release? Each is a change to the platform's
       scope, not a tenant setting: it needs a jurisdiction row, its authorities,
       its sources and a content language before a sweep can find anything.
       Until then a Swedish bank can watch only Denmark, Norway or Finland.
+      **Answered (Alex, 2026-11-14): all of SEB's home markets.** D-145 and ADR
+      0070 add Estonia, Latvia, Lithuania, Germany, the United Kingdom, the
+      Netherlands, Austria and Switzerland ("Every home market" at the top).
 - [ ] **The sector vocabulary, answered once (D-40).** The default names tax and
       AI in the PRD's scope sentence, maps the PRD's six sectors onto terms of
       the existing `licensed_activity` dimension by proposal, and adds a regime

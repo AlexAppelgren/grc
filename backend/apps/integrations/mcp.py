@@ -62,7 +62,7 @@ UNSUPPORTED_VERSION = -32022
 
 SERVER_VERSION = "1.0.0"
 INSTRUCTIONS = (
-    "Reads the shared library of Nordic and EU financial regulation, in the scope of the agent this "
+    "Reads the shared library of financial regulation, national and EU, in the scope of the agent this "
     "credential belongs to, and, where the bank has allowed it, the bank's own register decisions. "
     "Every tool reads; nothing here changes anything. An answer states the scope it was answered in, "
     "and a record outside that scope is not found."

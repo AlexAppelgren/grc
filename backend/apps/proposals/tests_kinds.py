@@ -391,7 +391,7 @@ class NewTranslations(KindsTestCase):
     def test_what_the_door_refuses(self) -> None:
         self._refused(self._file(translations_body(key="no-such-act")), 422, "unknown_key")
         self._refused(self._file(translations_body(target="provision")), 422, "unknown_key")
-        self._refused(self._file(translations_body(titles={"de": "Regeln"})), 422, "unknown_key")
+        self._refused(self._file(translations_body(titles={"fr": "Règles"})), 422, "unknown_key")
         self._refused(self._file(translations_body(titles={"en": "FFFS 2017:2"})), 409, "duplicate_key")
         self._refused(self._file(translations_body(titlesFrom="sv")), 422, "validation_error")
         self._refused(self._file(translations_body(titles={"sv": " "})), 422, "validation_error")
@@ -960,7 +960,7 @@ class TheLawsOwnWords(KindsTestCase):
         cases: tuple[tuple[str, dict[str, Any]], ...] = (
             ("an obligation key longer than a key", {"obligations": ["o" * 121]}),
             ("an obligation key that is not one", {"obligations": ["OBL Kinds"]}),
-            ("more official languages than languages", {"officialLanguages": ["sv", "en", "da", "nb", "fi"]}),
+            ("more official languages than languages", {"officialLanguages": ["sv", "en", "da", "nb", "fi", "et", "lv", "lt", "de", "nl"]}),
             ("a language key longer than one", {"officialLanguages": ["s" * 9]}),
             # The cap counts the list as sent, though a repeat would be kept once.
             ("one key sent past the cap", {"obligations": [self.duty.stable_key] * (settings.PROPOSAL_PROVISION_MAX_OBLIGATIONS + 1)}),

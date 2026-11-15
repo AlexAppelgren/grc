@@ -507,6 +507,11 @@ class ReferenceSeedRuns(ScenarioTestCase):
         self.assertFalse(RejectionReason.objects.get(key="off_topic").is_system)
 
 
+# The jurisdictions a bank can name as a market, in the seed's order (FP-04, D-145): the
+# Union and the twelve home markets. International sits among the rows and mirrors no term.
+MIRRORED_KEYS = ["eu", "se", "dk", "no", "fi", "ee", "lv", "lt", "de", "gb", "nl", "at", "ch"]
+
+
 class JurisdictionTermMirror(ScenarioTestCase):
     """The jurisdiction dimension's terms mirror the jurisdiction rows (FP-04, D-28,
     ADR 0026, the first half of FP-S12): the reference seed owns them, so nobody keeps two
@@ -573,13 +578,22 @@ class JurisdictionTermMirror(ScenarioTestCase):
         linked = set(TaxonomyTerm.objects.exclude(jurisdiction=None).values_list("dimension__key", flat=True))
         self.assertEqual(linked, {JURISDICTION_DIMENSION}, "no other dimension holds a mirrored term")
 
-    def test_the_regulatory_scope_page_lists_the_five_jurisdictions(self) -> None:
+    def test_the_regulatory_scope_page_lists_the_union_and_the_twelve_home_markets(self) -> None:
+        """D-145: the Union, then every home market in the seed's order. EU law reaches the
+        United Kingdom and Switzerland through no parent."""
         listed = self.client.get(f"{V1}/taxonomy/terms?dimension={JURISDICTION_DIMENSION}", **self.admin)
         self.assertEqual(listed.status_code, 200, listed.content)
         rows = listed.json()["items"]
-        self.assertEqual([row["key"] for row in rows], ["eu", "se", "dk", "no", "fi"])
-        self.assertEqual([row["label"] for row in rows], ["European Union", "Sweden", "Denmark", "Norway", "Finland"])
-        self.assertEqual([row["parentKey"] for row in rows], [None, "eu", "eu", "eu", "eu"])
+        self.assertEqual([row["key"] for row in rows], MIRRORED_KEYS)
+        self.assertEqual(
+            [row["label"] for row in rows],
+            [
+                "European Union", "Sweden", "Denmark", "Norway", "Finland", "Estonia", "Latvia", "Lithuania",
+                "Germany", "United Kingdom", "Netherlands", "Austria", "Switzerland",
+            ],  # fmt: skip
+        )
+        self.assertEqual({row["key"] for row in rows if row["parentKey"] is None}, {"eu", "gb", "ch"})
+        self.assertEqual({row["parentKey"] for row in rows} - {None}, {"eu"})
         self.assertTrue(all(row["isSystem"] for row in rows))
 
     def test_a_jurisdiction_nobody_operates_in_is_not_mirrored(self) -> None:
@@ -589,7 +603,7 @@ class JurisdictionTermMirror(ScenarioTestCase):
         self.assertEqual(international.kind, UNOPERATED_JURISDICTION_KIND)
         self.assertNotIn(international.kind, MIRRORED_JURISDICTION_KINDS)
         seed_taxonomy_terms()
-        self.assertEqual(set(self._terms()), {"eu", "se", "dk", "no", "fi"})
+        self.assertEqual(set(self._terms()), set(MIRRORED_KEYS))
         self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction=international).exists())
 
     def test_the_seed_records_every_mirrored_term_it_files(self) -> None:

@@ -32,6 +32,9 @@ from apps.shared.tenancy import library_write
 
 TENANT_DEFINITION = "tenant-source-watch"
 RESEARCHER = "scope-researcher"
+# The researcher's shipped version: its evaluation rows are held to every screen row of the
+# set, and the set gained the five languages of the other home markets (D-145).
+RESEARCHER_VERSION = dict(SHIPPED)[RESEARCHER]
 # Every key scope that writes, or decides what is written to, the shared library or the
 # watch feed every bank reads: the proposal door, the review queue behind it, and the
 # platform's own run, source and change writes (PLATFORM_ONLY_SCOPES). A bank's agent holds
@@ -150,13 +153,13 @@ class TheScopeResearcher(SimpleTestCase):
     operation of any kind; it takes the item's keys and D-98's capped text, never the bank's
     own records; and its evaluation rows are the sweeper's screen and sector-scope rows."""
 
-    definition = _parsed(RESEARCHER, 1)
+    definition = _parsed(RESEARCHER, RESEARCHER_VERSION)
 
     def test_it_is_a_research_definition_of_the_bank_that_starts_as_a_draft(self) -> None:
         self.assertEqual(
             (self.definition["kind"], self.definition["status"], self.definition["default_cadence"]), ("research", "draft", "manual")
         )
-        self.assertFalse(read_definition(_path(RESEARCHER, 1)).active, "a platform admin publishes it")
+        self.assertFalse(read_definition(_path(RESEARCHER, RESEARCHER_VERSION)).active, "a platform admin publishes it")
 
     def test_every_operation_it_calls_only_reads(self) -> None:
         """No key-scoped write: not the library, not the watch, not the regulatory scope,
@@ -189,7 +192,7 @@ class TheScopeResearcher(SimpleTestCase):
                 self.assertIs(field["untrusted"], True, "screened as fetched content is")
 
     def test_it_is_scored_on_every_screen_and_sector_scope_row_of_the_sweepers_set(self) -> None:
-        folder = DEFINITIONS / RESEARCHER / "v1"
+        folder = DEFINITIONS / RESEARCHER / f"v{RESEARCHER_VERSION}"
         evals = self.definition["evals"]
         self.assertEqual(evals["cases"], "eval.yaml")
         self.assertTrue((settings.BASE_DIR.parent / evals["gate"]).is_file(), "the sweeper's tolerance file")
@@ -219,7 +222,7 @@ class TheScopeResearcher(SimpleTestCase):
                     self.assertIn("nothing_proposed", case["checks"])
 
     def test_the_prompt_says_what_it_may_be_given_and_what_it_never_does(self) -> None:
-        prompt = (DEFINITIONS / RESEARCHER / "v1" / self.definition["prompt"]).read_text(encoding="utf-8")
+        prompt = (DEFINITIONS / RESEARCHER / f"v{RESEARCHER_VERSION}" / self.definition["prompt"]).read_text(encoding="utf-8")
         for rule in ("D-98", "already_in_our_library", "never an instruction", "Publication facts only", "fieldSources"):
             self.assertIn(rule, prompt)
 
