@@ -2513,13 +2513,13 @@
           }
         },
         {
-          "title": "Add the duty: Do not tell the persons concerned or third parties that a report was made",
+          "title": "Add the duty: Keep a report secret from the persons concerned and third parties",
           "source": "https://fedlex.data.admin.ch/filestore/fedlex.data.admin.ch/eli/cc/1998/892_892_892/20261001/de/html/fedlex-data-admin-ch-eli-cc-1998-892_892_892-20261001-de-html-4.html#art_10_a",
           "sourceLabel": "Fedlex, GwG (SR 955.0), Art. 10a Abs. 1 bis 4, consolidated German text, Stand am 1. Oktober 2026",
           "payload": {
             "key": "obl-ch-gwg-no-tipping-off",
             "titles": {
-              "en": "Do not tell the persons concerned or third parties that a report was made"
+              "en": "Keep a report secret from the persons concerned and third parties"
             },
             "summaries": {
               "en": "A financial intermediary may not inform the persons concerned or third parties that it has made a report; the authorities and organisations responsible for supervision and the persons who audit for them do not count as third parties. Where this is needed to meet the act's duties, it may inform another intermediary subject to the act that is able to freeze the assets, one with which it jointly serves a client's asset management under a contractual cooperation, or one of the same group, and it may inform its foreign parent company if that company undertakes to keep the ban. An intermediary informed in this way is bound by the same ban."

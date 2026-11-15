@@ -1653,7 +1653,10 @@ def list_authorities(order: list[str]) -> list[LibraryAuthority]:
     """Every issuing authority the shared library knows, with its jurisdiction labelled in
     the caller's language, in two queries. A shared reference row, the same for every bank
     and agent key, so no `_visible()` lookup."""
-    authorities = list(Authority.objects.select_related("jurisdiction"))
+    # Sorted here, by the key's characters: the database's collation decides its own order,
+    # and en_US.utf8 (CI's) skips hyphens, so "bankenes-sikringsfond" would come before
+    # "bank-of-england" there and after it on a database with the C collation.
+    authorities = sorted(Authority.objects.select_related("jurisdiction"), key=lambda row: row.key)
     jurisdictions = vocabulary_refs(JurisdictionLabel, (row.jurisdiction for row in authorities), order)
     return [
         LibraryAuthority(
