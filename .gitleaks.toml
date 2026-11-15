@@ -54,6 +54,12 @@ condition = "AND"
 regexes = ['''^[a-z0-9]+(?:-[a-z0-9]+){2,}$''']
 paths = ['''^frontend/src/features/demo/recordings\.json$''']
 
+[[allowlists]]
+description = "Stable keys of the Netherlands' instruments in the library baseline (D-145, ADR 0070, 2026-11-14): `nl-` and the act's BWB id, the public identifier the Dutch Basiswettenbestand gives every act and regulation (e.g. nl-bwbr0020368 for the Wet op het financieel toezicht, README key formats). A public citation, never a credential. The shape has one hyphen, so the baseline slug rule above does not cover it. Bound to the same baseline data files and to that exact shape, so the shape anywhere else is still reported."
+condition = "AND"
+regexes = ['''^nl-bwbr[0-9]{7}$''']
+paths = ['''^backend/apps/library/baseline/(summaries/|corrections/)?[a-z0-9-]+\.json$''']
+
 # Connection strings carry the dev-only passwords above. Some rules extract the
 # whole URL rather than the password, so the same literals are also accepted
 # when they appear as the password segment of a local/CI Postgres URL.
