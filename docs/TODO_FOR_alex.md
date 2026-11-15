@@ -215,15 +215,16 @@ library takes their law in its own language. What needs you, most urgent first.
       "andelsägare" for the "osanikud" of the fund prospectus regulation § 9 p 8; the
       national terms with no EU source ("överkollateraliseringsgrad", "god redovisningssed
       i Estland").
-- [ ] **One Swedish term differs between files: målgrupp or målmarknad.** For a MiFID
-      product's target market, MiFID II's Swedish (Art. 16(3)) and Swedish law say
-      "målgrupp", while the Delegated Directive (EU) 2017/593 and the Insurance
-      Distribution Directive say "målmarknad". The new files follow whichever act their
-      researcher read: de-acts, ee-acts and nl-besluiten mostly "målgrupp"; at-acts, lv-acts
-      and de-verordnungen "målmarknad". Default: "målgrupp" for investment products and
-      "målmarknad" for insurance products, applied in one pass over the files. Also from
-      Germany's regulations: PAngV § 18 is struck and PAngV §§ 16, 17 and 19 and
-      InstitutsVergV § 5 change on 20 November 2026, so those duties need new text then.
+- [ ] **One Swedish term is aligned across the files (default taken, 2026-11-15).** For a
+      MiFID product's target market MiFID II's Swedish (Art. 16(3)) and Swedish law say
+      "målgrupp"; the Insurance Distribution Directive says "målmarknad". The files now
+      follow that split: the product governance texts of Austria's WAG 2018, Germany's
+      WpDVerOV and Latvia's investment services law were changed to "målgrupp" (45
+      places), the insurance texts keep "målmarknad", and so do a bank's "target markets"
+      in its credit strategy, as the Swedish CRD has it. Say if you want it otherwise.
+- [ ] **German texts that change on 20 November 2026.** PAngV § 18 is struck and PAngV §§
+      16, 17 and 19 and InstitutsVergV § 5 change that day, so those duties and provisions
+      need new text then.
 - [ ] **A lawyer of each market on its third tranche.** The researchers' own doubts, by
       market; each row of the verification log says more.
       - Germany (`de-verordnungen-2`): KMAnzV § 1 Abs. 3 limits a MiCA bank to the § 2
