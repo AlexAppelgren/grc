@@ -37,6 +37,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Adding a stored generated column rewrites the table, so PostgreSQL rebuilds every
+        # index on it, the HNSW index on `embedding` too. pgvector builds HNSW with parallel
+        # workers, which take shared memory the size of maintenance_work_mem; the deployed
+        # database's /dev/shm is smaller, and the migration failed there with "could not resize
+        # shared memory segment ... No space left on device" (2026-11-16). Without parallel
+        # workers the build uses the backend's own memory. SET LOCAL ends with this migration's
+        # transaction, and no database had applied the migration before this line was added.
+        migrations.RunSQL("SET LOCAL max_parallel_maintenance_workers = 0", reverse_sql=migrations.RunSQL.noop),
         migrations.RemoveIndex(model_name="searchchunk", name="search_chunk_tsv_idx"),
         migrations.RemoveField(model_name="searchchunk", name="tsv"),
         migrations.AddField(
