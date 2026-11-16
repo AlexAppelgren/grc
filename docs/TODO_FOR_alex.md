@@ -305,8 +305,10 @@ library takes their law in its own language. What needs you, most urgent first.
       2,400 regulations and obligations lacks its title and summary in the five new
       languages, so the worker asks once more for each, at most
       `LIBRARY_TRANSLATION_RUN_MAX` per beat, and each answer now holds up to nine
-      languages. Set `LIBRARY_TRANSLATION_MINUTES=0` before the deploy to hold it. If the AI
-      log shows answers cut off, raise `LLM_MAX_TOKENS` (4096 today).
+      languages. Railway deployed this on 2026-11-15, when CI passed on `1bed0b6`, so
+      unless `LIBRARY_TRANSLATION_MINUTES=0` was already set the worker has begun; set it
+      now to hold it. If the AI log shows answers cut off, raise `LLM_MAX_TOKENS` (4096
+      today).
 - [ ] **Have a person open the Lithuanian sites.** Every Lithuanian state site but the
       Seimas's refused the build session, so six Lithuanian authorities rest on EU and
       Egmont directories and their Lithuanian names on search-engine titles

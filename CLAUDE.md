@@ -137,7 +137,9 @@ it into `main` (`docs/runbooks/WORKTREES.md`, `scripts/worktree.sh`). Inside a w
 load its slot first: `set -a; . ./.env.worktree; set +a`. Commit messages: a plain-English headline
 from the user's or the system's point of view; a body with the why, the
 requirement IDs, what now happens, what was deliberately not done; no model
-or tool names. The owner deploys; never deploy yourself.
+or tool names. Railway deploys `main` to the test environment on its own once CI on it
+passes (Alex, 2026-11-16), so moving `main` is the deploy: set any variable a change needs
+before it ships, and never deploy by any other route.
 
 **Do not pause until the change is on `main`** (Alex, 2026-11-12: "you cant just stop
 halfway"). A change is done only when it is on `main`. Ship every finished change without

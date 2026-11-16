@@ -956,8 +956,9 @@ first bank tenant (Section 18).
 ## 12. Git, environments and deploy
 
 - **Build phase: one branch.** All work is committed directly to `main`, in
-  small commits per whole slice, each passing the pre-push checklist. The
-  owner deploys `main` to the Railway test environment. No feature branches.
+  small commits per whole slice, each passing the pre-push checklist. Railway
+  deploys `main` to the test environment on its own once CI on it passes (Alex,
+  2026-11-16). No feature branches.
 - **Before the first real tenant**, switch to `staging` → `main`: `staging`
   auto-deploys, `main` is production and is only merged from `staging` after
   the owner approves, and `main-branch-guard.yml` enforces it. Record the

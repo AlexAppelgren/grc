@@ -3,6 +3,12 @@
 For Alex. The agent keeps this file true as services land. Verify names and
 menus in the Railway console: this was written without access to it.
 
+Railway deploys `main` on its own once CI on that commit passes (Alex, 2026-11-16).
+There is no separate deploy step: a ship (`scripts/ship.sh`, or the same steps from a
+cloud session) that moves `main` deploys it. A variable a change needs, such as
+`LIBRARY_TRANSLATION_MINUTES=0` to hold the translator, is set in Railway before the
+change ships.
+
 ## Project shape (region: EU West)
 
 | Service | Source | Start command | Notes |
