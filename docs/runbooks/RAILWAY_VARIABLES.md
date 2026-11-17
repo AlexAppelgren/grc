@@ -23,6 +23,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `DATABASE_URL` | api, worker, beat | `postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch` | the `cw_app` string against the service container | the `cw_app` connection string | The app refuses to boot if this role is a superuser, owns the tables or has `BYPASSRLS` (ADR 0022) |
 | `MIGRATOR_DATABASE_URL` | api (entrypoint), CI | `postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch` | the `cw_migrator` string | the `cw_migrator` connection string | Used only by `migrate`, `migrate_from_zero` and the test runner's database creation. The entrypoint unsets it right after `migrate`, so the seeds and gunicorn never hold it |
 | `REDIS_URL` | api, worker, beat | `redis://localhost:6379/0` | the service container | Railway Redis URL | Celery broker and cache |
+| `CELERY_WORKER_CONCURRENCY` | worker | `4` | `4` | `4` | Pool processes per worker, 1 to 32. Each holds a full copy of the app, so this sets the worker's memory and its bill. Unset in Celery itself it would be the host's CPU count, which on Railway was about 26 processes and 4 GB at idle |
 
 ## Hosts and identity
 

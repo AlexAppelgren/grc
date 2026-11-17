@@ -17,7 +17,7 @@ change ships.
 | `redis` | Redis | | Celery broker and cache |
 | `bucket` | Private S3-compatible bucket | | Evidence and exports. Required on every deployed environment, the test one included: the app refuses to boot on the local file backend when deployed (`STORAGE_BACKEND=s3`) |
 | `api` | `backend/Dockerfile` | default entrypoint | Migrates as `cw_migrator` (the entrypoint runs `manage.py migrate` with `DATABASE_URL=$MIGRATOR_DATABASE_URL`), seeds reference data, starts gunicorn as `cw_app` |
-| `worker` | same image | `celery -A config worker` | |
+| `worker` | same image | `celery -A config worker` | Pool size from `CELERY_WORKER_CONCURRENCY` (default 4); never leave it to the CPU count |
 | `beat` | same image | `celery -A config beat` | Exactly one instance |
 | `web` | `frontend/Dockerfile` | `next start` | Custom domain attached here |
 

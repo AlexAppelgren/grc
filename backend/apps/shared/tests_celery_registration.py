@@ -15,6 +15,7 @@ from __future__ import annotations
 import inspect
 import uuid
 
+from django.conf import settings
 from django.db import transaction
 from django.test import TestCase
 
@@ -37,6 +38,11 @@ class CeleryRegistrationGuard(TestCase):
             if entry.get("task") not in celery_app.tasks
         ]
         self.assertEqual(missing, [], "Beat entries pointing at tasks that do not exist:\n  " + "\n  ".join(missing))
+
+    def test_the_worker_pool_size_comes_from_the_setting(self) -> None:
+        """Unset, Celery sizes the pool from the host's CPU count (4 GB idle on Railway)."""
+        self.assertEqual(celery_app.conf.worker_concurrency, settings.CELERY_WORKER_CONCURRENCY)
+        self.assertEqual(settings.CELERY_WORKER_CONCURRENCY, 4)
 
     def test_every_tenant_task_is_wrapped(self) -> None:
         unwrapped: list[str] = []

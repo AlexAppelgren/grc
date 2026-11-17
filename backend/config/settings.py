@@ -205,6 +205,9 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TIMEZONE = "UTC"
 # Keep LOGGING's JSON handler: the worker's own prints exception messages (M2).
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+# Pool processes per worker. Unset, Celery starts one per CPU the host reports, not per CPU
+# the container may use: on Railway that was about 26 idle processes holding 4 GB.
+CELERY_WORKER_CONCURRENCY = env_int("CELERY_WORKER_CONCURRENCY", 4, min=1, max=32)
 CELERY_BEAT_SCHEDULE: dict[str, Any] = {}
 
 # --- No passwords (ID-03): empty, so a stray contrib import inherits nothing. ---
