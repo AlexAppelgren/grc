@@ -5,8 +5,9 @@ A platform agent's cadence, jurisdictions and budget live on its `agent` row, th
 every bank; no tenant path writes them, and `refuse_platform_agent` is the fence every tenant
 control calls first. Settings are platform configuration (D-102, ADR 0062), written through
 `seeds/console.py`. The console's run list carries no bank's run, name or figure. The
-monthly budget stops new runs once the agent's spend in the UTC calendar month reaches it
-(`refuse_over_budget`); a run already open finishes.
+monthly budget, or `PLATFORM_AGENT_MONTHLY_BUDGET` when the console set none, stops new runs
+once the agent's spend in the UTC calendar month reaches it (`refuse_over_budget`); a run
+already open finishes.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import datetime
 from decimal import Decimal
 from typing import Any, cast
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, OuterRef, QuerySet, Subquery, Sum
 from django.db.models.functions import Coalesce
@@ -51,12 +53,19 @@ def spent_this_month(agent: Agent) -> Decimal:
     return Decimal(reported) + Decimal(logged) / 100
 
 
+def monthly_budget(agent: Agent) -> Decimal:
+    """What one of bleqq's agents may spend this month: the console's figure, or the
+    platform default `PLATFORM_AGENT_MONTHLY_BUDGET` when the console set none (D-147)."""
+    if agent.platform_monthly_budget is not None:
+        return agent.platform_monthly_budget
+    return Decimal(settings.PLATFORM_AGENT_MONTHLY_BUDGET)
+
+
 def refuse_over_budget(agent: Agent) -> None:
-    """422 `budget_cap_reached` when one of bleqq's agents has a monthly budget and has spent
-    it this month (defect 5 of the agent review, 2026-11-21: the budget was stored and shown,
-    and nothing held to it). Called before a run that may ask a model opens."""
-    budget = agent.platform_monthly_budget
-    if budget is not None and spent_this_month(agent) >= budget:
+    """422 `budget_cap_reached` once one of bleqq's agents has spent its monthly budget
+    (defect 5 of the agent review, 2026-11-21: the budget was stored and shown, and nothing
+    held to it). Called before a run that may ask a model opens."""
+    if spent_this_month(agent) >= monthly_budget(agent):
         raise ProblemError(
             status=422,
             code="budget_cap_reached",

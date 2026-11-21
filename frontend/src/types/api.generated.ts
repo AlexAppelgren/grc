@@ -22137,7 +22137,7 @@ export interface components {
             jurisdictions: string[];
             /**
              * Monthlybudget
-             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when no budget is set.
+             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then the platform's default monthly budget applies.
              */
             monthlyBudget: string | null;
         };
@@ -22167,7 +22167,7 @@ export interface components {
             jurisdictions: string[];
             /**
              * Monthlybudget
-             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null removes the budget.
+             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null leaves the platform's default monthly budget in force.
              */
             monthlyBudget: number | string | null;
         };

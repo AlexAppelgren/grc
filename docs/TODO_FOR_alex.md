@@ -7,11 +7,11 @@ Ordered by what blocks testing first. Nothing here is blocked on code.
 The review's six defects are fixed; nothing below blocks the build. What switching an agent on
 now takes, and what needs you:
 
-- [ ] **The model key on the test deployment (D-07).** Staging runs `LLM_PROVIDER=mock` and
-      holds no key, so no agent has called a real model. With a key, the translator asks a
-      real model again about every record the mock answered (D-146), within its budget.
-      Before you add it, set the translator's monthly budget in the console (Agents), since
-      every record of the library is due at once.
+- [ ] **Add `ANTHROPIC_API_KEY` to the api and worker services on Railway (D-147).** That is
+      the only step. The key switches the model on by itself: the translator, Ask, the
+      what-applies summary and the drafted reasons then use `claude-opus-5-5`, and each of
+      bleqq's agents stops for the month at 150 EUR unless the console sets another figure.
+      The key processes in the US or globally, which a bank's vendor review will ask about.
 - [ ] **Release an agent by publishing a version whose folder says `status: active`.** A
       deploy never switches an agent on. The sweeper fails the evaluation gate until its
       classification baseline is recorded against a real model, and the confirmer until its

@@ -550,9 +550,18 @@ class BleqqsMonthlyBudget(PlatformBeatCase):
         self.beat()
         self.assertEqual(len(self.scheduled()), 1)
 
-    def test_no_budget_set_never_stops_it(self) -> None:
+    @override_settings(PLATFORM_AGENT_MONTHLY_BUDGET="100.00")
+    def test_with_no_console_budget_the_platform_default_holds(self) -> None:
+        """D-147: the key alone switches the model on, so no agent runs without a budget."""
         self.budget(None)
-        self.spent(cost="5000.00")
+        self.spent(cost="100.00")
+        self.beat()
+        self.assertEqual(self.scheduled(), [])
+
+    @override_settings(PLATFORM_AGENT_MONTHLY_BUDGET="100.00")
+    def test_under_the_platform_default_it_runs(self) -> None:
+        self.budget(None)
+        self.spent(cost="99.99")
         self.beat()
         self.assertEqual(len(self.scheduled()), 1)
 

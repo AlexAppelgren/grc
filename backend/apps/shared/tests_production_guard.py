@@ -46,6 +46,7 @@ SETTING_NAMES = (
     "WEBAUTHN_RP_ID",
     "WEBAUTHN_ORIGINS",
     "LLM_PROVIDER",
+    "ANTHROPIC_API_KEY",
     "EMBEDDER_PROVIDER",
     "RERANKER_PROVIDER",
     "AGENT_RUNNER",
@@ -382,12 +383,11 @@ class ProductionGuard(TestCase):
             ),
             # Rule 10 (review 2026-11-11 S-7, D-54): no processor outside the EU when
             # deployed, except on the environment named test, which holds no bank's data.
+            # D-147 (Alex, 2026-11-21) allows the anthropic provider everywhere.
             Case(
-                "prod refuses the anthropic provider",
-                self._good_deployed("prod", LLM_PROVIDER="anthropic"),
-                False,
-                "Rule 10",
-                "rule 10",
+                "prod boots with the anthropic provider",
+                self._good_deployed("prod", LLM_PROVIDER="anthropic", ANTHROPIC_API_KEY="sk-test"),
+                True,
             ),
             Case(
                 "demo refuses the managed agents runner",
@@ -459,6 +459,16 @@ class ProductionGuard(TestCase):
                 "rule 7 (see settings: the env override is refused when deployed)",
             ),
         ]
+
+    def test_the_key_alone_switches_the_provider_on(self) -> None:
+        """D-147 (Alex, 2026-11-21: provide the key and press play): with no LLM_PROVIDER, a
+        set ANTHROPIC_API_KEY selects the anthropic provider and its absence the mock."""
+        show = "import django; django.setup(); from django.conf import settings; print(settings.LLM_PROVIDER)"
+        for key, expected in (("sk-test", "anthropic"), ("", "mock")):
+            env = {k: v for k, v in os.environ.items() if k not in SETTING_NAMES}
+            env.update(self._local("local"), DJANGO_SETTINGS_MODULE="config.settings", ANTHROPIC_API_KEY=key)
+            result = subprocess.run([sys.executable, "-c", show], cwd=str(settings.BASE_DIR), env=env, capture_output=True, text=True, timeout=120, check=False)
+            self.assertEqual(result.stdout.strip().splitlines()[-1:], [expected], result.stderr[-2000:])
 
     def test_the_image_sets_environment_to_production(self) -> None:
         """Review 2026-11-11 S-14: outside Railway nothing sets RAILWAY_ENVIRONMENT_NAME,

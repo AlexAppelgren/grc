@@ -257,8 +257,10 @@ CORS_ALLOW_HEADERS = [
 CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
 # --- Adapters (playbook 16). A mock outside the named test environment refuses to boot. ---
-LLM_PROVIDER = env_choice("LLM_PROVIDER", "mock", ("mock", "anthropic", "bedrock"))
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "")
+# The key is the switch (D-147): with ANTHROPIC_API_KEY set and no LLM_PROVIDER, the
+# Anthropic provider answers; without either, the mock does, which rule 5 refuses deployed.
+LLM_PROVIDER = env_choice("LLM_PROVIDER", "anthropic" if ANTHROPIC_API_KEY else "mock", ("mock", "anthropic", "bedrock"))
 EMBEDDER_PROVIDER = env_choice("EMBEDDER_PROVIDER", "mock", ("mock", "none"))  # a model joins per D-09
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024, min=1, max=16000)  # D-09
 # No `managed_agents`: a runner outside the EU (D-54) was never built and is no value at all.
@@ -283,6 +285,15 @@ AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6, min=0, max=23)
 AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15, min=1, max=1440)
 AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5, min=1, max=1000)
 AGENT_RECENT_RUNS = env_int("AGENT_RECENT_RUNS", 5, min=1, max=100)  # a page is at most 100
+# What one of bleqq's agents may spend in a UTC month when the console set no budget of its
+# own, in EUR (D-147): a model call's cost counts against it (platform.refuse_over_budget).
+PLATFORM_AGENT_MONTHLY_BUDGET = env_str("PLATFORM_AGENT_MONTHLY_BUDGET", "150.00")
+try:
+    _platform_budget = Decimal(PLATFORM_AGENT_MONTHLY_BUDGET)
+except InvalidOperation:
+    _platform_budget = Decimal(-1)
+if not (_platform_budget.is_finite() and Decimal(0) <= _platform_budget < Decimal(100_000_000)):
+    raise ImproperlyConfigured(f"PLATFORM_AGENT_MONTHLY_BUDGET must be an amount in EUR of zero or more, got {PLATFORM_AGENT_MONTHLY_BUDGET!r}")
 # How long a run may stay running before the beat closes it as failed (opener.close_overdue).
 AGENT_RUN_MAX_MINUTES = env_int("AGENT_RUN_MAX_MINUTES", 360, min=15, max=10_080)
 # The most one run of a bank's own agent may spend, in EUR; stored as the run's budget_limit.
@@ -311,7 +322,7 @@ RESEARCH_URL_RATE_PER_HOUR = env_int("RESEARCH_URL_RATE_PER_HOUR", 20, min=1, ma
 SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000, min=1, max=100_000)
 
 # --- The Anthropic provider (D-07). The key is read from the environment only. ---
-LLM_MODEL = env_str("LLM_MODEL", "claude-opus-5")
+LLM_MODEL = env_str("LLM_MODEL", "claude-opus-5-5")
 LLM_MAX_TOKENS = env_int("LLM_MAX_TOKENS", 4096, min=1, max=200_000)
 LLM_TIMEOUT_S = env_float("LLM_TIMEOUT_S", 60.0, min=1, max=600)
 LLM_MAX_RETRIES = env_int("LLM_MAX_RETRIES", 2, min=0, max=10)
@@ -609,8 +620,9 @@ WHAT_APPLIES_SUMMARY_DEADLINE_MS = env_int("WHAT_APPLIES_SUMMARY_DEADLINE_MS", 2
 WHAT_APPLIES_SUMMARY_FACTS = env_int("WHAT_APPLIES_SUMMARY_FACTS", 20, min=1, max=1000)
 WHAT_APPLIES_SUMMARY_MAX_TOKENS = env_int("WHAT_APPLIES_SUMMARY_MAX_TOKENS", 400, min=1, max=LLM_MAX_TOKENS)
 # A model call's list price in minor units per million tokens (Verification_Log).
-LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 500, min=0)
-LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2500, min=0)
+# claude-opus-5-5's list price, $4 and $20 per million tokens (Verification_Log, D-147).
+LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 400, min=0)
+LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2000, min=0)
 # D-125: a bank's only approver may approve their own scope request, with a passkey, marked
 # `sole_approver` and audited. False restores four eyes everywhere.
 FOOTPRINT_SOLE_APPROVER_ALLOWED = env_bool("FOOTPRINT_SOLE_APPROVER_ALLOWED", True)
@@ -695,8 +707,9 @@ if SENTRY_DSN:
 #  9. RATE_LIMITING_ENABLED=false switches every bucket off at once; laptops and tests only
 #     (M2). Each bucket's own size already refuses to boot below 1.
 # 10. Processors outside the EU (D-54, ADR 0047). On every deployed environment but `test`,
-#     the `anthropic` provider is refused, and Sentry only on a host ending
-#     `.ingest.de.sentry.io`. The lists are code, never variables. The `managed_agents`
+#     Sentry runs only on a host ending
+#     `.ingest.de.sentry.io`. The `anthropic` provider is allowed everywhere since D-147
+#     (Alex, 2026-11-21). The lists are code, never variables. The `managed_agents`
 #     runner is refused everywhere: AGENT_RUNNER names no such value.
 # 11. TRUSTED_PROXY_HOPS=0 behind the edge keys every per-IP limit and security log row on
 #     the proxy's address. A deployed environment defaults to 1 and refuses 0 (L-18).
@@ -738,8 +751,6 @@ if IS_DEPLOYED_ENVIRONMENT and (
 if IS_DEPLOYED_ENVIRONMENT and not RATE_LIMITING_ENABLED:
     _refuse(f"RATE_LIMITING_ENABLED=false on deployed environment {ENVIRONMENT!r}. Rule 9.")
 if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT:
-    if LLM_PROVIDER == "anthropic":
-        _refuse(f"LLM_PROVIDER='anthropic' on deployed environment {ENVIRONMENT!r}: it processes outside the EU. Rule 10 (D-54).")
     if SENTRY_DSN and not (urlsplit(SENTRY_DSN).hostname or "").endswith(".ingest.de.sentry.io"):
         _refuse(f"SENTRY_DSN is not on ingest.de.sentry.io on deployed environment {ENVIRONMENT!r}. Rule 10 (D-54).")
 if IS_DEPLOYED_ENVIRONMENT and TRUSTED_PROXY_HOPS < 1:
