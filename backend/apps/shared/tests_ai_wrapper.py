@@ -33,7 +33,10 @@ APPS_DIR = Path(__file__).resolve().parent.parent
 
 # The one module that may reach the LLM adapter. Everything else asks it through
 # `apps/shared/ai.py:generate()`, which logs the call.
-LLM_CALLER_ALLOWLIST = frozenset({"shared/ai.py", "shared/adapters/llm.py"})
+# agents/eval.py builds the Anthropic adapter for the release gate's classifier, because the
+# test settings it boots under pin the mock, and hands it to `ai.converse`, which logs every
+# call (D-147); it calls the adapter nowhere itself.
+LLM_CALLER_ALLOWLIST = frozenset({"shared/ai.py", "shared/adapters/llm.py", "agents/eval.py"})
 # The one module that may write the log row.
 AI_LOG_WRITER_ALLOWLIST = frozenset({"governance/ai_log.py"})
 

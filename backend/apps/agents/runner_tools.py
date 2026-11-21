@@ -28,7 +28,6 @@ from apps.agents.models import AgentRun, RunStatus
 from apps.agents.schemas import AgentRunStats
 from apps.agents.screen import screen
 from apps.library import reading
-from apps.governance.models import AiGeneration
 from apps.proposals import logic as proposals
 from apps.proposals import reading as queue_reading
 from apps.proposals.models import Proposal
@@ -106,8 +105,9 @@ class Session:
     run: AgentRun
     fetches: int = 0
     finish: _Finish | None = None
-    # The current turn's log row: a decision names the model call it was made in (D-80).
-    generation: AiGeneration | None = None
+    # The current turn's log row (an AiGeneration, held and never written here): a decision
+    # names the model call it was made in (D-80).
+    generation: Any = None
 
     @property
     def actor(self) -> Actor:
