@@ -104,7 +104,8 @@ fi
 # passes), so a bank's agents page lists it and the beat runs it with the mock runner
 # (AGT-S13); plus fixture folders for watch-sweeper v3 to v5, the versions AGT-S4's journey
 # publishes from the console, one per attempt (the seed publishes v1 and v2). A fixture is
-# v1's definition under the new number with a prompt of its own. backend/agents/ itself is
+# the released v1's definition under the new number with a prompt of its own, so publishing
+# it keeps the sweeper switched on (a published version's status switches its agent). backend/agents/ itself is
 # never touched; config/settings.py reads AGENT_DEFINITIONS_DIR only under E2E_MODE.
 if [ "${E2E_DEMO_STACK:-0}" != "1" ]; then
   AGENTS_COPY="${TMPDIR:-/tmp}/cw-e2e-agents-$PORT"
@@ -114,7 +115,7 @@ if [ "${E2E_DEMO_STACK:-0}" != "1" ]; then
   for version in 3 4 5; do
     folder="$AGENTS_COPY/watch-sweeper/v$version"
     mkdir -p "$folder"
-    sed "s/^version: .*/version: $version/" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$folder/definition.yaml"
+    sed "s/^version: .*/version: $version/" "$AGENTS_COPY/watch-sweeper/v1/definition.yaml" >"$folder/definition.yaml"
     printf 'E2E fixture, version %s: sweep the registered sources and read the new FFFS index page first.\n' "$version" >"$folder/prompt.md"
   done
   export AGENT_DEFINITIONS_DIR="$AGENTS_COPY"

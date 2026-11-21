@@ -115,6 +115,10 @@ def _first_sentence(text: str) -> str:
     return match.group(1) if match else text
 
 
+# The model the mock names on every answer and log row.
+MOCK_MODEL = "mock"
+
+
 class MockLlm(LlmAdapter):
     """Deterministic and grounded: one statement per context chunk with its `[n]` marker,
     nothing when the prompt carries none (SRC-S4, SRC-S5). A deployed environment refuses it
@@ -123,7 +127,7 @@ class MockLlm(LlmAdapter):
     name = "mock"
 
     def asked_model(self) -> tuple[str, str]:
-        return "mock", "0"
+        return MOCK_MODEL, "0"
 
     def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
         chunks = CONTEXT_LINE.findall(prompt)
@@ -136,7 +140,7 @@ class MockLlm(LlmAdapter):
         text = " ".join(statements)
         yield Completion(
             text=text,
-            model="mock",
+            model=MOCK_MODEL,
             model_version="0",
             input_tokens=len(prompt.split()),
             output_tokens=len(text.split()),

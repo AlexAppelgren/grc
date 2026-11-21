@@ -668,7 +668,7 @@ class PlatformAgentSettings(CamelSchema):
     cadence: Cadence = Field(description=f"How often the platform starts the agent. {_CADENCE}")
     jurisdictions: list[str] = Field(description=f"The jurisdictions the agent sweeps. {_JURISDICTION_KEYS}")
     monthly_budget: Decimal | None = Field(
-        description=f"What the agent may spend in a calendar month, {_MONEY}. Null when no budget is set."
+        description=f"What the agent may spend in a calendar month of UTC, {_MONEY}; once its spend reaches it, the agent starts no run until the next month. Null when no budget is set."
     )
 
 
@@ -689,7 +689,7 @@ class PlatformAgentSettingsInput(WriteBody):
         ge=0,
         max_digits=10,
         decimal_places=2,
-        description=f"What the agent may spend in a calendar month, {_MONEY}, with a minimum of 0. Null removes the budget.",
+        description=f"What the agent may spend in a calendar month of UTC, {_MONEY}, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null removes the budget.",
     )
 
 

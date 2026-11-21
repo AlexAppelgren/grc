@@ -15,12 +15,15 @@ import uuid
 from decimal import Decimal
 from typing import Any
 
+from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.agents import scope as run_scope
 from apps.agents.models import AgentRun, ResearchRequest, RunStatus, RunTrigger, TenantAgent
 from apps.identity.models import User
-from apps.shared.adapters.agent_runner import get_agent_runner
+from apps.shared import tenancy
+from apps.shared.adapters.agent_runner import RunHandle, get_agent_runner
 from apps.shared.audit import Actor, batched, record
 
 logger = logging.getLogger(__name__)
@@ -28,6 +31,8 @@ logger = logging.getLogger(__name__)
 SUBJECT_TYPE = "agent_run"
 # What a run that the runner would not start says, for the people who operate the agents.
 START_FAILED = "The runner could not start this run."
+# What a run that never reported its end says once the beat closes it.
+OVERDUE = "The run did not report back in time, so it was closed as failed."
 
 
 @dataclasses.dataclass(frozen=True)
@@ -145,3 +150,45 @@ def take_slot(tenant_agent: TenantAgent, upcoming: datetime.datetime | None) -> 
     whatever happens to the run."""
     tenant_agent.next_run_at = upcoming
     tenant_agent.save(update_fields=["next_run_at", "updated_at"])
+
+
+def close_overdue(now: datetime.datetime) -> int:
+    """Close as failed every run of the caller's zone still running `AGENT_RUN_MAX_MINUTES`
+    after it started, asking the runner to stop it first, and say how many. A run whose
+    runner died or never reports would otherwise read as running for ever and, for a bank's
+    own agent, hold its budget limit against the cap (defect 4 of the agent review,
+    2026-11-21). Each beat calls it in its own zone before it opens anything; a run another
+    worker holds is left for the next beat."""
+    cutoff = now - datetime.timedelta(minutes=settings.AGENT_RUN_MAX_MINUTES)
+    zone = tenancy.active_tenant_id()
+    overdue = (
+        AgentRun.objects.select_for_update(of=("self",), skip_locked=True)
+        .select_related("agent")
+        .filter(Q(tenant__isnull=True) if zone is None else Q(tenant_id=zone), status=RunStatus.RUNNING.value, started_at__lt=cutoff)
+        .order_by("started_at", "id")
+    )
+    closed = 0
+    for run in overdue:
+        try:
+            get_agent_runner().interrupt(
+                RunHandle(run_id=run.id, external_id=run.external_session_id, status=RunStatus.RUNNING, started_at=run.started_at)
+            )
+        except Exception:  # compliance: allow-broad-except the runner is an external executor; a run it cannot stop is still closed here
+            logger.warning("overdue agent run not stopped by the runner", extra={"run_id": str(run.id), "agent": run.agent.key})
+        run.status = RunStatus.FAILED.value
+        run.error = OVERDUE
+        run.finished_at = now
+        run.save(update_fields=["status", "error", "finished_at"])
+        record(
+            action="agent_run.overdue",
+            actor=Actor.system("agent scheduler"),
+            subject_type=SUBJECT_TYPE,
+            subject_id=run.id,
+            subject_title=run.agent.key,
+            summary=f"{run.agent.key}'s run did not report back in time and was closed as failed.",
+            tenant_id=run.tenant_id,
+            before={"status": RunStatus.RUNNING.value},
+            after={"status": run.status, "maxMinutes": settings.AGENT_RUN_MAX_MINUTES},
+        )
+        closed += 1
+    return closed

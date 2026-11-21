@@ -47,15 +47,16 @@ SHIPPED_FOLDER = reader.DEFINITIONS / "watch-sweeper" / "v1"
 CHANGED_PROMPT = "Sweep the registered sources and read the new FFFS index page first.\n"
 
 
-def shipped_folder(root: Path, key: str, version: int, *, prompt: str = CHANGED_PROMPT) -> Path:
+def shipped_folder(root: Path, key: str, version: int, *, prompt: str = CHANGED_PROMPT, status: str = "draft") -> Path:
     """A version folder as the build would ship it for `key`: the sweeper's own definition
-    under that id and number, with a prompt of its own. Written under `root`, which a test
-    puts in place of `backend/agents/` for the reader."""
+    under that id and number, with a prompt and a `status` of its own. Written under `root`,
+    which a test puts in place of `backend/agents/` for the reader."""
     folder = root / key / f"v{version}"
     folder.mkdir(parents=True)
     text = SHIPPED_FOLDER.joinpath("definition.yaml").read_text(encoding="utf-8")
     text = re.sub(r"(?m)^id: .*$", f"id: {key}", text)
     text = re.sub(r"(?m)^version: .*$", f"version: {version}", text)
+    text = re.sub(r"(?m)^status: \S+", f"status: {status}", text)
     folder.joinpath("definition.yaml").write_text(text, encoding="utf-8")
     folder.joinpath("prompt.md").write_text(prompt, encoding="utf-8")
     return folder
@@ -135,10 +136,34 @@ class PublishingAVersion(DefinitionCase):
         self.assertIsNone(event.tenant_id)
         self.assertEqual(event.actor_id, self.admin.id)
         self.assertEqual(event.step_up_assertion_id, self.assertion)
-        self.assertEqual(event.before, {"currentVersion": 3})
-        self.assertEqual(event.after["versionNo"], 4)
+        self.assertEqual(event.before, {"currentVersion": 3, "active": True})
+        self.assertEqual((event.after["versionNo"], event.after["active"]), (4, False))
         self.assertNotIn("changeNote", event.after)
         self.assertEqual(AgentVersion.objects.get(agent=self.agent, version_number=4).change_note, "Reads the new FFFS index page.")
+
+    def test_a_version_whose_file_says_active_releases_the_agent(self) -> None:
+        """Releasing is publishing (defect 1 of the agent review, 2026-11-21): the seed writes
+        an agent's row once, so a draft seeded switched off stays off until a version whose
+        file says `active` is published, and the platform's beat then starts it."""
+        with library_write("test"):
+            Agent.objects.filter(pk=self.agent.pk).update(active=False)
+        with definitions_root() as root:
+            shipped_folder(root, self.agent.key, 4, status="active")
+            response = self.publish(4)
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertTrue(Agent.objects.get(pk=self.agent.pk).active)
+        [event] = self.events("agent_version.published")
+        self.assertEqual((event.before["active"], event.after["active"]), (False, True))
+
+    def test_a_version_whose_file_says_draft_or_retired_switches_the_agent_off(self) -> None:
+        for number, status in ((4, "draft"), (5, "retired")):
+            with library_write("test"):
+                Agent.objects.filter(pk=self.agent.pk).update(active=True)
+            with definitions_root() as root:
+                shipped_folder(root, self.agent.key, number, status=status)
+                response = self.publish(number)
+            self.assertEqual(response.status_code, 201, response.content)
+            self.assertFalse(Agent.objects.get(pk=self.agent.pk).active, status)
 
     def test_a_version_that_already_exists_is_409_and_changes_nothing(self) -> None:
         with definitions_root() as root:

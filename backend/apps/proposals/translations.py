@@ -45,6 +45,7 @@ from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared import ai
 from apps.shared.adapters.agent_runner import RunnerEvent
 from apps.shared.audit import Actor, ActorType
+from apps.shared.errors import ProblemError
 from apps.shared.schemas import AiCitation
 from apps.taxonomy.tenant_lists_logic import known_languages
 
@@ -206,7 +207,7 @@ def translate(target: str, record_id: uuid.UUID) -> str:
     """Ask for one record's missing translations and file them, and say what happened:
     `filed`, `refused` (the answer was not usable, or the door refused it), `failed` (the
     model did not answer), or `skipped` (another task holds the record, it is not a shared
-    record in force, or it is not due)."""
+    record in force, it is not due, or the agent has spent its monthly budget)."""
     with _held(target, record_id) as held:
         if not held:
             return "skipped"
@@ -217,8 +218,11 @@ def translate(target: str, record_id: uuid.UUID) -> str:
         ask = asked(record, known_languages())
         if ask is None or not _due(ask, *_settled()):
             return "skipped"
-        with transaction.atomic():
-            run = agent_tasks.open_baseline_run(AGENT_KEY, actor=RUN_ACTOR)
+        try:
+            with transaction.atomic():
+                run = agent_tasks.open_baseline_run(AGENT_KEY, actor=RUN_ACTOR, budgeted=True)
+        except ProblemError:
+            return "skipped"
         # The failed call's row is written in a block of its own and kept, so the error is caught
         # inside the transaction rather than rolling it back (`ai.generate`).
         generated: ai.Generation | None

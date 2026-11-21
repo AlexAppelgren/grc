@@ -129,7 +129,7 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
         if body.version_no != expected:
             raise ValidationError(f"Publish version {expected} next.", code="version_not_next")
         shipped = _shipped(agent, body.version_no)
-        before = {"currentVersion": agent.current_version}
+        before = {"currentVersion": agent.current_version, "active": agent.active}
         version = console.publish(agent, shipped, change_note=body.change_note, published_by_id=person_id)
         record(
             action="agent_version.published",
@@ -142,6 +142,7 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
             before=before,
             after={
                 "currentVersion": agent.current_version,
+                "active": agent.active,
                 "versionNo": version.version_number,
                 "model": version.model,
                 "tools": version.tools,

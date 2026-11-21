@@ -22,7 +22,10 @@ REASON = "console"
 
 
 def publish(agent: Agent, definition: Definition, *, change_note: str, published_by_id: uuid.UUID) -> AgentVersion:
-    """A new version row from the folder the reader read, and the agent moved onto it."""
+    """A new version row from the folder the reader read, and the agent moved onto it. The
+    folder's `status` switches the agent on (`active`) or off (`draft`, `retired`): releasing
+    a definition is publishing a version whose file says `active`, never a deploy rewriting
+    a row the seed wrote once."""
     with library_write(f"{REASON}: publish {agent.key} v{definition.version}"):
         version = AgentVersion.objects.create(
             agent=agent,
@@ -34,7 +37,8 @@ def publish(agent: Agent, definition: Definition, *, change_note: str, published
             published_by_id=published_by_id,
         )
         agent.current_version = definition.version
-        agent.save(update_fields=["current_version"])
+        agent.active = definition.active
+        agent.save(update_fields=["current_version", "active"])
     return version
 
 

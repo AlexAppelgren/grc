@@ -412,7 +412,9 @@ class AgentsScenarioTests(TestCase):
         console = user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE}, subject_id=admin.id, step_up_at=timezone.now())
         publish = {"versionNo": 4, "changeNote": "Reads the new FFFS index page first."}
         with publishing.definitions_root() as root, stub_session(console):
-            folder = publishing.shipped_folder(root, "nordic-watch", 4)
+            # Released, as the agent it replaces was: a published version's status switches
+            # its agent on or off (D-146), and a draft would stop the agent's key.
+            folder = publishing.shipped_folder(root, "nordic-watch", 4, status="active")
             self.assertNotEqual(folder.joinpath("prompt.md").read_text(encoding="utf-8"), (publishing.SHIPPED_FOLDER / "prompt.md").read_text(encoding="utf-8"))
             response = self.client.post("/api/v1/agent-definitions/nordic-watch/versions", data=publish, content_type="application/json", **_SESSION)
         self.assertEqual(response.status_code, 201, response.content)

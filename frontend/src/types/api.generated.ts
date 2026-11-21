@@ -426,7 +426,10 @@ export interface paths {
          * @description Publishes the version folder this build ships for the definition, with a note of
          *     what changed. Runs opened from now on run it; a run already open keeps the version it
          *     opened with, and every earlier run still names the version it used. The prompt, tools
-         *     and model come from the shipped folder and never from this request.
+         *     and model come from the shipped folder and never from this request. The folder's
+         *     `status` also switches the agent on or off: `active` releases it, so the platform starts
+         *     its scheduled runs and a bank reads it among bleqq's agents, and `draft` or `retired`
+         *     switches it off. Releasing a definition is publishing a version whose file says `active`.
          *
          *     A person's session in the platform console holding `agent_definitions.manage`, with a
          *     fresh passkey step-up, because a new version changes what runs for every bank at once.
@@ -3623,6 +3626,7 @@ export interface paths {
          *
          *     Errors: `permission_denied` (403) without `proposals.review`, and for every bank's
          *     session; `validation_error` (422) for a topic that is empty or too long;
+         *     `budget_cap_reached` (422) when bleqq's agent has spent its monthly budget;
          *     `no_published_version` (409) when bleqq's agent has no version to run.
          *
          *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.
@@ -22133,7 +22137,7 @@ export interface components {
             jurisdictions: string[];
             /**
              * Monthlybudget
-             * @description What the agent may spend in a calendar month, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in. Null when no budget is set.
+             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when no budget is set.
              */
             monthlyBudget: string | null;
         };
@@ -22163,7 +22167,7 @@ export interface components {
             jurisdictions: string[];
             /**
              * Monthlybudget
-             * @description What the agent may spend in a calendar month, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0. Null removes the budget.
+             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null removes the budget.
              */
             monthlyBudget: number | string | null;
         };

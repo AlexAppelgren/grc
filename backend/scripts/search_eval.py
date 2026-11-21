@@ -32,7 +32,9 @@ scores right only when the retriever returns nothing. A row with `via: "ask"` is
 on the passages Ask would give a model rather than on the search page (SRC-S12, D-81): a
 question about a standard's control is one Search answers with the conformance duty and
 Ask must not answer at all. Every run says which tracks have no
-recorded baseline, because a drop in those fails nothing yet. Exit 0 when the gate passes,
+recorded baseline, because a drop in those fails nothing yet. An agent definition released
+with `status: active` fails the gate while the evaluation its `evals:` names was never
+measured, so an unrecorded track can never pass for a released agent. Exit 0 when the gate passes,
 1 otherwise. `--self-test` runs eval/tests_scoring.py.
 """
 
@@ -391,6 +393,47 @@ def record(baseline: dict, results: dict[str, TrackResult], now: datetime | None
     return updated
 
 
+# --- releasing an agent ---
+# What an agent definition's `evals:` block names that measures whether its work is right: a
+# labelled set, a checker over its corpus, or the tests that file and approve what it makes.
+# A definition whose block holds only a `readme:` has no measure yet.
+MEASURES = ("cases", "checker", "filed_and_approved_by")
+SCORED_HERE = "backend/scripts/search_eval.py"
+
+
+def _evals_block(lines: list[str]) -> dict[str, str]:
+    """The `key: value` pairs indented under a top-level `evals:` line, comments dropped."""
+    block: dict[str, str] = {}
+    if "evals:" not in lines:
+        return block
+    for line in lines[lines.index("evals:") + 1 :]:
+        if line.strip() and not line[0].isspace():
+            break
+        name, separator, value = line.strip().partition(":")
+        if separator and name:
+            block[name] = value.split("#", 1)[0].strip()
+    return block
+
+
+def released_without_evaluation(definitions: Path, baseline: dict) -> list[str]:
+    """The failures for agent definitions released (`status: active`) without a measured
+    evaluation (defect 6 of the agent review, 2026-11-21): one this script scores while its
+    track has no recorded baseline, which passes here only as "not available yet", and one
+    whose `evals:` names nothing that measures it. A draft is never refused."""
+    failures = []
+    for path in sorted(definitions.glob("*/v*/definition.yaml")):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if not any(line.split("#", 1)[0].split() == ["status:", "active"] for line in lines):
+            continue
+        evals = _evals_block(lines)
+        where = path.relative_to(definitions.parent)
+        if evals.get("scored_by") == SCORED_HERE and not baseline["tracks"]["classification"]["recorded"]:
+            failures.append(f"{where}: released, but the classification baseline it is gated on was never recorded")
+        if not any(evals.get(measure) for measure in MEASURES):
+            failures.append(f"{where}: released, but its evals name no labelled cases, checker or tests")
+    return failures
+
+
 # --- reporting ---
 def report(track: str, result: TrackResult, baseline: dict, tolerance: dict) -> list[str]:
     lines = []
@@ -420,6 +463,7 @@ class Paths:
     classification: Path = EVAL / "classification.jsonl"
     baseline: Path = EVAL / "baseline.json"
     tolerance: Path = EVAL / "tolerance.json"
+    definitions: Path = BACKEND / "agents"
 
 
 def run(argv: list[str], paths: Paths | None = None, out=print) -> int:
@@ -462,6 +506,7 @@ def run(argv: list[str], paths: Paths | None = None, out=print) -> int:
         for line in report(track, result, baseline, tolerance):
             out(line)
         failures.extend(decide(track, result, baseline, tolerance))
+    failures.extend(released_without_evaluation(paths.definitions, baseline))
     unrecorded = [t for t in TRACKS if not baseline["tracks"][t]["recorded"]]
     if unrecorded:
         out("search_eval: no baseline is recorded for " + " or ".join(unrecorded) + ", so a drop there fails nothing yet")

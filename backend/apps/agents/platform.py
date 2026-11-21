@@ -4,16 +4,21 @@ fence that keeps a bank away from them.
 A platform agent's cadence, jurisdictions and budget live on its `agent` row, the same for
 every bank; no tenant path writes them, and `refuse_platform_agent` is the fence every tenant
 control calls first. Settings are platform configuration (D-102, ADR 0062), written through
-`seeds/console.py`. The console's run list carries no bank's run, name or figure.
+`seeds/console.py`. The console's run list carries no bank's run, name or figure. The
+monthly budget stops new runs once the agent's spend in the UTC calendar month reaches it
+(`refuse_over_budget`); a run already open finishes.
 """
 
 from __future__ import annotations
 
+import datetime
+from decimal import Decimal
 from typing import Any, cast
 
 from django.db import transaction
-from django.db.models import Count, OuterRef, QuerySet, Subquery
+from django.db.models import Count, OuterRef, QuerySet, Subquery, Sum
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 from apps.agents import definitions
 from apps.agents.models import Agent, AgentRun, AgentScopeKind
@@ -25,11 +30,38 @@ from apps.agents.schemas import (
     PlatformAgentSettingsInput,
 )
 from apps.agents.seeds import console
+from apps.governance.models import AiGeneration
 from apps.shared import permissions as perms
 from apps.shared.audit import record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError, not_found
 from apps.watch.keys import resolve_keys
+
+
+def spent_this_month(agent: Agent) -> Decimal:
+    """What one of bleqq's agents spent in the current UTC calendar month: each run's cost as
+    its runner reported it, or, for a run that reported none because the app was its runner
+    (the translator), the cost of the model calls logged under it."""
+    start = timezone.now().astimezone(datetime.UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    runs = AgentRun.objects.filter(agent=agent, tenant__isnull=True, started_at__gte=start)
+    reported = runs.aggregate(total=Sum("cost"))["total"] or Decimal(0)
+    logged = AiGeneration.objects.filter(
+        tenant_id__isnull=True, agent_run_id__in=runs.filter(cost__isnull=True).values("id")
+    ).aggregate(total=Sum("cost_minor"))["total"] or 0
+    return Decimal(reported) + Decimal(logged) / 100
+
+
+def refuse_over_budget(agent: Agent) -> None:
+    """422 `budget_cap_reached` when one of bleqq's agents has a monthly budget and has spent
+    it this month (defect 5 of the agent review, 2026-11-21: the budget was stored and shown,
+    and nothing held to it). Called before a run that may ask a model opens."""
+    budget = agent.platform_monthly_budget
+    if budget is not None and spent_this_month(agent) >= budget:
+        raise ProblemError(
+            status=422,
+            code="budget_cap_reached",
+            detail=f"{agent.key} has spent its monthly budget, so it starts no run until next month.",
+        )
 
 
 def _refused() -> ProblemError:

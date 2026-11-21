@@ -305,7 +305,10 @@ def publish_agent_version(
     """Publishes the version folder this build ships for the definition, with a note of
     what changed. Runs opened from now on run it; a run already open keeps the version it
     opened with, and every earlier run still names the version it used. The prompt, tools
-    and model come from the shipped folder and never from this request.
+    and model come from the shipped folder and never from this request. The folder's
+    `status` also switches the agent on or off: `active` releases it, so the platform starts
+    its scheduled runs and a bank reads it among bleqq's agents, and `draft` or `retired`
+    switches it off. Releasing a definition is publishing a version whose file says `active`.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up, because a new version changes what runs for every bank at once.
@@ -441,6 +444,7 @@ def create_retag_request(request: HttpRequest, body: RetagRequestInput) -> Any:
 
     Errors: `permission_denied` (403) without `proposals.review`, and for every bank's
     session; `validation_error` (422) for a topic that is empty or too long;
+    `budget_cap_reached` (422) when bleqq's agent has spent its monthly budget;
     `no_published_version` (409) when bleqq's agent has no version to run.
     """
     return requests.create_retag(who=principal(request), body=body)

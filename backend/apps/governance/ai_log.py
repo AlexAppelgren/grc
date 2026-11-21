@@ -161,12 +161,21 @@ def logged_for(*, agent_run_id: uuid.UUID, purpose: AiPurpose, subject_type: str
     ).exists()
 
 
+# The mock provider's name, and the model it writes on every answer (apps/shared/adapters/llm.py).
+MOCK = "mock"
+
+
 def prompt_hashes(*, purpose: AiPurpose, prompt_template: str, failures_allowed: int) -> set[str]:
     """The prompt hash of every settled call of this purpose and template, so a platform
     agent can tell a question it already asked from a new one (D-129). An answered call
     settles its prompt; a failed one only once `failures_allowed` failed rows share it, so a
-    failing question is not asked forever (S-9). Reads the library's rows only."""
+    failing question is not asked forever (S-9). The mock's answers settle nothing once a real
+    provider is configured, so a library translated on a deployment without a model is asked
+    again when one arrives (defect 2 of the agent review, 2026-11-21). Reads the library's
+    rows only."""
     rows = AiGeneration.objects.filter(tenant_id__isnull=True, purpose=purpose.value, prompt_template=prompt_template)
+    if settings.LLM_PROVIDER != MOCK:
+        rows = rows.exclude(model=MOCK)
     answered = rows.exclude(stop_reason=FAILED).values_list("prompt_hash", flat=True)
     given_up = (
         rows.filter(stop_reason=FAILED).values("prompt_hash").annotate(failed=Count("id")).filter(failed__gte=failures_allowed).values_list("prompt_hash", flat=True)

@@ -4,6 +4,8 @@ Every run opens through `opener.open_run` (`open_platform_run` or `open_tenant_r
 records the run and its audit row before the runner is asked, and closes it as failed when
 the runner cannot start it. This module reads and decides; the opener writes.
 
+- Each beat first closes the runs of its zone that never reported back
+  (`opener.close_overdue`), so a dead run neither reads as running nor holds the cap.
 - bleqq's beat (`run_platform_agents`) is no `@tenant_task`: it reads no tenant row, setting
   or `scope.py`. Its scope is the agent's `platform_scope`, else every covered jurisdiction.
   An agent is due once per UTC calendar period of its cadence, and a beat starts at most
@@ -31,7 +33,7 @@ from django.db import connection, transaction
 from django.db.models import Max, Q
 from django.utils import timezone
 
-from apps.agents import budget, definitions, opener
+from apps.agents import budget, definitions, opener, platform
 from apps.agents.models import (
     Agent,
     AgentCadence,
@@ -96,7 +98,9 @@ def _covered(agent: Agent) -> list[str]:
 
 
 def open_platform_run(agent: Agent) -> AgentRun:
-    """Open a scheduled run of one of bleqq's agents, in no tenant's zone."""
+    """Open a scheduled run of one of bleqq's agents, in no tenant's zone, or 422
+    `budget_cap_reached` once it has spent its monthly budget."""
+    platform.refuse_over_budget(agent)
     return opener.open_run(
         pinned=_pinned(agent),
         trigger=RunTrigger.SCHEDULE,
@@ -105,10 +109,14 @@ def open_platform_run(agent: Agent) -> AgentRun:
     )
 
 
-def open_baseline_run(agent_key: str, *, actor: Actor) -> AgentRun:
+def open_baseline_run(agent_key: str, *, actor: Actor, budgeted: bool = False) -> AgentRun:
     """Open a run of one of bleqq's agents whose runner is the calling command, in no
-    tenant's zone: the library baseline's filing (D-118, ADR 0065); handed to no runner."""
+    tenant's zone: the library baseline's filing (D-118, ADR 0065) and the translator
+    (D-129); handed to no runner. `budgeted` is for a runner that asks a model: 422
+    `budget_cap_reached` once the agent has spent its monthly budget."""
     agent = Agent.objects.get(key=agent_key, scope=AgentScopeKind.PLATFORM.value)
+    if budgeted:
+        platform.refuse_over_budget(agent)
     return opener.open_run(pinned=_pinned(agent), trigger=RunTrigger.MANUAL, actor=actor, hand_over=False)
 
 
@@ -152,6 +160,8 @@ def run_platform_agents() -> None:
     """bleqq's beat: start each due platform agent, at most `AGENT_RUNS_PER_BEAT` of them.
     Not a `@tenant_task`: it activates no tenant and reads no tenant row."""
     now = timezone.now()
+    with transaction.atomic():
+        opener.close_overdue(now)
     for agent in _due_platform_agents(now)[: settings.AGENT_RUNS_PER_BEAT]:
         with transaction.atomic():
             if not _claim(agent, now):
@@ -250,6 +260,7 @@ def open_request_run(research_request: ResearchRequest, *, requested_by: User, a
         agent, limit, scope = tenant_agent.agent, run_budget_limit(), None
     else:
         agent = Agent.objects.get(key=agent_key, scope=AgentScopeKind.PLATFORM.value)
+        platform.refuse_over_budget(agent)
         limit, scope = None, {"jurisdictions": _covered(agent)}
     return opener.open_run(
         pinned=_pinned(agent),
@@ -277,6 +288,7 @@ def run_due_tenant_agents(tenant_id: uuid.UUID) -> None:
     """Start the bank's own agents that are on, not paused and due, moving each one's next
     run first. Another worker holding one of them skips it rather than waiting."""
     tenant = Tenant.objects.get(pk=tenant_id)
+    opener.close_overdue(timezone.now())
     due = (
         TenantAgent.objects.select_related("agent")
         .select_for_update(of=("self",), skip_locked=True)

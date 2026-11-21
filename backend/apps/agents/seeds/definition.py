@@ -14,7 +14,7 @@ from pathlib import Path
 
 from django.conf import settings
 
-from apps.agents.models import AgentScopeKind, AgentWritesTo
+from apps.agents.models import AgentCadence, AgentScopeKind, AgentWritesTo
 
 # `backend/agents/`, `/app/agents/` in the image, which builds from `backend/` alone. The E2E
 # stack reads a copy (settings.AGENT_DEFINITIONS_DIR).
@@ -36,6 +36,7 @@ REQUIRED = (
     "model",
     "change_note",
     "prompt",
+    "default_cadence",
 )
 BOOLEANS = {"true": True, "false": False}
 # YAML ends an unquoted scalar at whitespace followed by `#`.
@@ -63,6 +64,7 @@ class Definition:
     model: str
     change_note: str
     prompt: str
+    default_cadence: str
     tools: tuple[str, ...]
 
     @property
@@ -81,7 +83,7 @@ def read_definition(path: Path) -> Definition:
     if not version.isdigit():
         raise DefinitionError(f"{path}: version must be a whole number, not {version!r}")
     # These land in columns the platform fence reads, so a value outside the kind is refused.
-    for name, kind in (("scope", AgentScopeKind), ("writes_to", AgentWritesTo)):
+    for name, kind in (("scope", AgentScopeKind), ("writes_to", AgentWritesTo), ("default_cadence", AgentCadence)):
         if scalars[name] not in {member.value for member in kind}:
             raise DefinitionError(f"{path}: {name} must be one of {', '.join(member.value for member in kind)}")
     if scalars["tenant_configurable"] not in BOOLEANS:
@@ -98,6 +100,7 @@ def read_definition(path: Path) -> Definition:
         model=scalars["model"],
         change_note=scalars["change_note"],
         prompt=scalars["prompt"],
+        default_cadence=scalars["default_cadence"],
         tools=_tool_names(path, lines),
     )
 

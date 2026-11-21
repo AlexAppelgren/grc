@@ -422,6 +422,63 @@ class EndToEnd(unittest.TestCase):
         self.assertFalse(any("no baseline is recorded" in line for line in self.output))
 
 
+class ReleasedAgents(unittest.TestCase):
+    """Defect 6 of the agent review (2026-11-21): the gate printed `ok` with no evaluator and
+    no recorded baseline, and that was all a released agent had to pass."""
+
+    SCORED = "evals:\n  cases: evals/cases.jsonl\n  scored_by: backend/scripts/search_eval.py   # classification track\n"
+    TESTED = "evals:\n  filed_and_approved_by: backend/apps/proposals/tests_translations.py\n"
+    README = "evals:\n  readme: evals/README.md\n"
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.agents = Path(self.tmp.name) / "agents"
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def ship(self, key: str, status: str, evals: str) -> None:
+        folder = self.agents / key / "v1"
+        folder.mkdir(parents=True)
+        folder.joinpath("definition.yaml").write_text(f"id: {key}\nstatus: {status}          # draft | active | retired\n{evals}", encoding="utf-8")
+
+    def failures(self, baseline: dict) -> list[str]:
+        return se.released_without_evaluation(self.agents, baseline)
+
+    def test_a_released_agent_gated_here_fails_until_its_baseline_is_recorded(self) -> None:
+        self.ship("watch-sweeper", "active", self.SCORED)
+        [failure] = self.failures(blank_baseline())
+        self.assertIn("agents/watch-sweeper/v1/definition.yaml", failure)
+        self.assertIn("never recorded", failure)
+        self.assertEqual(self.failures(recorded_baseline()), [])
+
+    def test_a_released_agent_whose_evals_measure_nothing_fails(self) -> None:
+        self.ship("library-confirmer", "active", self.README)
+        [failure] = self.failures(recorded_baseline())
+        self.assertIn("no labelled cases, checker or tests", failure)
+
+    def test_drafts_and_agents_measured_by_their_tests_pass(self) -> None:
+        self.ship("watch-sweeper", "draft", self.SCORED)
+        self.ship("library-confirmer", "draft", self.README)
+        self.ship("library-translator", "active", self.TESTED)
+        self.assertEqual(self.failures(blank_baseline()), [])
+
+    def test_the_cli_fails_on_a_released_agent_without_its_evaluation(self) -> None:
+        self.ship("watch-sweeper", "active", self.SCORED)
+        root = Path(self.tmp.name)
+        paths = se.Paths(root / "r.jsonl", root / "c.jsonl", root / "b.json", root / "t.json", self.agents)
+        paths.retrieval.write_text(json.dumps({"id": "1", "language": "en", "query": "q", "expected": ["a"], "match_kind": "keyword"}) + "\n", encoding="utf-8")
+        paths.classification.write_text(json.dumps({"id": "c", "language": "en", "text": "t", "injection": False, "expected": EXPECTED}) + "\n", encoding="utf-8")
+        paths.baseline.write_text(json.dumps(blank_baseline()), encoding="utf-8")
+        paths.tolerance.write_text(json.dumps(tolerance()), encoding="utf-8")
+        output: list[str] = []
+        self.assertEqual(se.run([], paths, out=output.append), 1)
+        self.assertTrue(any("never recorded" in line for line in output), output)
+
+    def test_every_shipped_definition_passes_today(self) -> None:
+        self.assertEqual(se.released_without_evaluation(se.BACKEND / "agents", se.load_json(se.EVAL / "baseline.json")), [])
+
+
 class PerfectRetriever:
     name = "tests_scoring:PerfectRetriever"
     is_mock = False

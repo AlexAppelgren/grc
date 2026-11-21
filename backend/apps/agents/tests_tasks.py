@@ -21,7 +21,7 @@ from django.test import override_settings
 from django.utils import timezone
 
 from apps.agents import scope as run_scope
-from apps.agents import opener, tasks
+from apps.agents import opener, platform, tasks
 from apps.agents import testing as agent_build
 from apps.agents.models import (
     Agent,
@@ -35,9 +35,12 @@ from apps.agents.models import (
 )
 from apps.agents.tests_tenant_agents import TenantAgentCase
 from apps.collab.models import Notification, NotificationKind
+from apps.governance import ai_log
+from apps.governance.models import AiPurpose
 from apps.library.models import Jurisdiction
 from apps.shared import factories, tenancy
 from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle
+from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import library_write
 from apps.shared.testing import is_tenant_task
@@ -417,3 +420,145 @@ class TheCapBeforeARun(BankBeatCase):
         opened = AuditEvent.objects.get(action="agent_run.opened", subject_id=run.id)
         self.assertEqual(opened.actor_id, self.admin.id)
 
+
+
+class RunsThatNeverReportBack(BankBeatCase):
+    """Defect 4 of the agent review (2026-11-21): a run whose runner died or never reports
+    stayed running for ever, and a bank's held its budget limit against the cap, so the cap
+    paused the bank's agents. Each beat now closes its own zone's overdue runs first."""
+
+    def stuck(self, *, agent: Agent | None = None, bank: Any = None, hours: int, limit: str | None = None) -> AgentRun:
+        with frozen(WEDNESDAY - datetime.timedelta(hours=hours)):
+            if bank is None:
+                tenancy.clear_tenant()
+                return AgentRun.objects.create(agent=agent or self.bleqq, trigger=RunTrigger.SCHEDULE.value, model="m", pipeline_version="1")
+            tenancy.activate(bank.id)
+            run = AgentRun.objects.create(
+                agent=self.definition,
+                tenant_agent=self.agent,
+                trigger=RunTrigger.SCHEDULE.value,
+                model="m",
+                pipeline_version="1",
+                budget_limit=Decimal(limit or "5.00"),
+            )
+        tenancy.clear_tenant()
+        return run
+
+    def status(self, run: AgentRun) -> tuple[str, str]:
+        if run.tenant_id is None:
+            tenancy.clear_tenant()
+        else:
+            tenancy.activate(run.tenant_id)
+        row = AgentRun.objects.get(pk=run.pk)
+        tenancy.clear_tenant()
+        return row.status, row.error
+
+    @override_settings(AGENT_RUN_MAX_MINUTES=360)
+    def test_a_banks_overdue_run_is_closed_as_failed_and_stops_holding_the_cap(self) -> None:
+        stuck = self.stuck(bank=self.bank, hours=7, limit="98.00")  # held 98 + 5 would pass the cap of 100
+        self.beat()
+        self.assertEqual(self.status(stuck), (RunStatus.FAILED.value, opener.OVERDUE))
+        self.assertEqual(len(self.runs()), 2, "the due run opened once the stuck one stopped holding the cap")
+        self.assertIsNone(self.fresh(self.agent).paused_at)
+        self.activate(self.bank)
+        [event] = AuditEvent.objects.filter(action="agent_run.overdue", subject_id=stuck.id)
+        self.assertEqual((event.tenant_id, event.before, event.after), (self.bank.id, {"status": "running"}, {"status": "failed", "maxMinutes": 360}))
+
+    @override_settings(AGENT_RUN_MAX_MINUTES=360)
+    def test_a_run_inside_the_limit_keeps_running(self) -> None:
+        young = self.stuck(bank=self.bank, hours=5)
+        self.beat()
+        self.assertEqual(self.status(young)[0], RunStatus.RUNNING.value)
+
+    @override_settings(AGENT_RUN_MAX_MINUTES=360)
+    def test_each_beat_closes_only_its_own_zones_runs(self) -> None:
+        bleqqs = self.stuck(hours=7)
+        banks = self.stuck(bank=self.bank, hours=7)
+        self.beat(self.other)
+        self.assertEqual((self.status(bleqqs)[0], self.status(banks)[0]), (RunStatus.RUNNING.value, RunStatus.RUNNING.value))
+        with frozen(WEDNESDAY), with_runner(Recorded()):
+            tasks.run_platform_agents()
+        self.assertEqual((self.status(bleqqs)[0], self.status(banks)[0]), (RunStatus.FAILED.value, RunStatus.RUNNING.value))
+        self.beat()
+        self.assertEqual(self.status(banks)[0], RunStatus.FAILED.value)
+
+    @override_settings(AGENT_RUN_MAX_MINUTES=360)
+    def test_a_runner_that_cannot_stop_the_run_still_sees_it_closed(self) -> None:
+        stuck = self.stuck(hours=7)
+
+        class Unstoppable(Recorded):
+            def interrupt(self, handle: RunHandle) -> RunHandle:
+                raise RuntimeError("runner unreachable")
+
+        with frozen(WEDNESDAY), with_runner(Unstoppable()):
+            tasks.run_platform_agents()
+        self.assertEqual(self.status(stuck)[0], RunStatus.FAILED.value)
+
+
+class BleqqsMonthlyBudget(PlatformBeatCase):
+    """Defect 5 of the agent review (2026-11-21): the console stored a platform agent's
+    monthly budget and showed it, and nothing held to it. A run that may ask a model now
+    opens only while the agent's spend this UTC month is under it."""
+
+    def budget(self, amount: str | None) -> None:
+        with library_write("test"):
+            Agent.objects.filter(pk=self.bleqq.pk).update(platform_monthly_budget=None if amount is None else Decimal(amount))
+        self.bleqq.refresh_from_db()
+
+    def spent(self, *, cost: str | None = None, logged_minor: int = 0, days_ago: int = 1) -> AgentRun:
+        tenancy.clear_tenant()
+        with frozen(WEDNESDAY - datetime.timedelta(days=days_ago)):
+            run = AgentRun.objects.create(
+                agent=self.bleqq,
+                trigger=RunTrigger.MANUAL.value,
+                model="m",
+                pipeline_version="1",
+                status=RunStatus.SUCCEEDED.value,
+                cost=None if cost is None else Decimal(cost),
+            )
+            if logged_minor:
+                ai_log.log_generation(
+                    purpose=AiPurpose.TRANSLATION, model="claude-opus-5", model_version="1", output="", citations=[],
+                    agent_run_id=run.id, cost_minor=logged_minor,
+                )
+        return run
+
+    def scheduled(self) -> list[AgentRun]:
+        return [run for run in platform_runs() if run.trigger == RunTrigger.SCHEDULE.value]
+
+    def test_an_agent_that_has_spent_its_budget_starts_no_run_and_the_skip_is_audited(self) -> None:
+        self.budget("10.00")
+        self.spent(cost="6.00")
+        self.spent(logged_minor=400)  # a run the app ran itself: its cost is its logged calls
+        self.beat()
+        self.assertEqual(self.scheduled(), [])
+        [skipped] = AuditEvent.objects.filter(action="agent_run.skipped", subject_id=self.bleqq.id)
+        self.assertEqual((skipped.tenant_id, skipped.after["reason"]), (None, "budget_cap_reached"))
+
+    def test_under_its_budget_or_with_none_it_runs(self) -> None:
+        self.budget("10.00")
+        self.spent(cost="9.99")
+        self.beat()
+        self.assertEqual(len(self.scheduled()), 1)
+
+    def test_last_months_spend_and_a_run_that_reported_its_cost_count_once(self) -> None:
+        self.budget("10.00")
+        self.spent(cost="50.00", days_ago=20)  # 24 September: last month
+        self.spent(cost="4.00", logged_minor=900)  # the runner's own figure wins over its calls
+        with frozen(WEDNESDAY):
+            self.assertEqual(platform.spent_this_month(self.bleqq), Decimal("4.00"))
+        self.beat()
+        self.assertEqual(len(self.scheduled()), 1)
+
+    def test_no_budget_set_never_stops_it(self) -> None:
+        self.budget(None)
+        self.spent(cost="5000.00")
+        self.beat()
+        self.assertEqual(len(self.scheduled()), 1)
+
+    def test_the_consoles_re_tag_is_refused_over_the_budget(self) -> None:
+        self.budget("0.00")
+        tenancy.clear_tenant()
+        with frozen(WEDNESDAY), self.assertRaises(ProblemError) as refused:
+            platform.refuse_over_budget(self.bleqq)
+        self.assertEqual((refused.exception.status, refused.exception.code), (422, "budget_cap_reached"))

@@ -17694,7 +17694,7 @@
                 "type": "null"
               }
             ],
-            "description": "What the agent may spend in a calendar month, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in. Null when no budget is set.",
+            "description": "What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when no budget is set.",
             "title": "Monthlybudget"
           }
         },
@@ -17756,7 +17756,7 @@
                 "type": "null"
               }
             ],
-            "description": "What the agent may spend in a calendar month, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0. Null removes the budget.",
+            "description": "What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null removes the budget.",
             "title": "Monthlybudget"
           }
         },
@@ -42067,7 +42067,7 @@
     },
     "/api/v1/agent-definitions/{agent_key}/versions": {
       "post": {
-        "description": "Publishes the version folder this build ships for the definition, with a note of\nwhat changed. Runs opened from now on run it; a run already open keeps the version it\nopened with, and every earlier run still names the version it used. The prompt, tools\nand model come from the shipped folder and never from this request.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up, because a new version changes what runs for every bank at once.\nRecords one audit event naming the person, the definition, the version and the\nassertion.\n\nErrors: `not_found` (404) for a key no definition has; `validation_error` (422) for a\nversion number the build does not ship or a missing note.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.",
+        "description": "Publishes the version folder this build ships for the definition, with a note of\nwhat changed. Runs opened from now on run it; a run already open keeps the version it\nopened with, and every earlier run still names the version it used. The prompt, tools\nand model come from the shipped folder and never from this request. The folder's\n`status` also switches the agent on or off: `active` releases it, so the platform starts\nits scheduled runs and a bank reads it among bleqq's agents, and `draft` or `retired`\nswitches it off. Releasing a definition is publishing a version whose file says `active`.\n\nA person's session in the platform console holding `agent_definitions.manage`, with a\nfresh passkey step-up, because a new version changes what runs for every bank at once.\nRecords one audit event naming the person, the definition, the version and the\nassertion.\n\nErrors: `not_found` (404) for a key no definition has; `validation_error` (422) for a\nversion number the build does not ship or a missing note.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.",
         "operationId": "publishAgentVersion",
         "parameters": [
           {
@@ -46866,7 +46866,7 @@
     },
     "/api/v1/console/research-requests": {
       "post": {
-        "description": "Asks bleqq's agents to re-tag library records, such as \"re-tag custody records with\nClient money\". The answer is one batch proposal with a before-and-after preview,\ndecided in the queue like any proposal; nothing in the library changes until an\nindependent reviewer approves it. The request itself is a job: read its status later.\n\nA person's session in the platform console holding `proposals.review`; a bank asks its\nown agents with `POST /research-requests` and never re-tags the library. It opens one\nrun of bleqq's agent in no bank's zone and reads no bank's record. Records one audit\nevent naming the person, and one more when the run files its batch.\n\nErrors: `permission_denied` (403) without `proposals.review`, and for every bank's\nsession; `validation_error` (422) for a topic that is empty or too long;\n`no_published_version` (409) when bleqq's agent has no version to run.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.",
+        "description": "Asks bleqq's agents to re-tag library records, such as \"re-tag custody records with\nClient money\". The answer is one batch proposal with a before-and-after preview,\ndecided in the queue like any proposal; nothing in the library changes until an\nindependent reviewer approves it. The request itself is a job: read its status later.\n\nA person's session in the platform console holding `proposals.review`; a bank asks its\nown agents with `POST /research-requests` and never re-tags the library. It opens one\nrun of bleqq's agent in no bank's zone and reads no bank's record. Records one audit\nevent naming the person, and one more when the run files its batch.\n\nErrors: `permission_denied` (403) without `proposals.review`, and for every bank's\nsession; `validation_error` (422) for a topic that is empty or too long;\n`budget_cap_reached` (422) when bleqq's agent has spent its monthly budget;\n`no_published_version` (409) when bleqq's agent has no version to run.\n\nErrors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.",
         "operationId": "createRetagRequest",
         "parameters": [],
         "requestBody": {

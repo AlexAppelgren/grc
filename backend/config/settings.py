@@ -283,6 +283,8 @@ AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6, min=0, max=23)
 AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15, min=1, max=1440)
 AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5, min=1, max=1000)
 AGENT_RECENT_RUNS = env_int("AGENT_RECENT_RUNS", 5, min=1, max=100)  # a page is at most 100
+# How long a run may stay running before the beat closes it as failed (opener.close_overdue).
+AGENT_RUN_MAX_MINUTES = env_int("AGENT_RUN_MAX_MINUTES", 360, min=15, max=10_080)
 # The most one run of a bank's own agent may spend, in EUR; stored as the run's budget_limit.
 AGENT_RUN_BUDGET_LIMIT = env_str("AGENT_RUN_BUDGET_LIMIT", "5.00")
 try:

@@ -42,6 +42,7 @@ from pydantic import ValidationError as SchemaError
 
 from apps.agents.models import (
     Agent,
+    AgentCadence,
     AgentKind,
     AgentRun,
     AgentScopeKind,
@@ -61,7 +62,7 @@ from apps.identity.api_keys_logic import resolve_api_key
 from apps.identity.models import ApiKey
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
-from apps.shared.audit import Actor
+from apps.shared.audit import Actor, record
 from apps.shared.authentication import PrincipalKind
 from apps.shared.models import AuditEvent
 from apps.shared.schemas import AgentDecision
@@ -74,6 +75,7 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
 V1 = "/api/v1"
 WATCH_SWEEPER = DEFINITIONS / "watch-sweeper" / "v1" / "definition.yaml"
+SHIPPED_TEXT = WATCH_SWEEPER.read_text(encoding="utf-8")
 CONFIRMER_VERSION = dict(SHIPPED)["library-confirmer"]
 LIBRARY_CONFIRMER = DEFINITIONS / "library-confirmer" / f"v{CONFIRMER_VERSION}" / "definition.yaml"
 # Where a run reads each list it names at run start, every route taking `library:read`: the
@@ -138,6 +140,7 @@ class DefinitionReaderTests(TestCase):
             self.assertEqual(read.version, parsed["version"], path)
             self.assertEqual(read.kind, parsed["kind"], path)
             self.assertEqual(read.status, parsed["status"], path)
+            self.assertEqual(read.default_cadence, parsed["default_cadence"], path)
             # A folded block keeps a trailing newline in YAML; the column does not.
             self.assertEqual(read.description, parsed["description"].strip(), path)
 
@@ -157,6 +160,11 @@ class DefinitionReaderTests(TestCase):
             ('id: a\nversion: one\nkind: watch\nstatus: draft\ndescription: x\n', "a version that is not a number"),
             ('id: a\nkind: watch\nstatus: draft\ndescription: x\n', "a missing field"),
             ('id a\n', "a line that is not `name: value`"),
+            (
+                SHIPPED_TEXT.replace("default_cadence: weekly", "default_cadence: hourly"),
+                "a cadence that is not one the scheduler knows",
+            ),
+            (re.sub(r"(?m)^default_cadence:.*\n", "", SHIPPED_TEXT), "no cadence"),
         ):
             path = directory / "definition.yaml"
             path.write_text(body, encoding="utf-8")
@@ -251,6 +259,49 @@ class DefinitionsShipInTheImageTests(SimpleTestCase):
 
 
 class AgentSeedTests(TestCase):
+    def test_each_agent_runs_as_often_as_its_definition_says(self) -> None:
+        """Defect 3 of the agent review (2026-11-21): the reader dropped `default_cadence`, so
+        the filers that run on their own command were seeded `weekly` and the beat would have
+        handed them to the runner once released."""
+        seed_agent_definitions()
+        cadences = dict(Agent.objects.values_list("key", "default_cadence"))
+        for definition in definitions():
+            self.assertEqual(cadences[definition.key], definition.default_cadence, definition.key)
+        self.assertEqual(cadences["library-baseline"], AgentCadence.MANUAL.value)
+        self.assertEqual(cadences["library-translator"], AgentCadence.MANUAL.value)
+
+    def test_a_cadence_seeded_before_the_reader_read_it_follows_the_file_once(self) -> None:
+        seed_agent_definitions()
+        with library_write("test"):
+            Agent.objects.filter(key="library-baseline").update(default_cadence=AgentCadence.WEEKLY.value)
+        seed_agent_definitions()
+        agent = Agent.objects.get(key="library-baseline")
+        self.assertEqual(agent.default_cadence, AgentCadence.MANUAL.value)
+        [event] = AuditEvent.objects.filter(action="agent.cadence_seeded", subject_id=agent.id)
+        self.assertIsNone(event.tenant_id)
+        self.assertEqual((event.before, event.after), ({"defaultCadence": "weekly"}, {"defaultCadence": "manual"}))
+        before = AuditEvent.objects.count()
+        seed_agent_definitions()
+        self.assertEqual(AuditEvent.objects.count(), before, "a corrected row is left alone after")
+
+    def test_a_cadence_set_in_the_console_is_never_overwritten_by_a_deploy(self) -> None:
+        seed_agent_definitions()
+        agent = Agent.objects.get(key="library-baseline")
+        with library_write("test"):
+            Agent.objects.filter(pk=agent.pk).update(default_cadence=AgentCadence.MONTHLY.value)
+        record(
+            action="agent.settings_changed",
+            actor=Actor.system("test"),
+            subject_type="agent",
+            subject_id=agent.id,
+            subject_title=agent.key,
+            summary="Settings changed.",
+            tenant_id=None,
+        )
+        seed_agent_definitions()
+        self.assertEqual(Agent.objects.get(pk=agent.pk).default_cadence, AgentCadence.MONTHLY.value)
+        self.assertFalse(AuditEvent.objects.filter(action="agent.cadence_seeded").exists())
+
     def test_the_seed_creates_every_shipped_agent_from_its_definition(self) -> None:
         created = seed_agent_definitions()
         self.assertEqual(created, len(SHIPPED))

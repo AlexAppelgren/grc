@@ -129,6 +129,14 @@ the bank's own records back (D-57); a duplicate by official reference is the ser
 409 `already_in_our_library`. Until Alex answers whether a bank's typed text may reach
 a model, only the item's term keys and the pages fetched from its public addresses do.
 
+The agent review of 2026-11-21 (D-146) closed six gaps before any agent is switched on.
+Publishing a version switches its agent on or off from the folder's `status`, since the
+seed writes an agent's row once; a folder released as `active` fails the evaluation gate
+while what its `evals:` names was never measured; the seed reads `default_cadence`; each
+beat closes its zone's runs still running after `AGENT_RUN_MAX_MINUTES`; a platform
+agent's console budget stops new runs that may ask a model; and the translator re-asks a
+question the mock answered once a real provider is configured.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -241,7 +249,8 @@ And a tenant admin's request to reach the definition at all, to read, publish, r
 And "nordic-watch" is one of bleqq's agents, so a bank's run log carries none of its runs, which the console lists
 ```
 
-A version is published only from its shipped folder, read by the seed's reader: 409
+Publishing also switches the agent on when the folder's `status` is `active`, and off when
+it is `draft` or `retired` (D-146). A version is published only from its shipped folder, read by the seed's reader: 409
 `version_exists` for a number already published, 422 `definition_unreadable` for a folder
 the reader refuses or one that changes the agent's id, kind, scope or zone, and 409
 `last_version` for retiring the last published version of an active agent. A run pins the

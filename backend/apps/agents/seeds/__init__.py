@@ -6,12 +6,16 @@ Library rows, written inside `library_write()` with an audit event each. An exis
 left alone: a new version is published by a platform admin, never by a deploy rewriting what
 a run points at; the one exception is an agent with no version row at all (pre agents 0004).
 A definition's `scope`, `tenant_configurable` and `writes_to` set the platform fence from
-the file, and its scope never changes once seeded.
+the file, and its scope never changes once seeded. Its `default_cadence` is the agent's
+cadence until a platform admin sets one in the console; a row seeded before the reader read
+the cadence (every one read `weekly`) is brought to its file's on the next deploy, with an
+audit row, unless the console has set it since.
 """
 
 from __future__ import annotations
 
 from apps.agents.models import Agent, AgentVersion
+from apps.shared.models import AuditEvent
 from apps.agents.seeds.definition import DEFINITIONS, Definition, read_definition
 from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
@@ -51,6 +55,7 @@ def seed_agent_definitions() -> int:
                     "description": definition.description,
                     "active": definition.active,
                     "current_version": definition.version,
+                    "default_cadence": definition.default_cadence,
                     "scope": definition.scope,
                     "tenant_configurable": definition.tenant_configurable,
                     "writes_to": definition.writes_to,
@@ -70,15 +75,43 @@ def seed_agent_definitions() -> int:
                         "kind": agent.kind,
                         "currentVersion": agent.current_version,
                         "active": agent.active,
+                        "defaultCadence": agent.default_cadence,
                         "scope": agent.scope,
                         "tenantConfigurable": agent.tenant_configurable,
                         "writesTo": agent.writes_to,
                     },
                 )
                 created += 1
+            elif _cadence_never_set(agent, definition):
+                _correct_cadence(agent, definition)
             if agent.current_version == definition.version and not agent.versions.exists():
                 _seed_first_version(agent, definition)
     return created
+
+
+def _cadence_never_set(agent: Agent, definition: Definition) -> bool:
+    """Whether the row's cadence differs from its file's and no platform admin chose it: the
+    console's every change is an `agent.settings_changed` audit row."""
+    return agent.default_cadence != definition.default_cadence and not AuditEvent.objects.filter(
+        action="agent.settings_changed", subject_type="agent", subject_id=agent.id
+    ).exists()
+
+
+def _correct_cadence(agent: Agent, definition: Definition) -> None:
+    before = agent.default_cadence
+    agent.default_cadence = definition.default_cadence
+    agent.save(update_fields=["default_cadence"])
+    record(
+        action="agent.cadence_seeded",
+        actor=ACTOR,
+        subject_type="agent",
+        subject_id=agent.id,
+        subject_title=agent.key,
+        summary=f"Agent {agent.key} runs {agent.default_cadence}, as its definition says.",
+        tenant_id=None,
+        before={"defaultCadence": before},
+        after={"defaultCadence": agent.default_cadence},
+    )
 
 
 def _seed_first_version(agent: Agent, definition: Definition) -> None:

@@ -190,7 +190,7 @@ class KeysFollowTheirAgent(ScenarioTestCase):
                 path.write_text(
                     f"id: {key}\nversion: 1\nkind: watch\nstatus: {status}\ndescription: A test sweeper.\n"
                     "scope: platform\ntenant_configurable: false\nwrites_to: library\nmodel: claude-opus-5\n"
-                    "change_note: First version.\nprompt: prompt.md\ntools:\n  - name: startAgentRun\n",
+                    "change_note: First version.\nprompt: prompt.md\ndefault_cadence: weekly\ntools:\n  - name: startAgentRun\n",
                     encoding="utf-8",
                 )
             api_keys_logic._declared_status.cache_clear()

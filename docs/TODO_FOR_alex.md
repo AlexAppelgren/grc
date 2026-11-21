@@ -2,6 +2,28 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## Switching agents on (2026-11-21, agent review, D-146)
+
+The review's six defects are fixed; nothing below blocks the build. What switching an agent on
+now takes, and what needs you:
+
+- [ ] **The model key on the test deployment (D-07).** Staging runs `LLM_PROVIDER=mock` and
+      holds no key, so no agent has called a real model. With a key, the translator asks a
+      real model again about every record the mock answered (D-146), within its budget.
+      Before you add it, set the translator's monthly budget in the console (Agents), since
+      every record of the library is due at once.
+- [ ] **Release an agent by publishing a version whose folder says `status: active`.** A
+      deploy never switches an agent on. The sweeper fails the evaluation gate until its
+      classification baseline is recorded against a real model, and the confirmer until its
+      labelled cases exist (`agents/library-confirmer/v5/evals/README.md`). The baseline and
+      translator need no release: they run on their own beats as drafts.
+- [ ] **The in-worker EU runner (D-08, D-54) and H80** are still what the sweeper, the
+      confirmer and the banks' own agents need to do real work. Until then a bank's run on the
+      mock closes as failed after `AGENT_RUN_MAX_MINUTES` (360) instead of holding its cap.
+- [x] Defaults taken (D-146): the seeded cadence of the baseline, translator and scope
+      researcher becomes `manual` on the next deploy unless the console set it; a platform
+      budget counts each run's reported cost, else its logged model calls, per UTC month.
+
 ## Every home market (2026-11-14, PRD 0.12, D-145, ADR 0070)
 
 The platform covers the EU and all twelve home markets from this change: a bank can name
