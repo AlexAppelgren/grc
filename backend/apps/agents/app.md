@@ -145,7 +145,13 @@ same domain function, validation, run budgets, screen and audit row as the route
 goes back to the model and stores nothing. Every turn is logged as `agent_turn` with its
 cost and reported as a runner event, so the run row carries what it spent while it runs
 (H80's leg for bleqq's agents). A bank's own agents are refused by this runner until their
-leg is built, and the confirmer's decision tools come with the next package.
+leg is built. The confirmer decides on the runner too: it reads the queue a person works
+(`listProposals`), and `approveProposal` or `rejectProposal` decide as its keyless run's agent, each
+decision carrying the model, version, prompt template and hash of the turn's own logged call
+with the citations the model gives (D-80), four eyes refusing its own definition's proposals.
+A platform caller cannot read `GET /obligations/{id}` or `GET /instruments/{id}` (both need a
+bank), so the runner holds no `getObligation` or `getInstrument`; the queue row, the cited
+sources and a fetch of the cited page are what the confirmer reads.
 
 ## 2. Requirements
 

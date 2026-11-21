@@ -236,3 +236,78 @@ class TheWorkerRunner(WorkerCase):
         self.agent_run.refresh_from_db()
         self.assertEqual((self.agent_run.status, self.agent_run.error), (RunStatus.FAILED.value, opener.START_FAILED))
         send.assert_not_called()
+
+
+CONFIRMER_TOOLS = ["startAgentRun", "listProposals", "approveProposal", "rejectProposal", "finishAgentRun"]
+CITED = [{"label": "Finansinspektionen, board decision", "url": PAGE}]
+
+
+class TheConfirmerDecides(WorkerCase):
+    """library-confirmer on the runner (D-62, D-80): it reads the queue a person works and
+    decides what another definition filed, each decision carrying the turn's logged call."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        from apps.agents import runner_tools
+        from apps.agents.models import AgentKind
+
+        sweeping = runner_tools.Session(run=self.agent_run)
+        with transaction.atomic():
+            runner_tools.call(
+                sweeping,
+                runner_tools.TOOLS["createProposal"],
+                {
+                    "kind": "new_obligation_version",
+                    "title": "Version 2 of the research assessment duty",
+                    "targetType": "obligation",
+                    "targetId": str(self.world.obligation.id),
+                    "payload": {"summaries": {"en": "Assess the research payment first."}, "originalLanguage": "en", "isMachine": True},
+                    "fieldSources": {"summaries.en": PAGE},
+                    "sourceLabel": "Finansinspektionen, board decision",
+                    "sourceUrl": PAGE,
+                    "model": "claude-opus-5-5",
+                },
+            )
+        self.proposal = Proposal.objects.get()
+        self.confirmer = agent_build.agent(key="library-confirmer", kind=AgentKind.REVIEW)
+        with library_write("test"):
+            version = AgentVersion.objects.create(agent=self.confirmer, version_number=2, model="claude-opus-5", prompt_path="prompt.md", tools=CONFIRMER_TOOLS)
+        self.agent_run = AgentRun.objects.create(
+            agent=self.confirmer, agent_version=version, trigger=RunTrigger.SCHEDULE.value, model="claude-opus-5", pipeline_version="2"
+        )
+
+    def decide(self, name: str, **extra: Any) -> Scripted:  # compliance: allow-kwargs test helper adding fields to the decision
+        given = {"proposalId": str(self.proposal.id), "note": "The board decision states the new summary.", "output": "Checked the cited page.", "citations": CITED, **extra}
+        return self.drive(_uses(("listProposals", {})), _uses((name, given)), _done())
+
+    def test_it_approves_as_filed_and_the_record_names_both_agents(self) -> None:
+        model = self.decide("approveProposal")
+        listed = model.sent[1]["messages"][-1]["content"][0]["content"]
+        self.assertIn(str(self.proposal.id), listed)
+        self.proposal.refresh_from_db()
+        self.assertEqual((self.proposal.status, self.proposal.reviewed_by_agent_id, self.proposal.proposed_by_agent_id), ("approved", self.confirmer.id, self.agent.id))
+        review = AiGeneration.objects.get(purpose="agent_review", agent_run_id=self.agent_run.id)
+        turn = AiGeneration.objects.filter(purpose="agent_turn", agent_run_id=self.agent_run.id).order_by("created_at")[1]
+        self.assertEqual((review.model, review.prompt_hash), (turn.model, turn.prompt_hash), "the decision names the turn it was made in")
+        self.assertEqual(review.citations[0]["url"], PAGE)
+
+    def test_it_rejects_with_a_reason(self) -> None:
+        self.decide("rejectProposal", rejectionReason="bad_source")
+        self.proposal.refresh_from_db()
+        self.assertEqual((self.proposal.status, self.proposal.rejection_code), ("rejected", "bad_source"))
+
+    def test_a_decision_with_no_citation_is_refused_and_decides_nothing(self) -> None:
+        model = self.decide("approveProposal", citations=[])
+        [result] = model.sent[2]["messages"][-1]["content"]
+        self.assertTrue(result["is_error"])
+        self.proposal.refresh_from_db()
+        self.assertEqual(self.proposal.status, "open")
+
+    def test_four_eyes_refuses_a_proposal_of_its_own_definition(self) -> None:
+        Proposal.objects.filter(pk=self.proposal.pk).update(proposed_by_agent_id=self.confirmer.id)
+        model = self.decide("approveProposal")
+        [result] = model.sent[2]["messages"][-1]["content"]
+        self.assertTrue(result["is_error"])
+        self.assertIn("four_eyes_violation", result["content"])
+        self.proposal.refresh_from_db()
+        self.assertEqual(self.proposal.status, "open")

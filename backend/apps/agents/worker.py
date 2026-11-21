@@ -173,6 +173,7 @@ def drive(run_id: uuid.UUID) -> None:
             _report(run, ledger, session, RunStatus.FAILED, NO_ANSWER)
             return
         ledger.add(conversed)
+        session.generation = conversed.generation
         turn = conversed.turn
         messages.append({"role": "assistant", "content": turn.content})
         if turn.stop_reason != "tool_use":

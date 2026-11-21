@@ -28,11 +28,16 @@ from apps.agents.models import AgentRun, RunStatus
 from apps.agents.schemas import AgentRunStats
 from apps.agents.screen import screen
 from apps.library import reading
+from apps.governance.models import AiGeneration
 from apps.proposals import logic as proposals
+from apps.proposals import reading as queue_reading
+from apps.proposals.models import Proposal
 from apps.proposals.schemas import ProposalCreateBody
 from apps.search import hybrid
 from apps.search.schemas import SimilarRequest
 from apps.shared.audit import Actor, ActorType
+from apps.shared.errors import not_found
+from apps.shared.schemas import AgentDecision, AiCitation
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy import terms_logic
 from apps.watch import registration, sources
@@ -73,6 +78,26 @@ class _Finish(BaseModel):
     error: str = Field(default="", max_length=2000, description="What went wrong, for a failed run.")
 
 
+class _Queue(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    status: str = Field(default="open", description="The queue to read: `open` (waiting), `approved` or `rejected`.")
+    kind: str | None = Field(default=None, description="One proposal kind only, or none for every kind.")
+    limit: int = Field(default=20, ge=1, le=50, description="How many rows, between 1 and 50.")
+    offset: int = Field(default=0, ge=0, description="How many rows to skip, oldest first.")
+
+
+class _Decide(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    proposal_id: uuid.UUID = Field(alias="proposalId", description="The proposal decided.")
+    note: str = Field(min_length=1, max_length=2000, description="One or two sentences on why, for the people who read the queue.")
+    output: str = Field(min_length=1, max_length=20_000, description="The reasoning behind the decision, as the AI log keeps it.")
+    citations: list[AiCitation] = Field(min_length=1, description="The pages that support the decision, at least one.")
+
+
+class _Reject(_Decide):
+    rejection_reason: str = Field(alias="rejectionReason", description="A key of the rejection_reason list.")
+
+
 @dataclass
 class Session:
     """What one run's tools share: the run, the counters the runner keeps, and how the model
@@ -81,10 +106,30 @@ class Session:
     run: AgentRun
     fetches: int = 0
     finish: _Finish | None = None
+    # The current turn's log row: a decision names the model call it was made in (D-80).
+    generation: AiGeneration | None = None
 
     @property
     def actor(self) -> Actor:
         return Actor(kind=ActorType.AGENT, id=self.run.agent_id, label=self.run.agent.key)
+
+    @property
+    def reviewer(self) -> proposals.Reviewer:
+        """The run's agent deciding, keyless: four eyes compares its agent with the
+        proposer's, and the decision names this run (D-62, D-80)."""
+        return proposals.Reviewer(actor=self.actor, agent_id=self.run.agent_id)
+
+    def decision(self, given: _Decide) -> AgentDecision:
+        assert self.generation is not None, "a tool runs inside a logged turn"
+        row = self.generation
+        return AgentDecision(
+            model=row.model,
+            model_version=row.model_version,
+            prompt_template=row.prompt_template or None,
+            prompt_hash=row.prompt_hash or None,
+            output=given.output,
+            citations=given.citations,
+        )
 
 
 @dataclass(frozen=True)
@@ -148,6 +193,48 @@ def _propose(session: Session, given: dict[str, Any]) -> str:
     return f"{'Filed' if created else 'Already filed'}: {_json(proposals.proposer_row(proposal))}"
 
 
+def _queue(session: Session, given: _Queue) -> str:
+    rows = proposals.queue(reviewer=session.reviewer, status=given.status, kind=given.kind, order="oldest")
+    page = list(rows[given.offset : given.offset + given.limit])
+    return json.dumps(
+        {"total": rows.count(), "items": [row.model_dump(mode="json", by_alias=True) for row in queue_reading.queue_rows(page, ORDER, reviewer=session.reviewer)]},
+        ensure_ascii=False,
+    )
+
+
+def _proposal(proposal_id: uuid.UUID) -> Proposal:
+    found = Proposal.objects.filter(pk=proposal_id, owner_tenant__isnull=True).first()  # ordering: pk lookup
+    if found is None:
+        raise not_found()
+    return found
+
+
+def _approve(session: Session, given: _Decide) -> str:
+    decided = proposals.approve(
+        proposal=_proposal(given.proposal_id),
+        reviewer=session.reviewer,
+        actor=session.actor,
+        note=given.note,
+        step_up_assertion_id=None,
+        decision=session.decision(given),
+        agent_run_id=session.run.id,
+    )
+    return f"Approved: {decided.id}"
+
+
+def _reject(session: Session, given: _Reject) -> str:
+    decided = proposals.reject(
+        proposal=_proposal(given.proposal_id),
+        reviewer=session.reviewer,
+        actor=session.actor,
+        rejection_code=given.rejection_reason,
+        note=given.note,
+        decision=session.decision(given),
+        agent_run_id=session.run.id,
+    )
+    return f"Rejected: {decided.id}"
+
+
 def _finish(session: Session, given: _Finish) -> str:
     if given.status not in (RunStatus.SUCCEEDED.value, RunStatus.FAILED.value):
         raise ValueError("status is succeeded or failed")
@@ -204,6 +291,14 @@ TOOLS: dict[str, Tool] = {
         Tool("recordSourceCheck", "Log that a source was checked, ok or failed, with the items found.", WatchSourceCheckInput, _check),
         Tool("createChange", "Register one change per reform, idempotent on its stable key.", _input(WatchChangeInput), _register),
         Tool("createProposal", "File a proposal, the only door into the library.", _input(ProposalCreateBody), _propose),
+        Tool("listProposals", "Read the shared library's proposal queue, oldest first, the same queue a person works.", _Queue, _queue),
+        Tool(
+            "approveProposal",
+            "Approve a proposal as filed, when the pages cited support every value. Never one you or your definition filed.",
+            _Decide,
+            _approve,
+        ),
+        Tool("rejectProposal", "Reject a proposal with a rejection_reason key and a note on what the sources did not support.", _Reject, _reject),
         Tool("finishAgentRun", "Close the run with its status and counters. Call it last, also after a failure.", _Finish, _finish),
     )
 }
