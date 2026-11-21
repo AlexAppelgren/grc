@@ -32,6 +32,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.agents import runs
+from apps.agents.models import AgentRun
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal
 from apps.watch import keys
@@ -216,7 +217,12 @@ def record_check(*, who: Principal, actor: Actor, run_id: uuid.UUID, body: Watch
     write, so a closed run or unknown source logs nothing. A re-check past
     `WATCH_RUN_MAX_RECHECKS` is `run_budget_exhausted` (H41).
     """
-    run = runs.require_open_run(who, run_id)
+    record_check_in(run=runs.require_open_run(who, run_id), actor=actor, body=body)
+
+
+def record_check_in(*, run: AgentRun, actor: Actor, body: WatchSourceCheckInput) -> None:
+    """The write behind `record_check`, once the caller has resolved the open run: a key's
+    own, or the keyless run the in-worker runner holds (D-147, `apps/agents/runner_tools.py`)."""
     source = keys.source_with_name(body.source_name)
     if source is None:
         raise ValidationError(

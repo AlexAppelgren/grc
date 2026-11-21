@@ -198,7 +198,7 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         fetched_text = ""
         if body.url is not None:
             rate_limit.enforce("research-url", str(tenant.id), settings.RESEARCH_URL_RATE_PER_HOUR, HOUR)
-            fetched_text = _fetch(body.url)
+            fetched_text = fetch_page(body.url)
         _refuse_over_cap(tenant, lock=True)
         request = ResearchRequest.objects.create(
             tenant=tenant,
@@ -400,7 +400,7 @@ def _get(*, host: str, address: str, target: str, deadline: float) -> Fetched:
         connection.close()
 
 
-def _fetch(url: str) -> str:
+def fetch_page(url: str) -> str:
     """The page at `url` as text, each redirect checked as the first address was, the whole
     of it within one deadline."""
     deadline = time.monotonic() + settings.RESEARCH_URL_TOTAL_SECONDS

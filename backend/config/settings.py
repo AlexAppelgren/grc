@@ -264,7 +264,15 @@ LLM_PROVIDER = env_choice("LLM_PROVIDER", "anthropic" if ANTHROPIC_API_KEY else 
 EMBEDDER_PROVIDER = env_choice("EMBEDDER_PROVIDER", "mock", ("mock", "none"))  # a model joins per D-09
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024, min=1, max=16000)  # D-09
 # No `managed_agents`: a runner outside the EU (D-54) was never built and is no value at all.
-AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "none"))
+AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "none", "worker"))
+# The in-worker runner (`worker`, D-147): one turn's token ceiling (thinking counts toward
+# it), its effort and deadline, the most turns a run takes, and the longest tool result a
+# turn reads back.
+AGENT_TURN_MAX_TOKENS = env_int("AGENT_TURN_MAX_TOKENS", 16000, min=1024, max=128_000)
+AGENT_EFFORT = env_choice("AGENT_EFFORT", "high", ("low", "medium", "high", "xhigh", "max"))
+AGENT_TURN_DEADLINE_S = env_float("AGENT_TURN_DEADLINE_S", 600.0, min=10, max=3600)
+AGENT_RUN_MAX_TURNS = env_int("AGENT_RUN_MAX_TURNS", 80, min=1, max=1000)
+AGENT_TOOL_RESULT_MAX_CHARS = env_int("AGENT_TOOL_RESULT_MAX_CHARS", 20_000, min=1000, max=500_000)
 RERANKER_PROVIDER = env_choice("RERANKER_PROVIDER", "mock", ("mock", "none"))  # none keeps the fused order
 RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50, min=1, max=1000)
 MAIL_PROVIDER = env_choice("MAIL_PROVIDER", "mock", ("mock", "smtp", "resend"))

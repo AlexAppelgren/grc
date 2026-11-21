@@ -298,3 +298,12 @@ def run_due_tenant_agents(tenant_id: uuid.UUID) -> None:
     for tenant_agent in due:
         opener.take_slot(tenant_agent, next_run_at(tenant_agent, tenant))
         open_tenant_run(tenant_agent, trigger=RunTrigger.SCHEDULE)
+
+
+@shared_task
+def drive_platform_run(run_id: str) -> None:
+    """The in-worker runner's task (D-147, `apps/agents/worker.py`): drive a run of one of
+    bleqq's agents. Not a `@tenant_task`: it is in no bank's zone."""
+    from apps.agents import worker  # the runner reads runner_events, which reads this module
+
+    worker.drive(uuid.UUID(run_id))

@@ -75,6 +75,16 @@ def register_change(
         if who.kind is PrincipalKind.AGENT or body.agent_run_id is not None
         else None
     )
+    editor_id = who.subject_id if who.kind is PrincipalKind.USER else None
+    return register(run=run, editor_id=editor_id, actor=actor, order=order, body=body)
+
+
+def register(
+    *, run: AgentRun | None, editor_id: uuid.UUID | None, actor: Actor, order: list[str], body: WatchChangeInput
+) -> tuple[int, WatchChange]:
+    """The write behind `register_change`, once the caller has resolved who files: an agent's
+    open run, or a library editor filing by hand (`editor_id`, no run). The in-worker runner
+    calls it with the keyless run it holds (D-147, `apps/agents/runner_tools.py`)."""
     change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [body.change_type])[0]
     flags = keys.resolve_keys(keys.FLAG_LIST, body.flags)
     terms = keys.resolve_terms(body.term_ids)
@@ -98,11 +108,11 @@ def register_change(
     keys.require_regime(terms)
     keys.require_standards_body(terms, authority_id)
 
-    origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
+    origin = OriginType.AGENT.value if run is not None else OriginType.USER.value
     # The suggester, copied here because a check constraint cannot read a key's agent (D-74):
     # the run's agent and key, or the editor filing by hand, who then cannot confirm alone.
     suggester = {
-        "suggested_by_id": who.subject_id if who.kind is PrincipalKind.USER else None,
+        "suggested_by_id": editor_id,
         "suggested_by_agent_id": None if run is None else run.agent_id,
         "suggested_by_api_key_id": None if run is None else run.api_key_id,
     }

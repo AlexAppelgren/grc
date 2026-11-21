@@ -21,10 +21,12 @@ else raises before any model is asked, and no row is written.
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import uuid
 from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -35,7 +37,7 @@ from apps.governance.models import AiGeneration, AiPurpose
 from apps.governance.schemas import AiCitation
 from apps.library.models import Instrument, Obligation, Provision, SubjectType
 from apps.shared import tenancy
-from apps.shared.adapters.llm import Completion, LlmAdapter, get_llm
+from apps.shared.adapters.llm import Completion, LlmAdapter, Turn, get_llm
 from apps.shared.adapters.llm import LlmError as LlmError
 from apps.shared.adapters.llm import format_context as format_context
 from apps.shared.errors import ProblemError
@@ -185,6 +187,82 @@ def generate(
         stop_reason=completion.stop_reason,
     )
     return Generation(text=completion.text, generation=row)
+
+
+@dataclass(frozen=True)
+class Conversed:
+    """One agent turn and the log row that records it."""
+
+    turn: Turn
+    generation: AiGeneration
+
+
+def _turn_output(turn: Turn) -> str:
+    """What the log keeps of a turn: its text and its tool calls, never its thinking."""
+    return json.dumps([block for block in turn.content if block["type"] in ("text", "tool_use")], ensure_ascii=False)
+
+
+def converse(
+    *,
+    system: str,
+    messages: list[dict[str, Any]],
+    tools: list[dict[str, Any]],
+    prompt_template: str,
+    agent_run_id: uuid.UUID,
+    tenant_id: uuid.UUID | None,
+    llm: LlmAdapter | None = None,
+) -> Conversed:
+    """One turn of an agent run the in-worker runner drives (D-147), then its log row, in the
+    caller's transaction: purpose `agent_turn`, the run named, the cost on the row. The bank's
+    switch stops a bank's run before any model is asked (`ensure_enabled`); a platform run is
+    in no bank's zone. A failed turn is logged as `failed` with its input cost estimated, as
+    `generate` logs one, and the error raised again."""
+    ensure_enabled()
+    engine = llm if llm is not None else get_llm()
+    asked = json.dumps(messages[-1], ensure_ascii=False, default=str)
+    try:
+        turn = engine.converse(
+            system=system,
+            messages=messages,
+            tools=tools,
+            max_tokens=settings.AGENT_TURN_MAX_TOKENS,
+            effort=settings.AGENT_EFFORT,
+            deadline_s=settings.AGENT_TURN_DEADLINE_S,
+        )
+    except LlmError:
+        model, model_version = engine.asked_model()
+        sent = system + json.dumps(messages, ensure_ascii=False, default=str) + json.dumps(tools)
+        with transaction.atomic():
+            log_generation(
+                purpose=AiPurpose.AGENT_TURN,
+                model=model,
+                model_version=model_version,
+                output="",
+                citations=[],
+                tenant_id=tenant_id,
+                agent_run_id=agent_run_id,
+                prompt_template=prompt_template,
+                prompt_hash=prompt_hash(system, asked),
+                cost_minor=cost_minor(math.ceil(len(sent) / CHARS_PER_TOKEN), 0),
+                stop_reason=FAILED,
+            )
+        raise
+    row = log_generation(
+        purpose=AiPurpose.AGENT_TURN,
+        model=turn.model,
+        model_version=turn.model_version,
+        output=_turn_output(turn),
+        citations=[],
+        tenant_id=tenant_id,
+        agent_run_id=agent_run_id,
+        prompt_template=prompt_template,
+        prompt_hash=prompt_hash(system, asked),
+        input_tokens=turn.input_tokens,
+        output_tokens=turn.output_tokens,
+        cost_minor=cost_minor(turn.input_tokens, turn.output_tokens),
+        stop_reason=turn.stop_reason,
+    )
+    return Conversed(turn=turn, generation=row)
 
 
 def stream(

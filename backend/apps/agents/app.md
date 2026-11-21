@@ -137,6 +137,16 @@ beat closes its zone's runs still running after `AGENT_RUN_MAX_MINUTES`; a platf
 agent's console budget stops new runs that may ask a model; and the translator re-asks a
 question the mock answered once a real provider is configured.
 
+D-147 (Alex, 2026-11-21) brings the first real runner, `AGENT_RUNNER=worker`: the app's own
+worker drives a run of one of bleqq's agents turn by turn with the pinned version's prompt
+and the tools its published version names (`apps/agents/worker.py`, `runner_tools.py`).
+Each tool is the agent API's operation called in-process on the keyless run, through the
+same domain function, validation, run budgets, screen and audit row as the route; a refusal
+goes back to the model and stores nothing. Every turn is logged as `agent_turn` with its
+cost and reported as a runner event, so the run row carries what it spent while it runs
+(H80's leg for bleqq's agents). A bank's own agents are refused by this runner until their
+leg is built, and the confirmer's decision tools come with the next package.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.

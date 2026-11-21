@@ -44,7 +44,10 @@ class AiPurpose(enum.StrEnum):
     `reason_draft` is the reason a model drafts in the "Does it apply" dialog from the licence
     facts and the library's facts alone (REG-01, D-143, ADR 0069). The person who sets the
     answer reviews it: the row reads `confirmed` when the stored reason is the draft as it
-    stood, `edited` when they changed it."""
+    stood, `edited` when they changed it.
+
+    `agent_turn` is one turn of an agent run the in-worker runner drives (D-147): the run is
+    named on the row, and what the turn filed is labelled on its own records."""
 
     SO_WHAT = "so_what"
     CHANGE_SUMMARY = "change_summary"
@@ -55,6 +58,7 @@ class AiPurpose(enum.StrEnum):
     AGENT_REVIEW = "agent_review"
     WHAT_APPLIES = "what_applies"
     REASON_DRAFT = "reason_draft"
+    AGENT_TURN = "agent_turn"
 
 
 class AiStatus(enum.StrEnum):
