@@ -324,6 +324,9 @@ SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000, m
 # --- The Anthropic provider (D-07). The key is read from the environment only. ---
 LLM_MODEL = env_str("LLM_MODEL", "claude-opus-5-5")
 LLM_MAX_TOKENS = env_int("LLM_MAX_TOKENS", 4096, min=1, max=200_000)
+# How hard a single-shot answer thinks (Ask, drafts, summaries, translations). The model's
+# thinking counts toward max_tokens and cannot be switched off on claude-opus-5-5 (D-147).
+LLM_EFFORT = env_choice("LLM_EFFORT", "low", ("low", "medium", "high", "xhigh", "max"))
 LLM_TIMEOUT_S = env_float("LLM_TIMEOUT_S", 60.0, min=1, max=600)
 LLM_MAX_RETRIES = env_int("LLM_MAX_RETRIES", 2, min=0, max=10)
 LLM_RETRY_BACKOFF_S = env_float("LLM_RETRY_BACKOFF_S", 0.5, min=0, max=60)

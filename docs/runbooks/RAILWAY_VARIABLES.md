@@ -69,6 +69,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `ANTHROPIC_API_KEY` | api, worker | unset | Railway secret | Railway secret | The Anthropic API key. Setting it is what switches the model on (D-147) |
 | `LLM_MODEL` | api, worker | `claude-opus-5-5` | `claude-opus-5-5` | `claude-opus-5-5` | The Messages API model id (E3) |
 | `LLM_MAX_TOKENS` | api, worker | `4096` | `4096` | `4096` | A ceiling: a caller asking for more gets this |
+| `LLM_EFFORT` | api, worker | `low` | `low` | `low` | How hard a single-shot answer thinks (Ask, drafts, summaries, translations): `low`, `medium`, `high`, `xhigh` or `max`. The model's thinking counts toward each feature's `max_tokens` and cannot be switched off on `claude-opus-5-5`, so a higher effort can cut an answer short (D-147) |
 | `LLM_TIMEOUT_S` | api, worker | `60.0` | `60.0` | `60.0` | Per socket operation (the connect, then each read of the stream), not per call; also the longest a `retry-after` may hold a request |
 | `LLM_MAX_RETRIES` | api, worker | `2` | `2` | `2` | Retried on 408, 409, 429, 5xx and connection failures only, and only before the answer starts |
 | `LLM_RETRY_BACKOFF_S` | api, worker | `0.5` | `0.5` | `0.5` | Doubled per attempt unless `retry-after` says otherwise |

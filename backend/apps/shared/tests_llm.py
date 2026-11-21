@@ -261,6 +261,7 @@ class AnthropicProvider(SimpleTestCase):
             {
                 "model": "claude-opus-5",
                 "max_tokens": 200,
+                "output_config": {"effort": "low"},
                 "system": "only the library",
                 "messages": [{"role": "user", "content": "a question"}],
                 "stream": True,
@@ -630,7 +631,92 @@ class AnthropicProvider(SimpleTestCase):
             llm.get_llm()
 
 
+def _turn_stream(*blocks: tuple[str, dict[str, Any], list[dict[str, Any]]], stop_reason: str = "tool_use", stop: bool = True) -> list[bytes]:
+    """A conversation turn on the wire: each block opens, takes its deltas and stops."""
+    events: list[tuple[str, dict[str, Any]]] = [
+        ("message_start", {"type": "message_start", "message": {"model": "claude-opus-5-5", "usage": {"input_tokens": 120}}}),
+    ]
+    for index, (_name, opened, deltas) in enumerate(blocks):
+        events.append(("content_block_start", {"type": "content_block_start", "index": index, "content_block": opened}))
+        events.extend(("content_block_delta", {"type": "content_block_delta", "index": index, "delta": delta}) for delta in deltas)
+        events.append(("content_block_stop", {"type": "content_block_stop", "index": index}))
+    events.append(("message_delta", {"type": "message_delta", "delta": {"stop_reason": stop_reason}, "usage": {"output_tokens": 40}}))
+    if stop:
+        events.append(("message_stop", {"type": "message_stop"}))
+    return _sse(*events)
+
+
+THINKING = ("thinking", {"type": "thinking", "thinking": "", "signature": ""}, [{"type": "signature_delta", "signature": "c2ln"}])
+SAID = ("text", {"type": "text", "text": ""}, [{"type": "text_delta", "text": "Checking the source."}])
+CALLED = (
+    "tool_use",
+    {"type": "tool_use", "id": "toolu_1", "name": "listSources", "input": {}},
+    [{"type": "input_json_delta", "partial_json": '{"jurisdiction": '}, {"type": "input_json_delta", "partial_json": '"se"}'}],
+)
+CONVERSE: dict[str, Any] = {
+    "system": "Sweep the sources.",
+    "messages": [{"role": "user", "content": "Start the run."}],
+    "tools": [{"name": "listSources", "description": "Read the sources.", "input_schema": {"type": "object"}}],
+    "max_tokens": 16000,
+    "effort": "high",
+    "deadline_s": 600.0,
+}
+
+
+@override_settings(LLM_PROVIDER="anthropic", ANTHROPIC_API_KEY=API_KEY, LLM_RETRY_BACKOFF_S=0.0)
+class AnthropicConversation(SimpleTestCase):
+    """`converse`, the in-worker runner's turn with tools (D-147)."""
+
+    def test_the_body_offers_the_tools_at_the_runners_effort_with_the_prefix_cached(self) -> None:
+        transport, patched = _stub(_StubResponse(_turn_stream(SAID, stop_reason="end_turn")))
+        with patched:
+            llm.get_llm().converse(**CONVERSE)
+        body = transport.body
+        self.assertEqual((body["tools"], body["messages"], body["system"]), (CONVERSE["tools"], CONVERSE["messages"], CONVERSE["system"]))
+        self.assertEqual((body["max_tokens"], body["output_config"], body["cache_control"], body["stream"]), (16000, {"effort": "high"}, {"type": "ephemeral"}, True))
+        self.assertEqual(transport.requests[-1].unredirected_hdrs.get("X-api-key"), API_KEY)
+
+    def test_a_turn_keeps_its_blocks_in_order_with_the_tool_input_parsed_and_the_signature_kept(self) -> None:
+        _, patched = _stub(_StubResponse(_turn_stream(THINKING, SAID, CALLED)))
+        with patched:
+            turn = llm.get_llm().converse(**CONVERSE)
+        self.assertEqual(
+            turn.content,
+            [
+                {"type": "thinking", "thinking": "", "signature": "c2ln"},
+                {"type": "text", "text": "Checking the source."},
+                {"type": "tool_use", "id": "toolu_1", "name": "listSources", "input": {"jurisdiction": "se"}},
+            ],
+        )
+        self.assertEqual((turn.stop_reason, turn.input_tokens, turn.output_tokens, turn.model), ("tool_use", 120, 40, "claude-opus-5-5"))
+        self.assertEqual((turn.text, [use["name"] for use in turn.tool_uses]), ("Checking the source.", ["listSources"]))
+
+    def test_tool_input_that_is_not_one_json_object_is_an_error(self) -> None:
+        for fragments in (['["se"]'], ['{"jurisdiction": '], ["not json"]):
+            broken = ("tool_use", CALLED[1], [{"type": "input_json_delta", "partial_json": part} for part in fragments])
+            _, patched = _stub(_StubResponse(_turn_stream(broken)))
+            with patched, self.assertRaises(llm.LlmError, msg=fragments):
+                llm.get_llm().converse(**CONVERSE)
+
+    def test_a_refusal_or_a_cut_stream_is_an_error_never_a_turn(self) -> None:
+        for stream in (_turn_stream(SAID, stop_reason="refusal"), _turn_stream(SAID, stop=False)):
+            _, patched = _stub(_StubResponse(stream))
+            with patched, self.assertRaises(llm.LlmError):
+                llm.get_llm().converse(**CONVERSE)
+
+    def test_a_block_type_never_asked_for_is_dropped(self) -> None:
+        server: tuple[str, dict[str, Any], list[dict[str, Any]]] = ("server_tool_use", {"type": "server_tool_use", "id": "srv_1", "name": "web_search"}, [])
+        _, patched = _stub(_StubResponse(_turn_stream(server, SAID, stop_reason="end_turn")))
+        with patched:
+            turn = llm.get_llm().converse(**CONVERSE)
+        self.assertEqual(turn.content, [{"type": "text", "text": "Checking the source."}])
+
+
 class GroundedMock(SimpleTestCase):
+    def test_offered_tools_the_mock_calls_none_and_ends_its_turn(self) -> None:
+        turn = llm.MockLlm().converse(**CONVERSE)
+        self.assertEqual((turn.tool_uses, turn.stop_reason, turn.model), ([], "end_turn", "mock"))
+
     """The mock answers from the prompt's numbered chunks and nothing else, so Ask's
     scenarios can assert on an answer without a model call."""
 

@@ -72,6 +72,29 @@ class Completion:
     stop_reason: str
 
 
+@dataclass(frozen=True)
+class Turn:
+    """One assistant turn of a conversation with tools (`converse`). `content` is the turn's
+    blocks as the provider returned them, thinking blocks and their signatures included, so
+    the caller sends them back unchanged on the next request; a tool call's `input` is
+    already parsed into a dict. A refusal never becomes a Turn: it raises."""
+
+    content: list[dict[str, Any]]
+    model: str
+    model_version: str
+    input_tokens: int
+    output_tokens: int
+    stop_reason: str
+
+    @property
+    def text(self) -> str:
+        return "".join(block["text"] for block in self.content if block["type"] == "text")
+
+    @property
+    def tool_uses(self) -> list[dict[str, Any]]:
+        return [block for block in self.content if block["type"] == "tool_use"]
+
+
 class LlmAdapter(ABC):
     name: str
 
@@ -88,6 +111,14 @@ class LlmAdapter(ABC):
             if isinstance(event, Completion):
                 return event
         raise LlmError("the model stream ended before the answer was complete")
+
+    def converse(
+        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int, effort: str, deadline_s: float
+    ) -> Turn:
+        """One assistant turn of a conversation the caller keeps, offered `tools`; the caller
+        runs any tool call the turn holds and sends the results back on the next request
+        (the in-worker agent runner, D-147). Raises `LlmError` as `stream` does."""
+        raise NotImplementedError(f"the {self.name} provider does not converse with tools")
 
     def asked_model(self) -> tuple[str, str]:
         """The model and version a call is addressed to, for the log row of a call that never
@@ -121,10 +152,15 @@ MOCK_MODEL = "mock"
 
 class MockLlm(LlmAdapter):
     """Deterministic and grounded: one statement per context chunk with its `[n]` marker,
-    nothing when the prompt carries none (SRC-S4, SRC-S5). A deployed environment refuses it
-    at boot."""
+    nothing when the prompt carries none (SRC-S4, SRC-S5). Offered tools, it calls none and
+    ends its turn. A deployed environment refuses it at boot."""
 
     name = "mock"
+
+    def converse(
+        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int, effort: str, deadline_s: float
+    ) -> Turn:
+        return Turn(content=[{"type": "text", "text": ""}], model=MOCK_MODEL, model_version="0", input_tokens=0, output_tokens=0, stop_reason="end_turn")
 
     def asked_model(self) -> tuple[str, str]:
         return MOCK_MODEL, "0"
@@ -284,6 +320,93 @@ def _read_events(response: Any, deadline: float) -> Iterator[str | Completion]:
     raise LlmError("the model stream ended before the answer was complete")
 
 
+def _index(event: dict[str, Any]) -> int:
+    return _typed(event.get("index"), int)
+
+
+def _started(block: dict[str, Any]) -> dict[str, Any] | None:
+    """A content block as it opens, keeping only the fields its type documents; a block of a
+    type the request never asked for (a server tool's) is not kept."""
+    kind = block.get("type")
+    if kind == "text":
+        return {"type": "text", "text": _typed(block.get("text", ""), str)}
+    if kind == "tool_use":
+        return {"type": "tool_use", "id": _typed(block.get("id"), str), "name": _typed(block.get("name"), str), "input": {}}
+    if kind == "thinking":
+        return {"type": "thinking", "thinking": _typed(block.get("thinking", ""), str), "signature": _typed(block.get("signature", ""), str)}
+    if kind == "redacted_thinking":
+        return {"type": "redacted_thinking", "data": _typed(block.get("data"), str)}
+    return None
+
+
+# Which delta extends which block, and the field it extends.
+_DELTAS = {
+    ("text_delta", "text"): ("text", "text"),
+    ("thinking_delta", "thinking"): ("thinking", "thinking"),
+    ("signature_delta", "thinking"): ("signature", "signature"),
+}
+
+
+def _read_turn(response: Any, deadline: float) -> Turn:
+    """Parse the SSE body of a conversation turn into its blocks, in their order. A tool
+    call's input arrives as JSON fragments, joined and parsed when its block stops; JSON
+    that is not one object is an error. The stream ends in a Turn or raises."""
+    model = settings.LLM_MODEL
+    input_tokens = 0
+    output_tokens = 0
+    stop_reason: str | None = None
+    blocks: dict[int, dict[str, Any]] = {}
+    fragments: dict[int, list[str]] = {}
+    for raw_line in _lines(response, deadline):
+        line = raw_line.decode("utf-8").strip()
+        if not line.startswith("data:"):
+            continue
+        event = json.loads(line[len("data:") :])
+        kind = event.get("type")
+        if kind == "message_start":
+            message = event.get("message", {})
+            model = _typed(message.get("model", model), str)
+            input_tokens = _typed(message.get("usage", {}).get("input_tokens", 0), int)
+        elif kind == "content_block_start":
+            block = _started(_typed(event.get("content_block"), dict))
+            if block is not None:
+                blocks[_index(event)] = block
+                if block["type"] == "tool_use":
+                    fragments[_index(event)] = []
+        elif kind == "content_block_delta":
+            index, delta = _index(event), _typed(event.get("delta"), dict)
+            if index in fragments and delta.get("type") == "input_json_delta":
+                fragments[index].append(_typed(delta.get("partial_json", ""), str))
+            elif index in blocks and (delta.get("type"), blocks[index]["type"]) in _DELTAS:
+                field, source = _DELTAS[(delta["type"], blocks[index]["type"])]
+                blocks[index][field] += _typed(delta.get(source, ""), str)
+        elif kind == "content_block_stop":
+            index = _index(event)
+            if index in fragments:
+                blocks[index]["input"] = _typed(json.loads("".join(fragments.pop(index)) or "{}"), dict)
+        elif kind == "message_delta":
+            output_tokens = _typed(event.get("usage", {}).get("output_tokens", output_tokens), int)
+            reason = event.get("delta", {}).get("stop_reason")
+            if reason is not None:
+                stop_reason = _kind(reason)
+            if stop_reason == "refusal":
+                raise LlmError("the model declined to answer (refusal)")
+        elif kind == "error":
+            raise LlmError(f"the model API failed mid-stream ({_kind(event.get('error', {}).get('type'))})")
+        elif kind == "message_stop":
+            if stop_reason is None or fragments:
+                raise LlmError("the model stream ended without a stop reason or with a tool call unfinished")
+            return Turn(
+                content=[blocks[index] for index in sorted(blocks)],
+                model=model,
+                model_version=ANTHROPIC_API_VERSION,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                stop_reason=stop_reason,
+            )
+    raise LlmError("the model stream ended before the turn was complete")
+
+
 class AnthropicLlm(LlmAdapter):
     """`model_version` is the API version the answer was produced under; the resolved model
     id the response reports is `model`. Both go on the `ai_generation` row (AUD-02)."""
@@ -304,11 +427,44 @@ class AnthropicLlm(LlmAdapter):
         body = {
             "model": settings.LLM_MODEL,
             # A setting is the ceiling, so no caller can spend more than the budget allows.
+            # Thinking tokens count toward it, so these short answers think at LLM_EFFORT.
             "max_tokens": min(max_tokens, settings.LLM_MAX_TOKENS),
+            "output_config": {"effort": settings.LLM_EFFORT},
             "system": system,
             "messages": [{"role": "user", "content": prompt}],
             "stream": True,
         }
+        with self._open_with_retries(self._request(body), deadline, min(limit, settings.LLM_TIMEOUT_S)) as response:
+            try:
+                yield from _read_events(response, deadline)
+            except _UNREADABLE as exc:
+                # Once the body has started nothing is retried: the caller may already hold
+                # deltas, and a second answer would be spliced onto the first.
+                raise LlmError(f"the model API sent a stream that could not be read ({type(exc).__name__})") from exc
+
+    def converse(
+        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int, effort: str, deadline_s: float
+    ) -> Turn:
+        deadline = time.monotonic() + deadline_s
+        body = {
+            "model": settings.LLM_MODEL,
+            "max_tokens": max_tokens,
+            "output_config": {"effort": effort},
+            # The system prompt and the tools never change within a run, so each turn reads
+            # them, and the turns before it, from the cache.
+            "cache_control": {"type": "ephemeral"},
+            "system": system,
+            "messages": messages,
+            "tools": tools,
+            "stream": True,
+        }
+        with self._open_with_retries(self._request(body), deadline, min(deadline_s, settings.LLM_TIMEOUT_S)) as response:
+            try:
+                return _read_turn(response, deadline)
+            except _UNREADABLE as exc:
+                raise LlmError(f"the model API sent a stream that could not be read ({type(exc).__name__})") from exc
+
+    def _request(self, body: dict[str, Any]) -> urllib.request.Request:
         request = urllib.request.Request(  # noqa: S310 the URL is this module's own https constant
             ANTHROPIC_MESSAGES_URL,
             data=json.dumps(body).encode("utf-8"),
@@ -317,13 +473,7 @@ class AnthropicLlm(LlmAdapter):
         )
         # Never copied onto a redirected request, should an opener ever follow one.
         request.add_unredirected_header("x-api-key", self._api_key)
-        with self._open_with_retries(request, deadline, min(limit, settings.LLM_TIMEOUT_S)) as response:
-            try:
-                yield from _read_events(response, deadline)
-            except _UNREADABLE as exc:
-                # Once the body has started nothing is retried: the caller may already hold
-                # deltas, and a second answer would be spliced onto the first.
-                raise LlmError(f"the model API sent a stream that could not be read ({type(exc).__name__})") from exc
+        return request
 
     def _open_with_retries(self, request: urllib.request.Request, deadline: float, timeout: float) -> Any:
         """Retries happen here, before the body starts, and nowhere else: a transient
