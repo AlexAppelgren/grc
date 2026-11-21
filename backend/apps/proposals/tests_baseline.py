@@ -143,9 +143,20 @@ class BaselineCase(TestCase):
         return approved
 
 
-class TheRealBaseline(BaselineCase):
+class RealBaselineCase(BaselineCase):
+    """The researched baseline filed and applied for real, one market's tranches per test
+    class: each tranche holds its instruments with their duties, summaries, provisions and
+    corrections (a correction naming a duty outside its tranche is the checker's to refuse),
+    so a market files on its own. One class per market lets the parallel runner spread the
+    corpus over its workers; the whole of it in one test passed CI's 20-minute shard limit."""
+
+    tranches: tuple[str, ...] = ()
+
     def test_every_entry_files_and_applies_instruments_first_then_their_duties_then_the_law_they_cite(self) -> None:
-        entries = baseline.load()
+        if not self.tranches:
+            return  # the base class carries no market
+        only = self.tranches
+        entries = baseline.load(only)
         instruments = {entry.key for entry in entries if entry.kind == baseline.INSTRUMENT}
         duties = {entry.key for entry in entries if entry.kind == baseline.OBLIGATION}
         summaries = {entry.key for entry in entries if entry.kind == baseline.SUMMARY}
@@ -157,30 +168,30 @@ class TheRealBaseline(BaselineCase):
         self.assertTrue(instruments, "the baseline holds instruments")
         self.assertEqual(summaries, instruments, "every instrument of the baseline has its summary (INV-09)")
 
-        first = baseline.file()
+        first = baseline.file(only=only)
         self.assertEqual(first.refused, [])
         self.assertEqual(sum(first.filed.values()), len(instruments), "only instruments are due on the first call")
         self.assertEqual(sum(first.waiting.values()), len(duties) + len(summaries) + len(provisions) + len(corrections))
         self.assertEqual(self.approve_open(), len(instruments))
 
-        second = baseline.file()
+        second = baseline.file(only=only)
         self.assertEqual(second.refused, [])
         self.assertEqual(sum(second.filed.values()), len(duties) + len(summaries), "the duties and the summaries follow")
         self.assertEqual(sum(second.waiting.values()), len(provisions) + len(corrections), "a provision and a correction wait for their duty")
         self.assertEqual(self.approve_open(), len(duties) + len(summaries))
 
-        third = baseline.file()
+        third = baseline.file(only=only)
         self.assertEqual(third.refused, [])
         due = len(provisions) + len(corrections) - len(citing)
         self.assertEqual(sum(third.filed.values()), due, "the law's own words follow the duties that cite them, and so do the corrections")
         self.assertEqual(self.approve_open(), due)
 
-        fourth = baseline.file()
+        fourth = baseline.file(only=only)
         self.assertEqual(fourth.refused, [])
         self.assertEqual(sum(fourth.filed.values()), len(citing), "a correction naming provisions follows them")
         self.assertEqual(self.approve_open(), len(citing))
 
-        fifth = baseline.file()
+        fifth = baseline.file(only=only)
         self.assertEqual((sum(fifth.filed.values()), fifth.runs), (0, 0))
         self.assertEqual(sum(fifth.held.values()), len(instruments) + len(duties) + len(summaries) + len(provisions))
         self.assertEqual(sum(fifth.decided.values()), len(corrections), "a correction applied is never filed again")
@@ -193,6 +204,26 @@ class TheRealBaseline(BaselineCase):
         self.assertEqual(set(Instrument.objects.filter(stable_key__in=instruments).values_list("stable_key", flat=True)), instruments)
         self.assertEqual(set(Obligation.objects.filter(stable_key__in=duties).values_list("stable_key", flat=True)), duties)
         self.assertEqual(set(Provision.objects.filter(stable_key__in=provisions).values_list("stable_key", flat=True)), provisions)
+
+
+def _market_cases() -> dict[str, type[RealBaselineCase]]:
+    """One test class per market: the tranches whose name opens with its code."""
+    markets: dict[str, list[str]] = {}
+    for name in baseline.tranches():
+        markets.setdefault(name.split("-")[0], []).append(name)
+    return {
+        f"TheRealBaseline_{market}": type(f"TheRealBaseline_{market}", (RealBaselineCase,), {"tranches": tuple(names)})
+        for market, names in sorted(markets.items())
+    }
+
+
+globals().update(_market_cases())
+
+
+class EveryTrancheIsTested(TestCase):
+    def test_each_tranche_belongs_to_exactly_one_market_case(self) -> None:
+        covered = [name for case in _market_cases().values() for name in case.tranches]
+        self.assertEqual(sorted(covered), baseline.tranches())
 
 
 class FilingTheBaseline(BaselineCase):

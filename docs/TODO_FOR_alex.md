@@ -20,10 +20,6 @@ now takes, and what needs you:
 - [ ] **The in-worker EU runner (D-08, D-54) and H80** are still what the sweeper, the
       confirmer and the banks' own agents need to do real work. Until then a bank's run on the
       mock closes as failed after `AGENT_RUN_MAX_MINUTES` (360) instead of holding its cap.
-- [ ] **One backend test is close to CI's 20-minute shard limit.** `tests_baseline.TheRealBaseline` files and
-      approves the whole researched inventory and takes about 14 minutes on a CI runner (18 locally), so it
-      now has a shard to itself after the weights were re-measured on 2026-11-21. It grows with the
-      inventory. Default if you say nothing: when it nears the limit, it runs one market per test instead.
 - [x] Defaults taken (D-146): the seeded cadence of the baseline, translator and scope
       researcher becomes `manual` on the next deploy unless the console set it; a platform
       budget counts each run's reported cost, else its logged model calls, per UTC month.
