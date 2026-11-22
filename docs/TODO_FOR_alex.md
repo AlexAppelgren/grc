@@ -20,6 +20,10 @@ now takes, and what needs you:
 - [ ] **The in-worker EU runner (D-08, D-54) and H80** are still what the sweeper, the
       confirmer and the banks' own agents need to do real work. Until then a bank's run on the
       mock closes as failed after `AGENT_RUN_MAX_MINUTES` (360) instead of holding its cap.
+- [x] **Fewer agents (D-149).** A bank runs one agent of its own, "Research and watch"
+      (`scope-researcher` v3): it watches the sources and topics the bank picks and researches its
+      scope items. "Source checker" can no longer be added; a bank that has one keeps it. The
+      confirmer now starts as soon as a sweep has filed proposals.
 - [x] **Model and effort per agent (D-148).** Each of bleqq's agents has a Model and an Effort in
       its console settings (Agents, How it runs). Empty is the platform's: `claude-opus-5-5`, at high
       effort for an agent's turns and low for the translator's single answers.

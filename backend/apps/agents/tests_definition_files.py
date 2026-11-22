@@ -156,8 +156,10 @@ class TheScopeResearcher(SimpleTestCase):
     definition = _parsed(RESEARCHER, RESEARCHER_VERSION)
 
     def test_it_is_a_research_definition_of_the_bank_that_starts_as_a_draft(self) -> None:
+        # Weekly since v3: the bank's one agent also watches on its schedule (D-149); a scope
+        # item still opens a run of its own.
         self.assertEqual(
-            (self.definition["kind"], self.definition["status"], self.definition["default_cadence"]), ("research", "draft", "manual")
+            (self.definition["kind"], self.definition["status"], self.definition["default_cadence"]), ("research", "draft", "weekly")
         )
         self.assertFalse(read_definition(_path(RESEARCHER, RESEARCHER_VERSION)).active, "a platform admin publishes it")
 
@@ -169,7 +171,9 @@ class TheScopeResearcher(SimpleTestCase):
         for operation in operations:
             method, _, path = operation.partition(" ")
             with self.subTest(operation):
-                self.assertEqual(method, "GET")
+                # POST /search/similar sends a text and reads the nearest records back: a read
+                # behind `search:read`, which it holds since v3 took over the watch (D-149).
+                self.assertEqual(method, "POST" if operation == "POST /search/similar" else "GET")
                 self.assertNotRegex(path, r"footprint|scope-item|proposal|agent-run", "nothing about the scope or a run")
 
     def test_its_findings_are_runner_events_with_a_source_per_field(self) -> None:

@@ -560,6 +560,8 @@ def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     `agent_definitions.manage` when the definition is one of bleqq's own agents, which no
     bank adds or steers; `unknown_key` (422) for a definition key that does not exist, or a
     scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+    `definition_retired` (422) for a definition no bank may add any more, such as
+    `tenant-source-watch`, whose job `scope-researcher` does;
     `above_plan_limit` (422) for a cadence more frequent than the plan allows, or one agent
     more than it allows; `duplicate_key` (409) when the bank has already added this
     definition; `validation_error` (422).

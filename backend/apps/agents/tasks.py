@@ -37,10 +37,12 @@ from apps.agents import budget, definitions, opener, platform
 from apps.agents.models import (
     Agent,
     AgentCadence,
+    AgentKind,
     AgentRun,
     AgentScopeKind,
     AgentVersion,
     ResearchRequest,
+    RunStatus,
     RunTrigger,
     TenantAgent,
 )
@@ -111,6 +113,22 @@ def open_platform_run(agent: Agent) -> AgentRun:
         actor=SCHEDULER,
         scope={"jurisdictions": _covered(agent)},
     )
+
+
+def start_reviews_after(run: AgentRun) -> None:
+    """After a sweep filed proposals, start each of bleqq's review agents that is on, so the
+    queue it filled is decided the same day rather than on the reviewer's own cadence (D-149).
+    A reviewer already running is left to finish; one over its monthly budget is skipped with
+    an audit row, as on the beat."""
+    reviewers = Agent.objects.filter(scope=AgentScopeKind.PLATFORM.value, active=True, kind=AgentKind.REVIEW.value).order_by("key")
+    for agent in reviewers:
+        if AgentRun.objects.filter(agent=agent, tenant__isnull=True, status=RunStatus.RUNNING.value).exists():
+            continue
+        with transaction.atomic():
+            try:
+                open_platform_run(agent)
+            except ProblemError as refused:
+                _skipped(agent=agent, reason=refused.code, tenant_id=None, after={"after": str(run.id)})
 
 
 def open_baseline_run(agent_key: str, *, actor: Actor, budgeted: bool = False) -> AgentRun:

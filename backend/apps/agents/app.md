@@ -159,6 +159,12 @@ The models are a priced list in code (`AGENT_MODELS`), so cost and budget stay e
 the translator and the sweeper's classifier use the setting, and a run opened by the app names
 the model its calls go to.
 
+D-149 (Alex, 2026-11-22) cuts the agents without changing what they produce: a bank runs one
+agent of its own, `scope-researcher` v3, which watches the bank's sources and topics and
+researches its scope items; `tenant-source-watch` is retired for new agents (422
+`definition_retired`). A sweep that filed proposals starts the confirmer at once, so the queue
+is decided the same day.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.

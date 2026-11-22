@@ -306,8 +306,8 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
 function AddAgentModal({ open, onClose, taken, onAdded }: { open: boolean; onClose: () => void; taken: readonly string[]; onAdded: (name: string) => void }) {
   const t = useT();
   const queryClient = useQueryClient();
-  const offered = Object.keys(ADDABLE_DEFINITIONS).filter((key) => !taken.includes(key));
-  const [agentKey, setAgentKey] = useState(offered[0] ?? '');
+  const offered = ADDABLE_DEFINITIONS.filter((key) => !taken.includes(key));
+  const [agentKey, setAgentKey] = useState<string>(offered[0] ?? '');
   const [schedule, setSchedule] = useState<Schedule>({ cadence: 'weekly', runWeekday: DEFAULT_WEEKDAY, runHour: DEFAULT_HOUR, jurisdictions: [] });
   const add = useMutation({
     mutationFn: () => createTenantAgent({ agent: agentKey, ...scheduleBody(schedule, []) }),
@@ -363,7 +363,7 @@ export function OurAgentsPanel({ agents, aiEnabled }: { agents: UseQueryResult<T
   const [status, setStatus] = useState<string | null>(null);
   const items = agents.data?.items ?? [];
   const taken = items.map((agent) => agent.agent);
-  const canAdd = Object.keys(ADDABLE_DEFINITIONS).some((key) => !taken.includes(key));
+  const canAdd = ADDABLE_DEFINITIONS.some((key) => !taken.includes(key));
   const capReached = budget.data === undefined ? false : spendOf(budget.data).reached;
   const addButton = canAdd ? (
     <Button onClick={() => setAdding(true)} data-add-agent="">

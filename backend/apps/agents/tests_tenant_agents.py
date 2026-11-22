@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 from django.test import override_settings
 
+from apps.agents.seeds import seed_agent_definitions
 from apps.agents import tenant_agents
 from apps.agents import testing as agent_build
 from apps.agents.models import Agent, AgentKind, AgentScopeKind, AgentWritesTo, TenantAgent, TenantAgentBudget
@@ -112,6 +113,19 @@ class AddingAnAgent(TenantAgentCase):
         answer = self.call("post", AGENTS, {"agent": "no-such-agent"})
         self.assertEqual(answer.status_code, 422, answer.content)
         self.assertEqual(answer.json()["code"], "unknown_key")
+
+    def test_a_retired_definition_is_refused_and_adds_nothing(self) -> None:
+        """D-149: tenant-source-watch's job is scope-researcher's, so no bank adds it any more;
+        a bank that holds one keeps it."""
+        seed_agent_definitions()
+        answer = self.call("post", AGENTS, {"agent": "tenant-source-watch"})
+        self.assertEqual(answer.status_code, 422, answer.content)
+        self.assertEqual(answer.json()["code"], "definition_retired")
+        self.activate(self.bank)
+        self.assertFalse(TenantAgent.objects.filter(tenant=self.bank).exists())
+        tenancy.clear_tenant()
+        added = self.call("post", AGENTS, {"agent": "scope-researcher"})
+        self.assertEqual(added.status_code, 201, added.content)
 
     def test_a_tenant_definition_adds_a_switched_off_agent_with_one_audit_row(self) -> None:
         answer = self.add(cadence="weekly", scope={"jurisdictions": ["se"], "terms": []})

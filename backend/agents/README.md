@@ -37,6 +37,11 @@ and files them as one `new_translations` proposal, machine-labelled, for a perso
 approve; `apps/proposals/translations.py` is its runner (D-129).
 `apps/agents/seeds/__init__.py` names them in `SHIPPED`.
 
+Since D-149 (2026-11-22) a bank runs one agent of its own, `scope-researcher` v3, which also
+does what `tenant-source-watch` did: it watches the bank's sources and topics and reports what it
+counted. `tenant-source-watch` is retired: no bank may add it (`RETIRED_FOR_BANKS`), and it stays
+shipped only so the agents banks already hold, and their runs, still name it.
+
 `scope-researcher` calls no write operation at all: its proposals and its
 report are the runner's own tools, which reach the bank's queue only as runner
 events the worker validates and applies, owned by the run's bank. Its

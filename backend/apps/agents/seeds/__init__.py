@@ -30,10 +30,16 @@ SHIPPED: tuple[tuple[str, int], ...] = (
     ("watch-sweeper", 1),
     ("library-confirmer", 2),
     ("tenant-source-watch", 1),
-    ("scope-researcher", 2),  # v2 is scored on the screen rows of all ten languages (D-145)
+    ("scope-researcher", 3),  # v3 is the bank's one agent: it also watches, as tenant-source-watch did (D-149)
     ("library-baseline", 1),
     ("library-translator", 2),  # v2 names all ten content languages (D-145)
 )
+
+
+# Definitions no bank may add an agent on any more (D-149): an agent a bank already has keeps
+# its history. tenant-source-watch's job is scope-researcher's since v3; the definition stays
+# shipped so its existing agents and their runs still name it.
+RETIRED_FOR_BANKS = frozenset({"tenant-source-watch"})
 
 
 def definitions() -> list[Definition]:

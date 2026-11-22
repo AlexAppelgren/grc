@@ -52,27 +52,31 @@ export function refusals(t: Translate): Record<RefusalCode, string> {
   return Object.fromEntries(Object.entries(REFUSAL_KEY).map(([code, key]) => [code, t(key)])) as Record<RefusalCode, string>;
 }
 
-// The tenant-scoped definitions a bank may add. No route lists them to a
-// bank, so the catalog names the ones bleqq ships; the server refuses any
-// other key with `unknown_key` and one of bleqq's own with a 403.
-export const ADDABLE_DEFINITIONS = {
-  'tenant-source-watch': { name: 'adminAgents.definition.sourceWatch.name', what: 'adminAgents.definition.sourceWatch.what' },
+// The tenant-scoped definitions bleqq ships, in words, for the agents a bank
+// holds. No route lists them to a bank, so the catalog names them.
+const BANK_DEFINITIONS = {
   'scope-researcher': { name: 'adminAgents.definition.scopeResearcher.name', what: 'adminAgents.definition.scopeResearcher.what' },
+  'tenant-source-watch': { name: 'adminAgents.definition.sourceWatch.name', what: 'adminAgents.definition.sourceWatch.what' },
 } as const satisfies Record<string, { name: MessageKey; what: MessageKey }>;
 
-type AddableKey = keyof typeof ADDABLE_DEFINITIONS;
+// The ones a bank may add now. tenant-source-watch is retired (D-149): its
+// job is scope-researcher's, and the server refuses it with
+// `definition_retired`; a bank that holds one keeps it and its history.
+export const ADDABLE_DEFINITIONS = ['scope-researcher'] as const;
 
-function isAddable(agentKey: string): agentKey is AddableKey {
-  return Object.hasOwn(ADDABLE_DEFINITIONS, agentKey);
+type BankDefinitionKey = keyof typeof BANK_DEFINITIONS;
+
+function isShipped(agentKey: string): agentKey is BankDefinitionKey {
+  return Object.hasOwn(BANK_DEFINITIONS, agentKey);
 }
 
 /** A bank's agent is named by its definition: the catalog's words, else its key read as words. */
 export function bankAgentName(agentKey: string, t: Translate): string {
-  return isAddable(agentKey) ? t(ADDABLE_DEFINITIONS[agentKey].name) : definitionName(agentKey);
+  return isShipped(agentKey) ? t(BANK_DEFINITIONS[agentKey].name) : definitionName(agentKey);
 }
 
 export function bankAgentWhat(agentKey: string, t: Translate): string | null {
-  return isAddable(agentKey) ? t(ADDABLE_DEFINITIONS[agentKey].what) : null;
+  return isShipped(agentKey) ? t(BANK_DEFINITIONS[agentKey].what) : null;
 }
 
 export interface Spend {

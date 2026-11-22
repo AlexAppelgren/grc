@@ -100,6 +100,7 @@ describe('the smaller readings', () => {
   });
 
   it('names a shipped definition in words and any other by its key', () => {
+    expect(bankAgentName('scope-researcher', t)).toBe('Research and watch');
     expect(bankAgentName('tenant-source-watch', t)).toBe('Source checker');
     expect(bankAgentName('bank-new-thing', t)).toBe('Bank new thing');
   });

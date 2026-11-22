@@ -25,6 +25,7 @@ from apps.agents.logic import definition_by_key, live_term_keys, term_keys
 from apps.agents.models import AgentCadence, TenantAgent, TenantAgentBudget
 from apps.agents.platform import refuse_platform_agent
 from apps.agents.schemas import TenantAgentInput, TenantAgentScope, TenantAgentUpdate
+from apps.agents.seeds import RETIRED_FOR_BANKS
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
@@ -197,6 +198,11 @@ def create_tenant_agent(*, who: Principal, tenant: Tenant, body: TenantAgentInpu
     if definition is None:
         raise ValidationError("No agent definition has that key.", code="unknown_key")
     refuse_platform_agent(definition)
+    if definition.key in RETIRED_FOR_BANKS:
+        raise ValidationError(
+            "This kind of agent is retired: add scope-researcher, which watches the sources and topics you pick and researches your scope items.",
+            code="definition_retired",
+        )
     _check_cadence(body.cadence)
     scope = _check_scope(body.scope)
     lock_tenant(tenant, SUBJECT_TYPE)

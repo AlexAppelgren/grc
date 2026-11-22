@@ -271,7 +271,7 @@ describe('admin agents screen', () => {
     let refuse = true;
     const sent = server({}, (s) => {
       if (s.method !== 'post' || s.path !== AGENTS) return undefined;
-      return refuse ? problem('unknown_key') : { status: 201, data: ownAgent({ enabled: false }) };
+      return refuse ? problem('unknown_key') : { status: 201, data: ownAgent({ id: 'ta2', agent: 'scope-researcher', enabled: false }) };
     });
     open(ADMIN);
     fireEvent.click(await screen.findByRole('button', { name: 'Add an agent' }));
@@ -282,9 +282,9 @@ describe('admin agents screen', () => {
 
     refuse = false;
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add the agent' }));
-    expect(await screen.findByText('Added Source checker. It is switched off until you switch it on.')).toBeInTheDocument();
+    expect(await screen.findByText('Added Research and watch. It is switched off until you switch it on.')).toBeInTheDocument();
     expect(sent.filter((s) => s.method === 'post' && s.path !== REFRESH_PATH).map((s) => s.body)[1]).toEqual({
-      agent: 'tenant-source-watch',
+      agent: 'scope-researcher',
       cadence: 'weekly',
       runWeekday: 1,
       runHour: 6,

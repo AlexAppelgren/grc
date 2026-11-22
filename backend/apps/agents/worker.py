@@ -8,7 +8,8 @@ turn limit and the agent's monthly budget are checked; each turn is logged with 
 (`ai.converse`) and reported as a runner event, which is H80's leg: the run row carries
 what it spent while it runs. A tool runs in a transaction of its own and a refusal goes back
 to the model as an error result. The run ends when the model ends its turn, closed with the
-status and counters it reported through `finishAgentRun`.
+status and counters it reported through `finishAgentRun`. A sweep that filed proposals then
+starts the review agents, so its queue is decided the same day (D-149).
 
 A bank's own agents are not driven here yet: `WorkerAgentRunner` refuses to start their runs,
 so the opener closes each as failed at once, until the bank-zone leg is built.
@@ -27,8 +28,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from pydantic import ValidationError as SchemaError
 
-from apps.agents import platform, runner_events, runner_tools
-from apps.agents.models import AgentRun, RunStatus
+from apps.agents import platform, runner_events, runner_tools, tasks
+from apps.agents.models import AgentKind, AgentRun, RunStatus
+from apps.proposals.models import Proposal
 from apps.agents.seeds.definition import DEFINITIONS
 from apps.shared import ai
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -181,10 +183,11 @@ def drive(run_id: uuid.UUID) -> None:
         if turn.stop_reason != "tool_use":
             if turn.stop_reason != "end_turn":
                 _report(run, ledger, session, RunStatus.FAILED, CUT_SHORT)
-            elif session.finish is not None:
-                _report(run, ledger, session, RunStatus(session.finish.status), session.finish.error)
-            else:
-                _report(run, ledger, session, RunStatus.SUCCEEDED)
+                return
+            ended = RunStatus(session.finish.status) if session.finish is not None else RunStatus.SUCCEEDED
+            _report(run, ledger, session, ended, session.finish.error if session.finish is not None else "")
+            if ended is RunStatus.SUCCEEDED and run.agent.kind == AgentKind.WATCH.value and Proposal.objects.filter(agent_run_id=run.id).exists():
+                tasks.start_reviews_after(run)
             return
         messages.append({"role": "user", "content": [_result(session, by_name.get(use["name"]), use) for use in turn.tool_uses]})
         if not _report(run, ledger, session, RunStatus.RUNNING):

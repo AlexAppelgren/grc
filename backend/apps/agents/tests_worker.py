@@ -339,3 +339,52 @@ class AnAgentsOwnModelAndEffort(WorkerCase):
         with transaction.atomic():
             opened = tasks.open_platform_run(type(self.agent).objects.get(pk=self.agent.pk))
         self.assertEqual(opened.model, "claude-sonnet-5-5", "the version says claude-opus-5; the run says what it calls")
+
+
+class TheConfirmerFollowsTheSweep(WorkerCase):
+    """D-149: a sweep that filed proposals starts the review agents, so its queue is decided
+    the same day; one that filed nothing, or a reviewer already running, starts none."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        from apps.agents.models import AgentKind
+
+        self.confirmer = agent_build.agent(key="library-confirmer", kind=AgentKind.REVIEW)
+        with library_write("test"):
+            AgentVersion.objects.create(agent=self.confirmer, version_number=1, model="claude-opus-5", prompt_path="prompt.md", tools=CONFIRMER_TOOLS)
+
+    def proposal(self) -> dict[str, Any]:
+        return {
+            "kind": "new_obligation_version",
+            "title": "Version 2 of the research assessment duty",
+            "targetType": "obligation",
+            "targetId": str(self.world.obligation.id),
+            "payload": {"summaries": {"en": "Assess the research payment first."}, "originalLanguage": "en", "isMachine": True},
+            "fieldSources": {"summaries.en": PAGE},
+            "sourceLabel": "Finansinspektionen, board decision",
+            "sourceUrl": PAGE,
+            "model": "claude-opus-5-5",
+        }
+
+    def reviews(self) -> list[AgentRun]:
+        return list(AgentRun.objects.filter(agent=self.confirmer))
+
+    def test_a_sweep_that_filed_starts_the_confirmer(self) -> None:
+        self.drive(_uses(("createProposal", self.proposal())), _done())
+        [review] = self.reviews()
+        self.assertEqual((review.trigger, review.tenant_id, review.status), (RunTrigger.SCHEDULE.value, None, RunStatus.RUNNING.value))
+
+    def test_a_sweep_that_filed_nothing_starts_none(self) -> None:
+        self.drive(_uses(("listSources", {})), _done())
+        self.assertEqual(self.reviews(), [])
+
+    def test_a_confirmer_already_running_is_left_to_finish(self) -> None:
+        running = AgentRun.objects.create(agent=self.confirmer, trigger=RunTrigger.SCHEDULE.value, model="m", pipeline_version="1")
+        self.drive(_uses(("createProposal", self.proposal())), _done())
+        self.assertEqual(self.reviews(), [running])
+
+    def test_a_confirmer_switched_off_is_not_started(self) -> None:
+        with library_write("test"):
+            type(self.confirmer).objects.filter(pk=self.confirmer.pk).update(active=False)
+        self.drive(_uses(("createProposal", self.proposal())), _done())
+        self.assertEqual(self.reviews(), [])
