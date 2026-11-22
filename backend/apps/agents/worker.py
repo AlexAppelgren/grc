@@ -165,6 +165,8 @@ def drive(run_id: uuid.UUID) -> None:
                     prompt_template=f"{run.agent.key}/v{run.pipeline_version}",
                     agent_run_id=run.id,
                     tenant_id=None,
+                    model=platform.model_of(run.agent),
+                    effort=platform.effort_of(run.agent),
                 )
             except ai.LlmError:
                 conversed = None

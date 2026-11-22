@@ -23,16 +23,19 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from apps.agents import definitions
-from apps.agents.models import Agent, AgentRun, AgentScopeKind
+from apps.agents.models import Agent, AgentKind, AgentRun, AgentScopeKind
 from apps.agents.schemas import (
     AgentRunListPage,
+    AgentModel,
     AgentRunStats,
     Cadence,
+    Effort,
     PlatformAgentSettings,
     PlatformAgentSettingsInput,
 )
 from apps.agents.seeds import console
 from apps.governance.models import AiGeneration
+from apps.shared.model_prices import AGENT_MODELS
 from apps.shared import permissions as perms
 from apps.shared.audit import record
 from apps.shared.authentication import Principal
@@ -59,6 +62,24 @@ def monthly_budget(agent: Agent) -> Decimal:
     if agent.platform_monthly_budget is not None:
         return agent.platform_monthly_budget
     return Decimal(settings.PLATFORM_AGENT_MONTHLY_BUDGET)
+
+
+def model_of(agent: Agent) -> str:
+    """The model one of the agent's runs calls: the console's (D-148), else `LLM_MODEL`."""
+    return agent.platform_model or settings.LLM_MODEL
+
+
+def default_effort(agent: Agent) -> str:
+    """The effort while the console set none: a single answer's (`LLM_EFFORT`) for an agent
+    the app runs itself, which asks one question per record (the translator, kind `backfill`),
+    else an agent turn's (`AGENT_EFFORT`)."""
+    return settings.LLM_EFFORT if agent.kind == AgentKind.BACKFILL.value else settings.AGENT_EFFORT
+
+
+def effort_of(agent: Agent) -> str:
+    """The effort one of the agent's model calls asks for: the console's (D-148), else the
+    default for its kind."""
+    return agent.platform_effort or default_effort(agent)
 
 
 def refuse_over_budget(agent: Agent) -> None:
@@ -106,6 +127,10 @@ def _platform_agent(agent_key: str, *, lock: bool = False) -> Agent:
     return agent
 
 
+# What a settings change records before and after: what a person set, never the defaults.
+AUDITED_OUT = {"agent_key", "default_model", "default_effort", "default_monthly_budget", "models"}
+
+
 def _settings(agent: Agent) -> PlatformAgentSettings:
     scope = agent.platform_scope or {}
     return PlatformAgentSettings(
@@ -113,6 +138,12 @@ def _settings(agent: Agent) -> PlatformAgentSettings:
         cadence=cast(Cadence, agent.default_cadence),
         jurisdictions=list(scope.get("jurisdictions", [])),
         monthly_budget=agent.platform_monthly_budget,
+        model=cast(AgentModel, agent.platform_model) if agent.platform_model else None,
+        effort=cast(Effort, agent.platform_effort) if agent.platform_effort else None,
+        default_model=settings.LLM_MODEL,
+        default_effort=cast(Effort, default_effort(agent)),
+        default_monthly_budget=Decimal(settings.PLATFORM_AGENT_MONTHLY_BUDGET),
+        models=cast(list[AgentModel], list(AGENT_MODELS)),
     )
 
 
@@ -129,9 +160,14 @@ def update_settings(*, who: Principal, agent_key: str, body: PlatformAgentSettin
     jurisdictions = list(dict.fromkeys(row.key for row in resolve_keys("jurisdiction", body.jurisdictions)))
     with transaction.atomic():
         agent = _platform_agent(agent_key, lock=True)
-        before = _settings(agent).model_dump(mode="json", by_alias=True, exclude={"agent_key"})
+        before = _settings(agent).model_dump(mode="json", by_alias=True, exclude=AUDITED_OUT)
         console.set_platform_settings(
-            agent, cadence=body.cadence, jurisdictions=jurisdictions, monthly_budget=body.monthly_budget
+            agent,
+            cadence=body.cadence,
+            jurisdictions=jurisdictions,
+            monthly_budget=body.monthly_budget,
+            model=body.model or "",
+            effort=body.effort or "",
         )
         after = _settings(agent)
         record(
@@ -143,7 +179,7 @@ def update_settings(*, who: Principal, agent_key: str, body: PlatformAgentSettin
             summary=f"Settings of agent {agent.key} changed for every bank.",
             tenant_id=None,
             before=before,
-            after=after.model_dump(mode="json", by_alias=True, exclude={"agent_key"}),
+            after=after.model_dump(mode="json", by_alias=True, exclude=AUDITED_OUT),
             step_up_assertion_id=who.step_up_assertion_id,
         )
     return after

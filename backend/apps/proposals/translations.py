@@ -32,7 +32,7 @@ from django.core.exceptions import ValidationError
 from django.db import connection, transaction
 from django.utils import timezone
 
-from apps.agents import runner_events, tasks as agent_tasks
+from apps.agents import platform, runner_events, tasks as agent_tasks
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import SHIPPED
 from apps.agents.seeds.definition import DEFINITIONS
@@ -237,6 +237,8 @@ def translate(target: str, record_id: uuid.UUID) -> str:
                     subject_type=record.target,
                     subject_id=record.id,
                     agent_run_id=run.id,
+                    model=platform.model_of(run.agent),
+                    effort=platform.effort_of(run.agent),
                 )
             except ai.LlmError:
                 generated = None

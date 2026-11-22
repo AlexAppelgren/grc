@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.utils import timezone
@@ -112,7 +113,7 @@ class BleqqsBeat(PlatformBeatCase):
         self.assertEqual((run.agent_id, run.tenant_id, run.api_key_id), (self.bleqq.id, None, None))
         self.assertEqual(run.trigger, RunTrigger.SCHEDULE.value)
         self.assertEqual(run.agent_version_id, self.version.id)
-        self.assertEqual(run.model, self.version.model)
+        self.assertEqual(run.model, settings.LLM_MODEL, "the model its calls go to, not the version's (D-148)")
         self.assertEqual(run.status, RunStatus.RUNNING.value)
         self.assertIsNone(run.budget_limit, "bleqq's run spends bleqq's budget, never a bank's cap")
         self.assertTrue(run.external_session_id)
@@ -286,7 +287,7 @@ class ABanksBeat(BankBeatCase):
         self.assertEqual(runner.seen, [(True, self.bank.id)])
         self.assertEqual((run.tenant_id, run.tenant_agent_id, run.api_key_id), (self.bank.id, self.agent.id, None))
         self.assertEqual(run.trigger, RunTrigger.SCHEDULE.value)
-        self.assertEqual((run.agent_version_id, run.model), (self.version.id, "claude-sonnet-5"))
+        self.assertEqual((run.agent_version_id, run.model), (self.version.id, settings.LLM_MODEL), "a bank's own agent runs on the platform's model (D-148)")
         self.assertEqual(run.budget_limit, Decimal("5.00"))
         self.assertEqual(run.scope["source"], "markets", "the scope is snapshot from scope.py at start")
         self.activate(self.bank)

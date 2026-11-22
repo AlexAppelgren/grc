@@ -38,6 +38,7 @@ from apps.governance.schemas import AiCitation
 from apps.library.models import Instrument, Obligation, Provision, SubjectType
 from apps.shared import tenancy
 from apps.shared.adapters.llm import Completion, LlmAdapter, Turn, get_llm
+from apps.shared.model_prices import AGENT_MODELS
 from apps.shared.adapters.llm import LlmError as LlmError
 from apps.shared.adapters.llm import format_context as format_context
 from apps.shared.errors import ProblemError
@@ -92,11 +93,15 @@ def refuse_private(subject_type: str, subject_id: uuid.UUID | None) -> None:
         )
 
 
-def cost_minor(input_tokens: int, output_tokens: int) -> int:
-    """What a call cost, in minor units, at `LLM_PRICE_*_MINOR_PER_MTOK`, rounded up so a call
-    that spent anything never reads as free."""
-    spent = input_tokens * settings.LLM_PRICE_INPUT_MINOR_PER_MTOK + output_tokens * settings.LLM_PRICE_OUTPUT_MINOR_PER_MTOK
-    return math.ceil(spent / 1_000_000)
+def cost_minor(input_tokens: int, output_tokens: int, model: str | None = None) -> int:
+    """What a call cost, in minor units, rounded up so a call that spent anything never reads
+    as free: at an agent's own model's list price (`AGENT_MODELS`, D-148), else at
+    `LLM_PRICE_*_MINOR_PER_MTOK`, the price of `LLM_MODEL`."""
+    if model in AGENT_MODELS:
+        price_in, price_out = AGENT_MODELS[model]
+    else:
+        price_in, price_out = settings.LLM_PRICE_INPUT_MINOR_PER_MTOK, settings.LLM_PRICE_OUTPUT_MINOR_PER_MTOK
+    return math.ceil((input_tokens * price_in + output_tokens * price_out) / 1_000_000)
 
 
 def ensure_enabled() -> None:
@@ -128,6 +133,8 @@ def generate(
     llm: LlmAdapter | None = None,
     deadline_s: float | None = None,
     agent_run_id: uuid.UUID | None = None,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> Generation:
     """Ask the model, then write the row, in the caller's transaction.
 
@@ -137,21 +144,22 @@ def generate(
     raised again. A finished call's row carries the provider's own model and version.
 
     A bank's own library record as subject is refused first (`refuse_private`). `deadline_s`
-    shortens the adapter's deadline; the row carries `cost_minor` and the agent run, if any.
+    shortens the adapter's deadline; `model` and `effort` are an agent's own (D-148), else the
+    settings'; the row carries `cost_minor` and the agent run, if any.
     """
     refuse_private(subject_type, subject_id)
     ensure_enabled()
     engine = llm if llm is not None else get_llm()
     try:
         completion = engine.complete(
-            system=system, prompt=prompt, max_tokens=max_tokens or settings.LLM_MAX_TOKENS, deadline_s=deadline_s
+            system=system, prompt=prompt, max_tokens=max_tokens or settings.LLM_MAX_TOKENS, deadline_s=deadline_s, model=model, effort=effort
         )
     except LlmError:
-        model, model_version = engine.asked_model()
+        asked, model_version = engine.asked_model(model)
         with transaction.atomic():
             log_generation(
                 purpose=purpose,
-                model=model,
+                model=asked,
                 model_version=model_version,
                 output="",
                 citations=citations,
@@ -162,7 +170,7 @@ def generate(
                 subject_id=subject_id,
                 prompt_template=prompt_template,
                 prompt_hash=prompt_hash(system, prompt),
-                cost_minor=cost_minor(math.ceil(len(system + prompt) / CHARS_PER_TOKEN), 0),
+                cost_minor=cost_minor(math.ceil(len(system + prompt) / CHARS_PER_TOKEN), 0, model),
                 metadata_reported_by_agent=False,
                 stop_reason=FAILED,
             )
@@ -182,7 +190,7 @@ def generate(
         prompt_hash=prompt_hash(system, prompt),
         input_tokens=completion.input_tokens,
         output_tokens=completion.output_tokens,
-        cost_minor=cost_minor(completion.input_tokens, completion.output_tokens),
+        cost_minor=cost_minor(completion.input_tokens, completion.output_tokens, model),
         metadata_reported_by_agent=False,
         stop_reason=completion.stop_reason,
     )
@@ -211,9 +219,12 @@ def converse(
     agent_run_id: uuid.UUID,
     tenant_id: uuid.UUID | None,
     llm: LlmAdapter | None = None,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> Conversed:
     """One turn of an agent run the in-worker runner drives (D-147), then its log row, in the
-    caller's transaction: purpose `agent_turn`, the run named, the cost on the row. The bank's
+    caller's transaction: purpose `agent_turn`, the run named, the cost on the row at the price
+    of the turn's model (`model`, `effort`: the agent's own, D-148, else the settings'). The bank's
     switch stops a bank's run before any model is asked (`ensure_enabled`); a platform run is
     in no bank's zone. A failed turn is logged as `failed` with its input cost estimated, as
     `generate` logs one, and the error raised again."""
@@ -226,16 +237,17 @@ def converse(
             messages=messages,
             tools=tools,
             max_tokens=settings.AGENT_TURN_MAX_TOKENS,
-            effort=settings.AGENT_EFFORT,
+            effort=effort or settings.AGENT_EFFORT,
             deadline_s=settings.AGENT_TURN_DEADLINE_S,
+            model=model,
         )
     except LlmError:
-        model, model_version = engine.asked_model()
+        asked, model_version = engine.asked_model(model)
         sent = system + json.dumps(messages, ensure_ascii=False, default=str) + json.dumps(tools)
         with transaction.atomic():
             log_generation(
                 purpose=AiPurpose.AGENT_TURN,
-                model=model,
+                model=asked,
                 model_version=model_version,
                 output="",
                 citations=[],
@@ -243,7 +255,7 @@ def converse(
                 agent_run_id=agent_run_id,
                 prompt_template=prompt_template,
                 prompt_hash=prompt_hash(system, asked),
-                cost_minor=cost_minor(math.ceil(len(sent) / CHARS_PER_TOKEN), 0),
+                cost_minor=cost_minor(math.ceil(len(sent) / CHARS_PER_TOKEN), 0, model),
                 stop_reason=FAILED,
             )
         raise
@@ -259,7 +271,7 @@ def converse(
         prompt_hash=prompt_hash(system, asked),
         input_tokens=turn.input_tokens,
         output_tokens=turn.output_tokens,
-        cost_minor=cost_minor(turn.input_tokens, turn.output_tokens),
+        cost_minor=cost_minor(turn.input_tokens, turn.output_tokens, model),
         stop_reason=turn.stop_reason,
     )
     return Conversed(turn=turn, generation=row)

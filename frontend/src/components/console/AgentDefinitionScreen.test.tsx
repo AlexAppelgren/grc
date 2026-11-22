@@ -51,7 +51,18 @@ const definition = {
   versions: [version(3), version(2), version(1, '2026-09-12T12:31:00Z')],
 };
 
-const settings = { agentKey: 'watch-sweeper', cadence: 'weekly', jurisdictions: ['se'], monthlyBudget: '200.00' };
+const settings = {
+  agentKey: 'watch-sweeper',
+  cadence: 'weekly',
+  jurisdictions: ['se'],
+  monthlyBudget: '200.00',
+  model: null,
+  effort: null,
+  defaultModel: 'claude-opus-5-5',
+  defaultEffort: 'high',
+  defaultMonthlyBudget: '150.00',
+  models: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
+};
 
 const JURISDICTIONS = [
   { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null },
@@ -204,7 +215,7 @@ describe('console agent definition', () => {
 
   it('saves how a platform agent runs for every bank, after a passkey', async () => {
     const answered = { count: 0 };
-    const sent = server((s) => (s.path === SETTINGS_PATH && s.method === 'put' ? stepUpOnce(answered, { agentKey: 'watch-sweeper', ...(s.body as object) }) : undefined));
+    const sent = server((s) => (s.path === SETTINGS_PATH && s.method === 'put' ? stepUpOnce(answered, { ...settings, ...(s.body as object) }) : undefined));
     renderIn(<AgentDefinitionScreen agentKey="watch-sweeper" />);
 
     const panel = (await screen.findByText('How it runs')).closest('[data-platform-settings]') as HTMLElement;
@@ -216,13 +227,19 @@ describe('console agent definition', () => {
     fireEvent.change(within(panel).getByLabelText('Runs'), { target: { value: 'daily' } });
     fireEvent.click(within(panel).getByLabelText('European Union'));
     fireEvent.change(within(panel).getByLabelText('Monthly budget in euro'), { target: { value: '250' } });
+    expect(within(panel).getByLabelText('Model')).toHaveValue('');
+    expect(within(panel).getByRole('option', { name: 'Platform default (claude-opus-5-5)' })).toBeInTheDocument();
+    expect(within(panel).getByRole('option', { name: 'Platform default (High)' })).toBeInTheDocument();
+    expect(within(panel).getByText("When it is reached, the next scheduled run waits for the new month. Leave it empty for the platform's default of 150.00 euro.")).toBeInTheDocument();
+    fireEvent.change(within(panel).getByLabelText('Model'), { target: { value: 'claude-sonnet-5-5' } });
+    fireEvent.change(within(panel).getByLabelText('Effort'), { target: { value: 'low' } });
     fireEvent.click(within(panel).getByRole('button', { name: 'Save for every bank' }));
 
     expect(await within(panel).findByText('Saved for every bank. Watch sweeper runs this way from its next run.')).toBeInTheDocument();
     expect(steppedUp).toBe(1);
     expect(sent.filter((s) => s.path === SETTINGS_PATH && s.method === 'put').map((s) => s.body)).toEqual([
-      { cadence: 'daily', jurisdictions: ['se', 'eu'], monthlyBudget: '250' },
-      { cadence: 'daily', jurisdictions: ['se', 'eu'], monthlyBudget: '250' },
+      { cadence: 'daily', jurisdictions: ['se', 'eu'], monthlyBudget: '250', model: 'claude-sonnet-5-5', effort: 'low' },
+      { cadence: 'daily', jurisdictions: ['se', 'eu'], monthlyBudget: '250', model: 'claude-sonnet-5-5', effort: 'low' },
     ]);
   });
 

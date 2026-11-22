@@ -11,15 +11,30 @@ import { CADENCE_KEY } from '@/features/agents/agents-presentation';
 import { usePlatformAgentSettings, useUpdatePlatformAgentSettings } from '@/features/agents/hooks';
 import type { AgentCadence, PlatformAgentSettings } from '@/features/agents/types';
 import { useJurisdictions } from '@/features/footprint/hooks';
+import type { MessageKey } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // How one of bleqq's own agents runs (console-agent-definitions.html, section
-// 5): its cadence, the jurisdictions it sweeps and its monthly budget. These
+// 5): its cadence, the jurisdictions it sweeps, its monthly budget, and the
+// model and effort its calls use (D-148), empty meaning the platform's. These
 // are the same for every bank, so the panel says so in plain words, and the
 // save asks for a passkey (the api client drives it off `step_up_required`)
 // and is audited with before and after by the server.
 
 const CADENCES = Object.keys(CADENCE_KEY) as AgentCadence[];
+
+type AgentEffort = NonNullable<PlatformAgentSettings['effort']>;
+type AgentModel = NonNullable<PlatformAgentSettings['model']>;
+
+// The effort levels in the order they are offered, each with its label (D-148).
+const EFFORT_KEY: Record<AgentEffort, MessageKey> = {
+  low: 'console.agents.settings.effort.low',
+  medium: 'console.agents.settings.effort.medium',
+  high: 'console.agents.settings.effort.high',
+  xhigh: 'console.agents.settings.effort.xhigh',
+  max: 'console.agents.settings.effort.max',
+};
+const EFFORTS = Object.keys(EFFORT_KEY) as AgentEffort[];
 
 /** Euro with at most two decimals, the shape the API takes; empty means no budget. */
 const EURO = /^\d{1,8}(\.\d{1,2})?$/;
@@ -31,6 +46,8 @@ function SettingsForm({ agentKey, name, saved }: { agentKey: string; name: strin
   const [cadence, setCadence] = useState<AgentCadence>(saved.cadence);
   const [chosen, setChosen] = useState<string[]>(saved.jurisdictions);
   const [budget, setBudget] = useState(saved.monthlyBudget ?? '');
+  const [model, setModel] = useState<AgentModel | ''>(saved.model ?? '');
+  const [effort, setEffort] = useState<AgentEffort | ''>(saved.effort ?? '');
   const [problem, setProblem] = useState<'jurisdictions' | 'budget' | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   // A saved key the reference list no longer holds stays choosable, so a save never drops it silently.
@@ -41,6 +58,8 @@ function SettingsForm({ agentKey, name, saved }: { agentKey: string; name: strin
     setCadence(saved.cadence);
     setChosen(saved.jurisdictions);
     setBudget(saved.monthlyBudget ?? '');
+    setModel(saved.model ?? '');
+    setEffort(saved.effort ?? '');
     setProblem(null);
     update.reset();
   };
@@ -53,7 +72,7 @@ function SettingsForm({ agentKey, name, saved }: { agentKey: string; name: strin
     if (amount !== '' && !EURO.test(amount)) return setProblem('budget');
     setProblem(null);
     update.mutate(
-      { cadence, jurisdictions: chosen, monthlyBudget: amount === '' ? null : amount },
+      { cadence, jurisdictions: chosen, monthlyBudget: amount === '' ? null : amount, model: model === '' ? null : model, effort: effort === '' ? null : effort },
       { onSuccess: () => setStatus(t('console.agents.settings.saved', { name })) },
     );
   };
@@ -73,10 +92,30 @@ function SettingsForm({ agentKey, name, saved }: { agentKey: string; name: strin
         <Field
           id="platform-agent-budget"
           label={t('console.agents.settings.budget')}
-          hint={t('console.agents.settings.budgetHint')}
+          hint={t('console.agents.settings.budgetHint', { amount: saved.defaultMonthlyBudget })}
           error={problem === 'budget' ? t('console.agents.settings.budgetInvalid') : undefined}
         >
           <TextInput id="platform-agent-budget" inputMode="decimal" value={budget} onChange={(e) => setBudget(e.target.value)} />
+        </Field>
+        <Field id="platform-agent-model" label={t('console.agents.settings.model')} hint={t('console.agents.settings.modelHint')}>
+          <Select id="platform-agent-model" value={model} onChange={(e) => setModel(e.target.value as AgentModel | '')}>
+            <option value="">{t('console.agents.settings.modelDefault', { model: saved.defaultModel })}</option>
+            {saved.models.map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field id="platform-agent-effort" label={t('console.agents.settings.effort')} hint={t('console.agents.settings.effortHint')}>
+          <Select id="platform-agent-effort" value={effort} onChange={(e) => setEffort(e.target.value as AgentEffort | '')}>
+            <option value="">{t('console.agents.settings.effortDefault', { effort: t(EFFORT_KEY[saved.defaultEffort]) })}</option>
+            {EFFORTS.map((key) => (
+              <option key={key} value={key}>
+                {t(EFFORT_KEY[key])}
+              </option>
+            ))}
+          </Select>
         </Field>
       </div>
       <CheckGroup legend={t('console.agents.settings.jurisdictions')} error={problem === 'jurisdictions' ? t('console.agents.settings.jurisdictionsRequired') : undefined}>

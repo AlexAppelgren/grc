@@ -153,6 +153,12 @@ A platform caller cannot read `GET /obligations/{id}` or `GET /instruments/{id}`
 bank), so the runner holds no `getObligation` or `getInstrument`; the queue row, the cited
 sources and a fetch of the cited page are what the confirmer reads.
 
+D-148 (Alex, 2026-11-22) puts a model and an effort in each platform agent's console settings,
+blank meaning the platform's (`LLM_MODEL`, and `AGENT_EFFORT` or, for the translator, `LLM_EFFORT`).
+The models are a priced list in code (`AGENT_MODELS`), so cost and budget stay exact; the runner,
+the translator and the sweeper's classifier use the setting, and a run opened by the app names
+the model its calls go to.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.

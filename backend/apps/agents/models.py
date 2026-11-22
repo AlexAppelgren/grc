@@ -24,6 +24,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.shared.model_prices import AGENT_MODELS, EFFORTS
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import KeyIsImmutable
 from apps.shared.kinds import choices
@@ -141,6 +142,10 @@ class Agent(LibraryModel):
     # What a platform agent carries in place of a bank's controls; a tenant row carries neither.
     platform_scope = models.JSONField(null=True, blank=True)  # schema: PlatformAgentScope
     platform_monthly_budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # The model and effort a platform agent runs on, set in the console (D-148); blank is the
+    # platform default (`LLM_MODEL`, and `AGENT_EFFORT` or `LLM_EFFORT`).
+    platform_model = models.CharField(max_length=64, blank=True, default="", choices=[(model, model) for model in AGENT_MODELS])
+    platform_effort = models.CharField(max_length=16, blank=True, default="", choices=[(effort, effort) for effort in EFFORTS])
 
     class Meta:
         db_table = "agent"
@@ -157,6 +162,8 @@ class Agent(LibraryModel):
                 | models.Q(
                     platform_scope__isnull=True,
                     platform_monthly_budget__isnull=True,
+                    platform_model="",
+                    platform_effort="",
                     writes_to=AgentWritesTo.TENANT.value,
                 ),
                 name="agent_tenant_carries_no_platform_settings",

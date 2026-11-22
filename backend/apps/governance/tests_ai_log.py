@@ -55,7 +55,7 @@ class _RecordingLlm(LlmAdapter):
         self.text = text
         self.prompts: list[tuple[str, str]] = []
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         self.prompts.append((system, prompt))
         yield self.text
         yield Completion(
@@ -71,10 +71,10 @@ class _RecordingLlm(LlmAdapter):
 class _FailingLlm(LlmAdapter):
     name = "failing"
 
-    def asked_model(self) -> tuple[str, str]:
+    def asked_model(self, model: str | None = None) -> tuple[str, str]:
         return "claude-opus-5", "2026-05-01"
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         raise LlmError("the model API could not be reached")
         yield  # pragma: no cover - unreachable, present so the signature stays a generator
 

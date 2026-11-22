@@ -17652,9 +17652,19 @@
           {
             "agentKey": "watch-sweeper",
             "cadence": "daily",
+            "defaultEffort": "high",
+            "defaultModel": "claude-opus-5-5",
+            "defaultMonthlyBudget": "150.00",
+            "effort": null,
             "jurisdictions": [
               "se",
               "eu"
+            ],
+            "model": "claude-sonnet-5-5",
+            "models": [
+              "claude-opus-5-5",
+              "claude-sonnet-5-5",
+              "claude-haiku-5-5"
             ],
             "monthlyBudget": "250.00"
           }
@@ -17676,12 +17686,84 @@
             "title": "Cadence",
             "type": "string"
           },
+          "defaultEffort": {
+            "description": "The effort the agent runs at while `effort` is null: the platform's for an agent turn, or for a single answer when the agent files through the app's own runner (the translator). How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher effort is more thorough and spends more; the thinking counts toward each call's token ceiling.",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "title": "Defaulteffort",
+            "type": "string"
+          },
+          "defaultModel": {
+            "description": "The model the agent runs on while `model` is null: the platform's configured model, such as `claude-opus-5-5`.",
+            "title": "Defaultmodel",
+            "type": "string"
+          },
+          "defaultMonthlyBudget": {
+            "description": "What the agent may spend in a month while `monthlyBudget` is null, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in.",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Defaultmonthlybudget",
+            "type": "string"
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The effort the agent runs at. How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher effort is more thorough and spends more; the thinking counts toward each call's token ceiling. Null when the console set none, and then `defaultEffort` applies.",
+            "title": "Effort"
+          },
           "jurisdictions": {
             "description": "The jurisdictions the agent sweeps. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.",
             "items": {
               "type": "string"
             },
             "title": "Jurisdictions",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "claude-opus-5-5",
+                  "claude-sonnet-5-5",
+                  "claude-haiku-5-5"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The model the agent runs on. One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and $0.50): the models whose list price the platform holds, so a run's cost and the monthly budget stay exact. Null when the console set none, and then `defaultModel` applies.",
+            "title": "Model"
+          },
+          "models": {
+            "description": "The models `model` may be set to, in the order to offer them. One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and $0.50): the models whose list price the platform holds, so a run's cost and the monthly budget stay exact.",
+            "items": {
+              "enum": [
+                "claude-opus-5-5",
+                "claude-sonnet-5-5",
+                "claude-haiku-5-5"
+              ],
+              "type": "string"
+            },
+            "title": "Models",
             "type": "array"
           },
           "monthlyBudget": {
@@ -17694,7 +17776,7 @@
                 "type": "null"
               }
             ],
-            "description": "What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then the platform's default monthly budget applies.",
+            "description": "What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then `defaultMonthlyBudget` applies.",
             "title": "Monthlybudget"
           }
         },
@@ -17702,7 +17784,13 @@
           "agentKey",
           "cadence",
           "jurisdictions",
-          "monthlyBudget"
+          "monthlyBudget",
+          "model",
+          "effort",
+          "defaultModel",
+          "defaultEffort",
+          "defaultMonthlyBudget",
+          "models"
         ],
         "title": "PlatformAgentSettings",
         "type": "object"
@@ -17713,10 +17801,12 @@
         "examples": [
           {
             "cadence": "daily",
+            "effort": null,
             "jurisdictions": [
               "se",
               "eu"
             ],
+            "model": "claude-sonnet-5-5",
             "monthlyBudget": "250.00"
           }
         ],
@@ -17732,6 +17822,25 @@
             "title": "Cadence",
             "type": "string"
           },
+          "effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The effort the agent runs at. How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher effort is more thorough and spends more; the thinking counts toward each call's token ceiling. Null, the default, leaves the platform's default effort in force.",
+            "title": "Effort"
+          },
           "jurisdictions": {
             "description": "The jurisdictions the agent sweeps, between 1 and 100 of them. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.",
             "items": {
@@ -17741,6 +17850,23 @@
             "minItems": 1,
             "title": "Jurisdictions",
             "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "claude-opus-5-5",
+                  "claude-sonnet-5-5",
+                  "claude-haiku-5-5"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The model the agent runs on. One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and $0.50): the models whose list price the platform holds, so a run's cost and the monthly budget stay exact. Null, the default, leaves the platform's configured model in force.",
+            "title": "Model"
           },
           "monthlyBudget": {
             "anyOf": [

@@ -40,11 +40,13 @@ class Translating(MockLlm):
 
     def __init__(self, reply: str | None = None) -> None:
         self.prompts: list[dict[str, Any]] = []
+        self.asked_with: list[tuple[str | None, str | None]] = []
         self.reply = reply
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         asked = json.loads(prompt)
         self.prompts.append(asked)
+        self.asked_with.append((model, effort))
         answer = {
             "titles": {language: f"[{language}] {asked['title']['text']}" for language in asked.get("title", {}).get("translateInto", [])},
             "summaries": {language: f"[{language}] {asked['summary']['text']}" for language in asked.get("summary", {}).get("translateInto", [])},
@@ -54,7 +56,7 @@ class Translating(MockLlm):
 
 
 class Failing(MockLlm):
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         raise LlmError("the model API returned 529 (overloaded_error)")
 
 
@@ -126,13 +128,25 @@ class Translator(TestCase):
         with override_settings(LLM_PROVIDER="anthropic"):
             self.assertEqual(translations.due(10), [("instrument", self.act.id), ("obligation", self.duty.id)])
             real = Translating(reply="still not a translation")
-            real.asked_model = lambda: ("claude-opus-5", "2023-06-01")  # type: ignore[method-assign]
+            real.asked_model = lambda model=None: ("claude-opus-5", "2023-06-01")  # type: ignore[method-assign]
             with mock.patch.object(real, "stream", side_effect=lambda **_: iter([Completion(
                 text="still not a translation", model="claude-opus-5", model_version="2023-06-01",
                 input_tokens=10, output_tokens=20, stop_reason="end_turn",
             )])):
                 self.assertEqual(self._translate(real, "instrument", self.act.id), "refused")
             self.assertEqual(translations.due(10), [("obligation", self.duty.id)], "a real model's answer settles")
+
+    def test_the_translator_asks_on_its_own_model_and_effort(self) -> None:
+        """D-148: the console's model and effort for the translator reach its call; without
+        them it asks the platform's model at a single answer's effort."""
+        llm = Translating()
+        self._translate(llm, "instrument", self.act.id)
+        self.assertEqual(llm.asked_with, [("claude-opus-5-5", "low")])
+        with library_write("test"):
+            AgentModel.objects.filter(key="library-translator").update(platform_model="claude-haiku-5-5", platform_effort="medium")
+        self._translate(llm, "obligation", self.duty.id)
+        self.assertEqual(llm.asked_with[-1], ("claude-haiku-5-5", "medium"))
+        self.assertEqual(AgentRun.objects.filter(agent__key="library-translator").latest("started_at").model, "claude-haiku-5-5")
 
     def test_a_translator_that_has_spent_its_monthly_budget_asks_nothing(self) -> None:
         """Defect 5 of the agent review (2026-11-21): the console's budget now holds."""

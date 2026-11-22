@@ -20,6 +20,9 @@ now takes, and what needs you:
 - [ ] **The in-worker EU runner (D-08, D-54) and H80** are still what the sweeper, the
       confirmer and the banks' own agents need to do real work. Until then a bank's run on the
       mock closes as failed after `AGENT_RUN_MAX_MINUTES` (360) instead of holding its cap.
+- [x] **Model and effort per agent (D-148).** Each of bleqq's agents has a Model and an Effort in
+      its console settings (Agents, How it runs). Empty is the platform's: `claude-opus-5-5`, at high
+      effort for an agent's turns and low for the translator's single answers.
 - [x] Defaults taken (D-146): the seeded cadence of the baseline, translator and scope
       researcher becomes `manual` on the next deploy unless the console set it; a platform
       budget counts each run's reported cost, else its logged model calls, per UTC month.

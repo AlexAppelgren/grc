@@ -56,20 +56,24 @@ from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant, TenantStatus
 
 SCHEDULER = Actor.system("agent scheduler")
+# What a definition that calls no model names as its model (the baseline filer).
+NO_MODEL = "none"
 
 
 # --- What a run pins; `opener.open_run` records it ---
 def _pinned(agent: Agent) -> opener.Pinned:
     """The version a run of `agent` pins: its newest one still published (AGT-06). Every
-    version retired raises 409 `no_published_version`."""
+    version retired raises 409 `no_published_version`. The run names the model its calls go
+    to (`platform.model_of`, D-148); a version that calls no model keeps saying so."""
     version_id = definitions.version_to_run(agent.id)
     version = None if version_id is None else AgentVersion.objects.get(pk=version_id)
+    model = "" if version is None else version.model if version.model == NO_MODEL else platform.model_of(agent)
     return opener.Pinned(
         agent_id=agent.id,
         key=agent.key,
         version_id=version_id,
         version_no=agent.current_version if version is None else version.version_number,
-        model="" if version is None else version.model,
+        model=model,
     )
 
 

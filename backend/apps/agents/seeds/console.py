@@ -50,11 +50,16 @@ def retire(version: AgentVersion) -> AgentVersion:
     return version
 
 
-def set_platform_settings(agent: Agent, *, cadence: str, jurisdictions: list[str], monthly_budget: Decimal | None) -> Agent:
-    """A platform agent's cadence, sweep and budget, the same for every bank."""
+def set_platform_settings(
+    agent: Agent, *, cadence: str, jurisdictions: list[str], monthly_budget: Decimal | None, model: str, effort: str
+) -> Agent:
+    """A platform agent's cadence, sweep, budget, model and effort, the same for every bank;
+    a blank model or effort is the platform's default (D-148)."""
     with library_write(f"{REASON}: settings of {agent.key}"):
         agent.default_cadence = cadence
         agent.platform_scope = {"jurisdictions": jurisdictions}
         agent.platform_monthly_budget = monthly_budget
-        agent.save(update_fields=["default_cadence", "platform_scope", "platform_monthly_budget"])
+        agent.platform_model = model
+        agent.platform_effort = effort
+        agent.save(update_fields=["default_cadence", "platform_scope", "platform_monthly_budget", "platform_model", "platform_effort"])
     return agent

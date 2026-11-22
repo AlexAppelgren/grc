@@ -501,6 +501,21 @@ class AgentDefinitionPage(CamelSchema):
 # definition and steers only those, inside its own zone (D-61, ADR 0053).
 # ---------------------------------------------------------------------------------------
 Cadence = Literal["daily", "weekly", "monthly", "manual"]
+# The models and efforts the console may set on one of bleqq's agents (D-148); the model list
+# is `apps.shared.model_prices.AGENT_MODELS`, and a test holds the two to the same keys.
+AgentModel = Literal["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"]
+Effort = Literal["low", "medium", "high", "xhigh", "max"]
+_MODEL = (
+    "One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output "
+    "tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and "
+    "$0.50): the models whose list price the platform holds, so a run's cost and the monthly "
+    "budget stay exact."
+)
+_EFFORT = (
+    "How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher "
+    "effort is more thorough and spends more; the thinking counts toward each call's token "
+    "ceiling."
+)
 Trigger = Literal["schedule", "manual", "request", "api"]
 RequestKind = Literal["run_now", "check_source", "check_url", "research_topic"]
 RequestState = Literal["queued", "running", "done", "failed", "rejected", "cancelled"]
@@ -660,7 +675,20 @@ class PlatformAgentSettings(CamelSchema):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [{"agentKey": "watch-sweeper", "cadence": "daily", "jurisdictions": ["se", "eu"], "monthlyBudget": "250.00"}]
+            "examples": [
+                {
+                    "agentKey": "watch-sweeper",
+                    "cadence": "daily",
+                    "jurisdictions": ["se", "eu"],
+                    "monthlyBudget": "250.00",
+                    "model": "claude-sonnet-5-5",
+                    "effort": None,
+                    "defaultModel": "claude-opus-5-5",
+                    "defaultEffort": "high",
+                    "defaultMonthlyBudget": "150.00",
+                    "models": ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+                }
+            ]
         }
     )
 
@@ -668,15 +696,23 @@ class PlatformAgentSettings(CamelSchema):
     cadence: Cadence = Field(description=f"How often the platform starts the agent. {_CADENCE}")
     jurisdictions: list[str] = Field(description=f"The jurisdictions the agent sweeps. {_JURISDICTION_KEYS}")
     monthly_budget: Decimal | None = Field(
-        description=f"What the agent may spend in a calendar month of UTC, {_MONEY}; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then the platform's default monthly budget applies."
+        description=f"What the agent may spend in a calendar month of UTC, {_MONEY}; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then `defaultMonthlyBudget` applies."
     )
+    model: AgentModel | None = Field(description=f"The model the agent runs on. {_MODEL} Null when the console set none, and then `defaultModel` applies.")
+    effort: Effort | None = Field(description=f"The effort the agent runs at. {_EFFORT} Null when the console set none, and then `defaultEffort` applies.")
+    default_model: str = Field(description="The model the agent runs on while `model` is null: the platform's configured model, such as `claude-opus-5-5`.")
+    default_effort: Effort = Field(description=f"The effort the agent runs at while `effort` is null: the platform's for an agent turn, or for a single answer when the agent files through the app's own runner (the translator). {_EFFORT}")
+    default_monthly_budget: Decimal = Field(description=f"What the agent may spend in a month while `monthlyBudget` is null, {_MONEY}.")
+    models: list[AgentModel] = Field(description=f"The models `model` may be set to, in the order to offer them. {_MODEL}")
 
 
 class PlatformAgentSettingsInput(WriteBody):
     """`PUT /agent-definitions/{agentKey}/settings`: the whole setting, for every bank at once."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"cadence": "daily", "jurisdictions": ["se", "eu"], "monthlyBudget": "250.00"}]}
+        json_schema_extra={
+            "examples": [{"cadence": "daily", "jurisdictions": ["se", "eu"], "monthlyBudget": "250.00", "model": "claude-sonnet-5-5", "effort": None}]
+        }
     )
 
     cadence: Cadence = Field(description=f"How often the platform starts the agent. {_CADENCE}")
@@ -691,6 +727,8 @@ class PlatformAgentSettingsInput(WriteBody):
         decimal_places=2,
         description=f"What the agent may spend in a calendar month of UTC, {_MONEY}, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null leaves the platform's default monthly budget in force.",
     )
+    model: AgentModel | None = Field(default=None, description=f"The model the agent runs on. {_MODEL} Null, the default, leaves the platform's configured model in force.")
+    effort: Effort | None = Field(default=None, description=f"The effort the agent runs at. {_EFFORT} Null, the default, leaves the platform's default effort in force.")
 
 
 class RetagRequestInput(WriteBody):

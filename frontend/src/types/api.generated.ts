@@ -22111,9 +22111,19 @@ export interface components {
          * @example {
          *       "agentKey": "watch-sweeper",
          *       "cadence": "daily",
+         *       "defaultEffort": "high",
+         *       "defaultModel": "claude-opus-5-5",
+         *       "defaultMonthlyBudget": "150.00",
+         *       "effort": null,
          *       "jurisdictions": [
          *         "se",
          *         "eu"
+         *       ],
+         *       "model": "claude-sonnet-5-5",
+         *       "models": [
+         *         "claude-opus-5-5",
+         *         "claude-sonnet-5-5",
+         *         "claude-haiku-5-5"
          *       ],
          *       "monthlyBudget": "250.00"
          *     }
@@ -22131,13 +22141,44 @@ export interface components {
              */
             cadence: "daily" | "weekly" | "monthly" | "manual";
             /**
+             * Defaulteffort
+             * @description The effort the agent runs at while `effort` is null: the platform's for an agent turn, or for a single answer when the agent files through the app's own runner (the translator). How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher effort is more thorough and spends more; the thinking counts toward each call's token ceiling.
+             * @enum {string}
+             */
+            defaultEffort: "low" | "medium" | "high" | "xhigh" | "max";
+            /**
+             * Defaultmodel
+             * @description The model the agent runs on while `model` is null: the platform's configured model, such as `claude-opus-5-5`.
+             */
+            defaultModel: string;
+            /**
+             * Defaultmonthlybudget
+             * @description What the agent may spend in a month while `monthlyBudget` is null, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in.
+             */
+            defaultMonthlyBudget: string;
+            /**
+             * Effort
+             * @description The effort the agent runs at. How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher effort is more thorough and spends more; the thinking counts toward each call's token ceiling. Null when the console set none, and then `defaultEffort` applies.
+             */
+            effort: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+            /**
              * Jurisdictions
              * @description The jurisdictions the agent sweeps. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.
              */
             jurisdictions: string[];
             /**
+             * Model
+             * @description The model the agent runs on. One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and $0.50): the models whose list price the platform holds, so a run's cost and the monthly budget stay exact. Null when the console set none, and then `defaultModel` applies.
+             */
+            model: ("claude-opus-5-5" | "claude-sonnet-5-5" | "claude-haiku-5-5") | null;
+            /**
+             * Models
+             * @description The models `model` may be set to, in the order to offer them. One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and $0.50): the models whose list price the platform holds, so a run's cost and the monthly budget stay exact.
+             */
+            models: ("claude-opus-5-5" | "claude-sonnet-5-5" | "claude-haiku-5-5")[];
+            /**
              * Monthlybudget
-             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then the platform's default monthly budget applies.
+             * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in; once its spend reaches it, the agent starts no run until the next month. Null when the console set none, and then `defaultMonthlyBudget` applies.
              */
             monthlyBudget: string | null;
         };
@@ -22146,10 +22187,12 @@ export interface components {
          * @description `PUT /agent-definitions/{agentKey}/settings`: the whole setting, for every bank at once.
          * @example {
          *       "cadence": "daily",
+         *       "effort": null,
          *       "jurisdictions": [
          *         "se",
          *         "eu"
          *       ],
+         *       "model": "claude-sonnet-5-5",
          *       "monthlyBudget": "250.00"
          *     }
          */
@@ -22161,10 +22204,20 @@ export interface components {
              */
             cadence: "daily" | "weekly" | "monthly" | "manual";
             /**
+             * Effort
+             * @description The effort the agent runs at. How hard the model thinks on each call: `low`, `medium`, `high`, `xhigh` or `max`. Higher effort is more thorough and spends more; the thinking counts toward each call's token ceiling. Null, the default, leaves the platform's default effort in force.
+             */
+            effort?: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+            /**
              * Jurisdictions
              * @description The jurisdictions the agent sweeps, between 1 and 100 of them. Jurisdiction keys from the jurisdiction vocabulary (`GET /vocab/jurisdiction`), such as `se` or `eu`: keys and never labels, each one an active row; an unknown key is refused with `unknown_key` and the valid keys. The platform's editors add rows to that list through the proposal queue, so its members are not fixed here.
              */
             jurisdictions: string[];
+            /**
+             * Model
+             * @description The model the agent runs on. One of `claude-opus-5-5` (the most capable, $4 and $20 per million input and output tokens), `claude-sonnet-5-5` ($2 and $10) or `claude-haiku-5-5` (the fastest, $0.10 and $0.50): the models whose list price the platform holds, so a run's cost and the monthly budget stay exact. Null, the default, leaves the platform's configured model in force.
+             */
+            model?: ("claude-opus-5-5" | "claude-sonnet-5-5" | "claude-haiku-5-5") | null;
             /**
              * Monthlybudget
              * @description What the agent may spend in a calendar month of UTC, a decimal amount in euros with at most two decimals and eight digits before the point, never negative, sent and returned as a string such as `250.00` so no rounding creeps in, with a minimum of 0; once its spend reaches it, the agent starts no run until the next month. Null leaves the platform's default monthly budget in force.

@@ -311,3 +311,31 @@ class TheConfirmerDecides(WorkerCase):
         self.assertIn("four_eyes_violation", result["content"])
         self.proposal.refresh_from_db()
         self.assertEqual(self.proposal.status, "open")
+
+
+def _big() -> Turn:
+    return Turn(content=[{"type": "text", "text": "Done."}], model="claude", model_version="1", input_tokens=100_000, output_tokens=10_000, stop_reason="end_turn")
+
+
+class AnAgentsOwnModelAndEffort(WorkerCase):
+    """D-148: the console's model and effort reach every turn, the turn is priced at that
+    model's list price, and the run names the model its calls went to."""
+
+    def test_the_platform_defaults_without_a_setting(self) -> None:
+        model = self.drive(_big())
+        self.assertEqual((model.sent[0]["model"], model.sent[0]["effort"]), ("claude-opus-5-5", "high"))
+        self.assertEqual(AiGeneration.objects.get(agent_run_id=self.agent_run.id).cost_minor, 60, "100k in and 10k out at $4 and $20")
+
+    def test_the_agents_own_model_and_effort_and_their_price(self) -> None:
+        with library_write("test"):
+            type(self.agent).objects.filter(pk=self.agent.pk).update(platform_model="claude-haiku-5-5", platform_effort="medium")
+        model = self.drive(_big())
+        self.assertEqual((model.sent[0]["model"], model.sent[0]["effort"]), ("claude-haiku-5-5", "medium"))
+        self.assertEqual(AiGeneration.objects.get(agent_run_id=self.agent_run.id).cost_minor, 2, "100k in and 10k out at $0.10 and $0.50, rounded up")
+
+    def test_a_run_the_scheduler_opens_names_the_model_its_calls_go_to(self) -> None:
+        with library_write("test"):
+            type(self.agent).objects.filter(pk=self.agent.pk).update(platform_model="claude-sonnet-5-5", active=True)
+        with transaction.atomic():
+            opened = tasks.open_platform_run(type(self.agent).objects.get(pk=self.agent.pk))
+        self.assertEqual(opened.model, "claude-sonnet-5-5", "the version says claude-opus-5; the run says what it calls")

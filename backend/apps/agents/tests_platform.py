@@ -26,6 +26,10 @@ from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
+from typing import get_args
+
+from apps.agents.schemas import AgentModel, Effort
+from apps.shared.model_prices import AGENT_MODELS, EFFORTS
 from apps.agents import testing as agent_build
 from apps.agents.models import Agent, AgentRun, RunTrigger
 from apps.agents.tests_definitions import platform_agent
@@ -44,6 +48,13 @@ RUNS = "/api/v1/agent-runs"
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
 JSON = "application/json"
 SETTINGS = {"cadence": "daily", "jurisdictions": ["se", "eu"], "monthlyBudget": "250.00"}
+# What every read carries beside what the console set (D-148), at the test settings.
+DEFAULTS = {
+    "defaultModel": "claude-opus-5-5",
+    "defaultEffort": "high",
+    "defaultMonthlyBudget": "150.00",
+    "models": ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+}
 BANK_NAMES = ("Nordbanken Settings AB", "Fjordbank Settings ASA")
 # The tables that hold a bank's rows: every tenant model, and the bank itself.
 TENANT_TABLES = frozenset({"tenant"} | {model._meta.db_table for model in production_models() if issubclass(model, TenantModel)})
@@ -117,12 +128,15 @@ class PlatformAgentSettings(ConsoleCase):
     def test_reading_them(self) -> None:
         response = self.call("get", self.url)
         self.assertEqual(response.status_code, 200, response.content)
-        self.assertEqual(response.json(), {"agentKey": self.agent.key, "cadence": "weekly", "jurisdictions": [], "monthlyBudget": None})
+        self.assertEqual(
+            response.json(),
+            {"agentKey": self.agent.key, "cadence": "weekly", "jurisdictions": [], "monthlyBudget": None, "model": None, "effort": None, **DEFAULTS},
+        )
 
     def test_changing_them_for_every_bank(self) -> None:
         response = self.call("put", self.url, SETTINGS)
         self.assertEqual(response.status_code, 200, response.content)
-        self.assertEqual(response.json(), {"agentKey": self.agent.key, **SETTINGS})
+        self.assertEqual(response.json(), {"agentKey": self.agent.key, **SETTINGS, "model": None, "effort": None, **DEFAULTS})
         stored = Agent.objects.get(pk=self.agent.pk)
         self.assertEqual(
             (stored.default_cadence, stored.platform_scope, stored.platform_monthly_budget),
@@ -136,8 +150,33 @@ class PlatformAgentSettings(ConsoleCase):
         self.assertIsNone(event.tenant_id)
         self.assertEqual(event.actor_id, self.admin.id)
         self.assertEqual(event.step_up_assertion_id, self.assertion)
-        self.assertEqual(event.before, {"cadence": "weekly", "jurisdictions": [], "monthlyBudget": None})
-        self.assertEqual(event.after, SETTINGS)
+        self.assertEqual(event.before, {"cadence": "weekly", "jurisdictions": [], "monthlyBudget": None, "model": None, "effort": None})
+        self.assertEqual(event.after, {**SETTINGS, "model": None, "effort": None}, "the audit row keeps what a person set, never the defaults")
+
+    def test_a_model_and_an_effort_of_its_own(self) -> None:
+        """D-148: the console sets one of bleqq's agents' model and effort, and null goes back
+        to the platform's."""
+        response = self.call("put", self.url, {**SETTINGS, "model": "claude-sonnet-5-5", "effort": "low"})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["model"], response.json()["effort"]), ("claude-sonnet-5-5", "low"))
+        stored = Agent.objects.get(pk=self.agent.pk)
+        self.assertEqual((stored.platform_model, stored.platform_effort), ("claude-sonnet-5-5", "low"))
+        [event] = AuditEvent.objects.filter(action="agent.settings_changed", subject_id=self.agent.id)
+        self.assertEqual((event.after["model"], event.after["effort"]), ("claude-sonnet-5-5", "low"))
+        self.call("put", self.url, SETTINGS)
+        stored.refresh_from_db()
+        self.assertEqual((stored.platform_model, stored.platform_effort), ("", ""))
+
+    def test_a_model_or_an_effort_not_on_the_list_is_422_and_changes_nothing(self) -> None:
+        for wrong in ({"model": "gpt-5"}, {"model": "claude-opus-5"}, {"effort": "extreme"}):
+            response = self.call("put", self.url, {**SETTINGS, **wrong})
+            self.assertEqual(response.status_code, 422, wrong)
+        stored = Agent.objects.get(pk=self.agent.pk)
+        self.assertEqual((stored.platform_model, stored.platform_effort, stored.default_cadence), ("", "", "weekly"))
+
+    def test_the_model_list_is_the_priced_list(self) -> None:
+        self.assertEqual(set(get_args(AgentModel)), set(AGENT_MODELS))
+        self.assertEqual(set(get_args(Effort)), set(EFFORTS))
 
     def test_a_jurisdiction_the_live_list_does_not_hold_is_422_with_the_valid_keys(self) -> None:
         with library_write("test"):

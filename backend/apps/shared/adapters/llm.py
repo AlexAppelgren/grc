@@ -99,28 +99,41 @@ class LlmAdapter(ABC):
     name: str
 
     @abstractmethod
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(
+        self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None
+    ) -> Iterator[str | Completion]:
         """Yield each text delta as it arrives, then one `Completion` carrying the whole
         answer, its usage and its stop reason, always last; a stream that cannot end in one
         raises `LlmError`, and the deltas already yielded are not a whole answer.
 
-        `deadline_s` is a caller's own shorter deadline beneath `LLM_DEADLINE_S`."""
+        `deadline_s` is a caller's own shorter deadline beneath `LLM_DEADLINE_S`; `model` and
+        `effort` an agent's own (D-148), else `LLM_MODEL` and `LLM_EFFORT`."""
 
-    def complete(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Completion:
-        for event in self.stream(system=system, prompt=prompt, max_tokens=max_tokens, deadline_s=deadline_s):
+    def complete(
+        self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None
+    ) -> Completion:
+        for event in self.stream(system=system, prompt=prompt, max_tokens=max_tokens, deadline_s=deadline_s, model=model, effort=effort):
             if isinstance(event, Completion):
                 return event
         raise LlmError("the model stream ended before the answer was complete")
 
     def converse(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int, effort: str, deadline_s: float
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        max_tokens: int,
+        effort: str,
+        deadline_s: float,
+        model: str | None = None,
     ) -> Turn:
         """One assistant turn of a conversation the caller keeps, offered `tools`; the caller
         runs any tool call the turn holds and sends the results back on the next request
         (the in-worker agent runner, D-147). Raises `LlmError` as `stream` does."""
         raise NotImplementedError(f"the {self.name} provider does not converse with tools")
 
-    def asked_model(self) -> tuple[str, str]:
+    def asked_model(self, model: str | None = None) -> tuple[str, str]:
         """The model and version a call is addressed to, for the log row of a call that never
         finished (a stream left early, or failed); a finished call logs what its `Completion`
         reports (AUD-02)."""
@@ -158,14 +171,24 @@ class MockLlm(LlmAdapter):
     name = "mock"
 
     def converse(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int, effort: str, deadline_s: float
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        max_tokens: int,
+        effort: str,
+        deadline_s: float,
+        model: str | None = None,
     ) -> Turn:
         return Turn(content=[{"type": "text", "text": ""}], model=MOCK_MODEL, model_version="0", input_tokens=0, output_tokens=0, stop_reason="end_turn")
 
-    def asked_model(self) -> tuple[str, str]:
+    def asked_model(self, model: str | None = None) -> tuple[str, str]:
         return MOCK_MODEL, "0"
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(
+        self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None
+    ) -> Iterator[str | Completion]:
         chunks = CONTEXT_LINE.findall(prompt)
         if prompt.startswith(REASON_DRAFT_OPENING):
             # A drafted reason is one to three sentences (apps/register/reason_draft.py): the first two facts.
@@ -418,18 +441,20 @@ class AnthropicLlm(LlmAdapter):
             raise ImproperlyConfigured("ANTHROPIC_API_KEY is not set; it is read from the environment only")
         self._api_key = api_key
 
-    def asked_model(self) -> tuple[str, str]:
-        return settings.LLM_MODEL, ANTHROPIC_API_VERSION
+    def asked_model(self, model: str | None = None) -> tuple[str, str]:
+        return model or settings.LLM_MODEL, ANTHROPIC_API_VERSION
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(
+        self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None
+    ) -> Iterator[str | Completion]:
         limit = settings.LLM_DEADLINE_S if deadline_s is None else min(deadline_s, settings.LLM_DEADLINE_S)
         deadline = time.monotonic() + limit
         body = {
-            "model": settings.LLM_MODEL,
+            "model": model or settings.LLM_MODEL,
             # A setting is the ceiling, so no caller can spend more than the budget allows.
             # Thinking tokens count toward it, so these short answers think at LLM_EFFORT.
             "max_tokens": min(max_tokens, settings.LLM_MAX_TOKENS),
-            "output_config": {"effort": settings.LLM_EFFORT},
+            "output_config": {"effort": effort or settings.LLM_EFFORT},
             "system": system,
             "messages": [{"role": "user", "content": prompt}],
             "stream": True,
@@ -443,11 +468,19 @@ class AnthropicLlm(LlmAdapter):
                 raise LlmError(f"the model API sent a stream that could not be read ({type(exc).__name__})") from exc
 
     def converse(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int, effort: str, deadline_s: float
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        max_tokens: int,
+        effort: str,
+        deadline_s: float,
+        model: str | None = None,
     ) -> Turn:
         deadline = time.monotonic() + deadline_s
         body = {
-            "model": settings.LLM_MODEL,
+            "model": model or settings.LLM_MODEL,
             "max_tokens": max_tokens,
             "output_config": {"effort": effort},
             # The system prompt and the tools never change within a run, so each turn reads
@@ -498,7 +531,9 @@ class AnthropicLlm(LlmAdapter):
 class BedrockLlm(LlmAdapter):
     name = "bedrock"
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(
+        self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None
+    ) -> Iterator[str | Completion]:
         raise NotImplementedError("Bedrock provider lands when D-07's EU path is contracted")
 
 

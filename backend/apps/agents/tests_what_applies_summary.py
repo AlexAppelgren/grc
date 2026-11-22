@@ -35,13 +35,13 @@ class Recording(MockLlm):
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         self.calls.append({"system": system, "prompt": prompt, "max_tokens": max_tokens, "deadline_s": deadline_s})
         return super().stream(system=system, prompt=prompt, max_tokens=max_tokens, deadline_s=deadline_s)
 
 
 class Failing(Recording):
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         self.calls.append({"prompt": prompt})
         raise LlmError("the model API returned 529 (overloaded_error)")
 
@@ -50,7 +50,7 @@ class Slow(Recording):
     """A model that is still silent when the caller's deadline passes, as the adapter's own
     deadline then refuses it."""
 
-    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
+    def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None, model: str | None = None, effort: str | None = None) -> Iterator[str | Completion]:
         self.calls.append({"deadline_s": deadline_s})
         time.sleep(deadline_s or 0)
         raise LlmError("the model API did not finish before the call's deadline")

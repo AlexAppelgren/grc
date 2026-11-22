@@ -15,7 +15,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from django.conf import settings
 from django.core.management import call_command
 from django.db import transaction
 
@@ -65,10 +64,14 @@ class Classifier:
         self._tool = _classify_tool(change_types, flags, scope, standards)
         with transaction.atomic():
             self._run = tasks.open_baseline_run(AGENT_KEY, actor=Actor.system("search_eval"))
+        from apps.agents import platform
+
+        # Measured on what the sweeper runs on: its console model and effort (D-148).
+        self._model, self._effort = platform.model_of(self._run.agent), platform.effort_of(self._run.agent)
 
     @property
     def name(self) -> str:
-        return f"{AGENT_KEY} v{self._version} on {settings.LLM_MODEL}"
+        return f"{AGENT_KEY} v{self._version} on {self._model} at {self._effort} effort"
 
     def classify(self, text: str) -> dict[str, Any]:
         from apps.agents.screen import screen
@@ -84,6 +87,8 @@ class Classifier:
                 agent_run_id=self._run.id,
                 tenant_id=None,
                 llm=self._llm,
+                model=self._model,
+                effort=self._effort,
             )
         answer = next((use["input"] for use in conversed.turn.tool_uses if use["name"] == TOOL), None)
         if answer is None:
